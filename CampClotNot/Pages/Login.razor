@@ -1,0 +1,38 @@
+@page "/login"
+
+<PageTitle>Sign In — Camp Clot Not</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="pa-6" Elevation="3">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Camp Clot Not</MudText>
+        <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-6">Sign In</MudText>
+
+        @if (Error)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">Invalid email or password.</MudAlert>
+        }
+
+        <form method="post" action="/account/login">
+            <div class="mb-4">
+                <input type="email" name="email" placeholder="Email address"
+                       required autocomplete="email"
+                       style="width:100%;padding:14px 12px;border:1px solid rgba(0,0,0,0.23);border-radius:4px;font-size:1rem;box-sizing:border-box;font-family:inherit" />
+            </div>
+            <div class="mb-6">
+                <input type="password" name="password" placeholder="Password"
+                       required autocomplete="current-password"
+                       style="width:100%;padding:14px 12px;border:1px solid rgba(0,0,0,0.23);border-radius:4px;font-size:1rem;box-sizing:border-box;font-family:inherit" />
+            </div>
+            <button type="submit"
+                    style="width:100%;padding:10px 22px;background-color:#594AE2;color:#fff;border:none;border-radius:4px;font-size:0.875rem;font-weight:500;letter-spacing:0.09em;cursor:pointer;font-family:inherit;text-transform:uppercase">
+                Sign In
+            </button>
+        </form>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "error")]
+    public bool Error { get; set; }
+}

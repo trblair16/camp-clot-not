@@ -1,0 +1,84 @@
+@page "/"
+@attribute [Authorize]
+@inject GroupService GroupSvc
+@inject TransactionService TxSvc
+@inject IDialogService DialogService
+@implements IAsyncDisposable
+
+<PageTitle>Dashboard — Camp Clot Not</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Leaderboard</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        @foreach (var entry in _ranked)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudPaper Class="pa-4" Style="@($"border-left: 6px solid {entry.Group.Color}")" Elevation="2">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
+                        <MudChip Color="@RankColor(entry.Rank)" Size="Size.Small">#@entry.Rank</MudChip>
+                        <MudText Typo="Typo.h6">@entry.Group.Name</MudText>
+                    </MudStack>
+                    <MudText>🪙 <strong>@entry.Coins</strong> Coins</MudText>
+                    <MudText>⭐ <strong>@entry.Stars</strong> Stars</MudText>
+                    @if (entry.Group.BoardPos is not null)
+                    {
+                        <MudText Typo="Typo.caption">Space @entry.Group.BoardPos.SpaceIndex</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+<MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+        Label="Log Transaction" Style="position:fixed;bottom:2rem;right:2rem"
+        OnClick="OpenTransactionDialog" />
+
+<LogTransactionDialog @ref="_txDialog" OnTransactionPosted="RefreshAsync" />
+
+@code {
+    private List<GroupEntry> _ranked = new();
+    private bool _loading = true;
+    private LogTransactionDialog _txDialog = null!;
+
+    protected override async Task OnInitializedAsync() => await RefreshAsync();
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        var groups = await GroupSvc.GetAllAsync();
+        var entries = new List<GroupEntry>();
+        foreach (var g in groups)
+        {
+            var coins = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Primary);
+            var stars = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Prestige);
+            entries.Add(new GroupEntry(g, coins, stars));
+        }
+        _ranked = entries
+            .OrderByDescending(e => e.Stars)
+            .ThenByDescending(e => e.Coins)
+            .Select((e, i) => e with { Rank = i + 1 })
+            .ToList();
+        _loading = false;
+    }
+
+    private async Task OpenTransactionDialog() => await _txDialog.OpenAsync();
+
+    private Color RankColor(int rank) => rank switch
+    {
+        1 => Color.Warning,
+        2 => Color.Default,
+        3 => Color.Tertiary,
+        _ => Color.Default
+    };
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+    private record GroupEntry(Group Group, int Coins, int Stars, int Rank = 0);
+}
