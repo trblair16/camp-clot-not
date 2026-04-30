@@ -1,0 +1,161 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@inject AuthService AuthSvc
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Manage Users — Camp Clot Not</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">User Accounts</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="5">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-3">Create Account</MudText>
+            <MudTextField @bind-Value="_form.FirstName" Label="First Name" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_form.LastName" Label="Last Name" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_form.Email" Label="Email" InputType="InputType.Email" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_form.Password" Label="Temporary Password" InputType="InputType.Password" Variant="Variant.Outlined" Class="mb-3" />
+            <MudSelect @bind-Value="_form.Role" Label="Role" Variant="Variant.Outlined" Class="mb-4">
+                <MudSelectItem Value="Role.Staff">Staff / Volunteer</MudSelectItem>
+                <MudSelectItem Value="Role.Admin">Admin</MudSelectItem>
+                <MudSelectItem Value="Role.Display">Display (Projector)</MudSelectItem>
+            </MudSelect>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">Create</MudButton>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="7">
+        @if (_loading)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudTable Items="_users" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Email</MudTh>
+                    <MudTh>Role</MudTh>
+                    <MudTh>Active</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.FirstName @context.LastName</MudTd>
+                    <MudTd>@context.Email</MudTd>
+                    <MudTd><MudChip Size="Size.Small">@context.UserRole.SystemName</MudChip></MudTd>
+                    <MudTd>@(context.IsActive ? "✓" : "—")</MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small"
+                                       Color="Color.Info" OnClick="() => OpenResetDialog(context)"
+                                       Title="Reset password" />
+                        @if (context.IsActive)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small"
+                                           Color="Color.Warning" OnClick="() => DeactivateAsync(context)"
+                                           Title="Deactivate" />
+                        }
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudItem>
+</MudGrid>
+
+<MudDialog @bind-IsVisible="_resetOpen">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Reset Password — @_resetting?.FirstName @_resetting?.LastName</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_resetPassword" Label="New Password" InputType="InputType.Password"
+                      Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="_resetConfirm" Label="Confirm Password" InputType="InputType.Password"
+                      Variant="Variant.Outlined" />
+        @if (_resetError is not null)
+        {
+            <MudText Color="Color.Error" Class="mt-2">@_resetError</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseResetDialog">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitResetAsync">Reset</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<User> _users = new();
+    private bool _loading = true;
+    private UserForm _form = new();
+
+    private bool _resetOpen;
+    private User? _resetting;
+    private string _resetPassword = "";
+    private string _resetConfirm = "";
+    private string? _resetError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _users = await AuthSvc.GetAllUsersAsync();
+        _loading = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Email) || string.IsNullOrWhiteSpace(_form.Password)) return;
+        await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role);
+        Snackbar.Add($"Account created for {_form.FirstName} {_form.LastName}.", Severity.Success);
+        _form = new();
+        _users = await AuthSvc.GetAllUsersAsync();
+    }
+
+    private void OpenResetDialog(User u)
+    {
+        _resetting = u;
+        _resetPassword = "";
+        _resetConfirm = "";
+        _resetError = null;
+        _resetOpen = true;
+    }
+
+    private void CloseResetDialog()
+    {
+        _resetOpen = false;
+        _resetting = null;
+    }
+
+    private async Task SubmitResetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_resetPassword))
+        {
+            _resetError = "Password cannot be empty.";
+            return;
+        }
+        if (_resetPassword != _resetConfirm)
+        {
+            _resetError = "Passwords do not match.";
+            return;
+        }
+        await AuthSvc.ResetPasswordAsync(_resetting!.UserId, _resetPassword);
+        Snackbar.Add($"Password reset for {_resetting.FirstName} {_resetting.LastName}.", Severity.Success);
+        CloseResetDialog();
+    }
+
+    private async Task DeactivateAsync(User u)
+    {
+        var result = await DialogService.ShowMessageBox("Deactivate User",
+            $"Deactivate {u.FirstName} {u.LastName}? They will no longer be able to sign in.",
+            yesText: "Deactivate", cancelText: "Cancel");
+        if (result != true) return;
+        await AuthSvc.DeactivateUserAsync(u.UserId);
+        _users = await AuthSvc.GetAllUsersAsync();
+        Snackbar.Add($"{u.FirstName} {u.LastName} deactivated.", Severity.Info);
+    }
+
+    private class UserForm
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+        public Role Role { get; set; } = Role.Staff;
+    }
+}

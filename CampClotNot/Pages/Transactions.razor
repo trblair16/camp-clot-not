@@ -1,0 +1,87 @@
+@page "/transactions"
+@attribute [Authorize]
+@inject TransactionService TxSvc
+@inject GroupService GroupSvc
+@inject IDialogService DialogService
+
+<PageTitle>Transactions — Camp Clot Not</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Transaction Log</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="_transactions" Dense="true" Striped="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Time</MudTh>
+            <MudTh>Group</MudTh>
+            <MudTh>Type</MudTh>
+            <MudTh>Amount</MudTh>
+            <MudTh>Logged By</MudTh>
+            <MudTh>Note</MudTh>
+            <MudTh>Status</MudTh>
+            <AuthorizeView Roles="Admin">
+                <MudTh>Actions</MudTh>
+            </AuthorizeView>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.CreatedAt.ToLocalTime().ToString("MM/dd HH:mm")</MudTd>
+            <MudTd>@context.Group?.Name</MudTd>
+            <MudTd>@(context.CurrencyType?.SystemName == nameof(Currency.Primary) ? "🪙 Coins" : "⭐ Stars")</MudTd>
+            <MudTd Style="@(context.Amount < 0 ? "color:red" : "")">@(context.Amount > 0 ? "+" : "")@context.Amount</MudTd>
+            <MudTd>@context.LoggedBy</MudTd>
+            <MudTd>@context.Note</MudTd>
+            <MudTd>
+                @if (context.VoidedAt.HasValue)
+                {
+                    <MudChip Color="Color.Error" Size="Size.Small">VOIDED</MudChip>
+                }
+                else
+                {
+                    <MudChip Color="Color.Success" Size="Size.Small">Active</MudChip>
+                }
+            </MudTd>
+            <AuthorizeView Roles="Admin" Context="authCtx">
+                <MudTd>
+                    @if (!context.VoidedAt.HasValue)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Block" Size="Size.Small"
+                                       Color="Color.Error" OnClick="() => VoidAsync(context)"
+                                       Title="Void transaction" />
+                    }
+                </MudTd>
+            </AuthorizeView>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private List<Transaction> _transactions = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _transactions = await TxSvc.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task VoidAsync(Transaction tx)
+    {
+        var currencyLabel = tx.CurrencyType?.SystemName == nameof(Currency.Primary) ? "coin" : "star";
+        var result = await DialogService.ShowMessageBox(
+            "Void Transaction",
+            $"Void this {currencyLabel} transaction of {tx.Amount:+0;-0} for {tx.Group?.Name}?",
+            yesText: "Void", cancelText: "Cancel");
+        if (result != true) return;
+
+        var state = await AuthState;
+        var name = state.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "unknown";
+        await TxSvc.VoidAsync(tx.TxId, name);
+        _transactions = await TxSvc.GetAllAsync();
+    }
+}

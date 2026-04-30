@@ -1,0 +1,79 @@
+@inject TransactionService TxSvc
+@inject GroupService GroupSvc
+@inject ISnackbar Snackbar
+
+<MudDialog @bind-IsVisible="_open">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Log Transaction</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudSelect @bind-Value="_form.GroupId" Label="Group" Variant="Variant.Outlined" Class="mb-3">
+            @foreach (var g in _groups)
+            {
+                <MudSelectItem Value="g.GroupId">@g.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect @bind-Value="_form.CurrencyTypeId" Label="Type" Variant="Variant.Outlined" Class="mb-3">
+            @foreach (var ct in _currencyTypes)
+            {
+                <MudSelectItem Value="ct.CurrencyTypeId">
+                    @(ct.SystemName == nameof(Currency.Primary) ? "🪙 Coins" : "⭐ Stars")
+                </MudSelectItem>
+            }
+        </MudSelect>
+        <MudNumericField @bind-Value="_form.Amount" Label="Amount (negative = deduction)"
+                         Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="_form.Note" Label="Note (optional)" Variant="Variant.Outlined" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_submitting">
+            @(_submitting ? "Posting..." : "Post")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
+    [Parameter] public EventCallback OnTransactionPosted { get; set; }
+
+    private bool _open;
+    private bool _submitting;
+    private List<Group> _groups = new();
+    private List<CurrencyType> _currencyTypes = new();
+    private TransactionForm _form = new();
+
+    public async Task OpenAsync()
+    {
+        _groups = await GroupSvc.GetAllAsync();
+        _currencyTypes = await GroupSvc.GetCurrencyTypesAsync();
+        _form = new TransactionForm
+        {
+            CurrencyTypeId = _currencyTypes.FirstOrDefault()?.CurrencyTypeId ?? Guid.Empty
+        };
+        _open = true;
+    }
+
+    private void Close() => _open = false;
+
+    private async Task SubmitAsync()
+    {
+        if (_form.GroupId == Guid.Empty || _form.CurrencyTypeId == Guid.Empty || _form.Amount == 0) return;
+        _submitting = true;
+        var state = await AuthState;
+        var name = state.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "unknown";
+        await TxSvc.PostAsync(_form.GroupId, _form.CurrencyTypeId, _form.Amount, name, _form.Note);
+        Snackbar.Add("Transaction posted.", Severity.Success);
+        _open = false;
+        _submitting = false;
+        await OnTransactionPosted.InvokeAsync();
+    }
+
+    private class TransactionForm
+    {
+        public Guid GroupId { get; set; }
+        public Guid CurrencyTypeId { get; set; }
+        public int Amount { get; set; } = 0;
+        public string? Note { get; set; }
+    }
+}

@@ -1,0 +1,95 @@
+@page "/display"
+@attribute [Authorize(Roles = "Display,Admin")]
+@inject GroupService GroupSvc
+@inject NavigationManager Nav
+@implements IAsyncDisposable
+
+<PageTitle>Camp Clot Not — Projector</PageTitle>
+
+<MudLayout Style="background:#1a1a2e;min-height:100vh;color:white;">
+    <MudMainContent Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudText Typo="Typo.h4" Style="font-family:'Fredoka One',cursive;color:#ffd700" Class="mb-4">
+                    Camp Clot Not — Super Party 2026
+                </MudText>
+                <MudText Typo="Typo.body1" Style="color:#aaa">
+                    Board view coming in v0.3.0
+                </MudText>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudText Typo="Typo.h5" Style="color:#ffd700" Class="mb-3">Leaderboard</MudText>
+                @if (_loading)
+                {
+                    <MudProgressCircular Indeterminate="true" Color="Color.Warning" />
+                }
+                else
+                {
+                    @foreach (var entry in _ranked)
+                    {
+                        <MudPaper Class="pa-3 mb-2" Style="@($"background:#16213e;border-left:4px solid {entry.Group.Color}")" Elevation="0">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudText Style="font-size:1.1rem;font-weight:600">#@entry.Rank @entry.Group.Name</MudText>
+                                <MudStack Row="true" Spacing="3">
+                                    <MudText Style="font-size:1.4rem">🪙@entry.Coins</MudText>
+                                    <MudText Style="font-size:1.4rem">⭐@entry.Stars</MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudPaper>
+                    }
+                }
+            </MudItem>
+        </MudGrid>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private List<GroupEntry> _ranked = new();
+    private bool _loading = true;
+    private HubConnection? _hub;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/camphub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On("ScoresUpdated", async () =>
+        {
+            await RefreshAsync();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hub.StartAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        var groups = await GroupSvc.GetAllAsync();
+        var entries = new List<GroupEntry>();
+        foreach (var g in groups)
+        {
+            var coins = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Primary);
+            var stars = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Prestige);
+            entries.Add(new GroupEntry(g, coins, stars));
+        }
+        _ranked = entries
+            .OrderByDescending(e => e.Stars)
+            .ThenByDescending(e => e.Coins)
+            .Select((e, i) => e with { Rank = i + 1 })
+            .ToList();
+        _loading = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hub is not null)
+            await _hub.DisposeAsync();
+    }
+
+    private record GroupEntry(Group Group, int Coins, int Stars, int Rank = 0);
+}

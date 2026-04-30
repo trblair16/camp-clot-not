@@ -1,0 +1,40 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject AuthService AuthSvc
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <AuthorizeView>
+        <Authorized>
+            <MudAppBar Elevation="1" Color="Color.Primary">
+                <MudText Typo="Typo.h6" Class="ml-3">Camp Clot Not</MudText>
+                <MudSpacer />
+                <MudNavLink Href="/" Match="NavLinkMatch.All" Style="color:white">Dashboard</MudNavLink>
+                <MudNavLink Href="/transactions" Style="color:white">Transactions</MudNavLink>
+                <AuthorizeView Roles="Admin" Context="adminCtx">
+                    <MudNavLink Href="/admin/groups" Style="color:white">Groups</MudNavLink>
+                    <MudNavLink Href="/admin/users" Style="color:white">Users</MudNavLink>
+                </AuthorizeView>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"
+                               OnClick="LogoutAsync" Title="Sign out" />
+            </MudAppBar>
+        </Authorized>
+    </AuthorizeView>
+
+    <MudMainContent Class="pt-4 px-4">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private async Task LogoutAsync()
+    {
+        // AuthService.LogoutAsync needs HttpContext — handled via a logout endpoint
+        Nav.NavigateTo("/logout", forceLoad: true);
+    }
+}
