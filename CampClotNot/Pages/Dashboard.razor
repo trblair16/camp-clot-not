@@ -22,7 +22,7 @@ else
                 <MudPaper Class="pa-4" Style="@($"border-left: 6px solid {entry.Group.Color}")" Elevation="2">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
                         <MudChip Color="@RankColor(entry.Rank)" Size="Size.Small">#@entry.Rank</MudChip>
-                        <MudText Typo="Typo.h6">@entry.Group.DisplayName</MudText>
+                        <MudText Typo="Typo.h6">@entry.Group.Name</MudText>
                     </MudStack>
                     <MudText>🪙 <strong>@entry.Coins</strong> Coins</MudText>
                     <MudText>⭐ <strong>@entry.Stars</strong> Stars</MudText>
@@ -56,8 +56,8 @@ else
         var entries = new List<GroupEntry>();
         foreach (var g in groups)
         {
-            var coins = await GroupSvc.GetTotalAsync(g.GroupId, CurrencyType.Primary);
-            var stars = await GroupSvc.GetTotalAsync(g.GroupId, CurrencyType.Prestige);
+            var coins = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Primary);
+            var stars = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Prestige);
             entries.Add(new GroupEntry(g, coins, stars));
         }
         _ranked = entries
@@ -68,7 +68,7 @@ else
         _loading = false;
     }
 
-    private void OpenTransactionDialog() => _txDialog.Open();
+    private async Task OpenTransactionDialog() => await _txDialog.OpenAsync();
 
     private Color RankColor(int rank) => rank switch
     {

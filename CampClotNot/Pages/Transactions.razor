@@ -29,8 +29,8 @@ else
         </HeaderContent>
         <RowTemplate>
             <MudTd>@context.CreatedAt.ToLocalTime().ToString("MM/dd HH:mm")</MudTd>
-            <MudTd>@context.Group?.DisplayName</MudTd>
-            <MudTd>@(context.CurrencyType == CurrencyType.Primary ? "🪙 Coins" : "⭐ Stars")</MudTd>
+            <MudTd>@context.Group?.Name</MudTd>
+            <MudTd>@(context.CurrencyType?.SystemName == nameof(Currency.Primary) ? "🪙 Coins" : "⭐ Stars")</MudTd>
             <MudTd Style="@(context.Amount < 0 ? "color:red" : "")">@(context.Amount > 0 ? "+" : "")@context.Amount</MudTd>
             <MudTd>@context.LoggedBy</MudTd>
             <MudTd>@context.Note</MudTd>
@@ -72,9 +72,10 @@ else
 
     private async Task VoidAsync(Transaction tx)
     {
+        var currencyLabel = tx.CurrencyType?.SystemName == nameof(Currency.Primary) ? "coin" : "star";
         var result = await DialogService.ShowMessageBox(
             "Void Transaction",
-            $"Void this {(tx.CurrencyType == CurrencyType.Primary ? "coin" : "star")} transaction of {tx.Amount:+0;-0} for {tx.Group?.DisplayName}?",
+            $"Void this {currencyLabel} transaction of {tx.Amount:+0;-0} for {tx.Group?.Name}?",
             yesText: "Void", cancelText: "Cancel");
         if (result != true) return;
 

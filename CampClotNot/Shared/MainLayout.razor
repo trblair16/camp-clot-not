@@ -14,7 +14,7 @@
                 <MudSpacer />
                 <MudNavLink Href="/" Match="NavLinkMatch.All" Style="color:white">Dashboard</MudNavLink>
                 <MudNavLink Href="/transactions" Style="color:white">Transactions</MudNavLink>
-                <AuthorizeView Roles="Admin">
+                <AuthorizeView Roles="Admin" Context="adminCtx">
                     <MudNavLink Href="/admin/groups" Style="color:white">Groups</MudNavLink>
                     <MudNavLink Href="/admin/users" Style="color:white">Users</MudNavLink>
                 </AuthorizeView>

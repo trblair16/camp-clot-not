@@ -2,8 +2,10 @@ using CampClotNot.Data;
 using CampClotNot.Hubs;
 using CampClotNot.Repositories;
 using CampClotNot.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -30,7 +32,8 @@ try
     if (connStr.StartsWith("postgres://") || connStr.StartsWith("postgresql://"))
         connStr = ConvertPostgresUri(connStr);
 
-    builder.Services.AddDbContext<AppDbContext>(opt =>
+    // DbContextFactory — required for Blazor Server to avoid concurrent-command errors on the same circuit
+    builder.Services.AddDbContextFactory<AppDbContext>(opt =>
         opt.UseNpgsql(connStr));
 
     // Cookie auth — 24-hour sessions per spec §7.2
@@ -52,6 +55,7 @@ try
     builder.Services.AddScoped<GroupService>();
     builder.Services.AddScoped<TransactionService>();
     builder.Services.AddScoped<AuthService>();
+    builder.Services.AddScoped<SeedService>();
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddRazorPages();
@@ -60,6 +64,10 @@ try
     builder.Services.AddMudServices();
 
     var app = builder.Build();
+
+    // Seed reference data and dev admin user on every startup (idempotent)
+    using (var scope = app.Services.CreateScope())
+        await scope.ServiceProvider.GetRequiredService<SeedService>().SeedAsync();
 
     if (!app.Environment.IsDevelopment())
     {
@@ -78,10 +86,11 @@ try
     app.UseAuthorization();
 
     // Health endpoint for Railway and ops monitoring
-    app.MapGet("/health", async (AppDbContext db) =>
+    app.MapGet("/health", async (IDbContextFactory<AppDbContext> factory) =>
     {
         try
         {
+            using var db = factory.CreateDbContext();
             await db.Database.CanConnectAsync();
             return Results.Ok(new { status = "ok", db = "connected" });
         }
@@ -91,7 +100,16 @@ try
         }
     });
 
-    // Logout endpoint (needs HttpContext — can't sign out from a Blazor component directly)
+    // Login/logout endpoints — cookie auth requires a real HTTP response, not a Blazor SignalR circuit
+    app.MapPost("/account/login", async (HttpContext ctx, AuthService auth) =>
+    {
+        var form = await ctx.Request.ReadFormAsync();
+        var email    = form["email"].ToString();
+        var password = form["password"].ToString();
+        var ok = await auth.LoginAsync(ctx, email, password);
+        return ok ? Results.Redirect("/") : Results.Redirect("/login?error=true");
+    });
+
     app.MapGet("/logout", async (HttpContext ctx) =>
     {
         await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

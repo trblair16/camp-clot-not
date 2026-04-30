@@ -12,7 +12,7 @@
     <MudItem xs="12" md="5">
         <MudPaper Class="pa-4" Elevation="2">
             <MudText Typo="Typo.h6" Class="mb-3">@(_editing is null ? "Add Group" : "Edit Group")</MudText>
-            <MudTextField @bind-Value="_form.DisplayName" Label="Display Name" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_form.Name" Label="Display Name" Variant="Variant.Outlined" Class="mb-3" />
             <MudTextField @bind-Value="_form.ShortName" Label="Short Name" Variant="Variant.Outlined" Class="mb-3" />
             <MudTextField @bind-Value="_form.Color" Label="Color (hex)" Variant="Variant.Outlined" Class="mb-3" />
             <MudStack Row="true" Spacing="2">
@@ -38,7 +38,7 @@
                 <MudTd>
                     <MudStack Row="true" AlignItems="AlignItems.Center">
                         <div style="@($"width:12px;height:12px;border-radius:50%;background:{context.Color}")"></div>
-                        @context.DisplayName
+                        @context.Name
                     </MudStack>
                 </MudTd>
                 <MudTd>@context.ShortName</MudTd>
@@ -64,26 +64,26 @@
     private void StartEdit(Group g)
     {
         _editing = g;
-        _form = new GroupForm { DisplayName = g.DisplayName, ShortName = g.ShortName, Color = g.Color };
+        _form = new GroupForm { Name = g.Name, ShortName = g.ShortName, Color = g.Color };
     }
 
     private void CancelEdit() { _editing = null; _form = new(); }
 
     private async Task SaveAsync()
     {
-        if (string.IsNullOrWhiteSpace(_form.DisplayName)) return;
+        if (string.IsNullOrWhiteSpace(_form.Name)) return;
 
-        // ThemeId will be wired up when Theme management is built (v0.2.0)
-        var defaultThemeId = _groups.FirstOrDefault()?.ThemeId ?? Guid.Empty;
+        // CCN 2026 event ID — stable seed ID. Event selection UI comes in v0.2.0.
+        var defaultEventId = _groups.FirstOrDefault()?.EventId ?? new Guid("00000009-0009-0009-0009-000000000001");
 
         if (_editing is null)
         {
-            await GroupSvc.CreateAsync(_form.DisplayName, _form.ShortName, _form.Color, defaultThemeId);
+            await GroupSvc.CreateAsync(_form.Name, _form.ShortName, _form.Color, defaultEventId);
             Snackbar.Add("Group added.", Severity.Success);
         }
         else
         {
-            await GroupSvc.UpdateAsync(_editing.GroupId, _form.DisplayName, _form.ShortName, _form.Color,
+            await GroupSvc.UpdateAsync(_editing.GroupId, _form.Name, _form.ShortName, _form.Color,
                 _editing.TokenAssetPath, _editing.CabinDisplayName);
             Snackbar.Add("Group updated.", Severity.Success);
             _editing = null;
@@ -95,7 +95,7 @@
     private async Task DeleteAsync(Group g)
     {
         var result = await DialogService.ShowMessageBox(
-            "Delete Group", $"Delete {g.DisplayName}? This cannot be undone.",
+            "Delete Group", $"Delete {g.Name}? This cannot be undone.",
             yesText: "Delete", cancelText: "Cancel");
         if (result != true) return;
         await GroupSvc.DeleteAsync(g.GroupId);
@@ -105,7 +105,7 @@
 
     private class GroupForm
     {
-        public string DisplayName { get; set; } = "";
+        public string Name { get; set; } = "";
         public string ShortName { get; set; } = "";
         public string Color { get; set; } = "#4CAF50";
     }

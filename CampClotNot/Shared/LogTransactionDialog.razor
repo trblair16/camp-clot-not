@@ -10,12 +10,16 @@
         <MudSelect @bind-Value="_form.GroupId" Label="Group" Variant="Variant.Outlined" Class="mb-3">
             @foreach (var g in _groups)
             {
-                <MudSelectItem Value="g.GroupId">@g.DisplayName</MudSelectItem>
+                <MudSelectItem Value="g.GroupId">@g.Name</MudSelectItem>
             }
         </MudSelect>
-        <MudSelect @bind-Value="_form.CurrencyType" Label="Type" Variant="Variant.Outlined" Class="mb-3">
-            <MudSelectItem Value="CurrencyType.Primary">🪙 Coins</MudSelectItem>
-            <MudSelectItem Value="CurrencyType.Prestige">⭐ Stars</MudSelectItem>
+        <MudSelect @bind-Value="_form.CurrencyTypeId" Label="Type" Variant="Variant.Outlined" Class="mb-3">
+            @foreach (var ct in _currencyTypes)
+            {
+                <MudSelectItem Value="ct.CurrencyTypeId">
+                    @(ct.SystemName == nameof(Currency.Primary) ? "🪙 Coins" : "⭐ Stars")
+                </MudSelectItem>
+            }
         </MudSelect>
         <MudNumericField @bind-Value="_form.Amount" Label="Amount (negative = deduction)"
                          Variant="Variant.Outlined" Class="mb-3" />
@@ -36,14 +40,17 @@
     private bool _open;
     private bool _submitting;
     private List<Group> _groups = new();
+    private List<CurrencyType> _currencyTypes = new();
     private TransactionForm _form = new();
 
-    protected override async Task OnInitializedAsync() =>
-        _groups = await GroupSvc.GetAllAsync();
-
-    public void Open()
+    public async Task OpenAsync()
     {
-        _form = new();
+        _groups = await GroupSvc.GetAllAsync();
+        _currencyTypes = await GroupSvc.GetCurrencyTypesAsync();
+        _form = new TransactionForm
+        {
+            CurrencyTypeId = _currencyTypes.FirstOrDefault()?.CurrencyTypeId ?? Guid.Empty
+        };
         _open = true;
     }
 
@@ -51,11 +58,11 @@
 
     private async Task SubmitAsync()
     {
-        if (_form.GroupId == Guid.Empty || _form.Amount == 0) return;
+        if (_form.GroupId == Guid.Empty || _form.CurrencyTypeId == Guid.Empty || _form.Amount == 0) return;
         _submitting = true;
         var state = await AuthState;
         var name = state.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "unknown";
-        await TxSvc.PostAsync(_form.GroupId, _form.CurrencyType, _form.Amount, name, _form.Note);
+        await TxSvc.PostAsync(_form.GroupId, _form.CurrencyTypeId, _form.Amount, name, _form.Note);
         Snackbar.Add("Transaction posted.", Severity.Success);
         _open = false;
         _submitting = false;
@@ -65,7 +72,7 @@
     private class TransactionForm
     {
         public Guid GroupId { get; set; }
-        public CurrencyType CurrencyType { get; set; } = CurrencyType.Primary;
+        public Guid CurrencyTypeId { get; set; }
         public int Amount { get; set; } = 0;
         public string? Note { get; set; }
     }

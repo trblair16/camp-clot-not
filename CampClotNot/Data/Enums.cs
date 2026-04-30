@@ -1,12 +1,23 @@
 namespace CampClotNot.Data;
 
-public enum UserRole { Admin, Staff, Display }
+public enum Currency { Primary, Prestige }
 
-public enum SpaceType { Start, Challenge, CoinBonus, Prestige, Penalty }
+public enum AwardKind { Named, BigStick, Branch }
 
-/// <summary>
-/// System name for currency type. Display strings (e.g. "Coins", "Stars") come from Theme config.
-/// </summary>
-public enum CurrencyType { Primary, Prestige }
+public enum Role { Admin, Staff, Display }
 
-public enum AwardType { Named, BigStick, Branch }
+public enum Feature { BoardGame, CoinShop, MiniGameSpinner, Announcements, Itinerary }
+
+public enum Permission
+{
+    LogTransaction,
+    VoidTransaction,
+    TriggerBlockHit,
+    TriggerScoreLock,
+    ManageUsers,
+    ManageGroups,
+    ManageBoard,
+    ManageShop,
+    ViewDisplay,
+    AccessAdminPanel
+}

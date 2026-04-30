@@ -37,5 +37,12 @@ yarn-error.log*
 **/obj/
 
 # Local .NET config (secrets go in Railway env vars only)
+appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
+
+# Visual Studio workspace files
+.vs/
+
+# Mockup preview node_modules
+mockup/preview/node_modules/

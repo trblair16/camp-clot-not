@@ -12,13 +12,14 @@
     <MudItem xs="12" md="5">
         <MudPaper Class="pa-4" Elevation="2">
             <MudText Typo="Typo.h6" Class="mb-3">Create Account</MudText>
-            <MudTextField @bind-Value="_form.DisplayName" Label="Display Name" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_form.FirstName" Label="First Name" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_form.LastName" Label="Last Name" Variant="Variant.Outlined" Class="mb-3" />
             <MudTextField @bind-Value="_form.Email" Label="Email" InputType="InputType.Email" Variant="Variant.Outlined" Class="mb-3" />
             <MudTextField @bind-Value="_form.Password" Label="Temporary Password" InputType="InputType.Password" Variant="Variant.Outlined" Class="mb-3" />
             <MudSelect @bind-Value="_form.Role" Label="Role" Variant="Variant.Outlined" Class="mb-4">
-                <MudSelectItem Value="UserRole.Staff">Staff / Volunteer</MudSelectItem>
-                <MudSelectItem Value="UserRole.Admin">Admin</MudSelectItem>
-                <MudSelectItem Value="UserRole.Display">Display (Projector)</MudSelectItem>
+                <MudSelectItem Value="Role.Staff">Staff / Volunteer</MudSelectItem>
+                <MudSelectItem Value="Role.Admin">Admin</MudSelectItem>
+                <MudSelectItem Value="Role.Display">Display (Projector)</MudSelectItem>
             </MudSelect>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">Create</MudButton>
         </MudPaper>
@@ -39,11 +40,14 @@
                     <MudTh>Actions</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd>@context.DisplayName</MudTd>
+                    <MudTd>@context.FirstName @context.LastName</MudTd>
                     <MudTd>@context.Email</MudTd>
-                    <MudTd><MudChip Size="Size.Small">@context.Role</MudChip></MudTd>
+                    <MudTd><MudChip Size="Size.Small">@context.UserRole.SystemName</MudChip></MudTd>
                     <MudTd>@(context.IsActive ? "✓" : "—")</MudTd>
                     <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small"
+                                       Color="Color.Info" OnClick="() => OpenResetDialog(context)"
+                                       Title="Reset password" />
                         @if (context.IsActive)
                         {
                             <MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small"
@@ -57,10 +61,36 @@
     </MudItem>
 </MudGrid>
 
+<MudDialog @bind-IsVisible="_resetOpen">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Reset Password — @_resetting?.FirstName @_resetting?.LastName</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_resetPassword" Label="New Password" InputType="InputType.Password"
+                      Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="_resetConfirm" Label="Confirm Password" InputType="InputType.Password"
+                      Variant="Variant.Outlined" />
+        @if (_resetError is not null)
+        {
+            <MudText Color="Color.Error" Class="mt-2">@_resetError</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseResetDialog">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitResetAsync">Reset</MudButton>
+    </DialogActions>
+</MudDialog>
+
 @code {
     private List<User> _users = new();
     private bool _loading = true;
     private UserForm _form = new();
+
+    private bool _resetOpen;
+    private User? _resetting;
+    private string _resetPassword = "";
+    private string _resetConfirm = "";
+    private string? _resetError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -71,28 +101,61 @@
     private async Task CreateAsync()
     {
         if (string.IsNullOrWhiteSpace(_form.Email) || string.IsNullOrWhiteSpace(_form.Password)) return;
-        await AuthSvc.CreateUserAsync(_form.DisplayName, _form.Email, _form.Password, _form.Role);
-        Snackbar.Add($"Account created for {_form.DisplayName}.", Severity.Success);
+        await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role);
+        Snackbar.Add($"Account created for {_form.FirstName} {_form.LastName}.", Severity.Success);
         _form = new();
         _users = await AuthSvc.GetAllUsersAsync();
+    }
+
+    private void OpenResetDialog(User u)
+    {
+        _resetting = u;
+        _resetPassword = "";
+        _resetConfirm = "";
+        _resetError = null;
+        _resetOpen = true;
+    }
+
+    private void CloseResetDialog()
+    {
+        _resetOpen = false;
+        _resetting = null;
+    }
+
+    private async Task SubmitResetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_resetPassword))
+        {
+            _resetError = "Password cannot be empty.";
+            return;
+        }
+        if (_resetPassword != _resetConfirm)
+        {
+            _resetError = "Passwords do not match.";
+            return;
+        }
+        await AuthSvc.ResetPasswordAsync(_resetting!.UserId, _resetPassword);
+        Snackbar.Add($"Password reset for {_resetting.FirstName} {_resetting.LastName}.", Severity.Success);
+        CloseResetDialog();
     }
 
     private async Task DeactivateAsync(User u)
     {
         var result = await DialogService.ShowMessageBox("Deactivate User",
-            $"Deactivate {u.DisplayName}? They will no longer be able to sign in.",
+            $"Deactivate {u.FirstName} {u.LastName}? They will no longer be able to sign in.",
             yesText: "Deactivate", cancelText: "Cancel");
         if (result != true) return;
         await AuthSvc.DeactivateUserAsync(u.UserId);
         _users = await AuthSvc.GetAllUsersAsync();
-        Snackbar.Add($"{u.DisplayName} deactivated.", Severity.Info);
+        Snackbar.Add($"{u.FirstName} {u.LastName} deactivated.", Severity.Info);
     }
 
     private class UserForm
     {
-        public string DisplayName { get; set; } = "";
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
         public string Email { get; set; } = "";
         public string Password { get; set; } = "";
-        public UserRole Role { get; set; } = UserRole.Staff;
+        public Role Role { get; set; } = Role.Staff;
     }
 }

@@ -29,7 +29,7 @@
                     {
                         <MudPaper Class="pa-3 mb-2" Style="@($"background:#16213e;border-left:4px solid {entry.Group.Color}")" Elevation="0">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                <MudText Style="font-size:1.1rem;font-weight:600">#@entry.Rank @entry.Group.DisplayName</MudText>
+                                <MudText Style="font-size:1.1rem;font-weight:600">#@entry.Rank @entry.Group.Name</MudText>
                                 <MudStack Row="true" Spacing="3">
                                     <MudText Style="font-size:1.4rem">🪙@entry.Coins</MudText>
                                     <MudText Style="font-size:1.4rem">⭐@entry.Stars</MudText>
@@ -73,8 +73,8 @@
         var entries = new List<GroupEntry>();
         foreach (var g in groups)
         {
-            var coins = await GroupSvc.GetTotalAsync(g.GroupId, CurrencyType.Primary);
-            var stars = await GroupSvc.GetTotalAsync(g.GroupId, CurrencyType.Prestige);
+            var coins = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Primary);
+            var stars = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Prestige);
             entries.Add(new GroupEntry(g, coins, stars));
         }
         _ranked = entries
