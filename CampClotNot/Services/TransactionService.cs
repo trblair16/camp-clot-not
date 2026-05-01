@@ -35,4 +35,10 @@ public class TransactionService(
         await transactions.VoidAsync(txId, voidedBy);
         await hub.Clients.All.SendAsync("ScoresUpdated");
     }
+
+    public async Task ReinstateAsync(Guid txId)
+    {
+        await transactions.ReinstateAsync(txId);
+        await hub.Clients.All.SendAsync("ScoresUpdated");
+    }
 }

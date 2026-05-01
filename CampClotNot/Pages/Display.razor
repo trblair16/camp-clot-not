@@ -1,47 +1,69 @@
 @page "/display"
+@layout DisplayLayout
 @attribute [Authorize(Roles = "Display,Admin")]
 @inject GroupService GroupSvc
 @inject NavigationManager Nav
 @implements IAsyncDisposable
 
-<PageTitle>Camp Clot Not — Projector</PageTitle>
+<PageTitle>Camp Clot Not — Scoreboard</PageTitle>
 
-<MudLayout Style="background:#1a1a2e;min-height:100vh;color:white;">
-    <MudMainContent Class="pa-4">
-        <MudGrid>
-            <MudItem xs="12" md="8">
-                <MudText Typo="Typo.h4" Style="font-family:'Fredoka One',cursive;color:#ffd700" Class="mb-4">
-                    Camp Clot Not — Super Party 2026
-                </MudText>
-                <MudText Typo="Typo.body1" Style="color:#aaa">
-                    Board view coming in v0.3.0
-                </MudText>
-            </MudItem>
-            <MudItem xs="12" md="4">
-                <MudText Typo="Typo.h5" Style="color:#ffd700" Class="mb-3">Leaderboard</MudText>
-                @if (_loading)
-                {
-                    <MudProgressCircular Indeterminate="true" Color="Color.Warning" />
-                }
-                else
-                {
-                    @foreach (var entry in _ranked)
-                    {
-                        <MudPaper Class="pa-3 mb-2" Style="@($"background:#16213e;border-left:4px solid {entry.Group.Color}")" Elevation="0">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                <MudText Style="font-size:1.1rem;font-weight:600">#@entry.Rank @entry.Group.Name</MudText>
-                                <MudStack Row="true" Spacing="3">
-                                    <MudText Style="font-size:1.4rem">🪙@entry.Coins</MudText>
-                                    <MudText Style="font-size:1.4rem">⭐@entry.Stars</MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudPaper>
-                    }
-                }
-            </MudItem>
+<div style="background:linear-gradient(135deg,#0e1628 0%,#0a1f3f 60%,#0d2b1e 100%);min-height:100vh;color:white;padding:28px 24px">
+
+    <div style="text-align:center;margin-bottom:32px">
+        <div style="font-family:'Fredoka One',cursive;font-size:clamp(22px,5vw,48px);background:linear-gradient(90deg,#E74C3C,#F39C12,#27AE60,#3498DB);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1">
+            SUPER CLOT NOT PARTY '26
+        </div>
+        <div style="font-size:11px;color:#556;letter-spacing:3px;text-transform:uppercase;margin-top:6px;font-weight:700">
+            Camp Clot Not · Live Standings
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="display:flex;justify-content:center;padding:60px 0">
+            <MudProgressCircular Indeterminate="true" Color="Color.Warning" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <MudGrid Spacing="4">
+            @foreach (var entry in _ranked)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <div style="@($"background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:18px;border-left:5px solid {entry.Group.Color};padding:20px;backdrop-filter:blur(8px)")">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                            <div style="@RankBadgeStyle(entry.Rank)">#@entry.Rank</div>
+                            @if (entry.Group.BoardPos is not null)
+                            {
+                                <div style="font-size:12px;color:#556">Space @entry.Group.BoardPos.SpaceIndex</div>
+                            }
+                        </div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+                            @if (entry.Group.TokenAssetPath is not null)
+                            {
+                                <img src="@entry.Group.TokenAssetPath"
+                                     style="width:48px;height:48px;object-fit:contain;flex-shrink:0" />
+                            }
+                            <div style="@($"font-family:'Fredoka One',cursive;font-size:clamp(20px,3vw,30px);color:{entry.Group.Color};line-height:1.1")">
+                                @entry.Group.Name
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:12px">
+                            <div style="flex:1;background:rgba(243,156,18,.15);border-radius:14px;padding:16px 10px;text-align:center">
+                                <div style="font-family:'Fredoka One',cursive;font-size:clamp(36px,5vw,60px);color:#F39C12;line-height:1">@entry.Coins</div>
+                                <div style="font-size:12px;color:#887;margin-top:4px;letter-spacing:1px;font-weight:700">🪙 COINS</div>
+                            </div>
+                            <div style="flex:1;background:rgba(231,76,60,.13);border-radius:14px;padding:16px 10px;text-align:center">
+                                <div style="font-family:'Fredoka One',cursive;font-size:clamp(28px,4vw,44px);color:#E74C3C;line-height:1;min-height:44px">@StarDisplay(entry.Stars)</div>
+                                <div style="font-size:12px;color:#887;margin-top:4px;letter-spacing:1px;font-weight:700">⭐ STARS (@entry.Stars)</div>
+                            </div>
+                        </div>
+                    </div>
+                </MudItem>
+            }
         </MudGrid>
-    </MudMainContent>
-</MudLayout>
+    }
+</div>
 
 @code {
     private List<GroupEntry> _ranked = new();
@@ -51,6 +73,7 @@
     protected override async Task OnInitializedAsync()
     {
         await RefreshAsync();
+        _loading = false;
 
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("/camphub"))
@@ -68,7 +91,6 @@
 
     private async Task RefreshAsync()
     {
-        _loading = true;
         var groups = await GroupSvc.GetAllAsync();
         var entries = new List<GroupEntry>();
         foreach (var g in groups)
@@ -82,8 +104,21 @@
             .ThenByDescending(e => e.Coins)
             .Select((e, i) => e with { Rank = i + 1 })
             .ToList();
-        _loading = false;
     }
+
+    private static string RankBadgeStyle(int rank) => rank switch
+    {
+        1 => "background:linear-gradient(135deg,#F39C12,#E67E22);color:white;border-radius:24px;padding:4px 16px;font-size:14px;font-weight:900;white-space:nowrap;box-shadow:0 4px 16px rgba(243,156,18,.4)",
+        2 => "background:linear-gradient(135deg,#95A5A6,#7F8C8D);color:white;border-radius:24px;padding:4px 16px;font-size:14px;font-weight:900;white-space:nowrap",
+        3 => "background:linear-gradient(135deg,#CD7F32,#A0522D);color:white;border-radius:24px;padding:4px 16px;font-size:14px;font-weight:900;white-space:nowrap",
+        _ => "background:rgba(255,255,255,.1);color:#aaa;border-radius:24px;padding:4px 16px;font-size:14px;font-weight:900;white-space:nowrap"
+    };
+
+    private static string StarDisplay(int stars) => stars == 0
+        ? "–"
+        : stars <= 5
+            ? string.Concat(Enumerable.Repeat("⭐", stars))
+            : $"⭐×{stars}";
 
     public async ValueTask DisposeAsync()
     {

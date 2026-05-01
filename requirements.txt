@@ -1,9 +1,0 @@
-#Install all required libraries with pip install -r requirements.txt
-flask
-flask_cors
-pyodbc
-pandas
-marshmallow
-python-dotenv
-python-jose
-six

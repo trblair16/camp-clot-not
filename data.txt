@@ -1,1 +1,0 @@
-{“grant_type”: “password”,”username:“tessat77@icloud.com”,”password”:“tigma2-Pahmap-hecvuc”,”audience”:“https://hbda-tracking-backend.azurewebsites.net”,”scope”:”read:attendees”,”client_id”:”zNg385h6feUi1Mn8idAgsgEuKXAcojOv”,”client_secret”:”0-YMhhk9kIiyUjRgX5NSkuZGA7hqYHa7ysO1gxZrLhihWGnXrzgWxcA4ifEX5Cru”}

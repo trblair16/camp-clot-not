@@ -14,7 +14,43 @@
             <MudText Typo="Typo.h6" Class="mb-3">@(_editing is null ? "Add Group" : "Edit Group")</MudText>
             <MudTextField @bind-Value="_form.Name" Label="Display Name" Variant="Variant.Outlined" Class="mb-3" />
             <MudTextField @bind-Value="_form.ShortName" Label="Short Name" Variant="Variant.Outlined" Class="mb-3" />
-            <MudTextField @bind-Value="_form.Color" Label="Color (hex)" Variant="Variant.Outlined" Class="mb-3" />
+
+            <MudText Typo="Typo.caption" Style="color:#888;display:block;margin-bottom:6px">Color</MudText>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+                <div style="@($"width:56px;height:56px;border-radius:12px;background:{_form.Color};box-shadow:0 2px 10px {_form.Color}55;flex-shrink:0")"></div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                    <input type="color" value="@_form.Color"
+                           @oninput="ColorPickerChanged"
+                           style="width:100%;height:36px;border:1px solid #ccc;border-radius:6px;padding:2px 4px;cursor:pointer;background:white" />
+                    <MudTextField @bind-Value="_form.Color" Label="Hex value" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </div>
+            </div>
+
+            <MudText Typo="Typo.caption" Style="color:#888;display:block;margin-bottom:6px">Team Logo</MudText>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+                <div style="@($"width:56px;height:56px;border-radius:12px;background:{_form.Color}22;border:2px dashed {_form.Color}88;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden")">
+                    @if (_form.LogoDataUrl is not null)
+                    {
+                        <img src="@_form.LogoDataUrl" style="width:100%;height:100%;object-fit:contain" />
+                    }
+                    else
+                    {
+                        <span style="font-size:22px">🖼️</span>
+                    }
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                    <InputFile OnChange="OnLogoSelected" accept="image/*"
+                               style="font-size:13px;width:100%" />
+                    <MudText Typo="Typo.caption" Style="color:#aaa">PNG or SVG recommended · max 500 KB</MudText>
+                    @if (_form.LogoDataUrl is not null)
+                    {
+                        <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Error"
+                                   OnClick="RemoveLogo">Remove logo</MudButton>
+                    }
+                </div>
+            </div>
+
             <MudStack Row="true" Spacing="2">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync">
                     @(_editing is null ? "Add" : "Save")
@@ -32,17 +68,29 @@
                 <MudTh>Name</MudTh>
                 <MudTh>Short</MudTh>
                 <MudTh>Color</MudTh>
+                <MudTh>Logo</MudTh>
                 <MudTh>Actions</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd>
-                    <MudStack Row="true" AlignItems="AlignItems.Center">
-                        <div style="@($"width:12px;height:12px;border-radius:50%;background:{context.Color}")"></div>
-                        @context.Name
-                    </MudStack>
-                </MudTd>
+                <MudTd>@context.Name</MudTd>
                 <MudTd>@context.ShortName</MudTd>
-                <MudTd>@context.Color</MudTd>
+                <MudTd>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <div style="@($"width:28px;height:28px;border-radius:6px;background:{context.Color};box-shadow:0 1px 4px {context.Color}55;flex-shrink:0")"></div>
+                        <span style="font-size:12px;color:#888;font-family:monospace">@context.Color</span>
+                    </div>
+                </MudTd>
+                <MudTd>
+                    @if (context.TokenAssetPath is not null)
+                    {
+                        <img src="@context.TokenAssetPath"
+                             style="width:32px;height:32px;object-fit:contain;border-radius:4px" />
+                    }
+                    else
+                    {
+                        <span style="font-size:12px;color:#ccc">—</span>
+                    }
+                </MudTd>
                 <MudTd>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="() => StartEdit(context)" />
                     <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
@@ -64,27 +112,52 @@
     private void StartEdit(Group g)
     {
         _editing = g;
-        _form = new GroupForm { Name = g.Name, ShortName = g.ShortName, Color = g.Color };
+        _form = new GroupForm
+        {
+            Name        = g.Name,
+            ShortName   = g.ShortName,
+            Color       = g.Color,
+            LogoDataUrl = g.TokenAssetPath
+        };
     }
 
     private void CancelEdit() { _editing = null; _form = new(); }
+
+    private void ColorPickerChanged(ChangeEventArgs e) =>
+        _form.Color = e.Value?.ToString() ?? _form.Color;
+
+    private async Task OnLogoSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file.Size > 500 * 1024)
+        {
+            Snackbar.Add("Image exceeds 500 KB — please use a smaller file.", Severity.Warning);
+            return;
+        }
+        using var stream = file.OpenReadStream(maxAllowedSize: 500 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        var base64 = Convert.ToBase64String(ms.ToArray());
+        _form.LogoDataUrl = $"data:{file.ContentType};base64,{base64}";
+    }
+
+    private void RemoveLogo() => _form.LogoDataUrl = null;
 
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(_form.Name)) return;
 
-        // CCN 2026 event ID — stable seed ID. Event selection UI comes in v0.2.0.
         var defaultEventId = _groups.FirstOrDefault()?.EventId ?? new Guid("00000009-0009-0009-0009-000000000001");
 
         if (_editing is null)
         {
-            await GroupSvc.CreateAsync(_form.Name, _form.ShortName, _form.Color, defaultEventId);
+            await GroupSvc.CreateAsync(_form.Name, _form.ShortName, _form.Color, defaultEventId, _form.LogoDataUrl);
             Snackbar.Add("Group added.", Severity.Success);
         }
         else
         {
             await GroupSvc.UpdateAsync(_editing.GroupId, _form.Name, _form.ShortName, _form.Color,
-                _editing.TokenAssetPath, _editing.CabinDisplayName);
+                _form.LogoDataUrl, _editing.CabinDisplayName);
             Snackbar.Add("Group updated.", Severity.Success);
             _editing = null;
         }
@@ -108,5 +181,6 @@
         public string Name { get; set; } = "";
         public string ShortName { get; set; } = "";
         public string Color { get; set; } = "#4CAF50";
+        public string? LogoDataUrl { get; set; }
     }
 }

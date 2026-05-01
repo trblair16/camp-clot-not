@@ -11,14 +11,16 @@ public class GroupService(IGroupRepository groups, IDbContextFactory<AppDbContex
 
     public Task<Group?> GetByIdAsync(Guid groupId) => groups.GetByIdAsync(groupId);
 
-    public Task<Group> CreateAsync(string name, string shortName, string color, Guid eventId) =>
+    public Task<Group> CreateAsync(string name, string shortName, string color, Guid eventId,
+        string? tokenAssetPath = null) =>
         groups.CreateAsync(new Group
         {
-            GroupId   = Guid.NewGuid(),
-            Name      = name,
-            ShortName = shortName,
-            Color     = color,
-            EventId   = eventId
+            GroupId        = Guid.NewGuid(),
+            Name           = name,
+            ShortName      = shortName,
+            Color          = color,
+            EventId        = eventId,
+            TokenAssetPath = tokenAssetPath
         });
 
     public async Task UpdateAsync(Guid groupId, string name, string shortName, string color,

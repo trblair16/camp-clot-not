@@ -6,7 +6,10 @@
 
 <PageTitle>Transactions — Camp Clot Not</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Transaction Log</MudText>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <MudText Typo="Typo.h4">Transaction Log</MudText>
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync" Title="Refresh" />
+</div>
 
 @if (_loading)
 {
@@ -14,7 +17,8 @@
 }
 else
 {
-    <MudTable Items="_transactions" Dense="true" Striped="true" Hover="true">
+    <MudTable Items="_transactions" Dense="true" Striped="true" Hover="true"
+              RowStyleFunc="@RowStyle">
         <HeaderContent>
             <MudTh>Time</MudTh>
             <MudTh>Group</MudTh>
@@ -31,7 +35,7 @@ else
             <MudTd>@context.CreatedAt.ToLocalTime().ToString("MM/dd HH:mm")</MudTd>
             <MudTd>@context.Group?.Name</MudTd>
             <MudTd>@(context.CurrencyType?.SystemName == nameof(Currency.Primary) ? "🪙 Coins" : "⭐ Stars")</MudTd>
-            <MudTd Style="@(context.Amount < 0 ? "color:red" : "")">@(context.Amount > 0 ? "+" : "")@context.Amount</MudTd>
+            <MudTd Style="@AmountStyle(context)">@(context.Amount > 0 ? "+" : "")@context.Amount</MudTd>
             <MudTd>@context.LoggedBy</MudTd>
             <MudTd>@context.Note</MudTd>
             <MudTd>
@@ -52,6 +56,12 @@ else
                                        Color="Color.Error" OnClick="() => VoidAsync(context)"
                                        Title="Void transaction" />
                     }
+                    else
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Undo" Size="Size.Small"
+                                       Color="Color.Warning" OnClick="() => ReinstateAsync(context)"
+                                       Title="Reinstate transaction" />
+                    }
                 </MudTd>
             </AuthorizeView>
         </RowTemplate>
@@ -64,8 +74,11 @@ else
     private List<Transaction> _transactions = new();
     private bool _loading = true;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
+        _loading = true;
         _transactions = await TxSvc.GetAllAsync();
         _loading = false;
     }
@@ -83,5 +96,29 @@ else
         var name = state.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "unknown";
         await TxSvc.VoidAsync(tx.TxId, name);
         _transactions = await TxSvc.GetAllAsync();
+    }
+
+    private async Task ReinstateAsync(Transaction tx)
+    {
+        var currencyLabel = tx.CurrencyType?.SystemName == nameof(Currency.Primary) ? "coin" : "star";
+        var result = await DialogService.ShowMessageBox(
+            "Reinstate Transaction",
+            $"Reinstate this {currencyLabel} transaction of {tx.Amount:+0;-0} for {tx.Group?.Name}? It will count toward their score again.",
+            yesText: "Reinstate", cancelText: "Cancel");
+        if (result != true) return;
+
+        await TxSvc.ReinstateAsync(tx.TxId);
+        _transactions = await TxSvc.GetAllAsync();
+    }
+
+    private static string RowStyle(Transaction tx, int _) =>
+        tx.VoidedAt.HasValue ? "opacity:0.5" : "";
+
+    private static string AmountStyle(Transaction tx)
+    {
+        var parts = new List<string>();
+        if (tx.Amount < 0) parts.Add("color:red");
+        if (tx.VoidedAt.HasValue) parts.Add("text-decoration:line-through");
+        return string.Join(";", parts);
     }
 }

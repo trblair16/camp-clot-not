@@ -1,58 +1,115 @@
-# Score Tracker for Camp Clot Not
+# Camp Clot Not — Score Tracker
 
-[Checkout the App](https://hbdatracking.azurewebsites.net)
+A Blazor Server web application for managing group competition scoring at Camp Clot Not (CCN), an annual summer camp for children with bleeding disorders hosted by HBDA (Alabama chapter). The 2026 theme is **Super Mario Party**.
 
-[Visit Our Website](https://tessa-hudson.github.io/Capstone_Fall2021/)
+**Deployed on Railway:** *(link TBD pre-camp)*
+
+---
 
 ## Motivation
 
-Camp Clot Not is a camp hosted by HBDA that allows children ranging from 6-18 years old who suffer from various bleeding disorders to enjoy a camp experience they normally would not be able to enjoy.
+Camp Clot Not gives kids aged 6–18 with bleeding disorders a camp experience built around their needs and safety. During the week, staff run activities and competitions across cabin groups, tracking coins and stars to announce final standings at closing ceremonies. This platform replaces manual scorekeeping with a real-time, role-secured scoring system designed to run reliably on a staff tablet and project live to a display screen throughout camp week.
 
-During the camp, counselors hold activities for the children and keep track of scores over the week to announce at the end of the camp what the teams earned, while also maintaining the correct amount of supervision for the kids needs and safety.
-With an application to assist them, we hope we can allow these counselors an easy and intuitive way to keep track of scoring so they can focus on the needs and enjoyment of the children at the camp.​
+Longer term, the platform is intended to replace the chapter's Yapp subscription (~$1,600/year) for all HBDA events — camp is the pilot.
+
+---
 
 ## Core Features
 
-- An easy-to-read leaderboard for each event
-- A secure login system for camp counselors and administrators
-- Full add/update/delete functionality for Attendees, Groups, and Events availiable to administators
-- Point addition and subtraction available to authorized users
-- Point tracking for groups of attendees
-- Restricted views based on user roles
+**Released (v0.2.0):**
+- Real-time leaderboard ranked by stars then coins, live-updating via SignalR
+- Coin and star transaction logging with staff attribution and optional note
+- Transaction audit log — admins can void transactions (with confirmation) or reinstate voided ones; voided rows are visually distinguished
+- Full-screen projector display at `/display` for ceremonies, live via SignalR
+- Role-based access — Admin / Staff / Display roles with per-authority RBAC
+- Group management with color picker and team logo upload (stored in PostgreSQL)
+- User management — create, deactivate, reset password for staff accounts
 
-## Workflow/Standards
+**Planned:**
+- SVG board game with pre-scripted block hit mechanic and token animations (v0.3.0)
+- Evening mini-game spinner, pre-scripted (v0.4.0)
+- Full projector board display with real-time token movement (v0.4.0)
 
-### Projects/Sprints and Issues
+---
 
-- Each feature, bug, or suggestion will be listed as an issue
-- Issues will then be added to cards in the sprint (project) that they will be addressed in
-- The cards should automatically update when a branch has been linked to that issue, when a pull request has been submitted for review, and when the request has been reviewed and successfully merged
-- Note cards will be added to each Sprint for non-code related things such as design tasks
-- Once a sprint is over, any incomplete items should be added to the next sprint and given first priority
+## Tech Stack
 
-### Branches and Pull Requests
+| Layer | Technology |
+|---|---|
+| App framework | Blazor Server (.NET 8) |
+| UI components | MudBlazor 6 |
+| ORM | EF Core 8 + Npgsql |
+| Database | PostgreSQL (Railway) |
+| Real-time | ASP.NET Core SignalR |
+| Auth | BCrypt + ASP.NET Core cookie sessions |
+| Hosting | Railway.app |
 
-- All code must be written on a branch, **_Not on_** `main`
-- Team members should create branches based on issues in the current sprint and assign the corresponding issue to themselves
-- Branch names for each team member follow the format `firstname/issuename`
-- Before merging a branch into main, a pull request should be made and reviewed by at least 2 other team members
+---
 
-### Requirements for Dev Environment
+## Workflow / Standards
 
-- python3
-- yarn
+### Branching
 
-### Starting the Servers
+```
+main           — stable releases only, tagged at each version
+dev            — integration branch; feature branches merge here first
+feature/N-name — feature branches cut from dev
+```
 
-- To start the backend server, run the startup script by entering ./startBackendDev.sh
+**Release flow:** `feature/*` → PR to `dev` → PR to `main` → `git tag vX.Y.Z`
 
-  - You may need to give the script permission to run by entering the command chmod +x startBackendDev.sh
+### Versioning
 
-- To start the front end run the startup script by entering ./startReactDev.sh
-  - This script may also need permission to run
+| Version | Milestone | Status |
+|---|---|---|
+| v0.1.0 | Foundation — auth, RBAC, user/group management, Railway | Released |
+| v0.2.0 | Competition core — leaderboard, transactions, display | Released |
+| v0.3.0 | Board game — SVG board, block hit animation | Planned ~May 19 |
+| v0.4.0 | Mini-games + projector board | Planned ~May 30 |
+| v1.0.0 | Camp-ready | Target June 8 |
 
-These scripts contain secrets and important enviroment variables needed for the servers to run. Contact Tyler Blair (trblair@crimson.ua.edu) to recieve a copy of the scripts.
+### Code Conventions
 
-### Testing and Documentation
+- `IDbContextFactory<AppDbContext>` throughout — never inject `AppDbContext` directly
+- Append-only transactions — never delete, only void; totals computed from non-voided rows
+- Stable seed IDs in `SeedService.Id` — never use `Guid.NewGuid()` for seed rows
+- Enum naming Option C: `Currency`, `AwardKind`, `Role`, `Feature`, `Permission`
+- `nameof()` for all `SystemName` seed values
 
-- Documentation for the API can be found on the [project site](https://tessa-hudson.github.io/Capstone_Fall2021/api/)
+---
+
+## Local Dev Setup
+
+**Prerequisites:** .NET 8 SDK, PostgreSQL
+
+1. Clone the repo
+2. Create `CampClotNot/appsettings.Development.json` (gitignored — not committed):
+   ```json
+   {
+     "ConnectionStrings": {
+       "DefaultConnection": "Host=localhost;Database=hbda_dev;Username=postgres;Password=YOUR_PASSWORD"
+     },
+     "Seed": {
+       "AdminEmail": "tyler@hbda.local",
+       "AdminPassword": "DevAdmin1!"
+     }
+   }
+   ```
+3. Apply migrations: `dotnet ef database update` from `CampClotNot/`
+4. Start: `dotnet run` from `CampClotNot/` or F5 in Visual Studio
+5. Open `https://localhost:63533` and log in with seed credentials
+
+**Mockup preview** (visual reference only): `cd mockup/preview && npm run dev` → `http://localhost:5173`
+
+---
+
+## Testing / Documentation
+
+Automated tests are planned post-v1.0.0 when the feature set stabilizes. All milestones are currently validated by manual testing against the scenarios in each PR's test plan.
+
+| Document | Purpose |
+|---|---|
+| `REQUIREMENTS.md` | Full product spec and feature decisions |
+| `CLAUDE.md` | Architecture constraints and AI pair programming context |
+| `docs/superpowers/specs/2026-04-28-schema-redesign.md` | Schema design rationale |
+| `mockup/ccn-mockup-v2.jsx` | React prototype — primary visual reference for UI |

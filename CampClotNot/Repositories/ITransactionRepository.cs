@@ -8,4 +8,5 @@ public interface ITransactionRepository
     Task<List<Transaction>> GetByGroupAsync(Guid groupId);
     Task<Transaction> CreateAsync(Transaction transaction);
     Task VoidAsync(Guid txId, string voidedBy);
+    Task ReinstateAsync(Guid txId);
 }

@@ -10,7 +10,7 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ## Current State (as of 2026-04-30)
 
-**Active branch:** `dev` (v0.1.0 shipped — starting v0.2.0)  
+**Active branch:** `feature/2-competition-core`  
 **Released:** v0.1.0 — Foundation (tagged on main)
 
 **v0.1.0 — Done:**
@@ -44,6 +44,7 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - **Blazor Server + SignalR** — projector display (/display route) receives real-time updates via SignalR hub (`/camphub`). Block hit animation MUST play on projector via SignalR broadcast triggered from admin tablet — plan hub message types before building.
 - **No Flask middleware in v1** — service → repository → EF Core → PostgreSQL.
 - **Append-only transactions** — coins/stars never deleted, only voided. Totals always computed from non-voided transactions, never stored.
+- **Reinstate clears void fields (known trade-off)** — `ReinstateAsync` nulls out `VoidedAt`/`VoidedBy`, losing the record that a void ever happened. Accepted for v1 (small admin team, camp context). If full void history is ever needed, add `ReinstatedAt`/`ReinstatedBy` columns to `Transaction` and a new migration — do not change the null-out behavior without that migration in place.
 - **Pre-scripted board** — block hit and mini-game spinner are NOT random. Pre-scripted by admin before camp.
 - **Auth** — BCrypt/cookie for v1 (small known user base, camp reliability). Auth0 deferred to v2 chapter platform when member self-service matters.
 - **Login flow** — Blazor Server can't set cookies from a SignalR circuit. Login uses a native HTML form POST to `/account/login` (minimal API endpoint), which issues the cookie and redirects.

@@ -45,4 +45,16 @@ public class TransactionRepository(IDbContextFactory<AppDbContext> factory) : IT
             await db.SaveChangesAsync();
         }
     }
+
+    public async Task ReinstateAsync(Guid txId)
+    {
+        using var db = factory.CreateDbContext();
+        var tx = await db.Transactions.FindAsync(txId);
+        if (tx is not null && tx.VoidedAt is not null)
+        {
+            tx.VoidedAt = null;
+            tx.VoidedBy = null;
+            await db.SaveChangesAsync();
+        }
+    }
 }

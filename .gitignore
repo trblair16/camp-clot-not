@@ -1,48 +1,18 @@
-# virtual environment
-venv/
-
-# pycache
-*.pyc
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-/startBackendDev.ps1
-/startBackendDev.sh
-/startReactDev.ps1
-/StartReactDev.sh
-/startTests.sh
-
-# production
-/build
-
-# misc
-.DS_Store
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
 # .NET build artifacts
 **/bin/
 **/obj/
 
-# Local .NET config (secrets go in Railway env vars only)
+# Local config (secrets stay out of source control)
 appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
 
-# Visual Studio workspace files
+# Visual Studio
 .vs/
+*.user
 
-# Mockup preview node_modules
-mockup/preview/node_modules/
+# OS
+.DS_Store
+
+# Mockup preview dev server (source is mockup/ccn-mockup-v2.jsx)
+mockup/preview/

@@ -16,8 +16,10 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    // CRITICAL: Railway injects PORT — never hardcode a port
-    builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "5000"}");
+    // Railway injects PORT — only override URLs in production; dev uses launchSettings.json
+    var railwayPort = Environment.GetEnvironmentVariable("PORT");
+    if (railwayPort is not null)
+        builder.WebHost.UseUrls($"http://0.0.0.0:{railwayPort}");
 
     builder.Host.UseSerilog((ctx, cfg) => cfg
         .ReadFrom.Configuration(ctx.Configuration)
