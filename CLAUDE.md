@@ -35,6 +35,25 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - [ ] Group count for CCN 2026 (4-6 — waiting on cabin groupings)
 - [ ] Board space count (waiting on activity list from Katelyn/Vicki)
 - [ ] ActivityType seed data (same dependency)
+- [ ] Deep UI redesign (v0.3.1 or later — see design notes below)
+
+---
+
+## UI Design Direction — Mario Party Reference
+
+Reviewed actual Mario Party Superstars / Mario Party 9 screenshots 2026-05-07. The correct aesthetic is well-defined. Reference images are at `References/` (local only, not committed).
+
+**What the game actually uses:**
+- **Background:** Deep purple-violet (#3d0066 range) with warm radial glow. NOT dark navy or teal-green.
+- **Leaderboard layout:** Full-width horizontal ROWS, not a grid of cards. #1 row has a bright solid-color band filling its full width.
+- **Portraits:** Small square with colored border — not a circle.
+- **Buttons/panels:** Opaque solid-colored rectangles with thick gold/yellow borders. No blur, no translucency.
+- **Typography:** All key text has outlines (white text + dark stroke). Never flat plain text.
+- **Score display:** Illustrated coin/star icon + large number. Emoji are placeholders only.
+
+**Current state (v0.3.0):** Implementation uses dark navy gradient, grid of rounded cards, circle avatars, emoji — all of which diverge from the reference. The `ThemeService` + CSS variables are in place to make a full redesign tractable.
+
+**Decision pending:** Whether to redesign in v0.3.1 (targeted, before camp) or defer to post-camp polish. See REQUIREMENTS.md §2.4 for full spec.
 
 ---
 

@@ -1,0 +1,186 @@
+@page "/admin/board"
+@attribute [Authorize(Roles = "Admin")]
+@inject BoardService BoardSvc
+@inject GroupService GroupSvc
+@inject NavigationManager Nav
+
+<PageTitle>Board Admin — Camp Clot Not</PageTitle>
+
+<MudText Typo="Typo.h5" Style="font-family:'Fredoka One',cursive;margin-bottom:24px">
+    🗺️ Board Admin
+</MudText>
+
+<MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+
+    @* ── TAB 1: BOARD SPACES ───────────────────────────────────────────────── *@
+    <MudTabPanel Text="Board Spaces">
+        <MudText Typo="Typo.body2" Color="Color.Default" Style="margin-bottom:16px;color:#888">
+            20-space layout seeded from mockup. Adjust XPos/YPos in SeedService and restart to reposition.
+        </MudText>
+
+        @if (_spaces is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
+        }
+        else
+        {
+            <MudTable Items="_spaces" Dense="true" Striped="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>#</MudTh>
+                    <MudTh>Type</MudTh>
+                    <MudTh>Activity</MudTh>
+                    <MudTh>X</MudTh>
+                    <MudTh>Y</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.SpaceIndex</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small" Style="@($"background:{SpaceColor(context.CategorySystemName)};color:white")">
+                            @SpaceIcon(context.CategorySystemName) @context.CategorySystemName
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>@context.ActivityName</MudTd>
+                    <MudTd>@context.XPos</MudTd>
+                    <MudTd>@context.YPos</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudTabPanel>
+
+    @* ── TAB 2: SCRIPTED BLOCK HITS ────────────────────────────────────────── *@
+    <MudTabPanel Text="Block Hit Scripts">
+        <MudText Typo="Typo.body2" Style="margin-bottom:16px;color:#888">
+            Set the destination space for each group per camp day. Cannot edit after triggered.
+        </MudText>
+
+        @if (_groups is null || _scripts is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
+        }
+        else
+        {
+            <div style="overflow-x:auto">
+                <table style="border-collapse:collapse;width:100%;min-width:480px">
+                    <thead>
+                        <tr>
+                            <th style="@ThStyle()">Group</th>
+                            @for (var d = 1; d <= 5; d++)
+                            {
+                                <th style="@ThStyle()">Day @d</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in _groups)
+                        {
+                            <tr>
+                                <td style="@TdStyle()">
+                                    <div style="@($"display:flex;align-items:center;gap:8px")">
+                                        <div style="@($"width:12px;height:12px;border-radius:50%;background:{group.Color};flex-shrink:0")"></div>
+                                        <span style="font-weight:700;font-size:13px">@group.ShortName</span>
+                                        <span style="color:#888;font-size:12px">@group.Name</span>
+                                    </div>
+                                </td>
+                                @for (var day = 1; day <= 5; day++)
+                                {
+                                    var d = day;
+                                    var script = _scripts.FirstOrDefault(s => s.GroupId == group.GroupId && s.CampDay == d);
+                                    <td style="@TdStyle()">
+                                        @if (script?.IsTriggered == true)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
+                                                ✓ Space @script.DestinationSpaceIndex
+                                            </MudChip>
+                                        }
+                                        else
+                                        {
+                                            <div style="display:flex;align-items:center;gap:6px">
+                                                <MudNumericField T="int?" Value="@(script?.DestinationSpaceIndex)"
+                                                                 ValueChanged="@(v => OnDestChanged(group.GroupId, d, v))"
+                                                                 Min="0" Max="19" Variant="Variant.Outlined"
+                                                                 Margin="Margin.Dense" Style="width:80px"
+                                                                 Placeholder="—" />
+                                            </div>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (_saveMsg is not null)
+            {
+                <MudAlert Severity="Severity.Success" Dense="true" Style="margin-top:12px">@_saveMsg</MudAlert>
+            }
+        }
+    </MudTabPanel>
+
+</MudTabs>
+
+@code {
+    private List<BoardSpaceView>?   _spaces;
+    private List<Group>?            _groups;
+    private List<ScriptedBlockHit>? _scripts;
+    private string?                 _saveMsg;
+
+    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            LoadSpacesAsync(),
+            LoadGroupsAsync()
+        );
+    }
+
+    private async Task LoadSpacesAsync()
+    {
+        _spaces  = await BoardSvc.GetSpacesAsync(EventId);
+        _scripts = await BoardSvc.GetScriptedBlockHitsAsync(EventId);
+    }
+
+    private async Task LoadGroupsAsync()
+    {
+        _groups = await GroupSvc.GetAllAsync();
+    }
+
+    private async Task OnDestChanged(Guid groupId, int campDay, int? destination)
+    {
+        if (destination is null) return;
+        await BoardSvc.UpsertScriptAsync(groupId, EventId, campDay, destination.Value);
+        _scripts = await BoardSvc.GetScriptedBlockHitsAsync(EventId);
+        _saveMsg = $"Day {campDay} destination saved.";
+        StateHasChanged();
+        await Task.Delay(2500);
+        _saveMsg = null;
+        StateHasChanged();
+    }
+
+    private static string SpaceColor(string cat) => cat switch
+    {
+        "BoardStart"     => "#95A5A6",
+        "BoardCoinBonus" => "#F39C12",
+        "BoardPrestige"  => "#E74C3C",
+        "BoardPenalty"   => "#C0392B",
+        "MinuteToWinIt"  => "#9B59B6",
+        _                => "#607D8B"
+    };
+
+    private static string SpaceIcon(string cat) => cat switch
+    {
+        "BoardStart"     => "🏁",
+        "BoardCoinBonus" => "🪙",
+        "BoardPrestige"  => "⭐",
+        "BoardPenalty"   => "👹",
+        "MinuteToWinIt"  => "🎮",
+        _                => "❓"
+    };
+
+    private static string ThStyle() =>
+        "padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)";
+
+    private static string TdStyle() =>
+        "padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle";
+}

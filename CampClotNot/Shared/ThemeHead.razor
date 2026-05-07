@@ -1,0 +1,27 @@
+@* Injects CSS custom properties for the active theme into :root.
+   Include this component in every layout so all pages get the vars.
+   Components use var(--color-primary) etc. instead of hardcoded hex. *@
+@inject ThemeService ThemeSvc
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
+
+    :root {
+        @((MarkupString)ThemeSvc.Active.CssVariables)
+    }
+
+    body {
+        font-family: 'Nunito', sans-serif;
+        background: var(--bg-start);
+    }
+
+    @@keyframes twinkle  { 0%,100%{opacity:.12} 50%{opacity:.55} }
+    @@keyframes ccnBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @@keyframes popIn    { 0%{transform:scale(.65) translateY(14px);opacity:0} 70%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+    @@keyframes slideUp  { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+    @@keyframes shake    { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)} 60%{transform:rotate(-5deg)} 80%{transform:rotate(4deg)} }
+    @@keyframes blockGlow{ 0%,100%{box-shadow:0 0 16px #F39C1260} 50%{box-shadow:0 0 40px #F39C12cc,0 0 70px #F39C1444} }
+    @@keyframes rollFlip { from{transform:translateY(-10px);opacity:0} to{transform:translateY(0);opacity:1} }
+    @@keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+    @@keyframes pulseBorder { 0%,100%{opacity:.5} 50%{opacity:1} }
+</style>

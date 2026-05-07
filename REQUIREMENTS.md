@@ -191,12 +191,26 @@ Implementation: pre-calculate SVG coordinates per space. Use JS-stepped setTimeo
 
 ### 2.4 Dashboard & Leaderboard
 
-- Group cards: token art, name, coin total, star total, current board space
-- Rank badge: gold #1, silver #2, bronze #3
+> ✅ DECIDED (2026-05-07): Reference images from Mario Party Superstars confirm the correct layout pattern. See §2.4.1 for the target design. Current implementation (grid of cards) is a known deviation — tracked for v0.3.1 or later.
+
+- **Layout:** Full-width horizontal rows stacked vertically — NOT a grid of cards. Each group gets one row spanning the full width.
+- **#1 row treatment:** A bright solid-color band fills the entire #1 row (like the hot-pink highlight stripe in Mario Party Superstars results screen). This is the single most recognizable Mario Party UI pattern.
+- **Portrait:** Small square with rounded corners and a colored border. Not a circle.
+- **Rank label:** "1st" / "2nd" / "3rd" with outlined white text and colored drop shadow — not a "#1" pill badge.
+- **Score display:** Illustrated star/coin icon (styled SVG, not emoji) + large white number.
+- **Background:** Deep purple-violet (#3d0066 range) with a warm radial glow/light burst behind center content — NOT dark navy or dark teal-green.
+- **UI elements:** Opaque solid-colored panels with thick gold/yellow borders. No backdrop-filter blur, no translucency.
+- **Typography:** All key text has thick outlines (white text + dark outline, or colored text + darker-shade outline). Never plain flat text.
 - Coin and star totals animate (count-up) when values change
-- Card border/glow in group color
 - Sort: stars descending, tiebreak coins descending
-- Rank change: cards animate into new positions (CSS FLIP animation)
+- Rank change: rows animate into new positions on score update
+
+#### 2.4.1 Reference Images
+Stored locally at `References/` in the repo root (not committed). Key references:
+- `Results Leaderboard Reference.jpg` — Mario Party Superstars results screen. Primary layout target.
+- `Results Leaderboard Reference 2.jpg` — Older Mario Party results. Shows colored row bands per player.
+- `Menu Selector Reference.jpg` — Main menu. Shows the purple-violet background and thick gold-bordered buttons.
+- `Cover Reference.jpg` — Mario Party Superstars box art. Shows board aesthetic and overall color energy.
 
 ### 2.5 Board Visual Design
 

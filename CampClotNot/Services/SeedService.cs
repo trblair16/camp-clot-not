@@ -7,7 +7,7 @@ namespace CampClotNot.Services;
 public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration config, ILogger<SeedService> logger)
 {
     // Stable IDs — never change these; they anchor FK references across re-seeds
-    static class Id
+    public static class Id
     {
         // UserRoles
         public static readonly Guid RoleAdmin   = new("00000001-0001-0001-0001-000000000001");
@@ -39,12 +39,18 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid CapAnnouncements   = new("00000005-0005-0005-0005-000000000004");
         public static readonly Guid CapItinerary       = new("00000005-0005-0005-0005-000000000005");
 
-        // ActivityTypeCategories
+        // ActivityTypeCategories — camp activities
         public static readonly Guid CatMinuteToWinIt   = new("00000006-0006-0006-0006-000000000001");
         public static readonly Guid CatWaterActivities = new("00000006-0006-0006-0006-000000000002");
         public static readonly Guid CatArts            = new("00000006-0006-0006-0006-000000000003");
         public static readonly Guid CatGames           = new("00000006-0006-0006-0006-000000000004");
         public static readonly Guid CatDiscussion      = new("00000006-0006-0006-0006-000000000005");
+
+        // ActivityTypeCategories — board mechanic spaces (not real camp activities)
+        public static readonly Guid CatBoardStart     = new("00000006-0006-0006-0006-000000000006");
+        public static readonly Guid CatBoardCoinBonus = new("00000006-0006-0006-0006-000000000007");
+        public static readonly Guid CatBoardPrestige  = new("00000006-0006-0006-0006-000000000008");
+        public static readonly Guid CatBoardPenalty   = new("00000006-0006-0006-0006-000000000009");
 
         // CurrencyTypes
         public static readonly Guid CurrencyPrimary  = new("00000007-0007-0007-0007-000000000001");
@@ -65,6 +71,43 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid Group4 = new("0000000a-000a-000a-000a-000000000004");
         public static readonly Guid Group5 = new("0000000a-000a-000a-000a-000000000005");
         public static readonly Guid Group6 = new("0000000a-000a-000a-000a-000000000006");
+
+        // ActivityTypes — one placeholder per board space category + MinuteToWinIt
+        public static readonly Guid ActTypeBoardStart      = new("0000000b-000b-000b-000b-000000000001");
+        public static readonly Guid ActTypeBoardCoinBonus  = new("0000000b-000b-000b-000b-000000000002");
+        public static readonly Guid ActTypeBoardPrestige   = new("0000000b-000b-000b-000b-000000000003");
+        public static readonly Guid ActTypeBoardPenalty    = new("0000000b-000b-000b-000b-000000000004");
+        public static readonly Guid ActTypeMtwiPlaceholder = new("0000000b-000b-000b-000b-000000000005");
+
+        // Activities — one placeholder per type, scoped to CCN 2026
+        // Real activities replace these when Katelyn/Vicki confirm the schedule
+        public static readonly Guid ActBoardStart      = new("0000000c-000c-000c-000c-000000000001");
+        public static readonly Guid ActBoardCoinBonus  = new("0000000c-000c-000c-000c-000000000002");
+        public static readonly Guid ActBoardPrestige   = new("0000000c-000c-000c-000c-000000000003");
+        public static readonly Guid ActBoardPenalty    = new("0000000c-000c-000c-000c-000000000004");
+        public static readonly Guid ActMtwiPlaceholder = new("0000000c-000c-000c-000c-000000000005");
+
+        // BoardSpaces — 20 spaces, layout matches mockup/ccn-mockup-v2.jsx
+        public static readonly Guid Space0  = new("0000000d-000d-000d-000d-000000000001");
+        public static readonly Guid Space1  = new("0000000d-000d-000d-000d-000000000002");
+        public static readonly Guid Space2  = new("0000000d-000d-000d-000d-000000000003");
+        public static readonly Guid Space3  = new("0000000d-000d-000d-000d-000000000004");
+        public static readonly Guid Space4  = new("0000000d-000d-000d-000d-000000000005");
+        public static readonly Guid Space5  = new("0000000d-000d-000d-000d-000000000006");
+        public static readonly Guid Space6  = new("0000000d-000d-000d-000d-000000000007");
+        public static readonly Guid Space7  = new("0000000d-000d-000d-000d-000000000008");
+        public static readonly Guid Space8  = new("0000000d-000d-000d-000d-000000000009");
+        public static readonly Guid Space9  = new("0000000d-000d-000d-000d-00000000000a");
+        public static readonly Guid Space10 = new("0000000d-000d-000d-000d-00000000000b");
+        public static readonly Guid Space11 = new("0000000d-000d-000d-000d-00000000000c");
+        public static readonly Guid Space12 = new("0000000d-000d-000d-000d-00000000000d");
+        public static readonly Guid Space13 = new("0000000d-000d-000d-000d-00000000000e");
+        public static readonly Guid Space14 = new("0000000d-000d-000d-000d-00000000000f");
+        public static readonly Guid Space15 = new("0000000d-000d-000d-000d-000000000010");
+        public static readonly Guid Space16 = new("0000000d-000d-000d-000d-000000000011");
+        public static readonly Guid Space17 = new("0000000d-000d-000d-000d-000000000012");
+        public static readonly Guid Space18 = new("0000000d-000d-000d-000d-000000000013");
+        public static readonly Guid Space19 = new("0000000d-000d-000d-000d-000000000014");
     }
 
     public async Task SeedAsync()
@@ -83,6 +126,10 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         await SeedEventCapabilitiesAsync(db);
         await SeedGroupsAsync(db);
         await SeedAdminUserAsync(db);
+        await SeedBoardSpaceActivityTypesAsync(db);
+        await SeedBoardSpaceActivitiesAsync(db);
+        await SeedBoardSpacesAsync(db);
+        await SeedGroupBoardPositionsAsync(db);
     }
 
     private async Task SeedUserRolesAsync(AppDbContext db)
@@ -180,16 +227,35 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         logger.LogInformation("Seeded Capabilities.");
     }
 
+    // Upsert-by-ID: v0.3.0 added board mechanic categories so AnyAsync() check would skip them on existing DBs
     private async Task SeedActivityTypeCategoriesAsync(AppDbContext db)
     {
-        if (await db.ActivityTypeCategories.AnyAsync()) return;
-        db.ActivityTypeCategories.AddRange(
-            new ActivityTypeCategory { CategoryId = Id.CatMinuteToWinIt,   Name = "Minute to Win It", Description = "Fast-paced individual or group challenges", SystemName = "MinuteToWinIt" },
-            new ActivityTypeCategory { CategoryId = Id.CatWaterActivities, Name = "Water Activities", Description = "Pool and lake activities",                   SystemName = "WaterActivities" },
-            new ActivityTypeCategory { CategoryId = Id.CatArts,            Name = "Arts & Crafts",    Description = "Creative arts and craft projects",           SystemName = "Arts" },
-            new ActivityTypeCategory { CategoryId = Id.CatGames,           Name = "Games",            Description = "Group games and competitions",               SystemName = "Games" },
-            new ActivityTypeCategory { CategoryId = Id.CatDiscussion,      Name = "Discussion",       Description = "Devotions and group discussion sessions",    SystemName = "Discussion" }
-        );
+        var defs = new[]
+        {
+            new { Id = Id.CatMinuteToWinIt,   Name = "Minute to Win It", Description = "Fast-paced individual or group challenges", SystemName = "MinuteToWinIt"   },
+            new { Id = Id.CatWaterActivities, Name = "Water Activities", Description = "Pool and lake activities",                   SystemName = "WaterActivities" },
+            new { Id = Id.CatArts,            Name = "Arts & Crafts",    Description = "Creative arts and craft projects",           SystemName = "Arts"            },
+            new { Id = Id.CatGames,           Name = "Games",            Description = "Group games and competitions",               SystemName = "Games"           },
+            new { Id = Id.CatDiscussion,      Name = "Discussion",       Description = "Devotions and group discussion sessions",    SystemName = "Discussion"      },
+            new { Id = Id.CatBoardStart,     Name = "Board Start",   Description = "Starting space — groups begin here",       SystemName = "BoardStart"     },
+            new { Id = Id.CatBoardCoinBonus, Name = "Coin Bonus",    Description = "Board space — land here to earn coins",    SystemName = "BoardCoinBonus" },
+            new { Id = Id.CatBoardPrestige,  Name = "Star Space",    Description = "Board space — land here to earn a star",   SystemName = "BoardPrestige"  },
+            new { Id = Id.CatBoardPenalty,   Name = "Bowser!",       Description = "Board space — Bowser penalty",             SystemName = "BoardPenalty"   },
+        };
+
+        foreach (var def in defs)
+        {
+            if (!await db.ActivityTypeCategories.AnyAsync(c => c.CategoryId == def.Id))
+            {
+                db.ActivityTypeCategories.Add(new ActivityTypeCategory
+                {
+                    CategoryId  = def.Id,
+                    Name        = def.Name,
+                    Description = def.Description,
+                    SystemName  = def.SystemName
+                });
+            }
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded ActivityTypeCategories.");
     }
@@ -312,5 +378,147 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         });
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded admin user {Email}.", email);
+    }
+
+    // One placeholder ActivityType per board space category + one for MinuteToWinIt spaces
+    private async Task SeedBoardSpaceActivityTypesAsync(AppDbContext db)
+    {
+        var defs = new[]
+        {
+            new { Id = Id.ActTypeBoardStart,      CategoryId = Id.CatBoardStart,     Name = "Start Space",    SystemName = "BoardStart"      },
+            new { Id = Id.ActTypeBoardCoinBonus,  CategoryId = Id.CatBoardCoinBonus, Name = "Coin Bonus",     SystemName = "BoardCoinBonus"  },
+            new { Id = Id.ActTypeBoardPrestige,   CategoryId = Id.CatBoardPrestige,  Name = "Star Space",     SystemName = "BoardPrestige"   },
+            new { Id = Id.ActTypeBoardPenalty,    CategoryId = Id.CatBoardPenalty,   Name = "Bowser Penalty", SystemName = "BoardPenalty"    },
+            new { Id = Id.ActTypeMtwiPlaceholder, CategoryId = Id.CatMinuteToWinIt,  Name = "Mini-Game",      SystemName = "MtwiPlaceholder" },
+        };
+
+        foreach (var def in defs)
+        {
+            if (!await db.ActivityTypes.AnyAsync(t => t.ActivityTypeId == def.Id))
+            {
+                db.ActivityTypes.Add(new ActivityType
+                {
+                    ActivityTypeId = def.Id,
+                    CategoryId     = def.CategoryId,
+                    Name           = def.Name,
+                    Description    = def.Name,
+                    SystemName     = def.SystemName
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+        logger.LogInformation("Seeded board space ActivityTypes.");
+    }
+
+    // One placeholder Activity per type, scoped to CCN 2026
+    // Real MinuteToWinIt activities replace the placeholder when Katelyn/Vicki confirm the schedule
+    private async Task SeedBoardSpaceActivitiesAsync(AppDbContext db)
+    {
+        var defs = new[]
+        {
+            new { Id = Id.ActBoardStart,      TypeId = Id.ActTypeBoardStart,      Name = "Start"       },
+            new { Id = Id.ActBoardCoinBonus,  TypeId = Id.ActTypeBoardCoinBonus,  Name = "Coin Bonus"  },
+            new { Id = Id.ActBoardPrestige,   TypeId = Id.ActTypeBoardPrestige,   Name = "Star Space"  },
+            new { Id = Id.ActBoardPenalty,    TypeId = Id.ActTypeBoardPenalty,    Name = "Bowser!"     },
+            new { Id = Id.ActMtwiPlaceholder, TypeId = Id.ActTypeMtwiPlaceholder, Name = "Mini-Game"   },
+        };
+
+        foreach (var def in defs)
+        {
+            if (!await db.Activities.AnyAsync(a => a.ActivityId == def.Id))
+            {
+                db.Activities.Add(new Activity
+                {
+                    ActivityId     = def.Id,
+                    EventId        = Id.EventCcn2026,
+                    ActivityTypeId = def.TypeId,
+                    Name           = def.Name,
+                    Description    = def.Name
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+        logger.LogInformation("Seeded board space Activities.");
+    }
+
+    // 20-space rectangular loop layout — clockwise: bottom → right → top → left.
+    // XPos/YPos are SVG coordinates within a 600×440 viewBox.
+    // Upserts coordinates so layout changes here apply on next restart.
+    // Update space count here if Katelyn/Vicki confirm a different number.
+    private async Task SeedBoardSpacesAsync(AppDbContext db)
+    {
+        var defs = new[]
+        {
+            // Bottom row — left → right (y=400)
+            new { Id = Id.Space0,  SpaceIndex = 0,  ActivityId = Id.ActBoardStart,      XPos = 80f,  YPos = 400f },
+            new { Id = Id.Space1,  SpaceIndex = 1,  ActivityId = Id.ActBoardCoinBonus,  XPos = 160f, YPos = 400f },
+            new { Id = Id.Space2,  SpaceIndex = 2,  ActivityId = Id.ActMtwiPlaceholder, XPos = 240f, YPos = 400f },
+            new { Id = Id.Space3,  SpaceIndex = 3,  ActivityId = Id.ActBoardCoinBonus,  XPos = 320f, YPos = 400f },
+            new { Id = Id.Space4,  SpaceIndex = 4,  ActivityId = Id.ActBoardPenalty,    XPos = 400f, YPos = 400f },
+            new { Id = Id.Space5,  SpaceIndex = 5,  ActivityId = Id.ActBoardCoinBonus,  XPos = 480f, YPos = 400f },
+            // Right side — bottom → top (x=540)
+            new { Id = Id.Space6,  SpaceIndex = 6,  ActivityId = Id.ActMtwiPlaceholder, XPos = 540f, YPos = 330f },
+            new { Id = Id.Space7,  SpaceIndex = 7,  ActivityId = Id.ActBoardCoinBonus,  XPos = 540f, YPos = 250f },
+            new { Id = Id.Space8,  SpaceIndex = 8,  ActivityId = Id.ActBoardPrestige,   XPos = 540f, YPos = 170f },
+            new { Id = Id.Space9,  SpaceIndex = 9,  ActivityId = Id.ActBoardCoinBonus,  XPos = 540f, YPos = 90f  },
+            // Top row — right → left (y=40)
+            new { Id = Id.Space10, SpaceIndex = 10, ActivityId = Id.ActMtwiPlaceholder, XPos = 480f, YPos = 40f  },
+            new { Id = Id.Space11, SpaceIndex = 11, ActivityId = Id.ActBoardPrestige,   XPos = 400f, YPos = 40f  },
+            new { Id = Id.Space12, SpaceIndex = 12, ActivityId = Id.ActBoardCoinBonus,  XPos = 320f, YPos = 40f  },
+            new { Id = Id.Space13, SpaceIndex = 13, ActivityId = Id.ActMtwiPlaceholder, XPos = 240f, YPos = 40f  },
+            new { Id = Id.Space14, SpaceIndex = 14, ActivityId = Id.ActBoardPenalty,    XPos = 160f, YPos = 40f  },
+            new { Id = Id.Space15, SpaceIndex = 15, ActivityId = Id.ActBoardPrestige,   XPos = 80f,  YPos = 40f  },
+            // Left side — top → bottom (x=60)
+            new { Id = Id.Space16, SpaceIndex = 16, ActivityId = Id.ActBoardCoinBonus,  XPos = 60f,  YPos = 110f },
+            new { Id = Id.Space17, SpaceIndex = 17, ActivityId = Id.ActMtwiPlaceholder, XPos = 60f,  YPos = 190f },
+            new { Id = Id.Space18, SpaceIndex = 18, ActivityId = Id.ActBoardPrestige,   XPos = 60f,  YPos = 270f },
+            new { Id = Id.Space19, SpaceIndex = 19, ActivityId = Id.ActBoardPenalty,    XPos = 60f,  YPos = 350f },
+        };
+
+        foreach (var def in defs)
+        {
+            var existing = await db.BoardSpaces.FindAsync(def.Id);
+            if (existing is null)
+            {
+                db.BoardSpaces.Add(new BoardSpace
+                {
+                    SpaceId    = def.Id,
+                    EventId    = Id.EventCcn2026,
+                    ActivityId = def.ActivityId,
+                    SpaceIndex = def.SpaceIndex,
+                    XPos       = def.XPos,
+                    YPos       = def.YPos
+                });
+            }
+            else
+            {
+                existing.ActivityId = def.ActivityId;
+                existing.SpaceIndex = def.SpaceIndex;
+                existing.XPos       = def.XPos;
+                existing.YPos       = def.YPos;
+            }
+        }
+        await db.SaveChangesAsync();
+        logger.LogInformation("Seeded/updated BoardSpaces (20-space rectangular loop, CCN 2026).");
+    }
+
+    // Initialize all groups at the Start space (index 0); skip groups that already have a position
+    private async Task SeedGroupBoardPositionsAsync(AppDbContext db)
+    {
+        var groupIds = new[] { Id.Group1, Id.Group2, Id.Group3, Id.Group4, Id.Group5, Id.Group6 };
+        foreach (var groupId in groupIds)
+        {
+            if (!await db.GroupBoardPositions.AnyAsync(p => p.GroupId == groupId))
+            {
+                db.GroupBoardPositions.Add(new GroupBoardPos
+                {
+                    GroupId    = groupId,
+                    SpaceIndex = 0,
+                    UpdatedAt  = DateTime.UtcNow
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+        logger.LogInformation("Seeded GroupBoardPositions.");
     }
 }

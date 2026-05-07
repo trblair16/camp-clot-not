@@ -5,18 +5,30 @@ namespace CampClotNot.Hubs;
 /// <summary>
 /// Real-time hub for score and board state updates.
 ///
-/// v0.2.0 events: ScoresUpdated
-/// v0.3.0 events (block hit animation — plan before building):
-///   BlockHitTriggered(groupId, campDay)
-///   BlockHitNumberRevealed(groupId, number)
-///   TokenMoveStep(groupId, spaceIndex)
-///   TokenMoveDone(groupId, finalSpaceIndex)
+/// Server broadcasts directly via IHubContext&lt;CampHub&gt; injected into services.
+/// Hub methods below are client-callable mirrors (same pattern as ScoresUpdated).
 ///
-/// All events broadcast to all clients. The /display route subscribes and drives
-/// projector animations. The triggering tablet calls admin endpoints only.
+/// Events:
+///   ScoresUpdated                          — leaderboard changed
+///   BlockHitTriggered(groupId, campDay)    — block hit started for a group
+///   BlockHitNumberRevealed(groupId, steps) — roll number revealed
+///   TokenMoveStep(groupId, spaceIndex)     — token moved to intermediate space
+///   TokenMoveDone(groupId, spaceIndex)     — token landed on final space
 /// </summary>
 public class CampHub : Hub
 {
     public async Task ScoresUpdated() =>
         await Clients.All.SendAsync("ScoresUpdated");
+
+    public async Task BlockHitTriggered(Guid groupId, int campDay) =>
+        await Clients.All.SendAsync("BlockHitTriggered", groupId, campDay);
+
+    public async Task BlockHitNumberRevealed(Guid groupId, int rollNumber) =>
+        await Clients.All.SendAsync("BlockHitNumberRevealed", groupId, rollNumber);
+
+    public async Task TokenMoveStep(Guid groupId, int spaceIndex) =>
+        await Clients.All.SendAsync("TokenMoveStep", groupId, spaceIndex);
+
+    public async Task TokenMoveDone(Guid groupId, int finalSpaceIndex) =>
+        await Clients.All.SendAsync("TokenMoveDone", groupId, finalSpaceIndex);
 }

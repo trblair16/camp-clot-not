@@ -1,0 +1,121 @@
+@* Reusable SVG board — used in /board and /display.
+   Layout: rectangular loop with rounded corners, spaces distributed around the perimeter.
+   Tokens use SVG attribute transform (not CSS transform) so positions map correctly to viewBox coordinates.
+   SvgStyle lets the parent control sizing: default max-width on /board, height-fill on /display. *@
+
+<svg viewBox="0 0 600 440" style="@SvgStyle" xmlns="http://www.w3.org/2000/svg">
+
+    @* Board interior — subtle green tint inside the loop *@
+    <rect x="78" y="38" width="444" height="364" rx="24" ry="24"
+          fill="rgba(15,90,40,0.18)" stroke="none" />
+
+    @* Track — three layers for depth: glow, fill, edge *@
+    <path d="@LoopPath" stroke="rgba(255,255,255,0.06)" stroke-width="44"
+          fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="@LoopPath" stroke="rgba(20,100,55,0.5)" stroke-width="38"
+          fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="@LoopPath" stroke="rgba(255,255,255,0.18)" stroke-width="2"
+          fill="none" stroke-linecap="round" stroke-linejoin="round" />
+
+    @* Spaces *@
+    @foreach (var space in Spaces)
+    {
+        var (spColor, spIcon)   = SpaceStyle(space.CategorySystemName);
+        var groupsHere          = Groups.Where(g => Positions.GetValueOrDefault(g.GroupId) == space.SpaceIndex).ToList();
+        var isPop               = space.CategorySystemName is "BoardPrestige" or "BoardPenalty";
+        var sx                  = (int)space.XPos;
+        var sy                  = (int)space.YPos;
+
+        <g>
+            @* Glow ring on prestige/penalty spaces *@
+            @if (isPop)
+            {
+                <circle cx="@sx" cy="@sy" r="23" fill="@spColor" opacity="0.2" />
+            }
+
+            @* Space circle *@
+            <circle cx="@sx" cy="@sy" r="18" fill="@spColor" stroke="#0e1628" stroke-width="3" opacity="0.93" />
+
+            @* Space icon — wrapped in <g> so Razor parses <text> as SVG not pseudo-element *@
+            <g>
+                <text x="@sx" y="@(sy + 1)" text-anchor="middle" dominant-baseline="middle" font-size="13">@spIcon</text>
+                <text x="@sx" y="@(sy + 28)" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.35)">@space.SpaceIndex</text>
+            </g>
+
+            @* Group tokens — cx/cy SVG attributes keep them in correct viewBox space *@
+            @{
+                var count = groupsHere.Count;
+            }
+            @foreach (var (group, gi) in groupsHere.Select((g, i) => (g, i)))
+            {
+                var rawOffset = count > 1 ? (gi - (count - 1) / 2.0f) * 15f : 0f;
+                var offX      = (int)MathF.Round(rawOffset);
+                var tx        = sx + offX;
+                var ty        = sy;
+                var isAnim    = AnimatingGroupId == group.GroupId;
+
+                @* Outer <g>: SVG transform for correct viewBox-relative positioning — NO CSS style here.
+                   Inner <g>: CSS animation in local coordinate space so translateY doesn't fight the SVG transform. *@
+                <g transform="translate(@tx,@ty)">
+                    <g style="@(isAnim ? "animation:tokenPop 0.5s cubic-bezier(.34,1.8,.64,1)" : "animation:tokenBob 2.2s ease-in-out infinite")">
+                        <circle cx="0" cy="0" r="12" fill="@group.Color" stroke="white" stroke-width="2.5" />
+                        <g>
+                            <text x="0" y="1" text-anchor="middle" dominant-baseline="middle"
+                                  font-size="7" font-weight="700" fill="white">@group.ShortName</text>
+                        </g>
+                    </g>
+                </g>
+            }
+        </g>
+    }
+
+    @* START label — space 0 is at (80,400); label sits beneath it *@
+    @if (Spaces.Any())
+    {
+        var s0x = (int)Spaces.First().XPos;
+        var s0y = (int)Spaces.First().YPos + 30;
+        <g>
+            <text x="@s0x" y="@s0y" text-anchor="middle" font-size="9" font-weight="700"
+                  fill="#F39C12" font-family="Fredoka One, cursive">START</text>
+        </g>
+    }
+</svg>
+
+<style>
+    @@keyframes tokenBob {
+        0%, 100% { transform: translateY(0px); }
+        50%       { transform: translateY(-4px); }
+    }
+    @@keyframes tokenPop {
+        0%   { transform: scale(1); }
+        40%  { transform: scale(1.35); }
+        100% { transform: scale(1); }
+    }
+</style>
+
+@code {
+    [Parameter] public List<BoardSpaceView> Spaces      { get; set; } = new();
+    [Parameter] public Dictionary<Guid, int> Positions  { get; set; } = new();
+    [Parameter] public List<Group> Groups               { get; set; } = new();
+    [Parameter] public Guid? AnimatingGroupId           { get; set; }
+
+    // Default: fit within the board page column; override on /display for height-fill
+    [Parameter] public string SvgStyle { get; set; } =
+        "width:100%;height:auto;display:block;max-width:680px;margin:0 auto";
+
+    // Rectangular loop path with quadratic bezier rounded corners.
+    // Corners at (540,400), (540,40), (60,40), (60,400) — radius ~40 SVG units.
+    private const string LoopPath =
+        "M80,400 L480,400 Q540,400 540,330 L540,90 Q540,40 480,40 " +
+        "L80,40 Q60,40 60,110 L60,350 Q60,400 80,400 Z";
+
+    private static (string Color, string Icon) SpaceStyle(string cat) => cat switch
+    {
+        "BoardStart"     => ("#95A5A6", "🏁"),
+        "BoardCoinBonus" => ("#FCCF00", "🪙"),
+        "BoardPrestige"  => ("#E83030", "⭐"),
+        "BoardPenalty"   => ("#C0392B", "👹"),
+        "MinuteToWinIt"  => ("#8B4FBF", "🎮"),
+        _                => ("#607D8B", "❓")
+    };
+}
