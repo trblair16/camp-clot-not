@@ -101,12 +101,16 @@ A visual game board displayed on the projector during gatherings.
 
 - Winding snake/rectangular path shape — see ccn-mockup-v2.jsx for reference layout
 - Spaces pre-designed by admin before camp to match the week's schedule
-- Space types: Start, MiniGame, CoinBonus, StarSpace, Penalty (Bowser)
-- Each group has a token sitting on their current board position
+- **Space type is determined by the Activity linked to the space — there is no SpaceType enum.**
+  `BoardSpace.ActivityId` → `Activity.ActivityTypeId` → `ActivityType.CategoryId` → `ActivityTypeCategory.SystemName`
+  The category SystemName drives space rendering behavior (icon, color, effect).
+- Each group has a token sitting on their current board position (`GroupBoardPos`)
 - Board positions persist in DB
 - SVG-based rendering with proper icon assets (not emoji)
 
-> ⚠️ PENDING: How many board spaces? Mockup uses 20. Should match camp day/activity count. Confirm with Katelyn/Vicki.
+> ✅ DECIDED: No SpaceType enum. Replaced by ActivityType + ActivityTypeCategory system. See schema redesign spec.
+
+> ⚠️ PENDING: How many board spaces? Mockup uses 20. Should match camp day/activity count. Confirm with Katelyn/Vicki. Determines how many Activity rows to seed.
 
 > ⚠️ PENDING: Should the board/leaderboard be visible to campers all week on the projector, or only during specific gathering moments?
 
