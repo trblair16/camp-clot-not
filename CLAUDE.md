@@ -8,10 +8,10 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-04-30)
+## Current State (as of 2026-05-06)
 
-**Active branch:** `feature/2-competition-core`  
-**Released:** v0.1.0 — Foundation (tagged on main)
+**Active branch:** `feature/3-board-game` (cut from dev)
+**Released:** v0.1.0 — Foundation, v0.2.0 — Competition Core (both tagged on main)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -23,24 +23,37 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - Group management: create, edit, delete — scoped to CCN 2026 event (`/admin/groups`)
 - Startup seed service: all reference data + CCN 2026 event + admin user (idempotent)
 - Railway infrastructure: PORT env var, `postgres://` URI conversion, `/health` endpoint
-- Seed credentials: `Seed:AdminEmail` / `Seed:AdminPassword` in `appsettings.Development.json`
 
-**v0.2.0 — Up next (Competition core):**
-1. Leaderboard with live coin/star totals (SignalR real-time updates)
-2. Log transaction UI wired to real groups and currency types
-3. Group seed data once cabin groupings are confirmed
-4. Transaction void from admin
+**v0.2.0 — Done:**
+- Real-time leaderboard: colorful group cards with rank badges (gold/silver/bronze), Fredoka One coin/star currency pills, SignalR `ScoresUpdated` live updates, recent transactions feed
+- Log transaction UI: select group, currency type, amount, note; broadcasts `ScoresUpdated` on post
+- Transaction audit log: void (admin-only, confirmation dialog) + reinstate with confirmation; voided rows dimmed with strikethrough; `ScoresUpdated` fires on both
+- Projector display (`/display`): full-screen dark scoreboard, AppBar-free `DisplayLayout`, SignalR live updates
+- Group admin: native color picker with live preview swatch; team logo upload (base64 stored in `TokenAssetPath`, 500 KB limit); logo shown in dashboard avatar and projector display
+- SeedService: Mario-themed placeholder groups (6 groups, awaiting real names from Vicki/Katelyn/Amanda) with upsert-by-stable-ID pattern
+- Program.cs: `UseUrls` only applied when Railway `PORT` env var is set — dev uses `launchSettings.json`
+- MainLayout: `MudAppBar` as direct child of `MudLayout` so content clears the nav bar correctly
+- Legacy 2021 Python/React capstone removed; CI replaced with `dotnet-build.yml`
 
-**Open decisions:**
-- [ ] Group count for CCN 2026 (4-6 — waiting on cabin groupings)
-- [ ] Board space count (waiting on activity list from Katelyn/Vicki)
-- [ ] ActivityType seed data (same dependency)
+**v0.3.0 — Up next (Board & Block Hit, target ~May 19):**
+1. SVG board display — winding snake path, typed spaces, group tokens at current positions
+2. Board admin UI — create/edit `BoardSpace` rows, load `ScriptedBlockHit` sequences per group per day
+3. Block hit trigger (admin tablet) — broadcasts SignalR events; animation plays on `/display`
+4. Step-by-step token movement animation on the projector via SignalR
+5. `GroupBoardPos` updated in DB when token lands
+6. `/display` redesigned: board ~70% of screen, leaderboard sidebar ~30%
+
+**Open decisions (still pending):**
+- [ ] Board space count (waiting on activity list from Katelyn/Vicki — mockup uses 20)
+- [ ] Board visible all week on projector, or only at gatherings?
+- [ ] Display mode: login or PIN-protected URL (`/display?pin=XXXX`)?
+- [ ] Group names: 6 placeholder Mario groups in seed — update `SeedGroupsAsync` when real names confirmed
 
 ---
 
 ## Architecture — Critical Points
 
-- **Railway.app hosting** — PORT env var is injected, never hardcode. postgres:// URI converted in Program.cs. HTTPS terminated externally — no ForceHttpsRedirection in prod.
+- **Railway.app hosting** — `PORT` env var applied via `UseUrls` only when set (Railway); dev uses `launchSettings.json`. `postgres://` URI converted in `Program.cs`. HTTPS terminated externally — no `ForceHttpsRedirection` in prod.
 - **Blazor Server + SignalR** — projector display (/display route) receives real-time updates via SignalR hub (`/camphub`). Block hit animation MUST play on projector via SignalR broadcast triggered from admin tablet — plan hub message types before building.
 - **No Flask middleware in v1** — service → repository → EF Core → PostgreSQL.
 - **Append-only transactions** — coins/stars never deleted, only voided. Totals always computed from non-voided transactions, never stored.
