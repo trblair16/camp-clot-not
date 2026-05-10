@@ -7,17 +7,13 @@
 
 <PageTitle>Board — Camp Clot Not</PageTitle>
 
-<div style="color:white">
+<div>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="font-family:'Fredoka One',cursive;font-size:clamp(18px,4vw,28px);
-                    background:linear-gradient(90deg,var(--color-accent),var(--color-primary),var(--color-success));
-                    -webkit-background-clip:text;-webkit-text-fill-color:transparent">
-            🗺️ Game Board
-        </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="ccn-section-label" style="margin:0">🗺️ Game Board</div>
         @if (_isAdmin)
         {
-            <button style="font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:10px 22px;border-radius:22px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--color-primary),#c9a600);color:white;box-shadow:0 4px 16px rgba(243,156,18,.35)"
+            <button class="ccn-btn" style="background:var(--color-primary)"
                     @onclick="@(() => _triggerOpen = true)">
                 ⁉️ Block Hit
             </button>
@@ -27,40 +23,38 @@
     @if (_loading)
     {
         <div style="display:flex;justify-content:center;padding:60px 0">
-            <MudProgressCircular Indeterminate="true" Color="Color.Warning" Size="Size.Large" />
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
         </div>
     }
     else
     {
-        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:18px;padding:12px;margin-bottom:20px">
+        <div class="ccn-panel" style="padding:12px;margin-bottom:18px">
             <BoardComponent Spaces="_spaces" Positions="_positions" Groups="_groups" />
         </div>
 
         @* Space type legend *@
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
             @foreach (var (label, icon, color) in _legend)
             {
-                <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);border-radius:20px;padding:4px 12px;font-size:11px;border:1px solid rgba(255,255,255,0.08)">
-                    <div style="@($"width:8px;height:8px;border-radius:50%;background:{color}")"></div>
+                <div style="display:flex;align-items:center;gap:6px;background:var(--panel-bg);border:2px solid var(--black);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;box-shadow:2px 2px 0 var(--black)">
+                    <div style="@($"width:8px;height:8px;border-radius:2px;background:{color};border:1px solid var(--black)")"></div>
                     @icon @label
                 </div>
             }
         </div>
 
         @* Group positions *@
-        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">
-            Group Positions
-        </div>
+        <div class="ccn-section-label">Group Positions</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
             @foreach (var g in _groups)
             {
                 var spaceIndex = _positions.GetValueOrDefault(g.GroupId);
                 var space      = _spaces.FirstOrDefault(s => s.SpaceIndex == spaceIndex);
-                <div style="@($"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;border-left:3px solid {g.Color}")">
+                <div class="ccn-panel" style="@($"padding:12px 14px;display:flex;align-items:center;gap:10px;border-top:4px solid {g.Color}")">
                     <div style="font-size:20px">@SpaceIcon(space?.CategorySystemName ?? "")</div>
                     <div style="flex:1">
-                        <div style="@($"font-family:'Fredoka One',cursive;font-size:14px;color:{g.Color}")">@g.ShortName — @g.Name</div>
-                        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">
+                        <div style="@($"font-family:'Fredoka One',cursive;font-size:14px;color:{g.Color}")">@g.ShortName</div>
+                        <div style="font-size:11px;color:var(--text-light);margin-top:2px;font-weight:700">
                             Space @spaceIndex: @(space?.ActivityName ?? "—")
                         </div>
                     </div>
@@ -73,12 +67,12 @@
 @* ── Block Hit Trigger Overlay (admin only, no MudDialog) ─────────────────── *@
 @if (_triggerOpen)
 {
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease"
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease"
          @onclick="CloseTrigger">
-        <div style="background:#111d35;border:1px solid rgba(255,255,255,0.13);border-radius:22px;padding:28px;width:100%;max-width:400px;animation:popIn 0.25s ease"
+        <div class="ccn-panel" style="padding:24px;width:100%;max-width:420px;animation:popIn 0.25s ease;box-shadow:8px 8px 0 var(--black)"
              @onclick:stopPropagation="true">
 
-            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--color-primary);margin-bottom:20px">
+            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--black);margin-bottom:18px">
                 ⁉️ Block Hit Trigger
             </div>
 
@@ -86,7 +80,7 @@
 
                 @* Group selector *@
                 <div>
-                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Which group?</div>
+                    <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Which group?</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         @foreach (var g in _groups)
                         {
@@ -101,7 +95,7 @@
 
                 @* Day selector *@
                 <div>
-                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Camp day?</div>
+                    <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Camp day?</div>
                     <div style="display:flex;gap:8px">
                         @for (var d = 1; d <= 5; d++)
                         {
@@ -120,20 +114,20 @@
                 {
                     @if (_triggerScript is null)
                     {
-                        <div style="background:rgba(243,156,18,0.12);border:1px solid rgba(243,156,18,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#FCCF00">
+                        <div style="background:#FFF8E1;border:2px solid var(--color-primary);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-dark);font-weight:700">
                             ⚠️ No script for this group + day. Set it in Board Admin → Block Hit Scripts.
                         </div>
                     }
                     else if (_triggerScript.IsTriggered)
                     {
-                        <div style="background:rgba(149,165,166,0.12);border:1px solid rgba(149,165,166,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#95A5A6">
+                        <div style="background:#F0F0F0;border:2px solid #888;border-radius:8px;padding:10px 14px;font-size:13px;color:#555;font-weight:700">
                             ✓ Already triggered for this group + day.
                         </div>
                     }
                     else
                     {
                         var destSpace = _spaces.FirstOrDefault(s => s.SpaceIndex == _triggerScript.DestinationSpaceIndex);
-                        <div style="background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#27AE60">
+                        <div style="background:#E8F5E9;border:2px solid var(--color-success);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-dark);font-weight:700">
                             🎯 Destination: <strong>Space @_triggerScript.DestinationSpaceIndex</strong>
                             — @(destSpace?.ActivityName ?? "—")
                             @SpaceIcon(destSpace?.CategorySystemName ?? "")
@@ -143,18 +137,15 @@
 
                 @if (_justTriggered)
                 {
-                    <div style="background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.35);border-radius:10px;padding:10px 14px;font-size:13px;color:#27AE60;animation:popIn 0.3s ease">
+                    <div style="background:#E8F5E9;border:2px solid var(--color-success);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-dark);font-weight:700;animation:popIn 0.3s ease">
                         🎉 Triggered! Watch the projector.
                     </div>
                 }
             </div>
 
             <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
-                <button style="font-family:'Nunito',sans-serif;font-weight:700;padding:9px 20px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.7);cursor:pointer"
-                        @onclick="CloseTrigger">
-                    Close
-                </button>
-                <button style="@TriggerBtnStyle()"
+                <button class="ccn-btn" @onclick="CloseTrigger">Close</button>
+                <button class="ccn-btn" style="background:var(--color-accent);color:white"
                         disabled="@(!CanTrigger)"
                         @onclick="TriggerBlockHit">
                     🎯 Trigger!
@@ -260,18 +251,16 @@
     };
 
     private static string GroupBtnStyle(string color, bool selected) =>
-        $"font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;padding:8px 14px;border-radius:10px;cursor:pointer;" +
-        $"background:{(selected ? color : "rgba(255,255,255,0.08)")};color:white;" +
-        $"border:2px solid {(selected ? color : "rgba(255,255,255,0.12)")};transition:all .2s;" +
-        $"box-shadow:{(selected ? $"0 3px 14px {color}55" : "none")}";
+        $"font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;transition:all .15s;" +
+        $"background:{(selected ? color : "var(--panel-bg)")};" +
+        $"color:{(selected ? "white" : "var(--black)")};" +
+        $"border:3px solid {(selected ? color : "var(--black)")};" +
+        $"box-shadow:{(selected ? $"3px 3px 0 var(--black)" : "2px 2px 0 var(--black)")}";
 
     private static string DayBtnStyle(bool selected) =>
-        $"font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;padding:7px 12px;border-radius:10px;cursor:pointer;" +
-        $"background:{(selected ? "var(--color-primary)" : "rgba(255,255,255,0.08)")};color:white;" +
-        $"border:2px solid {(selected ? "var(--color-primary)" : "rgba(255,255,255,0.12)")};transition:all .2s";
+        $"font-family:'Fredoka One',cursive;font-size:12px;padding:7px 12px;border-radius:6px;cursor:pointer;transition:all .15s;" +
+        $"background:{(selected ? "var(--color-primary)" : "var(--panel-bg)")};" +
+        $"color:var(--black);border:3px solid var(--black);" +
+        $"box-shadow:{(selected ? "3px 3px 0 var(--black)" : "2px 2px 0 var(--black)")}";
 
-    private static string TriggerBtnStyle() =>
-        "font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:10px 24px;border-radius:12px;cursor:pointer;" +
-        "background:linear-gradient(135deg,var(--color-accent),#C0392B);color:white;" +
-        "border:none;box-shadow:0 4px 16px rgba(231,76,60,.4);transition:all .2s";
 }

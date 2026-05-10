@@ -10,18 +10,69 @@
         @((MarkupString)ThemeSvc.Active.CssVariables)
     }
 
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
         font-family: 'Nunito', sans-serif;
-        background: var(--bg-start);
+        background-color: var(--bg-base);
+        background-image: radial-gradient(circle, var(--bg-dot) 1.5px, transparent 1.5px);
+        background-size: 22px 22px;
+        color: var(--text-dark);
     }
 
-    @@keyframes twinkle  { 0%,100%{opacity:.12} 50%{opacity:.55} }
-    @@keyframes ccnBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    /* ── Shared neo-brutalist panel ── */
+    .ccn-panel {
+        background: var(--panel-bg);
+        border: 3px solid var(--black);
+        border-radius: 10px;
+        box-shadow: var(--panel-shadow);
+    }
+
+    /* ── Shared neo-brutalist button ── */
+    .ccn-btn {
+        font-family: 'Fredoka One', cursive;
+        font-size: 13px;
+        letter-spacing: .4px;
+        padding: 9px 18px;
+        border-radius: 7px;
+        border: 3px solid var(--black);
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--black);
+        transition: transform .1s, box-shadow .1s;
+        color: var(--black);
+        background: var(--panel-bg);
+    }
+    .ccn-btn:hover  { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--black); }
+    .ccn-btn:active { transform: translate(2px,2px);   box-shadow: 1px 1px 0 var(--black); }
+    .ccn-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--black); }
+
+    /* ── Rank rows ── */
+    .ccn-rank-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-bottom: 3px solid var(--black);
+    }
+    .ccn-rank-row:last-child { border-bottom: none; }
+
+    /* ── Section label ── */
+    .ccn-section-label {
+        font-family: 'Fredoka One', cursive;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-light);
+        margin-bottom: 10px;
+    }
+
+    /* ── Animations ── */
     @@keyframes popIn    { 0%{transform:scale(.65) translateY(14px);opacity:0} 70%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
     @@keyframes slideUp  { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
     @@keyframes shake    { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)} 60%{transform:rotate(-5deg)} 80%{transform:rotate(4deg)} }
-    @@keyframes blockGlow{ 0%,100%{box-shadow:0 0 16px #F39C1260} 50%{box-shadow:0 0 40px #F39C12cc,0 0 70px #F39C1444} }
     @@keyframes rollFlip { from{transform:translateY(-10px);opacity:0} to{transform:translateY(0);opacity:1} }
     @@keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+    @@keyframes blockPulse { from{box-shadow:3px 3px 0 var(--black)} to{box-shadow:6px 6px 0 var(--black),0 0 0 3px var(--color-primary)} }
+    @@keyframes bounce   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
     @@keyframes pulseBorder { 0%,100%{opacity:.5} 50%{opacity:1} }
 </style>

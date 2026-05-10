@@ -45,11 +45,25 @@
 
     public async Task OpenAsync()
     {
-        _groups = await GroupSvc.GetAllAsync();
+        _groups        = await GroupSvc.GetAllAsync();
         _currencyTypes = await GroupSvc.GetCurrencyTypesAsync();
         _form = new TransactionForm
         {
             CurrencyTypeId = _currencyTypes.FirstOrDefault()?.CurrencyTypeId ?? Guid.Empty
+        };
+        _open = true;
+    }
+
+    public async Task OpenAsync(Guid groupId, Currency currency)
+    {
+        _groups        = await GroupSvc.GetAllAsync();
+        _currencyTypes = await GroupSvc.GetCurrencyTypesAsync();
+        _form = new TransactionForm
+        {
+            GroupId        = groupId,
+            CurrencyTypeId = _currencyTypes.FirstOrDefault(ct => ct.SystemName == currency.ToString())?.CurrencyTypeId
+                             ?? _currencyTypes.FirstOrDefault()?.CurrencyTypeId
+                             ?? Guid.Empty
         };
         _open = true;
     }

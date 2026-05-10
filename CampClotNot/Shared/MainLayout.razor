@@ -3,110 +3,100 @@
 @inject ThemeService ThemeSvc
 
 <ThemeHead />
-<MudThemeProvider IsDarkMode="true" Theme="@_mudTheme" />
+<MudThemeProvider IsDarkMode="false" Theme="@_mudTheme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-@* Twinkling star field *@
-<div style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden">
-    @foreach (var s in _stars)
-    {
-        <div style="@($"position:absolute;border-radius:50%;background:white;width:{s.Size:F1}px;height:{s.Size:F1}px;top:{s.Top:F1}%;left:{s.Left:F1}%;opacity:0.2;animation:twinkle {s.Duration:F1}s ease-in-out {s.Delay:F1}s infinite alternate")"></div>
-    }
-</div>
+<div style="min-height:100vh;display:flex;flex-direction:column">
 
-<MudLayout style="position:relative;z-index:1">
-    <MudAppBar Elevation="0" Style="@($"background:rgba(10,15,35,0.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);padding:0 16px")">
+    @* ── Header band ── *@
+    <div style="background:var(--black);border-bottom:4px solid var(--color-primary);padding:12px 18px;
+                display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+                position:sticky;top:0;z-index:50">
 
-        @* Logo + title *@
-        <div style="display:flex;align-items:center;gap:10px;margin-right:16px">
-            <div style="font-size:22px;animation:ccnBounce 2.2s ease-in-out infinite">🏁</div>
+        @* Logo *@
+        <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:40px;height:40px;border-radius:7px;border:3px solid var(--color-primary);
+                        background:var(--black);display:flex;align-items:center;justify-content:center;
+                        font-size:22px;flex-shrink:0">🏁</div>
             <div>
-                <div style="font-family:'Fredoka One',cursive;font-size:clamp(13px,2.5vw,18px);background:linear-gradient(90deg,#E74C3C,#F39C12,#27AE60,#3498DB);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1">
+                <div style="font-family:'Fredoka One',cursive;font-size:clamp(14px,3vw,20px);
+                            color:var(--color-primary);letter-spacing:.5px;
+                            text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000">
                     @ThemeSvc.Active.AppTitle
                 </div>
-                <div style="font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:2px;text-transform:uppercase;font-weight:700">
-                    Camp Clot Not
+                <div style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-top:2px">
+                    Camp Clot Not · Staff Dashboard
                 </div>
             </div>
         </div>
 
-        <MudSpacer />
-
+        @* Nav *@
         <AuthorizeView>
             <Authorized>
-                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                     @foreach (var link in _navLinks)
                     {
-                        <a href="@link.Href" style="@NavStyle(link.Color)">@link.Label</a>
+                        var isActive = Nav.Uri.TrimEnd('/').EndsWith(link.Href.TrimEnd('/'));
+                        <a href="@link.Href" style="@NavBtnStyle(link.Color, isActive)">@link.Label</a>
                     }
                     <AuthorizeView Roles="Admin" Context="adminCtx">
                         @foreach (var link in _adminLinks)
                         {
-                            <a href="@link.Href" style="@NavStyle(link.Color)">@link.Label</a>
+                            var isActive = Nav.Uri.Contains(link.Href);
+                            <a href="@link.Href" style="@NavBtnStyle(link.Color, isActive)">@link.Label</a>
                         }
                     </AuthorizeView>
-                    <button onclick="window.location='/logout'" style="@NavStyle("#E74C3C")">Sign Out</button>
+                    <button onclick="window.location='/logout'" style="@NavBtnStyle("#D12B2B", false)">Sign Out</button>
                 </div>
             </Authorized>
         </AuthorizeView>
-    </MudAppBar>
+    </div>
 
-    <MudMainContent Style="@($"background:{ThemeSvc.Active.BackgroundGradient};min-height:100vh")">
-        <div style="padding:20px 24px;position:relative;z-index:1">
-            @Body
-        </div>
-    </MudMainContent>
-</MudLayout>
+    @* ── Page content ── *@
+    <div style="flex:1;padding:20px 18px 60px">
+        @Body
+    </div>
+
+</div>
 
 @code {
     private static readonly MudTheme _mudTheme = new()
     {
-        PaletteDark = new PaletteDark
+        PaletteLight = new PaletteLight
         {
-            Primary         = "#FCCF00",
-            Secondary       = "#E83030",
-            Success         = "#44AF35",
-            Info            = "#009BD9",
-            Background      = "#08091e",
-            Surface         = "#0f1040",
-            DrawerBackground= "#0c0d38",
-            TextPrimary     = "rgba(255,255,255,0.95)",
-            TextSecondary   = "rgba(255,255,255,0.55)",
+            Primary         = "#F5C800",
+            Secondary       = "#D12B2B",
+            Success         = "#2B8A3E",
+            Info            = "#2563C4",
+            Background      = "#F2ECD8",
+            Surface         = "#FFFEF7",
+            DrawerBackground= "#FFFEF7",
+            TextPrimary     = "#1A1A1A",
+            TextSecondary   = "#4A4035",
+            AppbarBackground= "#1A1A1A",
+            AppbarText      = "#F5C800",
         }
     };
 
-    // Seeded star positions — deterministic so no hydration flicker
-    private static readonly (float Size, float Top, float Left, float Delay, float Duration)[] _stars =
-        Enumerable.Range(0, 50).Select(i =>
-        {
-            var r = new Random(i * 7919);
-            return (
-                (float)(r.NextDouble() * 2.2 + 0.7),
-                (float)(r.NextDouble() * 100),
-                (float)(r.NextDouble() * 100),
-                (float)(r.NextDouble() * 5),
-                (float)(r.NextDouble() * 3 + 2.5)
-            );
-        }).ToArray();
-
     private static readonly (string Href, string Label, string Color)[] _navLinks =
     [
-        ("/",            "📊 Dashboard",   "#E74C3C"),
-        ("/transactions","📋 Transactions","#3498DB"),
-        ("/board",       "🗺️ Board",       "#F39C12"),
+        ("/",            "📊 Dashboard",   "#D12B2B"),
+        ("/transactions","📋 Transactions","#2563C4"),
+        ("/board",       "🗺️ Board",       "#F5C800"),
     ];
 
     private static readonly (string Href, string Label, string Color)[] _adminLinks =
     [
         ("/admin/board", "⚙️ Board Admin", "#9B59B6"),
-        ("/admin/groups","👥 Groups",      "#27AE60"),
-        ("/admin/users", "🔑 Users",       "#95A5A6"),
+        ("/admin/groups","👥 Groups",      "#2B8A3E"),
+        ("/admin/users", "🔑 Users",       "#4A4035"),
     ];
 
-    private static string NavStyle(string color) =>
-        $"font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;padding:6px 12px;border-radius:20px;" +
-        $"background:rgba(255,255,255,0.07);color:white;text-decoration:none;border:none;cursor:pointer;" +
-        $"transition:all .2s;border:1px solid rgba(255,255,255,0.1);" +
-        $"&:hover{{background:{color}33}}";
+    private static string NavBtnStyle(string color, bool active) =>
+        $"font-family:'Fredoka One',cursive;font-size:12px;padding:6px 14px;border-radius:6px;" +
+        $"border:3px solid {(active ? color : "#555")};cursor:pointer;text-decoration:none;" +
+        $"box-shadow:2px 2px 0 {(active ? color : "#555")};" +
+        $"background:{(active ? color : "transparent")};" +
+        $"color:{(active ? "#1A1A1A" : "#ccc")};transition:all .1s;display:inline-block;";
 }
