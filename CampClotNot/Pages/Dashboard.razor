@@ -4,107 +4,161 @@
 @inject TransactionService TxSvc
 @inject NavigationManager Nav
 @inject IDialogService DialogService
+@inject ThemeService ThemeSvc
 @implements IAsyncDisposable
 
 <PageTitle>Dashboard — Camp Clot Not</PageTitle>
 
-<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#888;letter-spacing:2px;text-transform:uppercase">
-    🏆 Standings
+<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;gap:12px">
+    <div>
+        <div style="font-family:'Fredoka One',cursive;font-size:clamp(28px,5vw,42px);color:white;line-height:1;letter-spacing:-0.5px">
+            🏆 Live Standings
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.28);letter-spacing:3px;text-transform:uppercase;margin-top:6px;font-weight:700">
+            Camp Clot Not · Super Mario Party 2026
+        </div>
+    </div>
 </div>
 
 @if (_loading)
 {
-    <MudProgressCircular Indeterminate="true" />
+    <div style="display:flex;justify-content:center;padding:80px 0">
+        <MudProgressCircular Indeterminate="true" Color="Color.Warning" Size="Size.Large" />
+    </div>
 }
 else
 {
-    <MudGrid Spacing="3">
+    @* ── GROUP CARDS ── *@
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:18px;margin-bottom:40px">
         @foreach (var entry in _ranked)
         {
-            <MudItem xs="12" sm="6" md="4">
-                <MudPaper Elevation="2" Style="@($"border-radius:14px;border-left:5px solid {entry.Group.Color};padding:16px")">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                        <div style="display:flex;align-items:center;gap:10px">
+            var isFirst  = entry.Rank == 1;
+            var cardGlow = isFirst
+                ? $"0 0 0 2px {entry.Group.Color}60, 0 0 50px {entry.Group.Color}18, 0 12px 40px rgba(0,0,0,0.55)"
+                : "0 8px 32px rgba(0,0,0,0.5)";
+            var delay    = (entry.Rank - 1) * 90;
+
+            <div style="@($"position:relative;border-radius:20px;overflow:hidden;background:#111e30;border:1px solid rgba(255,255,255,0.07);box-shadow:{cardGlow};animation:slideUp 0.5s ease {delay}ms both")">
+
+                @* Colored accent strip at top *@
+                <div style="@($"height:5px;background:linear-gradient(90deg,{entry.Group.Color},{entry.Group.Color}88)")"></div>
+
+                <div style="padding:20px">
+                    @* Header: avatar + name + rank medal *@
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:20px">
+                        <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
+                            @* Avatar *@
                             @if (entry.Group.TokenAssetPath is not null)
                             {
                                 <img src="@entry.Group.TokenAssetPath"
-                                     style="@($"width:38px;height:38px;border-radius:50%;object-fit:contain;background:{entry.Group.Color}22;flex-shrink:0;box-shadow:0 2px 8px {entry.Group.Color}55")" />
+                                     style="@($"width:48px;height:48px;border-radius:50%;object-fit:contain;flex-shrink:0;border:3px solid {entry.Group.Color}55;box-shadow:0 4px 16px {entry.Group.Color}44")" />
                             }
                             else
                             {
-                                <div style="@($"width:38px;height:38px;border-radius:50%;background:{entry.Group.Color};display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:800;flex-shrink:0;box-shadow:0 2px 8px {entry.Group.Color}55")">
+                                <div style="@($"width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,{entry.Group.Color},{entry.Group.Color}99);display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:18px;color:white;flex-shrink:0;border:3px solid {entry.Group.Color}44;box-shadow:0 4px 18px {entry.Group.Color}55")">
                                     @entry.Group.ShortName
                                 </div>
                             }
-                            <div>
-                                <div style="font-weight:800;font-size:15px;line-height:1.2">@entry.Group.Name</div>
-                                @if (entry.Group.BoardPos is not null)
-                                {
-                                    <div style="font-size:11px;color:#888;margin-top:1px">Space @entry.Group.BoardPos.SpaceIndex</div>
-                                }
+                            @* Name + board position *@
+                            <div style="min-width:0">
+                                <div style="font-family:'Fredoka One',cursive;font-size:20px;color:white;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                                    @entry.Group.Name
+                                </div>
+                                <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:3px">
+                                    @if (entry.Group.BoardPos is not null)
+                                    {<span>📍 Space @entry.Group.BoardPos.SpaceIndex</span>}
+                                </div>
                             </div>
                         </div>
-                        <div style="@RankBadgeStyle(entry.Rank)">#@entry.Rank</div>
+                        @* Rank medal *@
+                        <div style="@MedalStyle(entry.Rank);flex-shrink:0">@entry.Rank</div>
                     </div>
-                    <div style="display:flex;gap:10px">
-                        <div style="flex:1;background:rgba(230,126,34,.1);border-radius:12px;padding:12px 10px;text-align:center">
-                            <div style="font-family:'Fredoka One',cursive;font-size:30px;color:#E67E22;line-height:1">@entry.Coins</div>
-                            <div style="font-size:10px;color:#999;margin-top:3px;font-weight:700;letter-spacing:1px">🪙 COINS</div>
-                        </div>
-                        <div style="flex:1;background:rgba(231,76,60,.08);border-radius:12px;padding:12px 10px;text-align:center">
-                            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#E74C3C;line-height:1;min-height:34px">@StarDisplay(entry.Stars)</div>
-                            <div style="font-size:10px;color:#999;margin-top:3px;font-weight:700;letter-spacing:1px">STARS (@entry.Stars)</div>
-                        </div>
-                    </div>
-                </MudPaper>
-            </MudItem>
-        }
-    </MudGrid>
 
+                    @* Score boxes *@
+                    <div style="display:flex;gap:10px">
+                        @* Coins *@
+                        <div style="flex:1;background:rgba(243,156,18,0.1);border:1px solid rgba(243,156,18,0.2);border-radius:14px;padding:16px 8px;text-align:center">
+                            <div style="font-family:'Fredoka One',cursive;font-size:48px;color:#FCCF00;line-height:1">
+                                @entry.Coins
+                            </div>
+                            <div style="font-size:10px;color:rgba(255,255,255,0.35);font-weight:800;letter-spacing:2.5px;margin-top:6px">
+                                🪙 COINS
+                            </div>
+                        </div>
+                        @* Stars *@
+                        <div style="flex:1;background:rgba(231,76,60,0.09);border:1px solid rgba(231,76,60,0.18);border-radius:14px;padding:16px 8px;text-align:center">
+                            <div style="font-family:'Fredoka One',cursive;font-size:36px;color:#E83030;line-height:1;min-height:48px">
+                                @StarDisplay(entry.Stars)
+                            </div>
+                            <div style="font-size:10px;color:rgba(255,255,255,0.35);font-weight:800;letter-spacing:2.5px;margin-top:6px">
+                                ⭐ STARS (@entry.Stars)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ── RECENT TRANSACTIONS ── *@
     @if (_recentTransactions.Any())
     {
-        <div style="margin-top:32px;margin-bottom:10px;font-size:11px;font-weight:700;color:#888;letter-spacing:2px;text-transform:uppercase">
-            ⚡ Recent
+        <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px">
+            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:white">⚡ Recent</div>
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
         </div>
-        <MudPaper Elevation="1" Style="border-radius:12px;overflow:hidden">
+
+        <div style="background:#111e30;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;margin-bottom:88px">
             @for (int i = 0; i < _recentTransactions.Count; i++)
             {
-                var tx = _recentTransactions[i];
+                var tx        = _recentTransactions[i];
                 var isPrimary = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
-                var borderBottom = i < _recentTransactions.Count - 1 ? ";border-bottom:1px solid rgba(0,0,0,.06)" : "";
-                <div style="@($"padding:13px 16px;display:flex;align-items:center;gap:12px{borderBottom}")">
-                    <div style="@($"width:36px;height:36px;border-radius:9px;background:{(isPrimary ? "rgba(230,126,34,.14)" : "rgba(231,76,60,.12)")};display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0")">
+                var sep       = i < _recentTransactions.Count - 1
+                    ? ";border-bottom:1px solid rgba(255,255,255,0.05)" : "";
+
+                <div style="@($"padding:13px 18px;display:flex;align-items:center;gap:12px{sep}")">
+                    <div style="@($"width:38px;height:38px;border-radius:11px;background:{(isPrimary ? "rgba(243,156,18,0.15)" : "rgba(231,76,60,0.13)")};display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0")">
                         @(isPrimary ? "🪙" : "⭐")
                     </div>
                     <div style="flex:1;min-width:0">
-                        <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                            <span style="@($"color:{tx.Group?.Color ?? "#333"}")">@tx.Group?.Name</span>
-                            <span style="@($"color:{(tx.Amount > 0 ? "#27AE60" : "#E74C3C")}")">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                            <span style="@($"font-weight:700;font-size:13px;color:{tx.Group?.Color ?? "white"}")">@tx.Group?.Name</span>
+                            <span style="@($"font-weight:700;font-size:13px;color:{(tx.Amount > 0 ? "#27AE60" : "#E83030")}")">
                                 @(tx.Amount > 0 ? "+" : "")@tx.Amount @(isPrimary ? "coins" : "stars")
                             </span>
                         </div>
-                        <div style="font-size:11px;color:#888;margin-top:2px">
+                        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px">
                             @(tx.Note != null ? $"{tx.Note} · " : "")@tx.LoggedBy · @tx.CreatedAt.ToLocalTime().ToString("h:mm tt")
                         </div>
                     </div>
                 </div>
             }
-        </MudPaper>
+        </div>
     }
 }
 
-<MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
-        Label="Log Transaction" Style="position:fixed;bottom:2rem;right:2rem"
-        OnClick="OpenTransactionDialog" />
+@* ── LOG SCORE — Mario question-block button ── *@
+<button style="position:fixed;bottom:24px;right:24px;font-family:'Fredoka One',cursive;font-size:17px;
+               padding:15px 28px;border-radius:50px;border:none;cursor:pointer;
+               background:linear-gradient(135deg,#FCCF00,#e6b800);color:white;
+               box-shadow:0 7px 0 #a08800,0 12px 30px rgba(243,156,18,0.45);
+               transition:transform 0.1s,box-shadow 0.1s;z-index:50;
+               display:flex;align-items:center;gap:8px;letter-spacing:0.3px"
+        @onclick="OpenTransactionDialog"
+        onmousedown="this.style.transform='translateY(4px)';this.style.boxShadow='0 3px 0 #a08800,0 6px 18px rgba(243,156,18,0.3)'"
+        onmouseup="this.style.transform='';this.style.boxShadow='0 7px 0 #a08800,0 12px 30px rgba(243,156,18,0.45)'"
+        onmouseleave="this.style.transform='';this.style.boxShadow='0 7px 0 #a08800,0 12px 30px rgba(243,156,18,0.45)'">
+    ＋ Log Score
+</button>
 
 <LogTransactionDialog @ref="_txDialog" OnTransactionPosted="RefreshAsync" />
 
 @code {
-    private List<GroupEntry> _ranked = new();
-    private List<Transaction> _recentTransactions = new();
-    private bool _loading = true;
-    private LogTransactionDialog _txDialog = null!;
-    private HubConnection? _hub;
+    private List<GroupEntry>   _ranked             = new();
+    private List<Transaction>  _recentTransactions = new();
+    private bool               _loading            = true;
+    private LogTransactionDialog _txDialog         = null!;
+    private HubConnection?     _hub;
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,7 +181,7 @@ else
 
     private async Task RefreshAsync()
     {
-        var groups = await GroupSvc.GetAllAsync();
+        var groups  = await GroupSvc.GetAllAsync();
         var entries = new List<GroupEntry>();
         foreach (var g in groups)
         {
@@ -140,18 +194,20 @@ else
             .ThenByDescending(e => e.Coins)
             .Select((e, i) => e with { Rank = i + 1 })
             .ToList();
+
         var allTx = await TxSvc.GetAllAsync();
         _recentTransactions = allTx.Where(t => t.VoidedAt == null).Take(5).ToList();
     }
 
     private async Task OpenTransactionDialog() => await _txDialog.OpenAsync();
 
-    private static string RankBadgeStyle(int rank) => rank switch
+    // Rank #1 gets a large gold circle, #2 silver, #3 bronze, rest a small dim pill
+    private static string MedalStyle(int rank) => rank switch
     {
-        1 => "background:linear-gradient(135deg,#F39C12,#E67E22);color:white;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:900;white-space:nowrap;box-shadow:0 3px 10px rgba(243,156,18,.35)",
-        2 => "background:linear-gradient(135deg,#95A5A6,#7F8C8D);color:white;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:900;white-space:nowrap",
-        3 => "background:linear-gradient(135deg,#CD7F32,#A0522D);color:white;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:900;white-space:nowrap",
-        _ => "background:#eee;color:#888;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:900;white-space:nowrap"
+        1 => "width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#FCCF00,#E67E22);color:white;font-family:'Fredoka One',cursive;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(255,215,0,0.35),0 4px 20px rgba(243,156,18,0.55)",
+        2 => "width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#C0C0C0,#95A5A6,#7F8C8D);color:white;font-family:'Fredoka One',cursive;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(127,140,141,0.45)",
+        3 => "width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#CD7F32,#B8860B,#A0522D);color:white;font-family:'Fredoka One',cursive;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(160,82,45,0.45)",
+        _ => "height:30px;min-width:30px;border-radius:15px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);font-family:'Fredoka One',cursive;font-size:14px;padding:0 10px;display:flex;align-items:center;justify-content:center;white-space:nowrap"
     };
 
     private static string StarDisplay(int stars) => stars == 0
@@ -162,8 +218,7 @@ else
 
     public async ValueTask DisposeAsync()
     {
-        if (_hub is not null)
-            await _hub.DisposeAsync();
+        if (_hub is not null) await _hub.DisposeAsync();
     }
 
     private record GroupEntry(Group Group, int Coins, int Stars, int Rank = 0);

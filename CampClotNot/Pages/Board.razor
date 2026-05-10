@@ -1,0 +1,277 @@
+@page "/board"
+@attribute [Authorize(Roles = "Admin,Staff")]
+@inject BoardService BoardSvc
+@inject GroupService GroupSvc
+@inject AuthenticationStateProvider AuthState
+@inject ThemeService ThemeSvc
+
+<PageTitle>Board — Camp Clot Not</PageTitle>
+
+<div style="color:white">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-family:'Fredoka One',cursive;font-size:clamp(18px,4vw,28px);
+                    background:linear-gradient(90deg,var(--color-accent),var(--color-primary),var(--color-success));
+                    -webkit-background-clip:text;-webkit-text-fill-color:transparent">
+            🗺️ Game Board
+        </div>
+        @if (_isAdmin)
+        {
+            <button style="font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:10px 22px;border-radius:22px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--color-primary),#c9a600);color:white;box-shadow:0 4px 16px rgba(243,156,18,.35)"
+                    @onclick="@(() => _triggerOpen = true)">
+                ⁉️ Block Hit
+            </button>
+        }
+    </div>
+
+    @if (_loading)
+    {
+        <div style="display:flex;justify-content:center;padding:60px 0">
+            <MudProgressCircular Indeterminate="true" Color="Color.Warning" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:18px;padding:12px;margin-bottom:20px">
+            <BoardComponent Spaces="_spaces" Positions="_positions" Groups="_groups" />
+        </div>
+
+        @* Space type legend *@
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+            @foreach (var (label, icon, color) in _legend)
+            {
+                <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);border-radius:20px;padding:4px 12px;font-size:11px;border:1px solid rgba(255,255,255,0.08)">
+                    <div style="@($"width:8px;height:8px;border-radius:50%;background:{color}")"></div>
+                    @icon @label
+                </div>
+            }
+        </div>
+
+        @* Group positions *@
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">
+            Group Positions
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+            @foreach (var g in _groups)
+            {
+                var spaceIndex = _positions.GetValueOrDefault(g.GroupId);
+                var space      = _spaces.FirstOrDefault(s => s.SpaceIndex == spaceIndex);
+                <div style="@($"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;border-left:3px solid {g.Color}")">
+                    <div style="font-size:20px">@SpaceIcon(space?.CategorySystemName ?? "")</div>
+                    <div style="flex:1">
+                        <div style="@($"font-family:'Fredoka One',cursive;font-size:14px;color:{g.Color}")">@g.ShortName — @g.Name</div>
+                        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">
+                            Space @spaceIndex: @(space?.ActivityName ?? "—")
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@* ── Block Hit Trigger Overlay (admin only, no MudDialog) ─────────────────── *@
+@if (_triggerOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease"
+         @onclick="CloseTrigger">
+        <div style="background:#111d35;border:1px solid rgba(255,255,255,0.13);border-radius:22px;padding:28px;width:100%;max-width:400px;animation:popIn 0.25s ease"
+             @onclick:stopPropagation="true">
+
+            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--color-primary);margin-bottom:20px">
+                ⁉️ Block Hit Trigger
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+
+                @* Group selector *@
+                <div>
+                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Which group?</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        @foreach (var g in _groups)
+                        {
+                            var isSelected = _triggerGroupId == g.GroupId;
+                            <button style="@GroupBtnStyle(g.Color, isSelected)"
+                                    @onclick="@(() => SelectGroup(g.GroupId))">
+                                @g.ShortName
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                @* Day selector *@
+                <div>
+                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Camp day?</div>
+                    <div style="display:flex;gap:8px">
+                        @for (var d = 1; d <= 5; d++)
+                        {
+                            var day = d;
+                            var isDaySelected = _triggerDay == day;
+                            <button style="@DayBtnStyle(isDaySelected)"
+                                    @onclick="@(() => SelectDay(day))">
+                                Day @day
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                @* Scripted destination *@
+                @if (_triggerGroupId.HasValue && _triggerDay > 0)
+                {
+                    @if (_triggerScript is null)
+                    {
+                        <div style="background:rgba(243,156,18,0.12);border:1px solid rgba(243,156,18,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#FCCF00">
+                            ⚠️ No script for this group + day. Set it in Board Admin → Block Hit Scripts.
+                        </div>
+                    }
+                    else if (_triggerScript.IsTriggered)
+                    {
+                        <div style="background:rgba(149,165,166,0.12);border:1px solid rgba(149,165,166,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#95A5A6">
+                            ✓ Already triggered for this group + day.
+                        </div>
+                    }
+                    else
+                    {
+                        var destSpace = _spaces.FirstOrDefault(s => s.SpaceIndex == _triggerScript.DestinationSpaceIndex);
+                        <div style="background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#27AE60">
+                            🎯 Destination: <strong>Space @_triggerScript.DestinationSpaceIndex</strong>
+                            — @(destSpace?.ActivityName ?? "—")
+                            @SpaceIcon(destSpace?.CategorySystemName ?? "")
+                        </div>
+                    }
+                }
+
+                @if (_justTriggered)
+                {
+                    <div style="background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.35);border-radius:10px;padding:10px 14px;font-size:13px;color:#27AE60;animation:popIn 0.3s ease">
+                        🎉 Triggered! Watch the projector.
+                    </div>
+                }
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+                <button style="font-family:'Nunito',sans-serif;font-weight:700;padding:9px 20px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.7);cursor:pointer"
+                        @onclick="CloseTrigger">
+                    Close
+                </button>
+                <button style="@TriggerBtnStyle()"
+                        disabled="@(!CanTrigger)"
+                        @onclick="TriggerBlockHit">
+                    🎯 Trigger!
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<BoardSpaceView>    _spaces    = new();
+    private Dictionary<Guid, int>   _positions = new();
+    private List<Group>             _groups    = new();
+    private bool                    _loading   = true;
+    private bool                    _isAdmin;
+
+    // Trigger state
+    private bool              _triggerOpen;
+    private Guid?             _triggerGroupId;
+    private int               _triggerDay = 1;
+    private ScriptedBlockHit? _triggerScript;
+    private bool              _justTriggered;
+
+    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+
+    private static readonly (string Label, string Icon, string Color)[] _legend =
+    [
+        ("Start",     "🏁", "#95A5A6"),
+        ("Coin Bonus","🪙", "#FCCF00"),
+        ("Star Space","⭐", "#E74C3C"),
+        ("Bowser!",   "👹", "#C0392B"),
+        ("Mini-Game", "🎮", "#9B59B6"),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        _isAdmin = auth.User.IsInRole(nameof(Role.Admin));
+
+        _spaces    = await BoardSvc.GetSpacesAsync(EventId);
+        _groups    = await GroupSvc.GetAllAsync();
+        _positions = await BoardSvc.GetGroupPositionsAsync(EventId);
+        _loading   = false;
+    }
+
+    private async Task SelectGroup(Guid groupId)
+    {
+        _triggerGroupId = groupId;
+        _justTriggered  = false;
+        await LoadScript();
+    }
+
+    private async Task SelectDay(int day)
+    {
+        _triggerDay    = day;
+        _justTriggered = false;
+        await LoadScript();
+    }
+
+    private async Task LoadScript()
+    {
+        if (_triggerGroupId.HasValue && _triggerDay > 0)
+            _triggerScript = await BoardSvc.GetScriptAsync(_triggerGroupId.Value, EventId, _triggerDay);
+        else
+            _triggerScript = null;
+    }
+
+    private bool CanTrigger =>
+        _triggerGroupId.HasValue &&
+        _triggerScript is { IsTriggered: false } &&
+        !_justTriggered;
+
+    private async Task TriggerBlockHit()
+    {
+        if (!_triggerGroupId.HasValue) return;
+        BoardSvc.StartBlockHit(_triggerGroupId.Value, _triggerDay, EventId);
+        _justTriggered = true;
+        // Reload positions after animation should have finished
+        var delayMs = 500 + 1400 + 20 * 400 + 1000;
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(delayMs);
+            _positions     = await BoardSvc.GetGroupPositionsAsync(EventId);
+            _triggerScript = await BoardSvc.GetScriptAsync(_triggerGroupId!.Value, EventId, _triggerDay);
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void CloseTrigger()
+    {
+        _triggerOpen   = false;
+        _justTriggered = false;
+    }
+
+    private static string SpaceIcon(string cat) => cat switch
+    {
+        "BoardStart"     => "🏁",
+        "BoardCoinBonus" => "🪙",
+        "BoardPrestige"  => "⭐",
+        "BoardPenalty"   => "👹",
+        "MinuteToWinIt"  => "🎮",
+        _                => "❓"
+    };
+
+    private static string GroupBtnStyle(string color, bool selected) =>
+        $"font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;padding:8px 14px;border-radius:10px;cursor:pointer;" +
+        $"background:{(selected ? color : "rgba(255,255,255,0.08)")};color:white;" +
+        $"border:2px solid {(selected ? color : "rgba(255,255,255,0.12)")};transition:all .2s;" +
+        $"box-shadow:{(selected ? $"0 3px 14px {color}55" : "none")}";
+
+    private static string DayBtnStyle(bool selected) =>
+        $"font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;padding:7px 12px;border-radius:10px;cursor:pointer;" +
+        $"background:{(selected ? "var(--color-primary)" : "rgba(255,255,255,0.08)")};color:white;" +
+        $"border:2px solid {(selected ? "var(--color-primary)" : "rgba(255,255,255,0.12)")};transition:all .2s";
+
+    private static string TriggerBtnStyle() =>
+        "font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:10px 24px;border-radius:12px;cursor:pointer;" +
+        "background:linear-gradient(135deg,var(--color-accent),#C0392B);color:white;" +
+        "border:none;box-shadow:0 4px 16px rgba(231,76,60,.4);transition:all .2s";
+}
