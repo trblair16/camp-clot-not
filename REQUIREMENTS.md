@@ -407,18 +407,22 @@ fix/N-name       — bug fix branched off dev
 chore/N-name     — config, deps, refactoring
 ```
 
+**N is always the GitHub issue number** — open the issue first, use whatever number GitHub assigns. Version numbers belong in tags and PR titles, not branch names.
+
 **Branch Protection Rules — Configure in GitHub Repo Settings at Project Start:**
 - main: direct pushes blocked — all changes must come through a PR
 - main: force pushes blocked — history cannot be rewritten
 - Violations are blocked at the Git level, not just a convention
 
-**PR & Merge Flow:**
-1. Create a GitHub issue
-2. Branch off dev using naming convention, referencing issue number
+**PR & Merge Flow (issue-first — required):**
+1. Open a GitHub issue describing the work. Apply appropriate labels (`feature`, `bug`, `chore`, `camp-critical`, etc.).
+2. Note the issue number GitHub assigns (e.g. #4). Branch off dev: `git checkout -b feature/4-short-name`
 3. Work and commit frequently with meaningful messages
-4. Open PR into dev — body includes "Closes #N" to auto-close issue on merge
+4. Open PR into dev — body includes "Closes #N" to auto-close the issue on merge
 5. Self-review PR before merging
 6. At milestone boundaries: PR dev into main and tag the release
+
+> Retroactive note: branches 1–3 predate this standard. Starting with issue #4, all branches must have a corresponding GitHub issue opened before the branch is created.
 
 ### 6.3 Tags & Releases
 
