@@ -1,0 +1,143 @@
+@inject GroupService GroupSvc
+@inject NavigationManager Nav
+@inject ThemeService ThemeSvc
+@implements IAsyncDisposable
+
+@if (Visible)
+{
+    <div style="position:fixed;inset:0;z-index:300;
+                background-color:var(--bg-base);
+                background-image:radial-gradient(circle,var(--bg-dot) 1.5px,transparent 1.5px);
+                background-size:28px 28px;
+                display:flex;flex-direction:column;padding:32px 40px;gap:16px;overflow:hidden">
+
+        @* Header row *@
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0">
+            <div style="font-family:'Fredoka One',cursive;font-size:clamp(24px,4.5vw,52px);
+                        color:var(--black);letter-spacing:1px;flex:1;text-align:center;
+                        text-shadow:4px 4px 0 var(--color-primary);
+                        border-bottom:5px solid var(--black);padding-bottom:14px">
+                🏆 @ThemeSvc.Active.AppTitle — STANDINGS
+            </div>
+            <button onclick="@OnClose" style="margin-left:16px;flex-shrink:0;
+                            font-family:'Fredoka One',cursive;font-size:13px;padding:8px 16px;
+                            border-radius:7px;border:3px solid var(--black);cursor:pointer;
+                            box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);
+                            color:var(--black);transition:transform .1s">
+                ✕ Exit
+            </button>
+        </div>
+
+        @* Group rows — flex:1 each so they share the remaining height equally *@
+        @if (!_loading)
+        {
+            @foreach (var entry in _ranked)
+            {
+                var rowStyle = entry.Rank switch
+                {
+                    1 => "background:var(--color-primary);border-color:var(--black);box-shadow:8px 8px 0 var(--black)",
+                    2 => "background:#DDEEFF;border-color:#2563C4;box-shadow:8px 8px 0 #2563C4",
+                    3 => "background:#DDFCE8;border-color:#2B8A3E;box-shadow:8px 8px 0 #2B8A3E",
+                    _ => "background:var(--panel-bg);border-color:var(--black);box-shadow:8px 8px 0 var(--black)"
+                };
+                var medals     = new[] { "🥇", "🥈", "🥉", "4️⃣" };
+                var medal      = entry.Rank <= medals.Length ? medals[entry.Rank - 1] : $"#{entry.Rank}";
+                var initial    = entry.Group.ShortName is { Length: > 0 } s ? s[..1] : "?";
+                var avatarStyle = $"width:72px;height:72px;border-radius:10px;border:5px solid var(--black);background:{entry.Group.Color};display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:36px;color:white;flex-shrink:0;box-shadow:4px 4px 0 var(--black)";
+
+                <div style="flex:1;min-height:0;display:flex;align-items:center;gap:24px;padding:16px 28px;border:5px solid var(--black);border-radius:14px;@rowStyle;animation:slideUp .3s ease @((entry.Rank-1)*80)ms both">
+
+                    @* Rank medal *@
+                    <div style="font-family:'Fredoka One',cursive;font-size:clamp(32px,5.5vw,64px);width:72px;text-align:center;flex-shrink:0;color:var(--black)">
+                        @medal
+                    </div>
+
+                    @* Square avatar *@
+                    <div style="@avatarStyle">
+                        @initial
+                    </div>
+
+                    @* Group name *@
+                    <div style="font-family:'Fredoka One',cursive;font-size:clamp(20px,3.5vw,40px);
+                                flex:1;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                        @entry.Group.Name
+                    </div>
+
+                    @* Score pills *@
+                    <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+                        <div style="display:flex;align-items:center;gap:10px;
+                                    background:var(--color-primary);border:3px solid var(--black);
+                                    border-radius:10px;padding:10px 22px;box-shadow:3px 3px 0 var(--black)">
+                            <span style="font-size:clamp(18px,2.5vw,28px)">🪙</span>
+                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(26px,4vw,48px);
+                                         color:var(--black);text-shadow:1px 1px 0 rgba(0,0,0,.2)">
+                                @entry.Coins
+                            </span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;
+                                    background:var(--black);border:3px solid var(--black);
+                                    border-radius:10px;padding:10px 22px;box-shadow:3px 3px 0 rgba(0,0,0,.4)">
+                            <span style="font-size:clamp(18px,2.5vw,28px)">⭐</span>
+                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(26px,4vw,48px);
+                                         color:white;text-shadow:2px 2px 0 #333">
+                                @entry.Stars
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private List<GroupEntry> _ranked  = new();
+    private bool             _loading = true;
+    private HubConnection?   _hub;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+        _loading = false;
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/camphub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On("ScoresUpdated", async () =>
+        {
+            await RefreshAsync();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hub.StartAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        var groups  = await GroupSvc.GetAllAsync();
+        var entries = new List<GroupEntry>();
+        foreach (var g in groups)
+        {
+            var coins = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Primary);
+            var stars = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Prestige);
+            entries.Add(new GroupEntry(g, coins, stars));
+        }
+        _ranked = entries
+            .OrderByDescending(e => e.Stars)
+            .ThenByDescending(e => e.Coins)
+            .Select((e, i) => e with { Rank = i + 1 })
+            .ToList();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hub is not null) await _hub.DisposeAsync();
+    }
+
+    private record GroupEntry(Group Group, int Coins, int Stars, int Rank = 0);
+}

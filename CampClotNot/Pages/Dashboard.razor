@@ -31,18 +31,20 @@ else
                 _ => "background:var(--panel-bg)"
             };
             var medals = new[] { "🥇", "🥈", "🥉", "4️⃣" };
+            var medal  = entry.Rank <= medals.Length ? medals[entry.Rank - 1] : $"#{entry.Rank}";
             var delay  = (entry.Rank - 1) * 60;
+            var initial = entry.Group.ShortName is { Length: > 0 } s ? s[..1] : "?";
 
             <div class="ccn-rank-row" style="@rankBg;animation:slideUp .3s ease @(delay)ms both">
 
                 @* Rank medal *@
                 <div style="font-family:'Fredoka One',cursive;font-size:22px;width:36px;text-align:center;flex-shrink:0;color:var(--black)">
-                    @medals[entry.Rank - 1]
+                    @medal
                 </div>
 
                 @* Square avatar *@
                 <div style="@($"width:38px;height:38px;border-radius:6px;border:3px solid var(--black);background:{entry.Group.Color};display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:16px;color:white;flex-shrink:0;box-shadow:2px 2px 0 var(--black)")">
-                    @entry.Group.ShortName[..1]
+                    @initial
                 </div>
 
                 @* Name + board position *@
@@ -81,12 +83,13 @@ else
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:24px">
         @foreach (var entry in _ranked)
         {
-            var delay = (entry.Rank - 1) * 60;
+            var delay   = (entry.Rank - 1) * 60;
+            var initial = entry.Group.ShortName is { Length: > 0 } sn ? sn[..1] : "?";
             <div class="ccn-panel" style="padding:14px;border-top:5px solid @entry.Group.Color;animation:slideUp .3s ease @(delay)ms both">
 
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
                     <div style="@($"width:38px;height:38px;border-radius:6px;border:3px solid var(--black);background:{entry.Group.Color};display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:16px;color:white;flex-shrink:0;box-shadow:2px 2px 0 var(--black)")">
-                        @entry.Group.ShortName[..1]
+                        @initial
                     </div>
                     <div>
                         <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@entry.Group.Name</div>

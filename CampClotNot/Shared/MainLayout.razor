@@ -7,6 +7,8 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
+<ProjectorOverlay Visible="_showProjector" OnClose="@(() => _showProjector = false)" />
+
 <div style="min-height:100vh;display:flex;flex-direction:column">
 
     @* ── Header band ── *@
@@ -35,6 +37,9 @@
         <AuthorizeView>
             <Authorized>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                    <button style="@NavBtnStyle("#F5C800", false)" @onclick="@(() => _showProjector = true)">
+                        📺 Projector
+                    </button>
                     @foreach (var link in _navLinks)
                     {
                         var isActive = Nav.Uri.TrimEnd('/').EndsWith(link.Href.TrimEnd('/'));
@@ -61,6 +66,8 @@
 </div>
 
 @code {
+    private bool _showProjector;
+
     private static readonly MudTheme _mudTheme = new()
     {
         Palette = new Palette
