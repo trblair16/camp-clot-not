@@ -9,60 +9,10 @@
 
 <ProjectorOverlay Visible="_showProjector" OnClose="@(() => _showProjector = false)" />
 
-<div style="min-height:100vh;display:flex;flex-direction:column">
+<AppNav OnLeaderboardClick="@(() => _showProjector = true)" />
 
-    @* ── Header band ── *@
-    <div style="background:var(--black);border-bottom:4px solid var(--color-primary);padding:12px 18px;
-                display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-                position:sticky;top:0;z-index:50">
-
-        @* Logo *@
-        <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:40px;height:40px;border-radius:7px;border:3px solid var(--color-primary);
-                        background:var(--black);display:flex;align-items:center;justify-content:center;
-                        font-size:22px;flex-shrink:0">🏁</div>
-            <div>
-                <div style="font-family:'Fredoka One',cursive;font-size:clamp(14px,3vw,20px);
-                            color:var(--color-primary);letter-spacing:.5px;
-                            text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000">
-                    @ThemeSvc.Active.AppTitle
-                </div>
-                <div style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-top:2px">
-                    Camp Clot Not · Staff Dashboard
-                </div>
-            </div>
-        </div>
-
-        @* Nav *@
-        <AuthorizeView>
-            <Authorized>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                    <button style="@NavBtnStyle("#F5C800", false)" @onclick="@(() => _showProjector = true)">
-                        📺 Projector
-                    </button>
-                    @foreach (var link in _navLinks)
-                    {
-                        var isActive = Nav.Uri.TrimEnd('/').EndsWith(link.Href.TrimEnd('/'));
-                        <a href="@link.Href" style="@NavBtnStyle(link.Color, isActive)">@link.Label</a>
-                    }
-                    <AuthorizeView Roles="Admin" Context="adminCtx">
-                        @foreach (var link in _adminLinks)
-                        {
-                            var isActive = Nav.Uri.Contains(link.Href);
-                            <a href="@link.Href" style="@NavBtnStyle(link.Color, isActive)">@link.Label</a>
-                        }
-                    </AuthorizeView>
-                    <button onclick="window.location='/logout'" style="@NavBtnStyle("#D12B2B", false)">Sign Out</button>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-    </div>
-
-    @* ── Page content ── *@
-    <div style="flex:1;padding:20px 18px 60px">
-        @Body
-    </div>
-
+<div style="padding:20px 18px 80px">
+    @Body
 </div>
 
 @code {
@@ -85,25 +35,4 @@
             AppbarText      = "#F5C800",
         }
     };
-
-    private static readonly (string Href, string Label, string Color)[] _navLinks =
-    [
-        ("/",            "📊 Dashboard",   "#D12B2B"),
-        ("/transactions","📋 Transactions","#2563C4"),
-        ("/board",       "🗺️ Board",       "#F5C800"),
-    ];
-
-    private static readonly (string Href, string Label, string Color)[] _adminLinks =
-    [
-        ("/admin/board", "⚙️ Board Admin", "#9B59B6"),
-        ("/admin/groups","👥 Groups",      "#2B8A3E"),
-        ("/admin/users", "🔑 Users",       "#4A4035"),
-    ];
-
-    private static string NavBtnStyle(string color, bool active) =>
-        $"font-family:'Fredoka One',cursive;font-size:12px;padding:6px 14px;border-radius:6px;" +
-        $"border:3px solid {(active ? color : "#555")};cursor:pointer;text-decoration:none;" +
-        $"box-shadow:2px 2px 0 {(active ? color : "#555")};" +
-        $"background:{(active ? color : "transparent")};" +
-        $"color:{(active ? "#1A1A1A" : "#ccc")};transition:all .1s;display:inline-block;";
 }
