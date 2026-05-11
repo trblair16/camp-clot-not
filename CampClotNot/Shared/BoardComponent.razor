@@ -56,7 +56,7 @@
 
                 @* Outer <g>: SVG transform for correct viewBox-relative positioning — NO CSS style here.
                    Inner <g>: CSS animation in local coordinate space so translateY doesn't fight the SVG transform. *@
-                <g transform="translate(@tx,@ty)">
+                <g style="transform:translate(@(tx)px,@(ty)px);transition:transform 0.35s ease">
                     <g style="@(isAnim ? "animation:tokenPop 0.5s cubic-bezier(.34,1.8,.64,1)" : "animation:tokenBob 2.2s ease-in-out infinite")">
                         <circle cx="0" cy="0" r="12" fill="@group.Color" stroke="white" stroke-width="2.5" />
                         <g>

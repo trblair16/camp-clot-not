@@ -17,7 +17,8 @@
     .nav-mobile-header {
         background: var(--black);
         border-bottom: 4px solid var(--color-primary);
-        padding: 10px 16px;
+        height: 72px;
+        padding: 0 16px;
         align-items: center;
         justify-content: space-between;
         position: sticky;
@@ -29,7 +30,8 @@
     .nav-desktop-header {
         background: var(--black);
         border-bottom: 4px solid var(--color-primary);
-        padding: 12px 18px;
+        height: 80px;
+        padding: 0 18px;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
@@ -162,7 +164,10 @@
 
 @* ── MOBILE HEADER ──────────────────────────────────────────────── *@
 <div class="nav-mobile-header">
-    <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:36px;width:auto;object-fit:contain" />
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+        <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:36px;width:auto;object-fit:contain" />
+        <span style="font-family:'Fredoka One',cursive;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;margin-left:8px">SUPER PARTY '26</span>
+    </div>
     <button class="ccn-btn" style="font-size:12px;padding:7px 14px;background:var(--color-primary)"
             @onclick="OnLeaderboardClick">
         📺 Leaderboard
@@ -171,7 +176,10 @@
 
 @* ── DESKTOP HEADER ─────────────────────────────────────────────── *@
 <div class="nav-desktop-header">
-    <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:38px;width:auto;object-fit:contain" />
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+        <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:42px;width:auto;object-fit:contain" />
+        <span style="font-family:'Fredoka One',cursive;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;margin-left:8px">SUPER PARTY '26</span>
+    </div>
 
     <AuthorizeView>
         <Authorized>
