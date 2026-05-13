@@ -42,30 +42,41 @@
                 <text x="@sx" y="@(sy + 28)" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.35)">@space.SpaceIndex</text>
             </g>
 
-            @* Group tokens — cx/cy SVG attributes keep them in correct viewBox space *@
-            @{
-                var count = groupsHere.Count;
-            }
-            @foreach (var (group, gi) in groupsHere.Select((g, i) => (g, i)))
-            {
-                var rawOffset = count > 1 ? (gi - (count - 1) / 2.0f) * 15f : 0f;
-                var offX      = (int)MathF.Round(rawOffset);
-                var tx        = sx + offX;
-                var ty        = sy;
-                var isAnim    = AnimatingGroupId == group.GroupId;
+            </g>
+    }
 
-                @* Outer <g>: SVG transform for correct viewBox-relative positioning — NO CSS style here.
-                   Inner <g>: CSS animation in local coordinate space so translateY doesn't fight the SVG transform. *@
-                <g transform="translate(@tx,@ty)">
-                    <g style="@(isAnim ? "animation:tokenPop 0.5s cubic-bezier(.34,1.8,.64,1)" : "animation:tokenBob 2.2s ease-in-out infinite")">
-                        <circle cx="0" cy="0" r="12" fill="@group.Color" stroke="white" stroke-width="2.5" />
-                        <g>
-                            <text x="0" y="1" text-anchor="middle" dominant-baseline="middle"
-                                  font-size="7" font-weight="700" fill="white">@group.ShortName</text>
-                        </g>
-                    </g>
-                </g>
-            }
+    @* Tokens — one persistent element per group so CSS transition fires on position change.
+       Rendered outside the spaces loop so Blazor never destroys/recreates them mid-animation. *@
+    @foreach (var group in Groups)
+    {
+        var spaceIndex  = Positions.GetValueOrDefault(group.GroupId);
+        var space       = Spaces.FirstOrDefault(s => s.SpaceIndex == spaceIndex);
+        if (space is null) continue;
+
+        var sameSpace   = Groups.Where(g => Positions.GetValueOrDefault(g.GroupId) == spaceIndex).ToList();
+        var gi          = sameSpace.IndexOf(group);
+        var count       = sameSpace.Count;
+        var rawOffset   = count > 1 ? (gi - (count - 1) / 2.0f) * 15f : 0f;
+        var tx          = (int)space.XPos + (int)MathF.Round(rawOffset);
+        var ty          = (int)space.YPos;
+        var isAnim      = AnimatingGroupId == group.GroupId;
+
+        <g @key="group.GroupId"
+           id="token-@group.GroupId"
+           style="transform:translate(@(tx)px,@(ty)px);transition:transform 0.5s ease">
+            <g style="@(isAnim ? "animation:tokenPop 0.5s cubic-bezier(.34,1.8,.64,1)" : "animation:tokenBob 2.2s ease-in-out infinite")">
+                <circle cx="0" cy="0" r="12" fill="@group.Color" stroke="white" stroke-width="2.5" />
+                @if (group.TokenAssetPath is not null)
+                {
+                    <image href="@group.TokenAssetPath" x="-11" y="-11" width="22" height="22"
+                           style="clip-path:circle(11px at center)" preserveAspectRatio="xMidYMid meet" />
+                }
+                else
+                {
+                    <g><text x="0" y="1" text-anchor="middle" dominant-baseline="middle"
+                          font-size="7" font-weight="700" fill="white">@group.ShortName</text></g>
+                }
+            </g>
         </g>
     }
 

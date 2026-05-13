@@ -8,10 +8,10 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-04-30)
+## Current State (as of 2026-05-10)
 
-**Active branch:** `feature/2-competition-core`  
-**Released:** v0.1.0 — Foundation (tagged on main)
+**Active branch:** `feature/94-ui-overhaul`  
+**Released:** v0.3.0 — Board & Block Hit (merged to dev, not yet tagged on main)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -25,11 +25,18 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - Railway infrastructure: PORT env var, `postgres://` URI conversion, `/health` endpoint
 - Seed credentials: `Seed:AdminEmail` / `Seed:AdminPassword` in `appsettings.Development.json`
 
-**v0.2.0 — Up next (Competition core):**
-1. Leaderboard with live coin/star totals (SignalR real-time updates)
-2. Log transaction UI wired to real groups and currency types
-3. Group seed data once cabin groupings are confirmed
-4. Transaction void from admin
+**v0.3.0 — Done (Board & Block Hit):**
+- SVG board with winding snake path, BoardComponent, BoardService
+- Pre-scripted block hit — admin trigger via `/admin/board`, animation on `/display` via SignalR
+- ThemeService + CSS variables foundation for redesign
+- Display page redesigned with board (70%) + leaderboard sidebar (30%)
+
+**v0.3.1 — In progress (UI Overhaul, issue #94):**
+1. Neo-brutalist redesign — cream bg, black borders, shadow offsets, rank rows
+2. ThemeService extended with flat palette CSS vars
+3. MainLayout: black header band, light MudBlazor theme, no star field
+4. Dashboard: rank rows replacing card grid; square avatars; score pills
+5. Board.razor, Display.razor sidebar chrome updated
 
 **Open decisions:**
 - [ ] Group count for CCN 2026 (4-6 — waiting on cabin groupings)

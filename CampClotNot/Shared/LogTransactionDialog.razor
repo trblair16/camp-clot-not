@@ -2,36 +2,93 @@
 @inject GroupService GroupSvc
 @inject ISnackbar Snackbar
 
-<MudDialog @bind-IsVisible="_open">
-    <TitleContent>
-        <MudText Typo="Typo.h6">Log Transaction</MudText>
-    </TitleContent>
-    <DialogContent>
-        <MudSelect @bind-Value="_form.GroupId" Label="Group" Variant="Variant.Outlined" Class="mb-3">
-            @foreach (var g in _groups)
-            {
-                <MudSelectItem Value="g.GroupId">@g.Name</MudSelectItem>
-            }
-        </MudSelect>
-        <MudSelect @bind-Value="_form.CurrencyTypeId" Label="Type" Variant="Variant.Outlined" Class="mb-3">
-            @foreach (var ct in _currencyTypes)
-            {
-                <MudSelectItem Value="ct.CurrencyTypeId">
-                    @(ct.SystemName == nameof(Currency.Primary) ? "🪙 Coins" : "⭐ Stars")
-                </MudSelectItem>
-            }
-        </MudSelect>
-        <MudNumericField @bind-Value="_form.Amount" Label="Amount (negative = deduction)"
-                         Variant="Variant.Outlined" Class="mb-3" />
-        <MudTextField @bind-Value="_form.Note" Label="Note (optional)" Variant="Variant.Outlined" />
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Close">Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_submitting">
-            @(_submitting ? "Posting..." : "Post")
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+@if (_open)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;
+                display:flex;align-items:center;justify-content:center;padding:20px;
+                animation:fadeIn .2s ease"
+         @onclick="Close">
+        <div class="ccn-panel" style="padding:24px;width:100%;max-width:420px;
+                                      box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease"
+             @onclick:stopPropagation="true">
+
+            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--black);margin-bottom:18px">
+                ＋ Log Transaction
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+
+                @* Group picker *@
+                <div>
+                    <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Group</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        @foreach (var g in _groups)
+                        {
+                            var sel = _form.GroupId == g.GroupId;
+                            var s   = sel
+                                ? $"font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:{g.Color};color:white;border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)"
+                                : "font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--black);border:3px solid var(--black);box-shadow:2px 2px 0 var(--black)";
+                            <button style="@s" @onclick="() => _form.GroupId = g.GroupId">@g.ShortName</button>
+                        }
+                    </div>
+                </div>
+
+                @* Type picker *@
+                <div>
+                    <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Type</div>
+                    <div style="display:flex;gap:8px">
+                        @foreach (var ct in _currencyTypes)
+                        {
+                            var isPrimary = ct.SystemName == nameof(Currency.Primary);
+                            var sel       = _form.CurrencyTypeId == ct.CurrencyTypeId;
+                            var color     = isPrimary ? "var(--color-primary)" : "var(--color-accent)";
+                            var textColor = isPrimary ? "var(--black)" : "white";
+                            var label     = isPrimary ? "Coins" : "Stars";
+                            var icon      = isPrimary ? "/img/ccn-coin.png" : "/img/ccn-star.png";
+                            var s         = sel
+                                ? $"flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:{color};color:{textColor};border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)"
+                                : "flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--black);border:3px solid var(--black);box-shadow:2px 2px 0 var(--black)";
+                            <button style="@s;display:flex;align-items:center;justify-content:center;gap:8px" @onclick="() => _form.CurrencyTypeId = ct.CurrencyTypeId">
+                                <img src="@icon" style="height:20px;width:auto" alt="@label" />
+                                @label
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                @* Amount *@
+                <div>
+                    <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Amount (negative = deduction)</div>
+                    <input type="number" placeholder="e.g. 25 or -10" @bind="_form.Amount"
+                           style="background:var(--bg-base);border:3px solid var(--black);border-radius:7px;
+                                  color:var(--text-dark);padding:9px 12px;font-size:14px;
+                                  font-family:'Nunito',sans-serif;font-weight:700;width:100%;
+                                  box-shadow:2px 2px 0 var(--black);outline:none" />
+                </div>
+
+                @* Note *@
+                <div>
+                    <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Note (optional)</div>
+                    <input type="text" placeholder="e.g. Won Bowser Dodge Battle" @bind="_form.Note"
+                           style="background:var(--bg-base);border:3px solid var(--black);border-radius:7px;
+                                  color:var(--text-dark);padding:9px 12px;font-size:14px;
+                                  font-family:'Nunito',sans-serif;font-weight:700;width:100%;
+                                  box-shadow:2px 2px 0 var(--black);outline:none" />
+                </div>
+
+                @* Actions *@
+                <div style="display:flex;gap:10px;margin-top:4px">
+                    <button class="ccn-btn" style="flex:1" @onclick="Close">Cancel</button>
+                    <button class="ccn-btn" style="flex:2;background:var(--color-accent);color:white"
+                            disabled="@_submitting" @onclick="SubmitAsync">
+                        @(_submitting ? "Posting..." : "Log It")
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
@@ -45,11 +102,25 @@
 
     public async Task OpenAsync()
     {
-        _groups = await GroupSvc.GetAllAsync();
+        _groups        = await GroupSvc.GetAllAsync();
         _currencyTypes = await GroupSvc.GetCurrencyTypesAsync();
         _form = new TransactionForm
         {
             CurrencyTypeId = _currencyTypes.FirstOrDefault()?.CurrencyTypeId ?? Guid.Empty
+        };
+        _open = true;
+    }
+
+    public async Task OpenAsync(Guid groupId, Currency currency)
+    {
+        _groups        = await GroupSvc.GetAllAsync();
+        _currencyTypes = await GroupSvc.GetCurrencyTypesAsync();
+        _form = new TransactionForm
+        {
+            GroupId        = groupId,
+            CurrencyTypeId = _currencyTypes.FirstOrDefault(ct => ct.SystemName == currency.ToString())?.CurrencyTypeId
+                             ?? _currencyTypes.FirstOrDefault()?.CurrencyTypeId
+                             ?? Guid.Empty
         };
         _open = true;
     }

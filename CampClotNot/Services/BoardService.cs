@@ -98,48 +98,64 @@ public class BoardService(
         await db.SaveChangesAsync();
     }
 
-    // Fire-and-forget: returns immediately; the animation sequence runs in background
-    public void StartBlockHit(Guid groupId, int campDay, Guid eventId)
-    {
-        _ = Task.Run(() => RunBlockHitAsync(groupId, campDay, eventId));
-    }
+    // ── 3-phase admin-controlled block hit ──────────────────────────────────────
+    //
+    // Phase 1 (admin clicks "Launch"): broadcast ⁉️ to /display, return step count
+    //         so Board.razor can cycle numbers on the dice block UI.
+    // Phase 2 (admin clicks the block): broadcast the scripted number to /display.
+    // Phase 3 (admin dismisses): step the token one space at a time (fire-and-forget).
+    //
+    // All three phases share the same script lookup so the number is always consistent.
 
-    private async Task RunBlockHitAsync(Guid groupId, int campDay, Guid eventId)
+    public async Task<int> Phase1TriggerAsync(Guid groupId, int campDay, Guid eventId)
     {
         using var db = factory.CreateDbContext();
-
         var script = await db.ScriptedBlockHits
             .FirstOrDefaultAsync(s => s.GroupId == groupId && s.EventId == eventId && s.CampDay == campDay);
+        if (script is null || script.IsTriggered) return -1;
 
-        if (script is null || script.IsTriggered) return;
-
-        var pos         = await db.GroupBoardPositions.FindAsync(groupId);
+        var pos          = await db.GroupBoardPositions.FindAsync(groupId);
         var currentSpace = pos?.SpaceIndex ?? 0;
-        var destination  = script.DestinationSpaceIndex;
-
-        var steps = ((destination - currentSpace) + TotalSpaces) % TotalSpaces;
+        var steps        = ((script.DestinationSpaceIndex - currentSpace) + TotalSpaces) % TotalSpaces;
         if (steps == 0) steps = TotalSpaces;
 
-        // Phase 1: announce
         await hub.Clients.All.SendAsync("BlockHitTriggered", groupId, campDay);
+        return steps;
+    }
 
-        // Phase 2: reveal roll number (~500ms for block squish animation)
-        await Task.Delay(500);
+    public async Task Phase2RevealAsync(Guid groupId, int steps)
+    {
         await hub.Clients.All.SendAsync("BlockHitNumberRevealed", groupId, steps);
+    }
 
-        // Phase 3: step token (~1400ms for number reveal animation to settle)
-        await Task.Delay(1400);
+    // Fire-and-forget: steps the token and updates the DB when done
+    public void Phase3StartStepping(Guid groupId, int campDay, Guid eventId)
+    {
+        _ = Task.Run(() => RunStepsAsync(groupId, campDay, eventId));
+    }
+
+    private async Task RunStepsAsync(Guid groupId, int campDay, Guid eventId)
+    {
+        using var db = factory.CreateDbContext();
+        var script = await db.ScriptedBlockHits
+            .FirstOrDefaultAsync(s => s.GroupId == groupId && s.EventId == eventId && s.CampDay == campDay);
+        if (script is null || script.IsTriggered) return;
+
+        var pos          = await db.GroupBoardPositions.FindAsync(groupId);
+        var currentSpace = pos?.SpaceIndex ?? 0;
+        var destination  = script.DestinationSpaceIndex;
+        var steps        = ((destination - currentSpace) + TotalSpaces) % TotalSpaces;
+        if (steps == 0) steps = TotalSpaces;
+
         for (var i = 1; i <= steps; i++)
         {
             var spaceIndex = (currentSpace + i) % TotalSpaces;
             await hub.Clients.All.SendAsync("TokenMoveStep", groupId, spaceIndex);
-            await Task.Delay(400);
+            await Task.Delay(600);
         }
 
-        // Phase 4: land
         await hub.Clients.All.SendAsync("TokenMoveDone", groupId, destination);
 
-        // Persist position and mark triggered
         if (pos is not null)
         {
             pos.SpaceIndex = destination;
@@ -158,7 +174,40 @@ public class BoardService(
         script.IsTriggered = true;
         await db.SaveChangesAsync();
 
-        // Landing space coin/star awards are manually logged by staff for now
-        // Re-evaluate after Katelyn/Vicki confirm award values per space type
+        await hub.Clients.All.SendAsync("ScoresUpdated");
+    }
+
+    // Dev/testing helper: move all groups back to space 0 and un-trigger all scripts for a given day
+    public async Task ResetDayAsync(Guid eventId, int campDay)
+    {
+        using var db = factory.CreateDbContext();
+
+        var groupIds = await db.Groups
+            .Where(g => g.EventId == eventId)
+            .Select(g => g.GroupId)
+            .ToListAsync();
+
+        // Reset positions to space 0
+        var positions = await db.GroupBoardPositions
+            .Where(p => groupIds.Contains(p.GroupId))
+            .ToListAsync();
+
+        foreach (var p in positions)
+        {
+            p.SpaceIndex = 0;
+            p.UpdatedAt  = DateTime.UtcNow;
+        }
+
+        // Un-trigger block hit scripts for the specified day
+        var scripts = await db.ScriptedBlockHits
+            .Where(s => s.EventId == eventId && s.CampDay == campDay)
+            .ToListAsync();
+
+        foreach (var s in scripts)
+            s.IsTriggered = false;
+
+        await db.SaveChangesAsync();
+
+        await hub.Clients.All.SendAsync("ScoresUpdated");
     }
 }

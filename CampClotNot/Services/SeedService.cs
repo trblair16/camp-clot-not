@@ -316,16 +316,13 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedGroupsAsync(AppDbContext db)
     {
-        // Upsert by stable ID so name/color updates here apply on next app start.
-        // Update this table when real cabin groupings are confirmed with Katelyn/Vicki/Amanda.
+        // CCN 2026 confirmed cabin groups.
         var defs = new[]
         {
-            new { Id = Id.Group1, Name = "Mario Group",       ShortName = "MA", Color = "#E74C3C" },
-            new { Id = Id.Group2, Name = "Luigi Group",       ShortName = "LU", Color = "#27AE60" },
-            new { Id = Id.Group3, Name = "Yoshi Group",       ShortName = "YO", Color = "#F1C40F" },
-            new { Id = Id.Group4, Name = "Donkey Kong Group", ShortName = "DK", Color = "#E67E22" },
-            new { Id = Id.Group5, Name = "Peach Group",       ShortName = "PE", Color = "#E91E8C" },
-            new { Id = Id.Group6, Name = "Rosalina Group",    ShortName = "RO", Color = "#3498DB" },
+            new { Id = Id.Group1, Name = "Mini Marios",        ShortName = "MM", Color = "#E74C3C", Logo = "/img/mini-marios-logo.png" },
+            new { Id = Id.Group2, Name = "Blue Shell Bandits", ShortName = "BB", Color = "#2980B9", Logo = "/img/blue-shell-bandits-logo.png" },
+            new { Id = Id.Group3, Name = "Mushroom Militia",   ShortName = "MU", Color = "#27AE60", Logo = "/img/mushroom-militia-logo.png" },
+            new { Id = Id.Group4, Name = "Luma Legends",       ShortName = "LL", Color = "#8E44AD", Logo = "/img/luma-legends-logo.png" },
         };
 
         foreach (var def in defs)
@@ -335,20 +332,36 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             {
                 db.Groups.Add(new Group
                 {
-                    GroupId   = def.Id,
-                    EventId   = Id.EventCcn2026,
-                    Name      = def.Name,
-                    ShortName = def.ShortName,
-                    Color     = def.Color,
+                    GroupId        = def.Id,
+                    EventId        = Id.EventCcn2026,
+                    Name           = def.Name,
+                    ShortName      = def.ShortName,
+                    Color          = def.Color,
+                    TokenAssetPath = def.Logo,
                 });
             }
             else
             {
-                existing.Name      = def.Name;
-                existing.ShortName = def.ShortName;
-                existing.Color     = def.Color;
+                existing.Name           = def.Name;
+                existing.ShortName      = def.ShortName;
+                existing.Color          = def.Color;
+                existing.TokenAssetPath = def.Logo;
             }
         }
+
+        // Remove placeholder groups 5 & 6 and their dependent rows if they exist
+        foreach (var staleId in new[] { Id.Group5, Id.Group6 })
+        {
+            var pos = await db.GroupBoardPositions.FindAsync(staleId);
+            if (pos is not null) db.GroupBoardPositions.Remove(pos);
+
+            var scripts = db.ScriptedBlockHits.Where(s => s.GroupId == staleId);
+            db.ScriptedBlockHits.RemoveRange(scripts);
+
+            var stale = await db.Groups.FindAsync(staleId);
+            if (stale is not null) db.Groups.Remove(stale);
+        }
+
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded/updated CCN 2026 groups.");
     }
@@ -505,7 +518,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     // Initialize all groups at the Start space (index 0); skip groups that already have a position
     private async Task SeedGroupBoardPositionsAsync(AppDbContext db)
     {
-        var groupIds = new[] { Id.Group1, Id.Group2, Id.Group3, Id.Group4, Id.Group5, Id.Group6 };
+        var groupIds = new[] { Id.Group1, Id.Group2, Id.Group3, Id.Group4 };
         foreach (var groupId in groupIds)
         {
             if (!await db.GroupBoardPositions.AnyAsync(p => p.GroupId == groupId))

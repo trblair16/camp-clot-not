@@ -44,6 +44,14 @@ public record ThemeConfig(
         --track-fill: {TrackFill};
         --track-bg: {TrackBg};
         --font-display: 'Fredoka One', cursive;
+        --bg-base: #F2ECD8;
+        --bg-dot: #DDD5BE;
+        --black: #1A1A1A;
+        --panel-bg: #FFFEF7;
+        --panel-shadow: 4px 4px 0 #1A1A1A;
+        --text-dark: #1A1A1A;
+        --text-mid: #4A4035;
+        --text-light: #8A7D6A;
         """;
 }
 
