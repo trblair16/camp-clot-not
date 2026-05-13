@@ -14,15 +14,14 @@
     @* ── LEFT: Board 70% ────────────────────────────────────────────────────── *@
     <div style="flex:7;min-width:0;position:relative;display:flex;flex-direction:column;padding:16px 12px 16px 16px">
 
-        @* App title banner *@
-        <div style="text-align:center;margin-bottom:10px;flex-shrink:0">
-            <div style="font-family:'Fredoka One',cursive;font-size:clamp(16px,2.2vw,26px);background:linear-gradient(90deg,#E83030,#FCCF00,#27AE60,#3498DB);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1">
-                @ThemeSvc.Active.AppTitle
-            </div>
+        @* App title banner — matches nav header: logo + tagline *@
+        <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:10px;flex-shrink:0;gap:2px">
+            <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:clamp(32px,4.5vw,54px);width:auto;object-fit:contain" />
+            <span style="font-family:'Fredoka One',cursive;font-size:clamp(9px,1.1vw,14px);color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1">SUPER PARTY '26</span>
         </div>
 
         @* Board container *@
-        <div style="flex:1;min-height:0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:8px;position:relative;overflow:hidden">
+        <div style="flex:1;min-height:0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:8px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
 
             @if (!_loading)
             {
@@ -30,7 +29,7 @@
                                 Positions="@(_livePositions ?? _dbPositions)"
                                 Groups="_groups"
                                 AnimatingGroupId="@(_blockHitPhase is "moving" ? _blockHitGroupId : null)"
-                                SvgStyle="height:100%;width:auto;display:block;max-width:100%;max-height:100%" />
+                                SvgStyle="height:100%;width:auto;display:block;max-width:100%;max-height:100%;margin:0 auto" />
             }
 
             @* ── PHASE: triggered / revealed — full overlay, board dimmed ── *@
@@ -39,16 +38,11 @@
                 var group = _groups.FirstOrDefault(g => g.GroupId == _blockHitGroupId);
                 <div style="position:absolute;inset:0;background:rgba(0,0,0,0.82);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:fadeIn 0.25s ease">
 
-                    @* ? Block *@
+                    @* Block — cycles 1-12 while triggered, locks to scripted number when revealed *@
                     <div style="@BlockStyle()">
-                        @if (_blockHitPhase is "triggered")
-                        {
-                            <span style="font-size:clamp(40px,7vw,80px)">⁉️</span>
-                        }
-                        else
-                        {
-                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(40px,7vw,80px);animation:rollFlip 0.08s ease">@_rollNumber</span>
-                        }
+                        <span style="font-family:'Fredoka One',cursive;font-size:clamp(40px,7vw,80px);animation:rollFlip 0.08s ease">
+                            @(_blockHitPhase is "triggered" ? _cycleNumber : _rollNumber)
+                        </span>
                     </div>
 
                     @* Group name *@
@@ -73,7 +67,7 @@
                 </div>
             }
 
-            @* ── PHASE: moving — board fully visible, small top banner only ── *@
+            @* ── PHASE: moving — small top banner, board animates directly ── *@
             @if (_blockHitPhase is "moving")
             {
                 var movingGroup = _groups.FirstOrDefault(g => g.GroupId == _blockHitGroupId);
@@ -114,7 +108,7 @@
     </div>
 
     @* ── RIGHT: Leaderboard sidebar 30% ─────────────────────────────────────── *@
-    <div style="flex:3;min-width:220px;max-width:360px;padding:16px 16px 16px 6px;display:flex;flex-direction:column;gap:6px;overflow-y:auto">
+    <div style="flex:3;min-width:220px;max-width:360px;padding:16px 16px 16px 6px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;justify-content:center">
 
         <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;flex-shrink:0;padding-top:4px">
             🏆 Standings
@@ -128,39 +122,53 @@
         {
             @foreach (var entry in _ranked)
             {
-                var sideBg = entry.Rank switch
+                var rankBg = entry.Rank switch
                 {
-                    1 => "rgba(245,200,0,0.18)",
-                    2 => "rgba(200,200,200,0.10)",
-                    3 => "rgba(205,161,50,0.12)",
-                    _ => "rgba(255,255,255,0.05)"
+                    1 => "background:var(--color-primary)",
+                    2 => "background:#E8E8E8",
+                    3 => "background:#F5EED8",
+                    _ => "background:rgba(255,255,255,0.92)"
                 };
-                var medals = new[] { "🥇", "🥈", "🥉", "4️⃣" };
+                var medals  = new[] { "🥇", "🥈", "🥉", "4️⃣" };
+                var medal   = entry.Rank <= medals.Length ? medals[entry.Rank - 1] : $"#{entry.Rank}";
+                var initial = entry.Group.ShortName is { Length: > 0 } s ? s[..1] : "?";
 
-                <div style="@($"background:{sideBg};border:2px solid {entry.Group.Color};border-radius:10px;padding:10px 12px;flex-shrink:0;display:flex;align-items:center;gap:10px")">
+                <div style="@($"{rankBg};border:3px solid #1A1A1A;border-radius:8px;padding:8px 10px;flex-shrink:0;display:flex;align-items:center;gap:8px;box-shadow:3px 3px 0 rgba(0,0,0,0.45)")">
 
-                    <div style="font-family:'Fredoka One',cursive;font-size:20px;width:28px;text-align:center;flex-shrink:0">
-                        @medals[entry.Rank - 1]
+                    @* Medal *@
+                    <div style="font-family:'Fredoka One',cursive;font-size:20px;width:26px;text-align:center;flex-shrink:0;color:#1A1A1A">
+                        @medal
                     </div>
 
+                    @* Circle avatar with logo *@
+                    <div style="@($"width:36px;height:36px;border-radius:50%;border:2px solid #1A1A1A;background:{entry.Group.Color};display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:14px;color:white;flex-shrink:0;box-shadow:2px 2px 0 #1A1A1A;overflow:hidden")">
+                        @if (entry.Group.TokenAssetPath is not null)
+                        {
+                            <img src="@entry.Group.TokenAssetPath" style="width:100%;height:100%;object-fit:contain" />
+                        }
+                        else { @initial }
+                    </div>
+
+                    @* Name + board position *@
                     <div style="flex:1;min-width:0">
-                        <div style="@($"font-family:'Fredoka One',cursive;font-size:clamp(13px,1.6vw,18px);color:{entry.Group.Color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis")">
+                        <div style="font-family:'Fredoka One',cursive;font-size:clamp(12px,1.4vw,16px);color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                             @entry.Group.Name
                         </div>
                         @if (entry.Group.BoardPos is not null)
                         {
-                            <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">Space @entry.Group.BoardPos.SpaceIndex</div>
+                            <div style="font-size:9px;color:#4A4035;font-weight:700;margin-top:1px">Space @entry.Group.BoardPos.SpaceIndex</div>
                         }
                     </div>
 
-                    <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end">
-                        <div style="display:flex;align-items:center;gap:4px;background:rgba(245,200,0,0.25);border-radius:4px;padding:3px 8px">
-                            <img src="/img/ccn-coin.png" style="height:16px;width:auto" alt="coins" />
-                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(14px,2vw,20px);color:var(--color-primary)">@entry.Coins</span>
+                    @* Score pills *@
+                    <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+                        <div style="display:flex;align-items:center;gap:3px;background:var(--color-accent);border:2px solid #1A1A1A;border-radius:4px;padding:2px 7px;box-shadow:2px 2px 0 #1A1A1A">
+                            <img src="/img/ccn-coin.png" style="height:14px;width:auto" alt="coins" />
+                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(12px,1.5vw,18px);color:white">@entry.Coins</span>
                         </div>
-                        <div style="display:flex;align-items:center;gap:4px;background:rgba(231,76,60,0.2);border-radius:4px;padding:3px 8px">
-                            <img src="/img/ccn-star.png" style="height:16px;width:auto" alt="stars" />
-                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(14px,2vw,20px);color:var(--color-accent)">@entry.Stars</span>
+                        <div style="display:flex;align-items:center;gap:3px;background:#2563C4;border:2px solid #1A1A1A;border-radius:4px;padding:2px 7px;box-shadow:2px 2px 0 #1A1A1A">
+                            <img src="/img/ccn-star.png" style="height:14px;width:auto" alt="stars" />
+                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(12px,1.5vw,18px);color:white">@entry.Stars</span>
                         </div>
                     </div>
                 </div>
@@ -186,6 +194,8 @@
     private int           _moveStep;
     private int           _totalSteps;
     private BoardSpaceView? _landedSpace;
+    private int           _cycleNumber     = 1;
+    private System.Timers.Timer? _cycleTimer;
 
     private static readonly Guid EventId = SeedService.Id.EventCcn2026;
 
@@ -194,6 +204,14 @@
         _spaces = await BoardSvc.GetSpacesAsync(EventId);
         await RefreshAsync();
         _loading = false;
+    }
+
+    // Hub setup deferred to OnAfterRenderAsync so it only runs on the interactive circuit,
+    // never during Blazor Server prerendering (which creates a dead server-to-server connection
+    // that drops before TokenMoveStep events arrive).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
 
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("/camphub"))
@@ -215,11 +233,13 @@
             _totalSteps      = 0;
             _landedSpace     = null;
             _livePositions   = new Dictionary<Guid, int>(_dbPositions);
+            StartCycleTimer();
             await InvokeAsync(StateHasChanged);
         });
 
         _hub.On<Guid, int>("BlockHitNumberRevealed", async (groupId, steps) =>
         {
+            StopCycleTimer();
             _blockHitGroupId = groupId;
             _rollNumber      = steps;
             _totalSteps      = steps;
@@ -228,25 +248,32 @@
             await InvokeAsync(StateHasChanged);
         });
 
-        // Phase transitions to "moving" on first step — board becomes visible
         _hub.On<Guid, int>("TokenMoveStep", async (groupId, spaceIndex) =>
         {
-            _livePositions ??= new Dictionary<Guid, int>(_dbPositions);
-            _livePositions[groupId] = spaceIndex;
+            var isFirst = _blockHitPhase is not "moving";
             _moveStep++;
             _blockHitPhase = "moving";
+
+            if (isFirst)
+            {
+                // Dismiss the overlay first so the board is visible, then pause briefly
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(900);
+            }
+
+            var prev = _livePositions ?? new Dictionary<Guid, int>(_dbPositions);
+            _livePositions = new Dictionary<Guid, int>(prev) { [groupId] = spaceIndex };
             await InvokeAsync(StateHasChanged);
         });
 
         _hub.On<Guid, int>("TokenMoveDone", async (groupId, finalSpaceIndex) =>
         {
-            _livePositions ??= new Dictionary<Guid, int>(_dbPositions);
-            _livePositions[groupId] = finalSpaceIndex;
-            _blockHitPhase          = "done";
-            _landedSpace            = _spaces.FirstOrDefault(s => s.SpaceIndex == finalSpaceIndex);
+            var prev = _livePositions ?? new Dictionary<Guid, int>(_dbPositions);
+            _livePositions = new Dictionary<Guid, int>(prev) { [groupId] = finalSpaceIndex };
+            _blockHitPhase = "done";
+            _landedSpace   = _spaces.FirstOrDefault(s => s.SpaceIndex == finalSpaceIndex);
             await InvokeAsync(StateHasChanged);
 
-            // Auto-reset after landing celebration, then sync from DB
             _ = Task.Run(async () =>
             {
                 await Task.Delay(5000);
@@ -291,7 +318,7 @@
             "width:clamp(90px,13vw,130px);height:clamp(90px,13vw,130px);border-radius:18px;" +
             "background:linear-gradient(135deg,#FCCF00,#D68910);" +
             "border:4px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;" +
-            "animation:blockGlow 0.4s ease-in-out infinite;box-shadow:0 6px 0 #A04000",
+            "animation:blockBounce 0.5s ease-in-out infinite;box-shadow:0 6px 0 #A04000",
         _ =>
             "width:clamp(90px,13vw,130px);height:clamp(90px,13vw,130px);border-radius:18px;" +
             "background:linear-gradient(135deg,#E83030,#C0392B);" +
@@ -315,8 +342,29 @@
             ? string.Concat(Enumerable.Repeat("⭐", stars))
             : $"⭐×{stars}";
 
+    private void StartCycleTimer()
+    {
+        StopCycleTimer();
+        _cycleTimer = new System.Timers.Timer(90);
+        _cycleTimer.Elapsed += (_, _) =>
+        {
+            _cycleNumber = Random.Shared.Next(1, 13);
+            InvokeAsync(StateHasChanged);
+        };
+        _cycleTimer.AutoReset = true;
+        _cycleTimer.Start();
+    }
+
+    private void StopCycleTimer()
+    {
+        _cycleTimer?.Stop();
+        _cycleTimer?.Dispose();
+        _cycleTimer = null;
+    }
+
     public async ValueTask DisposeAsync()
     {
+        StopCycleTimer();
         if (_hub is not null) await _hub.DisposeAsync();
     }
 

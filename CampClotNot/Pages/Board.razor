@@ -4,6 +4,8 @@
 @inject GroupService GroupSvc
 @inject AuthenticationStateProvider AuthState
 @inject ThemeService ThemeSvc
+@inject NavigationManager Nav
+@implements IAsyncDisposable
 
 <PageTitle>Board — Camp Clot Not</PageTitle>
 
@@ -11,13 +13,18 @@
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div class="ccn-section-label" style="margin:0">🗺️ Game Board</div>
-        @if (_isAdmin)
-        {
-            <button class="ccn-btn" style="background:var(--color-primary)"
-                    @onclick="@(() => _triggerOpen = true)">
-                ⁉️ Block Hit
-            </button>
-        }
+        <div style="display:flex;gap:8px">
+            <a href="/display" target="_blank" class="ccn-btn" style="text-decoration:none">
+                📺 Open Display
+            </a>
+            @if (_isAdmin)
+            {
+                <button class="ccn-btn" style="background:var(--color-primary)"
+                        @onclick="OpenTrigger">
+                    ⁉️ Block Hit
+                </button>
+            }
+        </div>
     </div>
 
     @if (_loading)
@@ -31,6 +38,22 @@
         <div class="ccn-panel" style="padding:12px;margin-bottom:18px">
             <BoardComponent Spaces="_spaces" Positions="_positions" Groups="_groups" />
         </div>
+
+        @* Live block-hit status banner *@
+        @if (_blockHitPhase != "idle")
+        {
+            var phaseLabel = _blockHitPhase switch
+            {
+                "triggered" => "⁉️ Rolling…",
+                "revealed"  => $"🎲 Moves {_blockRoll} spaces!",
+                "moving"    => $"🚀 Moving… step {_blockStep} / {_blockTotal}",
+                "done"      => "✅ Done!",
+                _           => ""
+            };
+            <div style="background:rgba(231,76,60,0.12);border:2px solid #E74C3C;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-family:'Fredoka One',cursive;font-size:14px;color:var(--black);animation:popIn 0.3s ease">
+                @phaseLabel
+            </div>
+        }
 
         @* Space type legend *@
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
@@ -64,94 +87,129 @@
     }
 </div>
 
-@* ── Block Hit Trigger Overlay (admin only, no MudDialog) ─────────────────── *@
-@if (_triggerOpen)
+@* ── PHASE 1: Group + Day picker ─────────────────────────────────────────────── *@
+@if (_triggerPhase == "selecting")
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease"
-         @onclick="CloseTrigger">
+         @onclick="CancelTrigger">
         <div class="ccn-panel" style="padding:24px;width:100%;max-width:420px;animation:popIn 0.25s ease;box-shadow:8px 8px 0 var(--black)"
              @onclick:stopPropagation="true">
 
             <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--black);margin-bottom:18px">
-                ⁉️ Block Hit Trigger
+                ⁉️ Block Hit
             </div>
 
             <div style="display:flex;flex-direction:column;gap:14px">
-
-                @* Group selector *@
                 <div>
                     <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Which group?</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         @foreach (var g in _groups)
                         {
                             var isSelected = _triggerGroupId == g.GroupId;
-                            <button style="@GroupBtnStyle(g.Color, isSelected)"
-                                    @onclick="@(() => SelectGroup(g.GroupId))">
-                                @g.ShortName
-                            </button>
+                            <button style="@GroupBtnStyle(g.Color, isSelected)" @onclick="@(() => SelectGroup(g.GroupId))">@g.ShortName</button>
                         }
                     </div>
                 </div>
 
-                @* Day selector *@
                 <div>
                     <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Camp day?</div>
                     <div style="display:flex;gap:8px">
                         @for (var d = 1; d <= 5; d++)
                         {
                             var day = d;
-                            var isDaySelected = _triggerDay == day;
-                            <button style="@DayBtnStyle(isDaySelected)"
-                                    @onclick="@(() => SelectDay(day))">
-                                Day @day
-                            </button>
+                            <button style="@DayBtnStyle(_triggerDay == day)" @onclick="@(() => SelectDay(day))">Day @day</button>
                         }
                     </div>
                 </div>
 
-                @* Scripted destination *@
-                @if (_triggerGroupId.HasValue && _triggerDay > 0)
+                @if (_triggerGroupId.HasValue)
                 {
                     @if (_triggerScript is null)
                     {
                         <div style="background:#FFF8E1;border:2px solid var(--color-primary);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-dark);font-weight:700">
-                            ⚠️ No script for this group + day. Set it in Board Admin → Block Hit Scripts.
+                            ⚠️ No script for this group + day.
                         </div>
                     }
                     else if (_triggerScript.IsTriggered)
                     {
                         <div style="background:#F0F0F0;border:2px solid #888;border-radius:8px;padding:10px 14px;font-size:13px;color:#555;font-weight:700">
-                            ✓ Already triggered for this group + day.
+                            ✓ Already triggered today.
                         </div>
                     }
                     else
                     {
-                        var destSpace = _spaces.FirstOrDefault(s => s.SpaceIndex == _triggerScript.DestinationSpaceIndex);
                         <div style="background:#E8F5E9;border:2px solid var(--color-success);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-dark);font-weight:700">
-                            🎯 Destination: <strong>Space @_triggerScript.DestinationSpaceIndex</strong>
-                            — @(destSpace?.ActivityName ?? "—")
-                            @SpaceIcon(destSpace?.CategorySystemName ?? "")
+                            ✓ Script ready
                         </div>
                     }
-                }
-
-                @if (_justTriggered)
-                {
-                    <div style="background:#E8F5E9;border:2px solid var(--color-success);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-dark);font-weight:700;animation:popIn 0.3s ease">
-                        🎉 Triggered! Watch the projector.
-                    </div>
                 }
             </div>
 
             <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
-                <button class="ccn-btn" @onclick="CloseTrigger">Close</button>
+                <button class="ccn-btn" @onclick="CancelTrigger">Cancel</button>
                 <button class="ccn-btn" style="background:var(--color-accent);color:white"
-                        disabled="@(!CanTrigger)"
-                        @onclick="TriggerBlockHit">
-                    🎯 Trigger!
+                        disabled="@(_triggerScript is null || _triggerScript.IsTriggered)"
+                        @onclick="LaunchDiceBlock">
+                    Launch Block Hit →
                 </button>
             </div>
         </div>
+    </div>
+}
+
+@* ── PHASE 2: Dice block — cycling numbers, tap to "hit" ─────────────────────── *@
+@if (_triggerPhase == "diceBlock")
+{
+    <div style="position:fixed;inset:0;background:rgba(10,10,10,0.88);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;animation:fadeIn 0.25s ease">
+
+        @* Big animated block — tap/click to hit it *@
+        <button style="@DiceBlockStyle()" @onclick="HitTheBlock">
+            <span style="font-family:'Fredoka One',cursive;font-size:clamp(60px,12vw,110px);color:var(--black);line-height:1;user-select:none">
+                @_cycleNumber
+            </span>
+        </button>
+
+        <div style="font-family:'Fredoka One',cursive;font-size:clamp(18px,3vw,28px);color:white;letter-spacing:2px;animation:tokenBob 1.2s ease-in-out infinite">
+            TAP TO HIT!
+        </div>
+
+        @if (_triggerGroupId.HasValue)
+        {
+            var g = _groups.FirstOrDefault(x => x.GroupId == _triggerGroupId);
+            @if (g is not null)
+            {
+                <div style="@($"font-family:'Fredoka One',cursive;font-size:clamp(14px,2vw,20px);color:{g.Color};opacity:0.8")">@g.Name</div>
+            }
+        }
+
+        <button class="ccn-btn" style="font-size:12px;padding:6px 16px" @onclick="CancelTrigger">✕ Cancel</button>
+    </div>
+}
+
+@* ── PHASE 3: Number revealed — watch the board ──────────────────────────────── *@
+@if (_triggerPhase == "revealed")
+{
+    var revealGroup = _groups.FirstOrDefault(g => g.GroupId == _triggerGroupId);
+    <div style="position:fixed;inset:0;background:rgba(10,10,10,0.88);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;animation:fadeIn 0.2s ease">
+
+        @* Block showing the locked-in number *@
+        <div style="@DiceBlockRevealedStyle()">
+            <span style="font-family:'Fredoka One',cursive;font-size:clamp(60px,12vw,110px);color:white;line-height:1">
+                @_scriptedSteps
+            </span>
+        </div>
+
+        @if (revealGroup is not null)
+        {
+            <div style="@($"font-family:'Fredoka One',cursive;font-size:clamp(20px,3.5vw,40px);color:{revealGroup.Color};animation:popIn 0.5s ease")">
+                @revealGroup.Name moves @_scriptedSteps!
+            </div>
+        }
+
+        <button class="ccn-btn" style="background:var(--color-accent);color:white;font-size:16px;padding:12px 28px"
+                @onclick="WatchTheBoard">
+            Watch the Board! →
+        </button>
     </div>
 }
 
@@ -162,12 +220,23 @@
     private bool                    _loading   = true;
     private bool                    _isAdmin;
 
-    // Trigger state
-    private bool              _triggerOpen;
+    // 3-phase trigger state: idle → selecting → diceBlock → revealed → animating
+    private string            _triggerPhase    = "idle";
     private Guid?             _triggerGroupId;
-    private int               _triggerDay = 1;
+    private int               _triggerDay      = 1;
     private ScriptedBlockHit? _triggerScript;
-    private bool              _justTriggered;
+    private int               _scriptedSteps;           // steps returned by Phase1
+    private int               _cycleNumber     = 1;     // number shown on spinning block
+    private System.Timers.Timer? _diceTimer;
+
+    // In-progress feedback (shown as banner while animating)
+    private string            _blockHitPhase = "idle";
+    private int?              _blockRoll;
+    private int               _blockStep;
+    private int               _blockTotal;
+    private Guid?             _blockHitGroupId;
+    private Dictionary<Guid, int>? _livePositions;
+    private HubConnection?    _hub;
 
     private static readonly Guid EventId = SeedService.Id.EventCcn2026;
 
@@ -191,53 +260,142 @@
         _loading   = false;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/camphub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On<Guid, int>("BlockHitTriggered", async (groupId, _) =>
+        {
+            _blockHitGroupId = groupId;
+            _blockHitPhase   = "triggered";
+            _blockRoll       = null;
+            _blockStep       = 0;
+            _livePositions   = new Dictionary<Guid, int>(_positions);
+            await InvokeAsync(StateHasChanged);
+        });
+        _hub.On<Guid, int>("BlockHitNumberRevealed", async (_, steps) =>
+        {
+            _blockHitPhase = "revealed"; _blockRoll = steps; _blockTotal = steps;
+            await InvokeAsync(StateHasChanged);
+        });
+        _hub.On<Guid, int>("TokenMoveStep", async (groupId, spaceIndex) =>
+        {
+            var prev = _livePositions ?? new Dictionary<Guid, int>(_positions);
+            _livePositions = new Dictionary<Guid, int>(prev) { [groupId] = spaceIndex };
+            _blockHitPhase = "moving"; _blockStep++;
+            await InvokeAsync(StateHasChanged);
+        });
+        _hub.On<Guid, int>("TokenMoveDone", async (_, __) =>
+        {
+            _blockHitPhase = "done";
+            _triggerPhase  = "idle";
+            _positions     = await BoardSvc.GetGroupPositionsAsync(EventId);
+            _livePositions = null;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(4000);
+            _blockHitPhase   = "idle";
+            _blockHitGroupId = null;
+            await InvokeAsync(StateHasChanged);
+        });
+        _hub.On("ScoresUpdated", async () =>
+        {
+            _positions = await BoardSvc.GetGroupPositionsAsync(EventId);
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hub.StartAsync();
+    }
+
+    private void OpenTrigger()
+    {
+        _triggerPhase   = "selecting";
+        _triggerGroupId = null;
+        _triggerScript  = null;
+    }
+
+    // ── Phase 1: group + day picker ─────────────────────────────────────────────
+
     private async Task SelectGroup(Guid groupId)
     {
         _triggerGroupId = groupId;
-        _justTriggered  = false;
         await LoadScript();
     }
 
     private async Task SelectDay(int day)
     {
-        _triggerDay    = day;
-        _justTriggered = false;
+        _triggerDay = day;
         await LoadScript();
     }
 
     private async Task LoadScript()
     {
-        if (_triggerGroupId.HasValue && _triggerDay > 0)
-            _triggerScript = await BoardSvc.GetScriptAsync(_triggerGroupId.Value, EventId, _triggerDay);
-        else
-            _triggerScript = null;
+        _triggerScript = _triggerGroupId.HasValue
+            ? await BoardSvc.GetScriptAsync(_triggerGroupId.Value, EventId, _triggerDay)
+            : null;
     }
 
-    private bool CanTrigger =>
-        _triggerGroupId.HasValue &&
-        _triggerScript is { IsTriggered: false } &&
-        !_justTriggered;
-
-    private async Task TriggerBlockHit()
+    private void CancelTrigger()
     {
-        if (!_triggerGroupId.HasValue) return;
-        BoardSvc.StartBlockHit(_triggerGroupId.Value, _triggerDay, EventId);
-        _justTriggered = true;
-        // Reload positions after animation should have finished
-        var delayMs = 500 + 1400 + 20 * 400 + 1000;
-        _ = Task.Run(async () =>
+        StopDiceTimer();
+        _triggerPhase = "idle";
+    }
+
+    // ── Phase 2: launch → dice block cycling ────────────────────────────────────
+
+    private async Task LaunchDiceBlock()
+    {
+        if (_triggerGroupId is null || _triggerScript is null || _triggerScript.IsTriggered) return;
+
+        // Phase1: tell the server → /display shows ⁉️; returns step count for cycling
+        _scriptedSteps = await BoardSvc.Phase1TriggerAsync(_triggerGroupId.Value, _triggerDay, EventId);
+        if (_scriptedSteps <= 0) return;
+
+        _triggerPhase = "diceBlock";
+        StartDiceTimer();
+    }
+
+    private void StartDiceTimer()
+    {
+        StopDiceTimer();
+        _diceTimer = new System.Timers.Timer(90);
+        _diceTimer.Elapsed += (_, _) =>
         {
-            await Task.Delay(delayMs);
-            _positions     = await BoardSvc.GetGroupPositionsAsync(EventId);
-            _triggerScript = await BoardSvc.GetScriptAsync(_triggerGroupId!.Value, EventId, _triggerDay);
-            await InvokeAsync(StateHasChanged);
-        });
+            _cycleNumber = Random.Shared.Next(1, 13);
+            InvokeAsync(StateHasChanged);
+        };
+        _diceTimer.AutoReset = true;
+        _diceTimer.Start();
     }
 
-    private void CloseTrigger()
+    private void StopDiceTimer()
     {
-        _triggerOpen   = false;
-        _justTriggered = false;
+        _diceTimer?.Stop();
+        _diceTimer?.Dispose();
+        _diceTimer = null;
+    }
+
+    // ── Phase 3: admin hits the block → reveal number ────────────────────────────
+
+    private async Task HitTheBlock()
+    {
+        StopDiceTimer();
+        _cycleNumber  = _scriptedSteps;   // snap to the scripted number
+        _triggerPhase = "revealed";
+        // Tell /display the number
+        await BoardSvc.Phase2RevealAsync(_triggerGroupId!.Value, _scriptedSteps);
+    }
+
+    // ── Phase 4: admin dismisses → token starts walking ──────────────────────────
+
+    private void WatchTheBoard()
+    {
+        _triggerPhase = "animating";
+        BoardSvc.Phase3StartStepping(_triggerGroupId!.Value, _triggerDay, EventId);
     }
 
     private static string SpaceIcon(string cat) => cat switch
@@ -263,4 +421,23 @@
         $"color:var(--black);border:3px solid var(--black);" +
         $"box-shadow:{(selected ? "3px 3px 0 var(--black)" : "2px 2px 0 var(--black)")}";
 
+    private static string DiceBlockStyle() =>
+        "width:clamp(160px,22vw,240px);height:clamp(160px,22vw,240px);border-radius:22px;" +
+        "background:linear-gradient(135deg,#FCCF00,#F39C12);" +
+        "border:6px solid var(--black);box-shadow:0 10px 0 #7D4E00,0 12px 40px rgba(252,207,0,0.5);" +
+        "display:flex;align-items:center;justify-content:center;cursor:pointer;" +
+        "animation:blockBounce 0.5s ease-in-out infinite;transition:transform .1s";
+
+    private static string DiceBlockRevealedStyle() =>
+        "width:clamp(160px,22vw,240px);height:clamp(160px,22vw,240px);border-radius:22px;" +
+        "background:linear-gradient(135deg,#E83030,#C0392B);" +
+        "border:6px solid var(--black);box-shadow:0 10px 0 #6E0000,0 12px 40px rgba(231,76,60,0.6);" +
+        "display:flex;align-items:center;justify-content:center;" +
+        "animation:popIn 0.5s cubic-bezier(.34,1.8,.64,1)";
+
+    public async ValueTask DisposeAsync()
+    {
+        StopDiceTimer();
+        if (_hub is not null) await _hub.DisposeAsync();
+    }
 }
