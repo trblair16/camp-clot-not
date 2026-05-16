@@ -67,9 +67,7 @@ Each group has:
 - Current board position (space index)
 - Cabin assignment (display reference)
 
-⚠️ **PENDING:** How many groups for 2026? Mario Party naturally suits 4 teams. Cabin groupings and board token design depend on this number.
-
----
+> ⚠️ PENDING: How many groups for 2026? Board confirmed 4-6 groups. Final number depends on cabin groupings and activity finalization. Data model must support variable group count — do not hardcode 4. Board token design and space count follow once finalized.
 
 ### 1.5 Currency System — Coins & Stars
 
@@ -85,11 +83,9 @@ Each group has:
 - Branch Awards (returning campers demonstrating continued independence) — converted to group bonus stars
 - End-of-camp balance stars — staff can award to help groups that fell behind
 
-⚠️ **PENDING:** Stars via staff judgment only, or can groups also spend coins to purchase stars? Recommendation: staff awards stars directly. Avoids coin-spending workflow burden on volunteers.
+> ✅ DECIDED: Groups can spend coins to purchase stars via a coin shop. Staff also award stars directly via judgment. A dedicated Shop page will be built for projector display in the galley (main gathering area) so groups can see what's available. See §1.11.
 
-⚠️ **PENDING:** Coin/star weighting for final standings? e.g. stars-first, tiebreak on coins. Affects leaderboard sort logic.
-
----
+> ✅ DECIDED: Stars are the primary win condition. Coins provide strategic value — earn them through activities, spend them in the shop to buy stars. Final standings sort: stars descending, tiebreak coins descending. This mirrors real Mario Party mechanics.
 
 ### 1.6 Transaction System
 
@@ -117,13 +113,9 @@ A visual game board displayed on the projector during gatherings.
 - Board positions persist in DB
 - SVG-based rendering with proper icon assets (not emoji)
 
-✅ **DECIDED:** No SpaceType enum. Replaced by ActivityType + ActivityTypeCategory system. See schema redesign spec.
+> ⚠️ PENDING: How many board spaces? At minimum one per activity. Confirmed activities so far: Arts & Crafts, Pool (Blooper Bay), Lake, plus a slate of Mario Party-themed games/activities still being finalized. Space count follows activity finalization — design the board to be configurable rather than hardcoded.
 
-⚠️ **PENDING:** How many board spaces? Mockup uses 20. Should match camp day/activity count. Confirm with Katelyn/Vicki. Determines how many Activity rows to seed.
-
-⚠️ **PENDING:** Should the board/leaderboard be visible to campers all week on the projector, or only during specific gathering moments?
-
----
+> ✅ DECIDED: Board is shown only during weekly group gatherings — not displayed all week. The board reveal is the theatrical moment that tells campers what their first activity of the day is. Display mode should default to off/idle and be activated by admin for gatherings.
 
 ### 1.8 Block Hit Mechanic
 
@@ -152,11 +144,27 @@ Dedicated page for Minute to Win It and group evening challenges.
 - Designed for projector display during evening gatherings
 - After reveal, staff can log coins/stars directly from this page
 
----
+### 1.11 Coin Shop
 
-### 1.10 Attendance Tracking
+A shop page where groups can spend coins to purchase stars, displayed on the projector in the galley during gatherings.
+
+- Shop items configured by admin before camp (e.g. "1 Star = 50 Coins")
+- Staff processes purchases on behalf of a group — no self-service by campers
+- Purchase posts two transactions atomically: a negative coin transaction and a positive star transaction
+- Shop page is projector-friendly: large text, group color coding, visible current coin balances
+- Admin can enable/disable the shop (e.g. close it before closing ceremony)
+
+> ✅ DECIDED: Coin exchange for stars is supported. Shop is a dedicated projector-display page in the galley. Staff processes purchases — groups cannot self-serve.
+
+### 1.12 Attendance Tracking
 
 ✅ **DECIDED:** Deferred to v2. Build competition system fully for 2026 camp first. Add Attendee/EventAttendance tables in a post-camp sprint.
+
+### 1.13 Display / Projector Mode
+
+Tyler controls the projector from his laptop and needs to present the display view without exposing admin navigation to the audience.
+
+> ✅ DECIDED: `/display` is a dedicated full-screen route with no admin chrome — no nav, no transaction buttons, no admin controls. Tyler opens it as a separate browser window and drags it to the projector screen (extended display). Admin panel has a "Open Display" button that launches `/display` in a new window. No PIN required since Tyler controls which device shows it. The route is still role-restricted (Display or Admin role) to prevent accidental access.
 
 ---
 
@@ -315,18 +323,19 @@ PushSubscription   — SubscriptionId, UserId, Endpoint, P256DH, Auth,
 
 All items below need resolution at or immediately after the Monday planning meeting. Create each as a blocked GitHub issue. Update to ready after the meeting and assign to the appropriate milestone.
 
-| Decision | Blocks |
-|---|---|
-| How many groups for 2026? | Group data model, board token design, space count |
-| Stars: staff judgment only, or coin exchange too? | Transaction UI, currency rules |
-| Coin/star weighting for final standings? | Leaderboard sort logic |
-| Board visible all week or only at gatherings? | Display mode requirements, auto-refresh |
-| How many board spaces? | Board layout, scripted hit configuration |
-| Display mode: login or PIN-protected URL? | Auth/routing for projector view |
-| How are staff accounts created? | Auth flow, pre-camp setup |
-| Session timeout behavior? | ASP.NET session configuration |
-| Offline/connectivity failure behavior? | Error handling strategy |
-| How is the winner officially declared? | End-of-camp flow, score lock |
+| Decision | Status | Outcome |
+|---|---|---|
+| How many groups for 2026? | ⚠️ PENDING | 4-6 groups — finalized once cabin groupings confirmed |
+| Stars: staff judgment only, or coin exchange too? | ✅ DECIDED | Both — staff award stars directly AND groups can buy stars with coins via shop |
+| Coin/star weighting for final standings? | ✅ DECIDED | Stars are win-con, coins are strategic. Sort: stars desc, tiebreak coins desc |
+| Board visible all week or only at gatherings? | ✅ DECIDED | Gatherings only — board reveal is the theatrical moment for each day |
+| How many board spaces? | ⚠️ PENDING | Minimum one per activity — activity list still being finalized |
+| Display mode: login or PIN-protected URL? | ✅ DECIDED | Dedicated `/display` route, no admin chrome, opened as separate window by Tyler |
+| How are staff accounts created? | ✅ DECIDED | Admin pre-creates: email, password, first name, last name, role. Depends on auth approach — see §7.2 |
+| Session timeout behavior? | ✅ DECIDED | Graceful SignalR reconnect with visible indicator. On hard session expiry: prompt to refresh or auto-refresh |
+| Offline/connectivity failure behavior? | ✅ DECIDED | Web app: clear offline error + retry. PWA (future): cached last-known state. No silent failures |
+| How is the winner officially declared? | ✅ DECIDED | Closing ceremony, after all camper awards and bonus stars applied. Admin triggers score lock then winner screen |
+| Auth0 vs BCrypt/cookie auth? | ⚠️ PENDING | Deeper security review needed. If staying with BCrypt/cookie, must follow proper security standards throughout |
 
 ---
 
@@ -557,11 +566,13 @@ The 2021 `hbda_tracking` schema tracked individual attendee points across events
 
 ### 7.2 Authentication & Session Management
 
-⚠️ **PENDING:** How are staff accounts created? Recommendation: Admin pre-creates all accounts before camp with role assignment. Individual accounts provide audit trail per volunteer.
+> ✅ DECIDED: Admin pre-creates all staff accounts before camp. Fields: email, password (hashed), first name, last name, role (Admin/Staff/Display). Individual accounts provide per-volunteer audit trail on transactions.
 
-⚠️ **PENDING:** Session timeout? Recommendation: 24-hour session during camp. Default ASP.NET timeout is too short — configure explicitly.
+> ✅ DECIDED: 24-hour sliding sessions during camp. Graceful SignalR reconnect on connection drop (visible "Reconnecting..." indicator). On hard session expiry: prompt user to refresh or auto-refresh — never a blank/broken screen.
 
-⚠️ **PENDING:** Projector display auth — login or PIN URL? Recommendation: `/display?pin=XXXX`
+> ✅ DECIDED: `/display` is a dedicated full-screen route opened as a separate browser window by Tyler — no PIN needed. See §1.13.
+
+> ⚠️ PENDING: Auth0 vs BCrypt/cookie auth — requires security review. The 2021 project used Auth0. Current scaffold uses BCrypt + cookie auth. If staying with BCrypt/cookie, must implement proper security standards: HTTPS only, secure/httpOnly cookie flags, CSRF protection, account lockout on repeated failures, no plaintext passwords anywhere in logs or error messages.
 
 **Do NOT carry forward from 2021:**
 - Weak/plain password hashing — use ASP.NET Identity or BCrypt
@@ -612,7 +623,7 @@ The 2021 `hbda_tracking` schema tracked individual attendee points across events
 
 ### 7.5 Offline & Connectivity Degradation
 
-⚠️ **PENDING:** What happens when a volunteer loses connection mid-transaction? Recommendation for v1: fail loudly with a clear non-technical error and a retry button. Document as a known limitation.
+> ✅ DECIDED: Fail loudly with a clear, non-technical error message and a retry button. Never silent failure. Web app with no connection shows a clear offline state — no cached data displayed as if current. PWA (v2+): cache last-known state so display remains usable while reconnecting.
 
 **Resilience requirements:**
 - SignalR reconnect: automatic with visible "Reconnecting..." indicator — never a blank screen
@@ -624,7 +635,7 @@ The 2021 `hbda_tracking` schema tracked individual attendee points across events
 
 ### 7.6 End-of-Camp Flow
 
-⚠️ **PENDING:** How is the winner officially declared? Recommendation: Tyler performs a final review pass, then triggers Score Lock before the ceremony. Leaderboard at time of lock is the official result.
+> ✅ DECIDED: Winner declared at closing ceremony. All camper awards (Named, Big Stick, Branch) and any end-of-camp bonus stars must be applied first. Tyler then triggers Score Lock — all transactions frozen. Leaderboard at time of lock is the official result. Winning group celebration screen displays on projector.
 
 **End-of-camp features to build:**
 - Score lock — admin action freezing all transactions
