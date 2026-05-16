@@ -514,11 +514,11 @@ Camp is June 20-25, 2026.
 
 | Target | Milestone | Scope |
 |---|---|---|
-| ~May 4 | v0.1.0 — Foundation | Repo + Railway setup, PostgreSQL + EF Core, auth, Group/Transaction CRUD, branch protection |
-| ~May 14 | v0.2.0 — Competition Core | Leaderboard, coin/star system, transaction log, void flow, staff dashboard, role-based access |
-| ~May 28 | v0.3.0 — Board & Block Hit | SVG board, pre-scripted block hit, step-by-step token movement animation |
-| ~May 28 | v0.3.1 — UI Overhaul | Mario Party Superstars leaderboard layout, purple-violet theme, thick outlined typography (in progress) |
-| ~June 7 | v0.4.0 — Mini-Games & Display | Evening spinner with hand animation, projector display mode, admin config screens |
+| ~May 4 | v0.1.0 — Foundation ✅ | Repo + Railway setup, PostgreSQL + EF Core, auth, Group/Transaction CRUD, branch protection |
+| ~May 14 | v0.2.0 — Competition Core ✅ | Leaderboard, coin/star system, transaction log, void flow, staff dashboard, role-based access |
+| ~May 28 | v0.3.0 — Board & Block Hit ✅ | SVG board, pre-scripted block hit, step-by-step token movement animation |
+| ~May 28 | v0.3.1 — UI Overhaul ✅ | Neo-brutalist redesign, cream bg, rank rows, ccn-coin/star assets, real group names & logos |
+| ~May 16 | v0.4.0 — Mini-Games & Display ✅ | Mini-game spinner (3-way split: /minigames, /minigames/display, /admin/games), LiveHub rename, Activities dropdown nav, login page redesign |
 | ~June 7 | v0.5.0 — Camp Info Hub + PWA | Hub features (§8.1–8.4), PWA manifest + service worker + install flow (§8.9) |
 | ~June 7-8 | v1.0.0-rc — Dry Run | Full dress rehearsal. Staff test on real devices. Projector verified. Issues logged. |
 | ~June 13 | v1.0.0 — Camp Ready | Dry run issues resolved. Production seeded. Staff briefed. One week buffer. |
