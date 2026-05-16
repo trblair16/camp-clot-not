@@ -1,42 +1,38 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Nav
-@inject AuthService AuthSvc
+@inject ThemeService ThemeSvc
 
-<MudThemeProvider />
+<ThemeHead />
+<MudThemeProvider IsDarkMode="false" Theme="@_mudTheme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudText Typo="Typo.h6" Class="ml-3" Style="white-space:nowrap">Camp Clot Not</MudText>
-        <MudSpacer />
-        <AuthorizeView>
-            <Authorized>
-                <MudNavLink Href="/" Match="NavLinkMatch.All" Style="color:white">Dashboard</MudNavLink>
-                <MudNavLink Href="/transactions" Style="color:white">Transactions</MudNavLink>
-                <AuthorizeView Roles="Admin" Context="adminCtx">
-                    <MudNavLink Href="/admin/groups" Style="color:white">Groups</MudNavLink>
-                    <MudNavLink Href="/admin/users" Style="color:white">Users</MudNavLink>
-                </AuthorizeView>
-                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"
-                               OnClick="LogoutAsync" Title="Sign out" />
-            </Authorized>
-        </AuthorizeView>
-    </MudAppBar>
+<ProjectorOverlay Visible="_showProjector" OnClose="@(() => _showProjector = false)" />
 
-    <MudMainContent>
-        <div style="padding: 16px">
-            @Body
-        </div>
-    </MudMainContent>
-</MudLayout>
+<AppNav OnLeaderboardClick="@(() => _showProjector = true)" />
+
+<div style="padding:20px 18px 80px">
+    @Body
+</div>
 
 @code {
-    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
+    private bool _showProjector;
 
-    private async Task LogoutAsync()
+    private static readonly MudTheme _mudTheme = new()
     {
-        // AuthService.LogoutAsync needs HttpContext — handled via a logout endpoint
-        Nav.NavigateTo("/logout", forceLoad: true);
-    }
+        Palette = new Palette
+        {
+            Primary         = "#F5C800",
+            Secondary       = "#D12B2B",
+            Success         = "#2B8A3E",
+            Info            = "#2563C4",
+            Background      = "#F2ECD8",
+            Surface         = "#FFFEF7",
+            DrawerBackground= "#FFFEF7",
+            TextPrimary     = "#1A1A1A",
+            TextSecondary   = "#4A4035",
+            AppbarBackground= "#1A1A1A",
+            AppbarText      = "#F5C800",
+        }
+    };
 }

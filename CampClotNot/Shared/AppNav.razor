@@ -1,0 +1,346 @@
+@inject NavigationManager Nav
+@inject ThemeService ThemeSvc
+
+<style>
+    /* ── Breakpoint control ── */
+    .nav-mobile-header  { display: flex; }
+    .nav-desktop-header { display: none; }
+    .nav-bottom-bar     { display: flex; }
+
+    @@media (min-width: 769px) {
+        .nav-mobile-header  { display: none; }
+        .nav-desktop-header { display: flex; }
+        .nav-bottom-bar     { display: none; }
+    }
+
+    /* ── Mobile header ── */
+    .nav-mobile-header {
+        background: var(--black);
+        border-bottom: 4px solid var(--color-primary);
+        height: 72px;
+        padding: 0 16px;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    /* ── Desktop header ── */
+    .nav-desktop-header {
+        background: var(--black);
+        border-bottom: 4px solid var(--color-primary);
+        height: 80px;
+        padding: 0 18px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    /* ── Desktop nav link ── */
+    .nav-link {
+        font-family: 'Fredoka One', cursive;
+        font-size: 12px;
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: 3px solid #555;
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow: 2px 2px 0 #555;
+        background: transparent;
+        color: #ccc;
+        transition: all .1s;
+        display: inline-block;
+        line-height: 1.4;
+    }
+
+    /* ── Desktop dropdown panels (activities + admin share the same panel style) ── */
+    .nav-activities-dropdown,
+    .nav-admin-dropdown { position: relative; }
+    .nav-admin-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        background: var(--panel-bg);
+        border: 3px solid var(--black);
+        border-radius: 10px;
+        box-shadow: 4px 4px 0 var(--black);
+        min-width: 180px;
+        z-index: 51;
+        overflow: hidden;
+    }
+    .nav-admin-panel a,
+    .nav-admin-panel button {
+        display: block;
+        width: 100%;
+        padding: 12px 16px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 13px;
+        color: var(--black);
+        text-decoration: none;
+        border: none;
+        border-bottom: 2px solid #E8E0CC;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+    }
+    .nav-admin-panel a:last-child,
+    .nav-admin-panel button:last-child { border-bottom: none; }
+    .nav-admin-panel a:hover,
+    .nav-admin-panel button:hover { background: #F5EED8; }
+
+    /* ── Bottom bar ── */
+    .nav-bottom-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg-base);
+        border-top: 4px solid var(--black);
+        z-index: 40;
+        justify-content: stretch;
+    }
+    .nav-tab {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 4px 6px;
+        gap: 2px;
+        border: none;
+        border-top: 3px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--text-light);
+        font-family: 'Fredoka One', cursive;
+        font-size: 10px;
+        letter-spacing: 0.5px;
+        min-height: 56px;
+        transition: color .15s, border-color .15s;
+    }
+    .nav-tab.active {
+        color: var(--black);
+        border-top-color: var(--black);
+    }
+    .nav-tab .tab-icon { font-size: 20px; line-height: 1; }
+
+    /* ── Bottom sheets (activities + admin share the same sheet style) ── */
+    .nav-admin-sheet,
+    .nav-activities-sheet {
+        position: fixed;
+        bottom: 64px;
+        left: 0;
+        right: 0;
+        background: var(--panel-bg);
+        border-top: 4px solid var(--black);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 0 var(--black);
+        z-index: 45;
+        animation: slideUp .2s ease;
+    }
+    .nav-admin-sheet a,
+    .nav-admin-sheet button,
+    .nav-activities-sheet a,
+    .nav-activities-sheet button {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 16px;
+        color: var(--black);
+        text-decoration: none;
+        border: none;
+        border-bottom: 2px solid #E8E0CC;
+        background: transparent;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+    }
+    .nav-admin-sheet a:last-child,
+    .nav-admin-sheet button:last-child,
+    .nav-activities-sheet a:last-child,
+    .nav-activities-sheet button:last-child { border-bottom: none; }
+</style>
+
+@* ── MOBILE HEADER ──────────────────────────────────────────────── *@
+<div class="nav-mobile-header">
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+        <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:36px;width:auto;object-fit:contain" />
+        <span style="font-family:'Fredoka One',cursive;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;margin-left:8px">SUPER PARTY '26</span>
+    </div>
+    <button class="ccn-btn" style="font-size:12px;padding:7px 14px;background:var(--color-primary)"
+            @onclick="OnLeaderboardClick">
+        📺 Leaderboard
+    </button>
+</div>
+
+@* ── DESKTOP HEADER ─────────────────────────────────────────────── *@
+<div class="nav-desktop-header">
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+        <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:42px;width:auto;object-fit:contain" />
+        <span style="font-family:'Fredoka One',cursive;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;margin-left:8px">SUPER PARTY '26</span>
+    </div>
+
+    <AuthorizeView>
+        <Authorized>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <a href="/" class="nav-link" style="@ActiveStyle("/", "#D12B2B")">📊 Dashboard</a>
+
+                @* ── Activities dropdown ── *@
+                <div class="nav-activities-dropdown">
+                    @if (_activitiesDropdownOpen)
+                    {
+                        <div style="position:fixed;inset:0;z-index:49"
+                             @onclick="() => _activitiesDropdownOpen = false"></div>
+                    }
+                    <button class="nav-link" style="@ActivitiesDropdownStyle()"
+                            @onclick="() => { _activitiesDropdownOpen = !_activitiesDropdownOpen; _adminDropdownOpen = false; }">
+                        🎮 Activities @(_activitiesDropdownOpen ? "▲" : "▼")
+                    </button>
+                    @if (_activitiesDropdownOpen)
+                    {
+                        <div class="nav-admin-panel">
+                            <a href="/board"     @onclick="() => _activitiesDropdownOpen = false">🗺️ Board Game</a>
+                            <AuthorizeView Roles="Admin" Context="actAdminCtx">
+                                <a href="/minigames" @onclick="() => _activitiesDropdownOpen = false">🎲 Mini-Game</a>
+                            </AuthorizeView>
+                        </div>
+                    }
+                </div>
+
+                <AuthorizeView Roles="Admin" Context="adminCtx">
+                    <a href="/transactions" class="nav-link" style="@ActiveStyle("/transactions", "#2563C4")">📋 Transactions</a>
+
+                    <div class="nav-admin-dropdown">
+                        @if (_adminDropdownOpen)
+                        {
+                            <div style="position:fixed;inset:0;z-index:49"
+                                 @onclick="() => _adminDropdownOpen = false"></div>
+                        }
+                        <button class="nav-link" style="@AdminDropdownStyle()"
+                                @onclick="() => { _adminDropdownOpen = !_adminDropdownOpen; _activitiesDropdownOpen = false; }">
+                            ⚙️ Admin @(_adminDropdownOpen ? "▲" : "▼")
+                        </button>
+                        @if (_adminDropdownOpen)
+                        {
+                            <div class="nav-admin-panel">
+                                <a href="/admin/games"  @onclick="() => _adminDropdownOpen = false">🎮 Game Admin</a>
+                                <a href="/admin/groups" @onclick="() => _adminDropdownOpen = false">👥 Groups</a>
+                                <a href="/admin/users"  @onclick="() => _adminDropdownOpen = false">🔑 Users</a>
+                            </div>
+                        }
+                    </div>
+                </AuthorizeView>
+
+                <button class="nav-link" style="@ActiveStyle("/__lbd__", "#F5C800")"
+                        @onclick="OnLeaderboardClick">
+                    📺 Leaderboard
+                </button>
+                <button onclick="window.location='/logout'" class="nav-link"
+                        style="border-color:#D12B2B;box-shadow:2px 2px 0 #D12B2B;color:#D12B2B;opacity:.8">
+                    Sign Out
+                </button>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+</div>
+
+@* ── BOTTOM BAR (mobile) ─────────────────────────────────────────── *@
+<AuthorizeView>
+    <Authorized>
+        <div class="nav-bottom-bar">
+            <a href="/" class="nav-tab @(IsActive("/") ? "active" : "")">
+                <span class="tab-icon">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <button class="nav-tab @(IsActivitiesActive() ? "active" : "")"
+                    @onclick="() => { _activitiesSheetOpen = !_activitiesSheetOpen; _adminSheetOpen = false; }">
+                <span class="tab-icon">🎮</span>
+                <span>Activities</span>
+            </button>
+            <AuthorizeView Roles="Admin" Context="mobileAdminCtx">
+                <button class="nav-tab @(_adminSheetOpen ? "active" : "")"
+                        @onclick="() => { _adminSheetOpen = !_adminSheetOpen; _activitiesSheetOpen = false; }">
+                    <span class="tab-icon">⚙️</span>
+                    <span>Admin</span>
+                </button>
+            </AuthorizeView>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+@* ── ACTIVITIES BOTTOM SHEET (mobile) ────────────────────────────── *@
+@if (_activitiesSheetOpen)
+{
+    <div style="position:fixed;inset:0;z-index:44;background:rgba(26,26,26,.4)"
+         @onclick="() => _activitiesSheetOpen = false"></div>
+    <div class="nav-activities-sheet">
+        <a href="/board"     @onclick="() => _activitiesSheetOpen = false">🗺️ Board Game</a>
+        <AuthorizeView Roles="Admin">
+            <a href="/minigames" @onclick="() => _activitiesSheetOpen = false">🎲 Mini-Game</a>
+        </AuthorizeView>
+    </div>
+}
+
+@* ── ADMIN BOTTOM SHEET (mobile) ─────────────────────────────────── *@
+@if (_adminSheetOpen)
+{
+    <div style="position:fixed;inset:0;z-index:44;background:rgba(26,26,26,.4)"
+         @onclick="() => _adminSheetOpen = false"></div>
+    <div class="nav-admin-sheet">
+        <a href="/transactions" @onclick="() => _adminSheetOpen = false">📋 Transactions</a>
+        <a href="/admin/games"  @onclick="() => _adminSheetOpen = false">🎮 Game Admin</a>
+        <a href="/admin/groups" @onclick="() => _adminSheetOpen = false">👥 Groups</a>
+        <a href="/admin/users"  @onclick="() => _adminSheetOpen = false">🔑 Users</a>
+        <button onclick="window.location='/logout'">🚪 Sign Out</button>
+    </div>
+}
+
+@code {
+    [Parameter] public EventCallback OnLeaderboardClick { get; set; }
+
+    private bool _activitiesDropdownOpen;
+    private bool _activitiesSheetOpen;
+    private bool _adminDropdownOpen;
+    private bool _adminSheetOpen;
+
+    private bool IsActive(string href) =>
+        href == "/"
+            ? Nav.ToBaseRelativePath(Nav.Uri) is "" or "/"
+            : ("/" + Nav.ToBaseRelativePath(Nav.Uri))
+                .StartsWith(href, StringComparison.OrdinalIgnoreCase);
+
+    private bool IsActivitiesActive() =>
+        IsActive("/board") || IsActive("/minigames");
+
+    private string ActiveStyle(string href, string color)
+    {
+        var active = href.StartsWith("/__") ? false : IsActive(href);
+        return active
+            ? $"border-color:{color};box-shadow:2px 2px 0 {color};background:{color};color:#1A1A1A"
+            : "";
+    }
+
+    private string ActivitiesDropdownStyle()
+    {
+        var active = IsActive("/board") || IsActive("/minigames");
+        return active
+            ? "border-color:#F5C800;box-shadow:2px 2px 0 #F5C800;background:#F5C800;color:#1A1A1A"
+            : "";
+    }
+
+    private string AdminDropdownStyle()
+    {
+        var adminActive = ("/" + Nav.ToBaseRelativePath(Nav.Uri))
+            .StartsWith("/admin", StringComparison.OrdinalIgnoreCase);
+        return adminActive
+            ? "border-color:#9B59B6;box-shadow:2px 2px 0 #9B59B6;background:#9B59B6;color:white"
+            : "";
+    }
+}

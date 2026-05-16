@@ -1,0 +1,372 @@
+@page "/board/display"
+@layout DisplayLayout
+@attribute [Authorize(Roles = "Display,Admin")]
+@inject GroupService GroupSvc
+@inject BoardService BoardSvc
+@inject NavigationManager Nav
+@inject ThemeService ThemeSvc
+@implements IAsyncDisposable
+
+<PageTitle>Camp Clot Not — Scoreboard</PageTitle>
+
+<div style="display:flex;height:100vh;@ThemeSvc.Active.BackgroundGradient;color:white;overflow:hidden">
+
+    @* ── LEFT: Board 70% ────────────────────────────────────────────────────── *@
+    <div style="flex:7;min-width:0;position:relative;display:flex;flex-direction:column;padding:16px 12px 16px 16px">
+
+        @* App title banner — matches nav header: logo + tagline *@
+        <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:10px;flex-shrink:0;gap:2px">
+            <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:clamp(32px,4.5vw,54px);width:auto;object-fit:contain" />
+            <span style="font-family:'Fredoka One',cursive;font-size:clamp(9px,1.1vw,14px);color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1">SUPER PARTY '26</span>
+        </div>
+
+        @* Board container *@
+        <div style="flex:1;min-height:0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:8px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
+
+            @if (!_loading)
+            {
+                <BoardComponent Spaces="_spaces"
+                                Positions="@(_livePositions ?? _dbPositions)"
+                                Groups="_groups"
+                                AnimatingGroupId="@(_blockHitPhase is "moving" ? _blockHitGroupId : null)"
+                                SvgStyle="height:100%;width:auto;display:block;max-width:100%;max-height:100%;margin:0 auto" />
+            }
+
+            @* ── PHASE: triggered / revealed — full overlay, board dimmed ── *@
+            @if (_blockHitPhase is "triggered" or "revealed")
+            {
+                var group = _groups.FirstOrDefault(g => g.GroupId == _blockHitGroupId);
+                <div style="position:absolute;inset:0;background:rgba(0,0,0,0.82);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:fadeIn 0.25s ease">
+
+                    @* Block — cycles 1-12 while triggered, locks to scripted number when revealed *@
+                    <div style="@BlockStyle()">
+                        <span style="font-family:'Fredoka One',cursive;font-size:clamp(40px,7vw,80px);animation:rollFlip 0.08s ease">
+                            @(_blockHitPhase is "triggered" ? _cycleNumber : _rollNumber)
+                        </span>
+                    </div>
+
+                    @* Group name *@
+                    @if (group is not null)
+                    {
+                        <div style="@($"font-family:'Fredoka One',cursive;font-size:clamp(20px,3.5vw,44px);color:{group.Color};animation:popIn 0.4s ease")">
+                            @group.Name
+                        </div>
+                    }
+
+                    @* Phase label *@
+                    <div style="font-size:clamp(12px,1.5vw,18px);font-weight:800;letter-spacing:3px;color:var(--color-primary);text-transform:uppercase">
+                        @(_blockHitPhase is "triggered" ? "Rolling..." : $"Moves {_rollNumber} spaces!")
+                    </div>
+
+                    @if (_blockHitPhase is "revealed")
+                    {
+                        <div style="font-size:clamp(12px,1.4vw,16px);color:rgba(255,255,255,0.5);letter-spacing:1px">
+                            Get ready — watch the board!
+                        </div>
+                    }
+                </div>
+            }
+
+            @* ── PHASE: moving — small top banner, board animates directly ── *@
+            @if (_blockHitPhase is "moving")
+            {
+                var movingGroup = _groups.FirstOrDefault(g => g.GroupId == _blockHitGroupId);
+                <div style="position:absolute;top:10px;left:0;right:0;text-align:center;z-index:10;pointer-events:none">
+                    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(0,0,0,0.72);border-radius:20px;padding:8px 20px;animation:popIn 0.3s ease">
+                        @if (movingGroup is not null)
+                        {
+                            <div style="@($"width:12px;height:12px;border-radius:50%;background:{movingGroup.Color};box-shadow:0 0 8px {movingGroup.Color}")"></div>
+                            <span style="@($"font-family:'Fredoka One',cursive;font-size:clamp(14px,2vw,22px);color:{movingGroup.Color}")">@movingGroup.Name</span>
+                        }
+                        <span style="font-size:clamp(12px,1.5vw,16px);color:rgba(255,255,255,0.7)">
+                            step @_moveStep / @_totalSteps
+                        </span>
+                    </div>
+                </div>
+            }
+
+            @* ── PHASE: done — celebration overlay ── *@
+            @if (_blockHitPhase is "done" && _landedSpace is not null)
+            {
+                var landedGroup = _groups.FirstOrDefault(g => g.GroupId == _blockHitGroupId);
+                <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;animation:fadeIn 0.4s ease">
+                    <div style="font-size:clamp(56px,10vw,110px);animation:popIn 0.6s cubic-bezier(.34,1.8,.64,1)">
+                        @SpaceIcon(_landedSpace.CategorySystemName)
+                    </div>
+                    @if (landedGroup is not null)
+                    {
+                        <div style="@($"font-family:'Fredoka One',cursive;font-size:clamp(22px,4vw,52px);color:{landedGroup.Color};animation:popIn 0.5s ease 0.1s both")">
+                            @landedGroup.Name
+                        </div>
+                    }
+                    <div style="font-family:'Fredoka One',cursive;font-size:clamp(14px,2.5vw,30px);color:white;animation:popIn 0.5s ease 0.2s both">
+                        landed on @_landedSpace.ActivityName!
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── RIGHT: Leaderboard sidebar 30% ─────────────────────────────────────── *@
+    <div style="flex:3;min-width:220px;max-width:360px;padding:16px 16px 16px 6px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;justify-content:center">
+
+        <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;flex-shrink:0;padding-top:4px">
+            🏆 Standings
+        </div>
+
+        @if (_loading)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Warning" />
+        }
+        else
+        {
+            @foreach (var entry in _ranked)
+            {
+                var rankBg = entry.Rank switch
+                {
+                    1 => "background:var(--color-primary)",
+                    2 => "background:#E8E8E8",
+                    3 => "background:#F5EED8",
+                    _ => "background:rgba(255,255,255,0.92)"
+                };
+                var medals  = new[] { "🥇", "🥈", "🥉", "4️⃣" };
+                var medal   = entry.Rank <= medals.Length ? medals[entry.Rank - 1] : $"#{entry.Rank}";
+                var initial = entry.Group.ShortName is { Length: > 0 } s ? s[..1] : "?";
+
+                <div style="@($"{rankBg};border:3px solid #1A1A1A;border-radius:8px;padding:8px 10px;flex-shrink:0;display:flex;align-items:center;gap:8px;box-shadow:3px 3px 0 rgba(0,0,0,0.45)")">
+
+                    @* Medal *@
+                    <div style="font-family:'Fredoka One',cursive;font-size:20px;width:26px;text-align:center;flex-shrink:0;color:#1A1A1A">
+                        @medal
+                    </div>
+
+                    @* Circle avatar with logo *@
+                    <div style="@($"width:36px;height:36px;border-radius:50%;border:2px solid #1A1A1A;background:{entry.Group.Color};display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:14px;color:white;flex-shrink:0;box-shadow:2px 2px 0 #1A1A1A;overflow:hidden")">
+                        @if (entry.Group.TokenAssetPath is not null)
+                        {
+                            <img src="@entry.Group.TokenAssetPath" style="width:100%;height:100%;object-fit:contain" />
+                        }
+                        else { @initial }
+                    </div>
+
+                    @* Name + board position *@
+                    <div style="flex:1;min-width:0">
+                        <div style="font-family:'Fredoka One',cursive;font-size:clamp(12px,1.4vw,16px);color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                            @entry.Group.Name
+                        </div>
+                        @if (entry.Group.BoardPos is not null)
+                        {
+                            <div style="font-size:9px;color:#4A4035;font-weight:700;margin-top:1px">Space @entry.Group.BoardPos.SpaceIndex</div>
+                        }
+                    </div>
+
+                    @* Score pills *@
+                    <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+                        <div style="display:flex;align-items:center;gap:3px;background:var(--color-accent);border:2px solid #1A1A1A;border-radius:4px;padding:2px 7px;box-shadow:2px 2px 0 #1A1A1A">
+                            <img src="/img/ccn-coin.png" style="height:14px;width:auto" alt="coins" />
+                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(12px,1.5vw,18px);color:white">@entry.Coins</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:3px;background:#2563C4;border:2px solid #1A1A1A;border-radius:4px;padding:2px 7px;box-shadow:2px 2px 0 #1A1A1A">
+                            <img src="/img/ccn-star.png" style="height:14px;width:auto" alt="stars" />
+                            <span style="font-family:'Fredoka One',cursive;font-size:clamp(12px,1.5vw,18px);color:white">@entry.Stars</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<GroupEntry>      _ranked       = new();
+    private bool                  _loading      = true;
+    private HubConnection?        _hub;
+
+    private List<BoardSpaceView>  _spaces       = new();
+    private List<Group>           _groups       = new();
+    private Dictionary<Guid, int> _dbPositions  = new();
+    private Dictionary<Guid, int>? _livePositions;
+
+    // Block hit animation state
+    private string        _blockHitPhase   = "idle";
+    private Guid?         _blockHitGroupId;
+    private int?          _rollNumber;
+    private int           _moveStep;
+    private int           _totalSteps;
+    private BoardSpaceView? _landedSpace;
+    private int           _cycleNumber     = 1;
+    private System.Timers.Timer? _cycleTimer;
+
+    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _spaces = await BoardSvc.GetSpacesAsync(EventId);
+        await RefreshAsync();
+        _loading = false;
+    }
+
+    // Hub setup deferred to OnAfterRenderAsync so it only runs on the interactive circuit,
+    // never during Blazor Server prerendering (which creates a dead server-to-server connection
+    // that drops before TokenMoveStep events arrive).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/livehub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On("ScoresUpdated", async () =>
+        {
+            await RefreshAsync();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On<Guid, int>("BlockHitTriggered", async (groupId, _) =>
+        {
+            _blockHitGroupId = groupId;
+            _blockHitPhase   = "triggered";
+            _rollNumber      = null;
+            _moveStep        = 0;
+            _totalSteps      = 0;
+            _landedSpace     = null;
+            _livePositions   = new Dictionary<Guid, int>(_dbPositions);
+            StartCycleTimer();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On<Guid, int>("BlockHitNumberRevealed", async (groupId, steps) =>
+        {
+            StopCycleTimer();
+            _blockHitGroupId = groupId;
+            _rollNumber      = steps;
+            _totalSteps      = steps;
+            _moveStep        = 0;
+            _blockHitPhase   = "revealed";
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On<Guid, int>("TokenMoveStep", async (groupId, spaceIndex) =>
+        {
+            var isFirst = _blockHitPhase is not "moving";
+            _moveStep++;
+            _blockHitPhase = "moving";
+
+            if (isFirst)
+            {
+                // Dismiss the overlay first so the board is visible, then pause briefly
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(900);
+            }
+
+            var prev = _livePositions ?? new Dictionary<Guid, int>(_dbPositions);
+            _livePositions = new Dictionary<Guid, int>(prev) { [groupId] = spaceIndex };
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On<Guid, int>("TokenMoveDone", async (groupId, finalSpaceIndex) =>
+        {
+            var prev = _livePositions ?? new Dictionary<Guid, int>(_dbPositions);
+            _livePositions = new Dictionary<Guid, int>(prev) { [groupId] = finalSpaceIndex };
+            _blockHitPhase = "done";
+            _landedSpace   = _spaces.FirstOrDefault(s => s.SpaceIndex == finalSpaceIndex);
+            await InvokeAsync(StateHasChanged);
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(5000);
+                await RefreshAsync();
+                _livePositions   = null;
+                _blockHitPhase   = "idle";
+                _blockHitGroupId = null;
+                _rollNumber      = null;
+                _landedSpace     = null;
+                await InvokeAsync(StateHasChanged);
+            });
+        });
+
+        await _hub.StartAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        var groups = await GroupSvc.GetAllAsync();
+        var entries = new List<GroupEntry>();
+        foreach (var g in groups)
+        {
+            var coins = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Primary);
+            var stars = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Prestige);
+            entries.Add(new GroupEntry(g, coins, stars));
+        }
+        _ranked = entries
+            .OrderByDescending(e => e.Stars)
+            .ThenByDescending(e => e.Coins)
+            .Select((e, i) => e with { Rank = i + 1 })
+            .ToList();
+
+        _groups      = groups;
+        _dbPositions = groups
+            .Where(g => g.BoardPos is not null)
+            .ToDictionary(g => g.GroupId, g => g.BoardPos!.SpaceIndex);
+    }
+
+    private string BlockStyle() => _blockHitPhase switch
+    {
+        "triggered" =>
+            "width:clamp(90px,13vw,130px);height:clamp(90px,13vw,130px);border-radius:18px;" +
+            "background:linear-gradient(135deg,#FCCF00,#D68910);" +
+            "border:4px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;" +
+            "animation:blockBounce 0.5s ease-in-out infinite;box-shadow:0 6px 0 #A04000",
+        _ =>
+            "width:clamp(90px,13vw,130px);height:clamp(90px,13vw,130px);border-radius:18px;" +
+            "background:linear-gradient(135deg,#E83030,#C0392B);" +
+            "border:4px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;" +
+            "animation:shake 0.5s ease;box-shadow:0 6px 0 #7B241C,0 8px 30px rgba(231,76,60,0.5)"
+    };
+
+    private static string SpaceIcon(string cat) => cat switch
+    {
+        "BoardStart"     => "🏁",
+        "BoardCoinBonus" => "🪙",
+        "BoardPrestige"  => "⭐",
+        "BoardPenalty"   => "👹",
+        "MinuteToWinIt"  => "🎮",
+        _                => "❓"
+    };
+
+    private static string StarDisplay(int stars) => stars == 0
+        ? "–"
+        : stars <= 5
+            ? string.Concat(Enumerable.Repeat("⭐", stars))
+            : $"⭐×{stars}";
+
+    private void StartCycleTimer()
+    {
+        StopCycleTimer();
+        _cycleTimer = new System.Timers.Timer(90);
+        _cycleTimer.Elapsed += (_, _) =>
+        {
+            _cycleNumber = Random.Shared.Next(1, 13);
+            InvokeAsync(StateHasChanged);
+        };
+        _cycleTimer.AutoReset = true;
+        _cycleTimer.Start();
+    }
+
+    private void StopCycleTimer()
+    {
+        _cycleTimer?.Stop();
+        _cycleTimer?.Dispose();
+        _cycleTimer = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        StopCycleTimer();
+        if (_hub is not null) await _hub.DisposeAsync();
+    }
+
+    private record GroupEntry(Group Group, int Coins, int Stars, int Rank = 0);
+}

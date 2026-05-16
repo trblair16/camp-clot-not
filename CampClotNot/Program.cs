@@ -54,8 +54,11 @@ try
     builder.Services.AddScoped<IUserRepository, UserRepository>();
 
     // Services
+    builder.Services.AddSingleton<ThemeService>();   // one active theme per app instance
     builder.Services.AddScoped<GroupService>();
     builder.Services.AddScoped<TransactionService>();
+    builder.Services.AddScoped<BoardService>();
+    builder.Services.AddScoped<MiniGameService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<SeedService>();
 
@@ -118,7 +121,7 @@ try
         ctx.Response.Redirect("/login");
     });
 
-    app.MapHub<CampHub>("/camphub");
+    app.MapHub<LiveHub>("/livehub");
     app.MapBlazorHub();
     app.MapFallbackToPage("/_Host");
 
