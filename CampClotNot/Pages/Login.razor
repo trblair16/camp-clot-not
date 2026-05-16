@@ -1,35 +1,46 @@
 @page "/login"
+@layout LoginLayout
 
 <PageTitle>Sign In — Camp Clot Not</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
-    <MudPaper Class="pa-6" Elevation="3">
-        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Camp Clot Not</MudText>
-        <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-6">Sign In</MudText>
+@* Logo: fixed above the card, centered horizontally *@
+<img src="/img/ccn-logo-2026.png?v=2" alt="Camp Clot Not — Super Party 2026"
+     style="position:fixed;bottom:calc(50% + 165px);left:50%;transform:translateX(-50%);width:clamp(120px,25vw,180px);height:auto;pointer-events:none" />
 
-        @if (Error)
-        {
-            <MudAlert Severity="Severity.Error" Class="mb-4">Invalid email or password.</MudAlert>
-        }
+@* Card: exactly at viewport center *@
+<div class="ccn-panel"
+     style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(340px,calc(100vw - 32px));padding:20px">
 
-        <form method="post" action="/account/login">
-            <div class="mb-4">
-                <input type="email" name="email" placeholder="Email address"
-                       required autocomplete="email"
-                       style="width:100%;padding:14px 12px;border:1px solid rgba(0,0,0,0.23);border-radius:4px;font-size:1rem;box-sizing:border-box;font-family:inherit" />
-            </div>
-            <div class="mb-6">
-                <input type="password" name="password" placeholder="Password"
-                       required autocomplete="current-password"
-                       style="width:100%;padding:14px 12px;border:1px solid rgba(0,0,0,0.23);border-radius:4px;font-size:1rem;box-sizing:border-box;font-family:inherit" />
-            </div>
-            <button type="submit"
-                    style="width:100%;padding:10px 22px;background-color:#594AE2;color:#fff;border:none;border-radius:4px;font-size:0.875rem;font-weight:500;letter-spacing:0.09em;cursor:pointer;font-family:inherit;text-transform:uppercase">
-                Sign In
-            </button>
-        </form>
-    </MudPaper>
-</MudContainer>
+    <div style="font-family:'Fredoka One',cursive;font-size:20px;color:var(--black);text-align:center;margin-bottom:16px">
+        Staff Sign In
+    </div>
+
+    @if (Error)
+    {
+        <div style="background:#FEE2E2;border:2px solid #E83030;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:#C0392B">
+            ⚠️ Invalid email or password.
+        </div>
+    }
+
+    <form method="post" action="/account/login" style="display:flex;flex-direction:column;gap:12px">
+        <div>
+            <label style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);display:block;margin-bottom:4px">Email</label>
+            <input type="email" name="email" placeholder="you@example.com"
+                   required autocomplete="email"
+                   style="width:100%;padding:10px 12px;border:3px solid var(--black);border-radius:8px;font-size:14px;font-family:'Nunito',sans-serif;box-sizing:border-box;background:var(--bg-base);color:var(--black);outline:none;box-shadow:2px 2px 0 var(--black)" />
+        </div>
+        <div>
+            <label style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);display:block;margin-bottom:4px">Password</label>
+            <input type="password" name="password" placeholder="••••••••"
+                   required autocomplete="current-password"
+                   style="width:100%;padding:10px 12px;border:3px solid var(--black);border-radius:8px;font-size:14px;font-family:'Nunito',sans-serif;box-sizing:border-box;background:var(--bg-base);color:var(--black);outline:none;box-shadow:2px 2px 0 var(--black)" />
+        </div>
+        <button type="submit" class="ccn-btn"
+                style="width:100%;padding:11px;background:var(--color-primary);font-size:16px;border:3px solid var(--black);box-shadow:4px 4px 0 var(--black)">
+            Sign In
+        </button>
+    </form>
+</div>
 
 @code {
     [Parameter]

@@ -1,4 +1,4 @@
-using CampClotNot.Data.Entities;
+﻿using CampClotNot.Data.Entities;
 using CampClotNot.Hubs;
 using CampClotNot.Repositories;
 using Microsoft.AspNetCore.SignalR;
@@ -7,7 +7,7 @@ namespace CampClotNot.Services;
 
 public class TransactionService(
     ITransactionRepository transactions,
-    IHubContext<CampHub> hub)
+    IHubContext<LiveHub> hub)
 {
     public Task<List<Transaction>> GetAllAsync() => transactions.GetAllAsync();
 
@@ -42,3 +42,4 @@ public class TransactionService(
         await hub.Clients.All.SendAsync("ScoresUpdated");
     }
 }
+

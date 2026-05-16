@@ -17,7 +17,7 @@ public record BoardSpaceView(
 
 public class BoardService(
     IDbContextFactory<AppDbContext> factory,
-    IHubContext<CampHub> hub)
+    IHubContext<LiveHub> hub)
 {
     private const int TotalSpaces = 20;
 

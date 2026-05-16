@@ -58,7 +58,8 @@
         line-height: 1.4;
     }
 
-    /* ── Desktop admin dropdown panel ── */
+    /* ── Desktop dropdown panels (activities + admin share the same panel style) ── */
+    .nav-activities-dropdown,
     .nav-admin-dropdown { position: relative; }
     .nav-admin-panel {
         position: absolute;
@@ -129,8 +130,9 @@
     }
     .nav-tab .tab-icon { font-size: 20px; line-height: 1; }
 
-    /* ── Admin bottom sheet ── */
-    .nav-admin-sheet {
+    /* ── Bottom sheets (activities + admin share the same sheet style) ── */
+    .nav-admin-sheet,
+    .nav-activities-sheet {
         position: fixed;
         bottom: 64px;
         left: 0;
@@ -143,7 +145,9 @@
         animation: slideUp .2s ease;
     }
     .nav-admin-sheet a,
-    .nav-admin-sheet button {
+    .nav-admin-sheet button,
+    .nav-activities-sheet a,
+    .nav-activities-sheet button {
         display: flex;
         align-items: center;
         padding: 16px 20px;
@@ -159,7 +163,9 @@
         text-align: left;
     }
     .nav-admin-sheet a:last-child,
-    .nav-admin-sheet button:last-child { border-bottom: none; }
+    .nav-admin-sheet button:last-child,
+    .nav-activities-sheet a:last-child,
+    .nav-activities-sheet button:last-child { border-bottom: none; }
 </style>
 
 @* ── MOBILE HEADER ──────────────────────────────────────────────── *@
@@ -185,7 +191,28 @@
         <Authorized>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                 <a href="/" class="nav-link" style="@ActiveStyle("/", "#D12B2B")">📊 Dashboard</a>
-                <a href="/board" class="nav-link" style="@ActiveStyle("/board", "#F5C800")">🗺️ Activities</a>
+
+                @* ── Activities dropdown ── *@
+                <div class="nav-activities-dropdown">
+                    @if (_activitiesDropdownOpen)
+                    {
+                        <div style="position:fixed;inset:0;z-index:49"
+                             @onclick="() => _activitiesDropdownOpen = false"></div>
+                    }
+                    <button class="nav-link" style="@ActivitiesDropdownStyle()"
+                            @onclick="() => { _activitiesDropdownOpen = !_activitiesDropdownOpen; _adminDropdownOpen = false; }">
+                        🎮 Activities @(_activitiesDropdownOpen ? "▲" : "▼")
+                    </button>
+                    @if (_activitiesDropdownOpen)
+                    {
+                        <div class="nav-admin-panel">
+                            <a href="/board"     @onclick="() => _activitiesDropdownOpen = false">🗺️ Board Game</a>
+                            <AuthorizeView Roles="Admin" Context="actAdminCtx">
+                                <a href="/minigames" @onclick="() => _activitiesDropdownOpen = false">🎲 Mini-Game</a>
+                            </AuthorizeView>
+                        </div>
+                    }
+                </div>
 
                 <AuthorizeView Roles="Admin" Context="adminCtx">
                     <a href="/transactions" class="nav-link" style="@ActiveStyle("/transactions", "#2563C4")">📋 Transactions</a>
@@ -197,15 +224,15 @@
                                  @onclick="() => _adminDropdownOpen = false"></div>
                         }
                         <button class="nav-link" style="@AdminDropdownStyle()"
-                                @onclick="() => _adminDropdownOpen = !_adminDropdownOpen">
+                                @onclick="() => { _adminDropdownOpen = !_adminDropdownOpen; _activitiesDropdownOpen = false; }">
                             ⚙️ Admin @(_adminDropdownOpen ? "▲" : "▼")
                         </button>
                         @if (_adminDropdownOpen)
                         {
                             <div class="nav-admin-panel">
-                                <a href="/admin/board"   @onclick="() => _adminDropdownOpen = false">⚙️ Board Admin</a>
-                                <a href="/admin/groups"  @onclick="() => _adminDropdownOpen = false">👥 Groups</a>
-                                <a href="/admin/users"   @onclick="() => _adminDropdownOpen = false">🔑 Users</a>
+                                <a href="/admin/games"  @onclick="() => _adminDropdownOpen = false">🎮 Game Admin</a>
+                                <a href="/admin/groups" @onclick="() => _adminDropdownOpen = false">👥 Groups</a>
+                                <a href="/admin/users"  @onclick="() => _adminDropdownOpen = false">🔑 Users</a>
                             </div>
                         }
                     </div>
@@ -232,13 +259,14 @@
                 <span class="tab-icon">📊</span>
                 <span>Dashboard</span>
             </a>
-            <a href="/board" class="nav-tab @(IsActive("/board") ? "active" : "")">
-                <span class="tab-icon">🗺️</span>
+            <button class="nav-tab @(IsActivitiesActive() ? "active" : "")"
+                    @onclick="() => { _activitiesSheetOpen = !_activitiesSheetOpen; _adminSheetOpen = false; }">
+                <span class="tab-icon">🎮</span>
                 <span>Activities</span>
-            </a>
+            </button>
             <AuthorizeView Roles="Admin" Context="mobileAdminCtx">
                 <button class="nav-tab @(_adminSheetOpen ? "active" : "")"
-                        @onclick="() => _adminSheetOpen = !_adminSheetOpen">
+                        @onclick="() => { _adminSheetOpen = !_adminSheetOpen; _activitiesSheetOpen = false; }">
                     <span class="tab-icon">⚙️</span>
                     <span>Admin</span>
                 </button>
@@ -247,6 +275,19 @@
     </Authorized>
 </AuthorizeView>
 
+@* ── ACTIVITIES BOTTOM SHEET (mobile) ────────────────────────────── *@
+@if (_activitiesSheetOpen)
+{
+    <div style="position:fixed;inset:0;z-index:44;background:rgba(26,26,26,.4)"
+         @onclick="() => _activitiesSheetOpen = false"></div>
+    <div class="nav-activities-sheet">
+        <a href="/board"     @onclick="() => _activitiesSheetOpen = false">🗺️ Board Game</a>
+        <AuthorizeView Roles="Admin">
+            <a href="/minigames" @onclick="() => _activitiesSheetOpen = false">🎲 Mini-Game</a>
+        </AuthorizeView>
+    </div>
+}
+
 @* ── ADMIN BOTTOM SHEET (mobile) ─────────────────────────────────── *@
 @if (_adminSheetOpen)
 {
@@ -254,7 +295,7 @@
          @onclick="() => _adminSheetOpen = false"></div>
     <div class="nav-admin-sheet">
         <a href="/transactions" @onclick="() => _adminSheetOpen = false">📋 Transactions</a>
-        <a href="/admin/board"  @onclick="() => _adminSheetOpen = false">⚙️ Board Admin</a>
+        <a href="/admin/games"  @onclick="() => _adminSheetOpen = false">🎮 Game Admin</a>
         <a href="/admin/groups" @onclick="() => _adminSheetOpen = false">👥 Groups</a>
         <a href="/admin/users"  @onclick="() => _adminSheetOpen = false">🔑 Users</a>
         <button onclick="window.location='/logout'">🚪 Sign Out</button>
@@ -264,6 +305,8 @@
 @code {
     [Parameter] public EventCallback OnLeaderboardClick { get; set; }
 
+    private bool _activitiesDropdownOpen;
+    private bool _activitiesSheetOpen;
     private bool _adminDropdownOpen;
     private bool _adminSheetOpen;
 
@@ -273,13 +316,22 @@
             : ("/" + Nav.ToBaseRelativePath(Nav.Uri))
                 .StartsWith(href, StringComparison.OrdinalIgnoreCase);
 
+    private bool IsActivitiesActive() =>
+        IsActive("/board") || IsActive("/minigames");
+
     private string ActiveStyle(string href, string color)
     {
-        var active = href.StartsWith("/__")
-            ? false
-            : IsActive(href);
+        var active = href.StartsWith("/__") ? false : IsActive(href);
         return active
             ? $"border-color:{color};box-shadow:2px 2px 0 {color};background:{color};color:#1A1A1A"
+            : "";
+    }
+
+    private string ActivitiesDropdownStyle()
+    {
+        var active = IsActive("/board") || IsActive("/minigames");
+        return active
+            ? "border-color:#F5C800;box-shadow:2px 2px 0 #F5C800;background:#F5C800;color:#1A1A1A"
             : "";
     }
 

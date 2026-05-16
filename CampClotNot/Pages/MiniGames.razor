@@ -1,0 +1,219 @@
+@page "/minigames"
+@attribute [Authorize(Roles = "Admin")]
+@inject MiniGameService MiniGameSvc
+@inject NavigationManager Nav
+
+<PageTitle>Mini-Game — Camp Clot Not</PageTitle>
+
+<style>
+    .mg-activity-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border: 3px solid var(--black);
+        border-radius: 10px;
+        background: var(--panel-bg);
+        box-shadow: 3px 3px 0 var(--black);
+        margin-bottom: 10px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 16px;
+        transition: background .15s;
+    }
+    .mg-activity-row.scripted {
+        background: #F5EED8;
+        border-color: #F5C800;
+        box-shadow: 3px 3px 0 #A08000;
+    }
+    .mg-activity-row.triggered {
+        background: #E8F5E9;
+        border-color: #4CAF50;
+        box-shadow: 3px 3px 0 #2E7D32;
+        opacity: .7;
+    }
+</style>
+
+<div style="max-width:640px;margin:0 auto;padding:24px 16px">
+
+    @* ── Header ── *@
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div>
+            <div style="font-family:'Fredoka One',cursive;font-size:26px;line-height:1">🎲 Mini-Game</div>
+            <div style="font-size:13px;color:#888;margin-top:2px">Evening challenge spinner</div>
+        </div>
+        <a href="/minigames/display" target="_blank"
+           style="font-family:'Fredoka One',cursive;font-size:13px;padding:8px 16px;border:3px solid var(--black);border-radius:8px;background:var(--panel-bg);box-shadow:2px 2px 0 var(--black);text-decoration:none;color:var(--black)">
+            📺 Open Display
+        </a>
+    </div>
+
+    @* ── Day selector ── *@
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <span style="font-family:'Fredoka One',cursive;font-size:14px">Camp Day:</span>
+        @for (var d = 1; d <= 5; d++)
+        {
+            var day = d;
+            <button @onclick="() => SelectDay(day)"
+                    style="@DayBtnStyle(day)">
+                @day
+            </button>
+        }
+    </div>
+
+    @* ── Scripted result for selected day ── *@
+    @{
+        var todayScript = _scripts?.FirstOrDefault(s => s.CampDay == _selectedDay);
+    }
+    <div style="padding:14px 18px;border:3px solid var(--black);border-radius:10px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black);margin-bottom:20px">
+        <div style="font-size:11px;font-weight:800;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Day @_selectedDay — Scripted Result</div>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
+        }
+        else if (todayScript is null)
+        {
+            <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#AAA">Not scripted — set in Game Admin</div>
+        }
+        else
+        {
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <div style="font-family:'Fredoka One',cursive;font-size:18px">🎮 @todayScript.ActivityName</div>
+                @if (todayScript.IsTriggered)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">✓ Triggered</MudChip>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Controls ── *@
+    <div style="display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+        @if (_phase == "idle")
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large"
+                       Disabled="@(todayScript is null || todayScript.IsTriggered)"
+                       OnClick="StartSpinAsync"
+                       Style="font-family:'Fredoka One',cursive;font-size:16px;border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)">
+                🎰 Start Spin
+            </MudButton>
+        }
+        else if (_phase == "spinning")
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
+                       OnClick="RevealAsync"
+                       Style="font-family:'Fredoka One',cursive;font-size:16px;border:3px solid var(--black);box-shadow:3px 3px 0 var(--black);animation:blockBounce 0.6s ease-in-out infinite">
+                🎯 Reveal Result!
+            </MudButton>
+        }
+    </div>
+
+    @* ── Reveal result banner ── *@
+    @if (_phase == "revealed" && _revealedName is not null)
+    {
+        <div style="padding:20px 24px;border:4px solid #F5C800;border-radius:12px;background:#FFFDE7;box-shadow:4px 4px 0 #A08000;margin-bottom:24px;text-align:center">
+            <div style="font-size:11px;font-weight:800;color:#A08000;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Tonight's Challenge!</div>
+            <div style="font-family:'Fredoka One',cursive;font-size:28px;color:#1A1A1A">🎮 @_revealedName</div>
+            <div style="margin-top:16px">
+                <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small"
+                           OnClick="() => _txDialog.OpenAsync()"
+                           Style="font-family:'Fredoka One',cursive;border:2px solid var(--black);box-shadow:2px 2px 0 var(--black)">
+                    🪙 Log Coins / Stars
+                </MudButton>
+            </div>
+        </div>
+    }
+
+    @* ── Activity list ── *@
+    @if (!_loading)
+    {
+        <div style="font-size:11px;font-weight:800;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Activities</div>
+        @if (_activities.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">No MinuteToWinIt activities seeded yet.</MudAlert>
+        }
+        else
+        {
+            @foreach (var activity in _activities)
+            {
+                var isScripted  = todayScript?.ActivityId == activity.ActivityId;
+                var isTriggered = isScripted && todayScript!.IsTriggered;
+                <div class="mg-activity-row @(isTriggered ? "triggered" : isScripted ? "scripted" : "")">
+                    <span style="font-size:20px">🎮</span>
+                    <div style="flex:1;min-width:0">
+                        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@activity.Name</div>
+                        @if (!string.IsNullOrEmpty(activity.Description))
+                        {
+                            <div style="font-family:inherit;font-size:12px;font-weight:400;color:#888;margin-top:2px">@activity.Description</div>
+                        }
+                    </div>
+                    @if (isScripted)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="@(isTriggered ? Color.Success : Color.Warning)" Variant="Variant.Outlined">
+                            @(isTriggered ? "✓ Done" : "★ Tonight")
+                        </MudChip>
+                    }
+                </div>
+            }
+        }
+    }
+</div>
+
+<LogTransactionDialog @ref="_txDialog" OnTransactionPosted="LoadAsync" />
+
+@code {
+    private List<Activity>           _activities = new();
+    private List<MiniGameScriptView> _scripts    = new();
+    private bool                     _loading    = true;
+    private LogTransactionDialog     _txDialog = null!;
+
+    private int    _selectedDay   = 1;
+    private string _phase         = "idle";   // idle | spinning | revealed
+    private string? _revealedName;
+
+    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        var (activities, scripts) = (
+            await MiniGameSvc.GetActivitiesAsync(EventId),
+            await MiniGameSvc.GetScriptsAsync(EventId)
+        );
+        _activities = activities;
+        _scripts    = scripts;
+    }
+
+    private void SelectDay(int day)
+    {
+        _selectedDay  = day;
+        _phase        = "idle";
+        _revealedName = null;
+    }
+
+    private async Task StartSpinAsync()
+    {
+        await MiniGameSvc.TriggerSpinAsync(_selectedDay);
+        _phase = "spinning";
+    }
+
+    private async Task RevealAsync()
+    {
+        var result = await MiniGameSvc.RevealAsync(EventId, _selectedDay);
+        if (result is not null)
+        {
+            _revealedName = result.Value.activityName;
+            _phase        = "revealed";
+            _scripts      = await MiniGameSvc.GetScriptsAsync(EventId);
+        }
+    }
+
+    private string DayBtnStyle(int day) =>
+        day == _selectedDay
+            ? "font-family:'Fredoka One',cursive;font-size:14px;width:36px;height:36px;border:3px solid var(--black);border-radius:8px;background:var(--color-primary);color:white;cursor:pointer;box-shadow:2px 2px 0 var(--black)"
+            : "font-family:'Fredoka One',cursive;font-size:14px;width:36px;height:36px;border:3px solid #CCC;border-radius:8px;background:transparent;color:var(--black);cursor:pointer";
+}

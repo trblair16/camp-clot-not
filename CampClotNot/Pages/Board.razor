@@ -14,7 +14,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div class="ccn-section-label" style="margin:0">🗺️ Game Board</div>
         <div style="display:flex;gap:8px">
-            <a href="/display" target="_blank" class="ccn-btn" style="text-decoration:none">
+            <a href="/board/display" target="_blank" class="ccn-btn" style="text-decoration:none">
                 📺 Open Display
             </a>
             @if (_isAdmin)
@@ -265,7 +265,7 @@
         if (!firstRender) return;
 
         _hub = new HubConnectionBuilder()
-            .WithUrl(Nav.ToAbsoluteUri("/camphub"))
+            .WithUrl(Nav.ToAbsoluteUri("/livehub"))
             .WithAutomaticReconnect()
             .Build();
 

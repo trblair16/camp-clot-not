@@ -1,0 +1,370 @@
+@page "/admin/games"
+@attribute [Authorize(Roles = "Admin")]
+@inject BoardService BoardSvc
+@inject MiniGameService MiniGameSvc
+@inject GroupService GroupSvc
+
+<PageTitle>Game Admin — Camp Clot Not</PageTitle>
+
+<MudText Typo="Typo.h5" Style="font-family:'Fredoka One',cursive;margin-bottom:24px">
+    🎮 Game Admin
+</MudText>
+
+<MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+
+    @* ── TAB 1: BOARD SPACES ───────────────────────────────────────────────── *@
+    <MudTabPanel Text="Board Spaces">
+        <MudText Typo="Typo.body2" Style="margin-bottom:16px;color:#888">
+            20-space layout seeded from mockup. Adjust XPos/YPos in SeedService and restart to reposition.
+        </MudText>
+
+        @if (_spaces is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
+        }
+        else
+        {
+            <MudTable Items="_spaces" Dense="true" Striped="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>#</MudTh>
+                    <MudTh>Type</MudTh>
+                    <MudTh>Activity</MudTh>
+                    <MudTh>X</MudTh>
+                    <MudTh>Y</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.SpaceIndex</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small" Style="@($"background:{SpaceColor(context.CategorySystemName)};color:white")">
+                            @SpaceIcon(context.CategorySystemName) @context.CategorySystemName
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>@context.ActivityName</MudTd>
+                    <MudTd>@context.XPos</MudTd>
+                    <MudTd>@context.YPos</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudTabPanel>
+
+    @* ── TAB 2: BLOCK HIT SCRIPTS ──────────────────────────────────────────── *@
+    <MudTabPanel Text="Block Hit Scripts">
+        <MudText Typo="Typo.body2" Style="margin-bottom:16px;color:#888">
+            Set the destination space for each group per camp day. Cannot edit after triggered.
+        </MudText>
+
+        @if (_groups is null || _blockHitScripts is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
+        }
+        else
+        {
+            <div style="overflow-x:auto">
+                <table style="border-collapse:collapse;width:100%;min-width:480px">
+                    <thead>
+                        <tr>
+                            <th style="@ThStyle()">Group</th>
+                            @for (var d = 1; d <= 5; d++)
+                            {
+                                <th style="@ThStyle()">Day @d</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in _groups)
+                        {
+                            <tr>
+                                <td style="@TdStyle()">
+                                    <div style="display:flex;align-items:center;gap:8px">
+                                        <div style="@($"width:12px;height:12px;border-radius:50%;background:{group.Color};flex-shrink:0")"></div>
+                                        <span style="font-weight:700;font-size:13px">@group.ShortName</span>
+                                        <span style="color:#888;font-size:12px">@group.Name</span>
+                                    </div>
+                                </td>
+                                @for (var day = 1; day <= 5; day++)
+                                {
+                                    var d = day;
+                                    var script = _blockHitScripts.FirstOrDefault(s => s.GroupId == group.GroupId && s.CampDay == d);
+                                    <td style="@TdStyle()">
+                                        @if (script?.IsTriggered == true)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
+                                                ✓ Space @script.DestinationSpaceIndex
+                                            </MudChip>
+                                        }
+                                        else
+                                        {
+                                            <MudNumericField T="int?" Value="@(script?.DestinationSpaceIndex)"
+                                                             ValueChanged="@(v => OnBlockHitDestChanged(group.GroupId, d, v))"
+                                                             Min="0" Max="19" Variant="Variant.Outlined"
+                                                             Margin="Margin.Dense" Style="width:80px"
+                                                             Placeholder="—" />
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (_blockHitSaveMsg is not null)
+            {
+                <MudAlert Severity="Severity.Success" Dense="true" Style="margin-top:12px">@_blockHitSaveMsg</MudAlert>
+            }
+        }
+    </MudTabPanel>
+
+    @* ── TAB 3: MINI-GAME SCRIPTS ──────────────────────────────────────────── *@
+    <MudTabPanel Text="Mini-Game Scripts">
+        <MudText Typo="Typo.body2" Style="margin-bottom:16px;color:#888">
+            Set the activity revealed for each camp day's evening mini-game. Cannot edit after triggered.
+        </MudText>
+
+        @if (_miniGameActivities is null || _miniGameScripts is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
+        }
+        else if (_miniGameActivities.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">
+                No MinuteToWinIt activities seeded yet. Add activities with category "MinuteToWinIt" in SeedService and restart.
+            </MudAlert>
+        }
+        else
+        {
+            <div style="overflow-x:auto">
+                <table style="border-collapse:collapse;width:100%;max-width:640px">
+                    <thead>
+                        <tr>
+                            <th style="@ThStyle()">Camp Day</th>
+                            <th style="@ThStyle()">Activity</th>
+                            <th style="@ThStyle()">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var day = 1; day <= 5; day++)
+                        {
+                            var d = day;
+                            var script = _miniGameScripts.FirstOrDefault(s => s.CampDay == d);
+                            <tr>
+                                <td style="@TdStyle()">
+                                    <span style="font-weight:700;font-size:13px">Day @d</span>
+                                </td>
+                                <td style="@TdStyle()">
+                                    @if (script?.IsTriggered == true)
+                                    {
+                                        <span style="font-size:13px;color:#888">@script.ActivityName</span>
+                                    }
+                                    else
+                                    {
+                                        <MudSelect T="Guid?" Value="@(script?.ActivityId)"
+                                                   ValueChanged="@(v => OnMiniGameActivityChanged(d, v))"
+                                                   Variant="Variant.Outlined" Margin="Margin.Dense"
+                                                   Style="min-width:220px" Placeholder="— pick activity —">
+                                            @foreach (var activity in _miniGameActivities)
+                                            {
+                                                <MudSelectItem T="Guid?" Value="@((Guid?)activity.ActivityId)">
+                                                    @activity.Name
+                                                </MudSelectItem>
+                                            }
+                                        </MudSelect>
+                                    }
+                                </td>
+                                <td style="@TdStyle()">
+                                    @if (script?.IsTriggered == true)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">✓ Triggered</MudChip>
+                                    }
+                                    else if (script is not null)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">Scripted</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Not set</MudChip>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (_miniGameSaveMsg is not null)
+            {
+                <MudAlert Severity="Severity.Success" Dense="true" Style="margin-top:12px">@_miniGameSaveMsg</MudAlert>
+            }
+        }
+    </MudTabPanel>
+
+    @* ── TAB 4: RESET (dev/testing) ────────────────────────────────────────── *@
+    <MudTabPanel Text="Reset">
+        <MudText Typo="Typo.body2" Style="margin-bottom:20px;color:#888">
+            Testing utilities — reset scripted sequences so animations can be re-run.
+        </MudText>
+
+        <div style="display:flex;flex-direction:column;gap:24px;max-width:480px">
+            <div>
+                <MudText Typo="Typo.subtitle2" Style="margin-bottom:12px">Block Hit — Reset Day</MudText>
+                <MudText Typo="Typo.body2" Style="margin-bottom:12px;color:#888">
+                    Moves all groups back to space 0 and un-triggers all block hit scripts for the selected day.
+                </MudText>
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                    <MudNumericField T="int" @bind-Value="_resetDay" Label="Camp Day" Min="1" Max="5"
+                                     Variant="Variant.Outlined" Style="width:120px" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning"
+                               Disabled="@_resettingBoard" OnClick="ResetBoardDayAsync">
+                        @(_resettingBoard ? "Resetting…" : "⟳ Reset Board Day")
+                    </MudButton>
+                    @if (_resetBoardMsg is not null)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">@_resetBoardMsg</MudAlert>
+                    }
+                </div>
+            </div>
+
+            <MudDivider />
+
+            <div>
+                <MudText Typo="Typo.subtitle2" Style="margin-bottom:12px">Mini-Game — Reset Day</MudText>
+                <MudText Typo="Typo.body2" Style="margin-bottom:12px;color:#888">
+                    Un-triggers the mini-game script for the selected day so the spinner can be re-run.
+                </MudText>
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                    <MudNumericField T="int" @bind-Value="_resetMiniGameDay" Label="Camp Day" Min="1" Max="5"
+                                     Variant="Variant.Outlined" Style="width:120px" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning"
+                               Disabled="@_resettingMiniGame" OnClick="ResetMiniGameDayAsync">
+                        @(_resettingMiniGame ? "Resetting…" : "⟳ Reset Mini-Game Day")
+                    </MudButton>
+                    @if (_resetMiniGameMsg is not null)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">@_resetMiniGameMsg</MudAlert>
+                    }
+                </div>
+            </div>
+        </div>
+    </MudTabPanel>
+
+</MudTabs>
+
+@code {
+    private List<BoardSpaceView>?      _spaces;
+    private List<Group>?               _groups;
+    private List<ScriptedBlockHit>?    _blockHitScripts;
+    private List<Activity>?            _miniGameActivities;
+    private List<MiniGameScriptView>?  _miniGameScripts;
+
+    private string? _blockHitSaveMsg;
+    private string? _miniGameSaveMsg;
+
+    private int     _resetDay        = 1;
+    private bool    _resettingBoard;
+    private string? _resetBoardMsg;
+
+    private int     _resetMiniGameDay  = 1;
+    private bool    _resettingMiniGame;
+    private string? _resetMiniGameMsg;
+
+    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            LoadBoardDataAsync(),
+            LoadMiniGameDataAsync()
+        );
+    }
+
+    private async Task LoadBoardDataAsync()
+    {
+        _spaces          = await BoardSvc.GetSpacesAsync(EventId);
+        _groups          = await GroupSvc.GetAllAsync();
+        _blockHitScripts = await BoardSvc.GetScriptedBlockHitsAsync(EventId);
+    }
+
+    private async Task LoadMiniGameDataAsync()
+    {
+        _miniGameActivities = await MiniGameSvc.GetActivitiesAsync(EventId);
+        _miniGameScripts    = await MiniGameSvc.GetScriptsAsync(EventId);
+    }
+
+    private async Task OnBlockHitDestChanged(Guid groupId, int campDay, int? destination)
+    {
+        if (destination is null) return;
+        await BoardSvc.UpsertScriptAsync(groupId, EventId, campDay, destination.Value);
+        _blockHitScripts = await BoardSvc.GetScriptedBlockHitsAsync(EventId);
+        _blockHitSaveMsg = $"Day {campDay} destination saved.";
+        StateHasChanged();
+        await Task.Delay(2500);
+        _blockHitSaveMsg = null;
+        StateHasChanged();
+    }
+
+    private async Task OnMiniGameActivityChanged(int campDay, Guid? activityId)
+    {
+        if (activityId is null) return;
+        await MiniGameSvc.UpsertScriptAsync(EventId, campDay, activityId.Value);
+        _miniGameScripts = await MiniGameSvc.GetScriptsAsync(EventId);
+        _miniGameSaveMsg = $"Day {campDay} mini-game saved.";
+        StateHasChanged();
+        await Task.Delay(2500);
+        _miniGameSaveMsg = null;
+        StateHasChanged();
+    }
+
+    private async Task ResetBoardDayAsync()
+    {
+        _resettingBoard = true;
+        _resetBoardMsg  = null;
+        await BoardSvc.ResetDayAsync(EventId, _resetDay);
+        _blockHitScripts = await BoardSvc.GetScriptedBlockHitsAsync(EventId);
+        _resetBoardMsg   = $"Day {_resetDay} reset — all groups returned to space 0.";
+        _resettingBoard  = false;
+        StateHasChanged();
+        await Task.Delay(4000);
+        _resetBoardMsg = null;
+        StateHasChanged();
+    }
+
+    private async Task ResetMiniGameDayAsync()
+    {
+        _resettingMiniGame = true;
+        _resetMiniGameMsg  = null;
+        await MiniGameSvc.ResetDayAsync(EventId, _resetMiniGameDay);
+        _miniGameScripts   = await MiniGameSvc.GetScriptsAsync(EventId);
+        _resetMiniGameMsg  = $"Day {_resetMiniGameDay} mini-game reset.";
+        _resettingMiniGame = false;
+        StateHasChanged();
+        await Task.Delay(4000);
+        _resetMiniGameMsg = null;
+        StateHasChanged();
+    }
+
+    private static string SpaceColor(string cat) => cat switch
+    {
+        "BoardStart"     => "#95A5A6",
+        "BoardCoinBonus" => "#F39C12",
+        "BoardPrestige"  => "#E74C3C",
+        "BoardPenalty"   => "#C0392B",
+        "MinuteToWinIt"  => "#9B59B6",
+        _                => "#607D8B"
+    };
+
+    private static string SpaceIcon(string cat) => cat switch
+    {
+        "BoardStart"     => "🏁",
+        "BoardCoinBonus" => "🪙",
+        "BoardPrestige"  => "⭐",
+        "BoardPenalty"   => "👹",
+        "MinuteToWinIt"  => "🎮",
+        _                => "❓"
+    };
+
+    private static string ThStyle() =>
+        "padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)";
+
+    private static string TdStyle() =>
+        "padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle";
+}
