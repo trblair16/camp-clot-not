@@ -77,7 +77,9 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid ActTypeBoardCoinBonus  = new("0000000b-000b-000b-000b-000000000002");
         public static readonly Guid ActTypeBoardPrestige   = new("0000000b-000b-000b-000b-000000000003");
         public static readonly Guid ActTypeBoardPenalty    = new("0000000b-000b-000b-000b-000000000004");
-        public static readonly Guid ActTypeMtwiPlaceholder = new("0000000b-000b-000b-000b-000000000005");
+        public static readonly Guid ActTypeMtwiPlaceholder  = new("0000000b-000b-000b-000b-000000000005");
+        public static readonly Guid ActTypeMtwiTrivia        = new("0000000b-000b-000b-000b-000000000006");
+        public static readonly Guid ActTypeMtwiRelay         = new("0000000b-000b-000b-000b-000000000007");
 
         // Activities — one placeholder per type, scoped to CCN 2026
         // Real activities replace these when Katelyn/Vicki confirm the schedule
@@ -86,6 +88,8 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid ActBoardPrestige   = new("0000000c-000c-000c-000c-000000000003");
         public static readonly Guid ActBoardPenalty    = new("0000000c-000c-000c-000c-000000000004");
         public static readonly Guid ActMtwiPlaceholder = new("0000000c-000c-000c-000c-000000000005");
+        public static readonly Guid ActMtwiTrivia      = new("0000000c-000c-000c-000c-000000000006");
+        public static readonly Guid ActMtwiRelay       = new("0000000c-000c-000c-000c-000000000007");
 
         // BoardSpaces — 20 spaces, layout matches mockup/ccn-mockup-v2.jsx
         public static readonly Guid Space0  = new("0000000d-000d-000d-000d-000000000001");
@@ -402,7 +406,9 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             new { Id = Id.ActTypeBoardCoinBonus,  CategoryId = Id.CatBoardCoinBonus, Name = "Coin Bonus",     SystemName = "BoardCoinBonus"  },
             new { Id = Id.ActTypeBoardPrestige,   CategoryId = Id.CatBoardPrestige,  Name = "Star Space",     SystemName = "BoardPrestige"   },
             new { Id = Id.ActTypeBoardPenalty,    CategoryId = Id.CatBoardPenalty,   Name = "Bowser Penalty", SystemName = "BoardPenalty"    },
-            new { Id = Id.ActTypeMtwiPlaceholder, CategoryId = Id.CatMinuteToWinIt,  Name = "Mini-Game",      SystemName = "MtwiPlaceholder" },
+            new { Id = Id.ActTypeMtwiPlaceholder, CategoryId = Id.CatMinuteToWinIt, Name = "Mini-Game",                       SystemName = "MtwiPlaceholder" },
+            new { Id = Id.ActTypeMtwiTrivia,      CategoryId = Id.CatMinuteToWinIt, Name = "Mushroom Kingdom Trivia Showdown", SystemName = "MtwiTrivia"      },
+            new { Id = Id.ActTypeMtwiRelay,       CategoryId = Id.CatMinuteToWinIt, Name = "Yoshi Egg Rescue Relay",           SystemName = "MtwiRelay"       },
         };
 
         foreach (var def in defs)
@@ -429,11 +435,13 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     {
         var defs = new[]
         {
-            new { Id = Id.ActBoardStart,      TypeId = Id.ActTypeBoardStart,      Name = "Start"       },
-            new { Id = Id.ActBoardCoinBonus,  TypeId = Id.ActTypeBoardCoinBonus,  Name = "Coin Bonus"  },
-            new { Id = Id.ActBoardPrestige,   TypeId = Id.ActTypeBoardPrestige,   Name = "Star Space"  },
-            new { Id = Id.ActBoardPenalty,    TypeId = Id.ActTypeBoardPenalty,    Name = "Bowser!"     },
-            new { Id = Id.ActMtwiPlaceholder, TypeId = Id.ActTypeMtwiPlaceholder, Name = "Mini-Game"   },
+            new { Id = Id.ActBoardStart,      TypeId = Id.ActTypeBoardStart,      Name = "Start",                            Description = "Board starting space"                                                          },
+            new { Id = Id.ActBoardCoinBonus,  TypeId = Id.ActTypeBoardCoinBonus,  Name = "Coin Bonus",                       Description = "Land here to earn bonus coins"                                                 },
+            new { Id = Id.ActBoardPrestige,   TypeId = Id.ActTypeBoardPrestige,   Name = "Star Space",                       Description = "Land here to earn a star"                                                      },
+            new { Id = Id.ActBoardPenalty,    TypeId = Id.ActTypeBoardPenalty,    Name = "Bowser!",                          Description = "Bowser penalty space"                                                          },
+            new { Id = Id.ActMtwiPlaceholder, TypeId = Id.ActTypeMtwiPlaceholder, Name = "Mini-Game",                       Description = "Placeholder mini-game activity"                                                 },
+            new { Id = Id.ActMtwiTrivia,      TypeId = Id.ActTypeMtwiTrivia,      Name = "Mushroom Kingdom Trivia Showdown", Description = "Gameshow-style Nintendo trivia — Jeopardy, Family Feud, or Millionaire format"  },
+            new { Id = Id.ActMtwiRelay,       TypeId = Id.ActTypeMtwiRelay,       Name = "Yoshi Egg Rescue Relay",           Description = "Camp-wide relay race to recover the Yoshi eggs Bowser has stolen"               },
         };
 
         foreach (var def in defs)
@@ -446,7 +454,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
                     EventId        = Id.EventCcn2026,
                     ActivityTypeId = def.TypeId,
                     Name           = def.Name,
-                    Description    = def.Name
+                    Description    = def.Description
                 });
             }
         }

@@ -1,4 +1,4 @@
-@page "/display"
+@page "/board/display"
 @layout DisplayLayout
 @attribute [Authorize(Roles = "Display,Admin")]
 @inject GroupService GroupSvc
@@ -214,7 +214,7 @@
         if (!firstRender) return;
 
         _hub = new HubConnectionBuilder()
-            .WithUrl(Nav.ToAbsoluteUri("/camphub"))
+            .WithUrl(Nav.ToAbsoluteUri("/livehub"))
             .WithAutomaticReconnect()
             .Build();
 

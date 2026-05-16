@@ -1,5 +1,17 @@
 @inject NavigationManager Nav
+@inject IHttpContextAccessor HttpCtx
 
 @code {
-    protected override void OnInitialized() => Nav.NavigateTo("/login", forceLoad: true);
+    protected override void OnInitialized()
+    {
+        var http = HttpCtx.HttpContext;
+        // During prerendering HttpContext is available — use a real HTTP redirect
+        // so NavigationException never bubbles up through the dev exception page.
+        // During the interactive SignalR circuit HttpContext is null, so fall back
+        // to NavigateTo which Blazor's router handles correctly.
+        if (http is not null && !http.Response.HasStarted)
+            http.Response.Redirect("/login");
+        else
+            Nav.NavigateTo("/login", forceLoad: true);
+    }
 }

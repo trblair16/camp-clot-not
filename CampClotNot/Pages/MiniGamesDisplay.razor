@@ -1,0 +1,219 @@
+@page "/minigames/display"
+@layout DisplayLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject MiniGameService MiniGameSvc
+@inject NavigationManager Nav
+@implements IAsyncDisposable
+
+<PageTitle>Mini-Game Display — Camp Clot Not</PageTitle>
+
+<style>
+    @@keyframes popIn {
+        0%   { transform: scale(0.6); opacity: 0; }
+        70%  { transform: scale(1.08); }
+        100% { transform: scale(1);   opacity: 1; }
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    @@keyframes glow {
+        0%, 100% { box-shadow: 0 0 12px 2px var(--color-primary); }
+        50%       { box-shadow: 0 0 28px 8px var(--color-primary); }
+    }
+    @@keyframes revealPulse {
+        0%, 100% { transform: scale(1); }
+        50%       { transform: scale(1.04); }
+    }
+</style>
+
+<div style="display:flex;flex-direction:column;min-height:100vh;padding:28px 40px">
+
+    @* ── Title bar — matches /display layout ── *@
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;flex-shrink:0;gap:2px">
+        <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:clamp(32px,4.5vw,54px);width:auto;object-fit:contain" />
+        <span style="font-family:'Fredoka One',cursive;font-size:clamp(9px,1.1vw,14px);color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1">SUPER PARTY '26</span>
+    </div>
+
+    @* ── Activity list ── *@
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:6px 8px;justify-content:center">
+
+        @if (_loading)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Warning" Style="margin:auto" />
+        }
+        else if (_activities.Count == 0)
+        {
+            <div style="text-align:center;font-family:'Fredoka One',cursive;font-size:clamp(16px,2vw,24px);color:var(--text-light)">
+                No activities seeded yet.
+            </div>
+        }
+        else
+        {
+            @for (var i = 0; i < _activities.Count; i++)
+            {
+                var idx      = i;
+                var activity = _activities[i];
+                var isHighlighted = _highlightedIndex == idx;
+                var isRevealed    = _phase == "revealed" && _revealedActivityId == activity.ActivityId;
+
+                <div style="@ActivityRowStyle(isHighlighted, isRevealed)">
+
+                    @* Hand pointer ── only shown on highlighted row during cycling/decelerating *@
+                    <div style="@HandStyle(isHighlighted)">
+                        @if (isHighlighted && _phase is "cycling" or "decelerating")
+                        {
+                            <span style="font-size:clamp(20px,3vw,36px)">👉</span>
+                        }
+                        else if (isRevealed)
+                        {
+                            <span style="font-size:clamp(20px,3vw,36px);animation:popIn 0.4s ease">👉</span>
+                        }
+                    </div>
+
+                    @* Activity name ── *@
+                    <div style="@ActivityNameStyle(isHighlighted, isRevealed)">
+                        🎮 @activity.Name
+                    </div>
+
+                    @* "Tonight's Challenge!" badge on reveal ── *@
+                    @if (isRevealed)
+                    {
+                        <div style="font-family:'Fredoka One',cursive;font-size:clamp(12px,1.5vw,18px);color:white;white-space:nowrap;animation:popIn 0.5s ease 0.3s both;flex-shrink:0">
+                            ★ Tonight's Challenge!
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @* ── Idle prompt ── *@
+    @if (_phase == "idle" && !_loading)
+    {
+        <div style="text-align:center;padding-top:16px;flex-shrink:0;animation:fadeIn 0.5s ease">
+            <div style="font-family:'Fredoka One',cursive;font-size:clamp(13px,1.5vw,18px);color:rgba(255,255,255,0.35);letter-spacing:2px;text-transform:uppercase">
+                Waiting for admin to start the spin...
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Activity> _activities        = new();
+    private bool           _loading           = true;
+    private HubConnection? _hub;
+
+    private string  _phase             = "idle";   // idle | cycling | decelerating | revealed
+    private int     _highlightedIndex  = -1;
+    private Guid?   _revealedActivityId;
+    private System.Timers.Timer? _cycleTimer;
+
+    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _activities = await MiniGameSvc.GetActivitiesAsync(EventId);
+        _loading    = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/livehub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On<int>("MiniGameSpinTriggered", async (_) =>
+        {
+            _phase            = "cycling";
+            _highlightedIndex = 0;
+            _revealedActivityId = null;
+            StartCycleTimer();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On<Guid, string>("MiniGameSpinRevealed", async (activityId, activityName) =>
+        {
+            _revealedActivityId = activityId;
+            _phase              = "decelerating";
+            StopCycleTimer();
+            _ = Task.Run(DecelerateAsync);
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On("MiniGameSpinReset", async () =>
+        {
+            StopCycleTimer();
+            _phase              = "idle";
+            _highlightedIndex   = -1;
+            _revealedActivityId = null;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hub.StartAsync();
+    }
+
+    private async Task DecelerateAsync()
+    {
+        if (_activities.Count == 0) return;
+
+        var delays = new[] { 220, 330, 470, 660, 920, 1250 };
+        foreach (var delay in delays)
+        {
+            _highlightedIndex = (_highlightedIndex + 1) % _activities.Count;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(delay);
+        }
+
+        // Snap to the scripted result
+        var revealedIdx = _activities.FindIndex(a => a.ActivityId == _revealedActivityId);
+        _highlightedIndex = revealedIdx >= 0 ? revealedIdx : 0;
+        _phase            = "revealed";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void StartCycleTimer()
+    {
+        StopCycleTimer();
+        _cycleTimer = new System.Timers.Timer(120);
+        _cycleTimer.Elapsed += (_, _) =>
+        {
+            if (_activities.Count > 0)
+                _highlightedIndex = (_highlightedIndex + 1) % _activities.Count;
+            InvokeAsync(StateHasChanged);
+        };
+        _cycleTimer.AutoReset = true;
+        _cycleTimer.Start();
+    }
+
+    private void StopCycleTimer()
+    {
+        _cycleTimer?.Stop();
+        _cycleTimer?.Dispose();
+        _cycleTimer = null;
+    }
+
+    private string ActivityRowStyle(bool highlighted, bool revealed) =>
+        revealed
+            ? "display:flex;align-items:center;gap:16px;padding:clamp(12px,1.8vw,22px) clamp(16px,2vw,28px);border:3px solid var(--black);border-radius:10px;background:#44AF35;box-shadow:4px 4px 0 var(--black);animation:revealPulse 1.2s ease-in-out infinite;flex-shrink:0"
+            : highlighted
+                ? "display:flex;align-items:center;gap:16px;padding:clamp(12px,1.8vw,22px) clamp(16px,2vw,28px);border:3px solid var(--black);border-radius:10px;background:#44AF35;box-shadow:4px 4px 0 var(--black);flex-shrink:0;transition:all .08s"
+                : $"display:flex;align-items:center;gap:16px;padding:clamp(10px,1.4vw,18px) clamp(16px,2vw,28px);border:3px solid var(--black);border-radius:10px;background:#FFD740;box-shadow:3px 3px 0 var(--black);flex-shrink:0;transition:all .12s;opacity:{(_phase is "cycling" or "decelerating" ? "0.5" : "1")}";
+
+    private static string HandStyle(bool highlighted) =>
+        $"width:clamp(28px,3.5vw,44px);flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:{(highlighted ? "1" : "0")}";
+
+    private string ActivityNameStyle(bool highlighted, bool revealed) =>
+        (revealed || highlighted)
+            ? "font-family:'Fredoka One',cursive;font-size:clamp(18px,2.8vw,34px);color:white;flex:1;min-width:0"
+            : "font-family:'Fredoka One',cursive;font-size:clamp(15px,2.2vw,26px);color:var(--black);flex:1;min-width:0";
+
+    public async ValueTask DisposeAsync()
+    {
+        StopCycleTimer();
+        if (_hub is not null) await _hub.DisposeAsync();
+    }
+}
