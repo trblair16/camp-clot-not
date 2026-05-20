@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline — Camp Clot Not</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #F2ECD8;
+            color: #1A1A1A;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+            text-align: center;
+        }
+        .card {
+            background: white;
+            border: 3px solid #1A1A1A;
+            border-radius: 12px;
+            box-shadow: 4px 4px 0 #1A1A1A;
+            padding: 32px 24px;
+            max-width: 360px;
+            width: 100%;
+        }
+        h1 { font-size: 22px; margin-bottom: 8px; }
+        p { font-size: 15px; color: #555; margin-bottom: 20px; }
+        button {
+            background: #1A1A1A;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        #scores { margin-top: 16px; font-size: 13px; color: #555; }
+        #scores p { margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div style="font-size:48px;margin-bottom:16px">📵</div>
+        <h1>You're Offline</h1>
+        <p>Camp Clot Not requires a live connection. Check your signal and try again.</p>
+        <button onclick="window.location.reload()">Try Again</button>
+        <div id="scores"></div>
+    </div>
+    <script>
+        (function() {
+            try {
+                var raw = localStorage.getItem('ccn_last_scores');
+                if (!raw) return;
+                var scores = JSON.parse(raw);
+                if (!Array.isArray(scores) || scores.length === 0) return;
+                var container = document.getElementById('scores');
+                var heading = document.createElement('p');
+                heading.style.fontWeight = 'bold';
+                heading.style.marginTop = '12px';
+                heading.textContent = 'Last known scores:';
+                container.appendChild(heading);
+                scores.forEach(function(s) {
+                    var row = document.createElement('p');
+                    row.textContent = s.name + ': ' + s.coins + ' coins, ' + s.stars + ' stars';
+                    container.appendChild(row);
+                });
+            } catch (e) {}
+        })();
+    </script>
+</body>
+</html>
