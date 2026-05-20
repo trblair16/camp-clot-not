@@ -39,6 +39,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserAuthorityLink> UserAuthorityLinks => Set<UserAuthorityLink>();
     public DbSet<User> Users => Set<User>();
 
+    // Hub (Camp Info)
+    public DbSet<InfoPage> InfoPages => Set<InfoPage>();
+    public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<ScheduleEvent> ScheduleEvents => Set<ScheduleEvent>();
+    public DbSet<ScheduleEventGroup> ScheduleEventGroups => Set<ScheduleEventGroup>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Non-conventional primary keys
@@ -62,5 +69,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasKey(l => new { l.UserRoleId, l.AuthorityId });
         modelBuilder.Entity<UserAuthorityLink>()
             .HasKey(l => new { l.UserId, l.AuthorityId });
+
+        // ScheduleEvent: non-conventional PK
+        modelBuilder.Entity<ScheduleEvent>().HasKey(e => e.ScheduleEventId);
+
+        // ScheduleEventGroup: composite PK
+        modelBuilder.Entity<ScheduleEventGroup>()
+            .HasKey(eg => new { eg.ScheduleEventId, eg.GroupId });
+
+        // InfoPage: unique index on Slug
+        modelBuilder.Entity<InfoPage>()
+            .HasIndex(p => p.Slug)
+            .IsUnique();
     }
 }
