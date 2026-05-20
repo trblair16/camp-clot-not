@@ -70,6 +70,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<UserAuthorityLink>()
             .HasKey(l => new { l.UserId, l.AuthorityId });
 
+        // InfoPage: non-conventional PK (PageId, not InfoPageId)
+        modelBuilder.Entity<InfoPage>().HasKey(p => p.PageId);
+
         // ScheduleEvent: non-conventional PK
         modelBuilder.Entity<ScheduleEvent>().HasKey(e => e.ScheduleEventId);
 
