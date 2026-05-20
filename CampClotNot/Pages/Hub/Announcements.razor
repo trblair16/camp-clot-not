@@ -1,0 +1,110 @@
+@page "/hub/announcements"
+@attribute [Authorize(Roles = "Admin,Staff")]
+@inject AnnouncementService AnnouncementSvc
+@inject AuthenticationStateProvider Auth
+
+<PageTitle>Announcements — Camp Clot Not</PageTitle>
+
+<HubSubNav />
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 16px">📣 Announcements</h2>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <div style="border:3px solid var(--black);border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg)">
+            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 12px">New Announcement</h3>
+            <MudTextField @bind-Value="_newTitle" Label="Title" Required="true" Class="mb-2" />
+            <MudTextField @bind-Value="_newBody"  Label="Message" Lines="3" Class="mb-2" />
+            @if (_isAdmin)
+            {
+                <MudSelect @bind-Value="_newPriority" Label="Priority" Class="mb-2">
+                    <MudSelectItem Value="@AnnouncementPriority.Normal">Normal</MudSelectItem>
+                    <MudSelectItem Value="@AnnouncementPriority.Urgent">Urgent</MudSelectItem>
+                </MudSelect>
+            }
+            <button class="ccn-btn" @onclick="Post" disabled="@string.IsNullOrWhiteSpace(_newTitle)">Post</button>
+        </div>
+
+        @foreach (var a in _feed)
+        {
+            var urgent = a.Priority == AnnouncementPriority.Urgent;
+            <div style="border:3px solid var(--black);border-radius:10px;margin-bottom:12px;box-shadow:3px 3px 0 var(--black);overflow:hidden;border-left-width:@(urgent ? "6px" : "3px");border-left-color:@(urgent ? "#D12B2B" : "var(--black)")">
+                <div style="padding:14px 16px;background:var(--panel-bg)">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                        <div style="flex:1">
+                            @if (urgent)
+                            {
+                                <span style="font-size:11px;background:#D12B2B;color:white;padding:2px 8px;border-radius:4px;font-family:'Fredoka One',cursive;margin-right:6px">URGENT</span>
+                            }
+                            @if (a.IsPinned)
+                            {
+                                <span style="font-size:11px;background:#F5C800;color:#1A1A1A;padding:2px 8px;border-radius:4px;font-family:'Fredoka One',cursive;margin-right:6px">Pinned</span>
+                            }
+                            <span style="font-family:'Fredoka One',cursive;font-size:16px">@a.Title</span>
+                            <p style="margin:8px 0 4px;font-size:14px">@a.Body</p>
+                            <div style="font-size:12px;color:var(--text-light)">
+                                @a.Author.Email • @a.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt")
+                            </div>
+                        </div>
+                        @if (_isAdmin)
+                        {
+                            <div style="display:flex;gap:4px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => TogglePin(a)">@(a.IsPinned ? "Unpin" : "Pin")</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#555" @onclick="() => Archive(a.AnnouncementId)">Archive</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!_feed.Any())
+        {
+            <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No announcements yet.</p>
+        }
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _isAdmin;
+    private Guid _userId;
+    private List<Announcement> _feed = [];
+    private string _newTitle = "";
+    private string _newBody = "";
+    private AnnouncementPriority _newPriority = AnnouncementPriority.Normal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await Auth.GetAuthenticationStateAsync();
+        _isAdmin = authState.User.IsInRole("Admin");
+        Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
+        _feed = await AnnouncementSvc.GetFeedAsync();
+        _loading = false;
+    }
+
+    private async Task Post()
+    {
+        if (string.IsNullOrWhiteSpace(_newTitle)) return;
+        var priority = _isAdmin ? _newPriority : AnnouncementPriority.Normal;
+        await AnnouncementSvc.PostAsync(_newTitle, _newBody, priority, _userId);
+        _newTitle = ""; _newBody = ""; _newPriority = AnnouncementPriority.Normal;
+        _feed = await AnnouncementSvc.GetFeedAsync();
+    }
+
+    private async Task TogglePin(Announcement a)
+    {
+        await AnnouncementSvc.PinAsync(a.AnnouncementId, !a.IsPinned);
+        _feed = await AnnouncementSvc.GetFeedAsync();
+    }
+
+    private async Task Archive(Guid id)
+    {
+        await AnnouncementSvc.ArchiveAsync(id);
+        _feed = await AnnouncementSvc.GetFeedAsync();
+    }
+}
