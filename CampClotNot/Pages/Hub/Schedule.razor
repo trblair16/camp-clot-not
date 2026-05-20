@@ -1,0 +1,211 @@
+@page "/hub/schedule"
+@attribute [Authorize(Roles = "Admin,Staff")]
+@inject ScheduleService ScheduleSvc
+@inject AuthenticationStateProvider Auth
+
+<PageTitle>Schedule — Camp Clot Not</PageTitle>
+
+<HubSubNav />
+
+<div style="padding: 0 16px 100px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0">📅 Schedule</h2>
+        @if (_canEdit)
+        {
+            <button class="ccn-btn" @onclick="OpenAddForm">+ Add Event</button>
+        }
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_eventsByDay.Any())
+    {
+        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No events scheduled yet.</p>
+    }
+    else
+    {
+        @foreach (var (day, events) in _eventsByDay)
+        {
+            var isToday = day == DateOnly.FromDateTime(DateTime.Today);
+            var expanded = _expandedDays.Contains(day);
+            <div style="border:3px solid var(--black);border-radius:10px;margin-bottom:12px;box-shadow:3px 3px 0 var(--black);overflow:hidden">
+                <button style="width:100%;padding:12px 16px;background:@(isToday ? "var(--color-primary)" : "var(--panel-bg)");border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:'Fredoka One',cursive;font-size:16px;color:@(isToday ? "white" : "var(--black)")"
+                        @onclick="() => ToggleDay(day)">
+                    <span>@day.ToString("dddd, MMMM d") @(isToday ? "— TODAY" : "")</span>
+                    <span>@(expanded ? "▲" : "▼") (@events.Count)</span>
+                </button>
+                @if (expanded)
+                {
+                    <div style="padding:8px 0">
+                        @foreach (var ev in events)
+                        {
+                            <div style="padding:10px 16px;border-bottom:2px solid #E8E0CC;display:flex;gap:12px;align-items:flex-start">
+                                <div style="min-width:70px;font-family:'Fredoka One',cursive;font-size:13px;color:var(--text-light)">
+                                    @ev.StartTime.ToString("h:mm tt")
+                                    @if (ev.EndTime.HasValue)
+                                    {
+                                        <br />@ev.EndTime.Value.ToString("h:mm tt")
+                                    }
+                                </div>
+                                <div style="flex:1">
+                                    <div style="font-family:'Fredoka One',cursive;font-size:15px">@ev.Title</div>
+                                    @if (!string.IsNullOrEmpty(ev.LocationDisplayName))
+                                    {
+                                        <div style="font-size:13px;color:var(--text-light)">📍 @ev.LocationDisplayName</div>
+                                    }
+                                    <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@EventTypeBadgeColor(ev.EventType);color:white;font-family:'Fredoka One',cursive">
+                                        @ev.EventType
+                                    </span>
+                                    @if (!ev.AppliesToAllGroups && ev.EventGroups.Any())
+                                    {
+                                        <span style="font-size:12px;color:var(--text-light);margin-left:6px">
+                                            @string.Join(", ", ev.EventGroups.Select(eg => eg.Group.ShortName))
+                                        </span>
+                                    }
+                                </div>
+                                @if (_canEdit)
+                                {
+                                    <div style="display:flex;gap:4px">
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEditForm(ev)">Edit</button>
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => DeleteEvent(ev.ScheduleEventId)">Del</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @if (_showForm)
+    {
+        <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" @onclick="CloseForm">
+            <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:4px 4px 0 var(--black);padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto" @onclick:stopPropagation>
+                <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Event" : "Edit Event")</h3>
+                <MudTextField @bind-Value="_fTitle"    Label="Title" Required="true" Class="mb-3" />
+                <MudDatePicker @bind-Date="_fDate"     Label="Day" Required="true" Class="mb-3" />
+                <MudTimePicker @bind-Time="_fStart"    Label="Start Time" Required="true" Class="mb-3" />
+                <MudTimePicker @bind-Time="_fEnd"      Label="End Time (optional)" Class="mb-3" />
+                <MudSelect @bind-Value="_fType"        Label="Event Type" Class="mb-3">
+                    @foreach (var t in Enum.GetValues<ScheduleEventType>())
+                    {
+                        <MudSelectItem Value="@t">@t</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudTextField @bind-Value="_fLocation" Label="Location (optional)" Class="mb-3" />
+                <MudTextField @bind-Value="_fDesc"     Label="Description (optional)" Lines="2" Class="mb-3" />
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                    <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CloseForm">Cancel</button>
+                    <button class="ccn-btn" @onclick="SaveEvent">Save</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _canEdit;
+    private bool _showForm;
+    private Dictionary<DateOnly, List<ScheduleEvent>> _eventsByDay = [];
+    private HashSet<DateOnly> _expandedDays = [];
+    private Guid _editingId;
+    private Guid _userId;
+    private string _fTitle = "";
+    private string? _fLocation;
+    private string? _fDesc;
+    private DateTime? _fDate;
+    private TimeSpan? _fStart;
+    private TimeSpan? _fEnd;
+    private ScheduleEventType _fType = ScheduleEventType.Activity;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await Auth.GetAuthenticationStateAsync();
+        _canEdit = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
+        Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
+
+        await LoadEvents();
+    }
+
+    private async Task LoadEvents()
+    {
+        var events = await ScheduleSvc.GetByEventAsync(SeedService.Id.EventCcn2026);
+        _eventsByDay = events
+            .GroupBy(e => e.CampDay)
+            .OrderBy(g => g.Key)
+            .ToDictionary(g => g.Key, g => g.OrderBy(e => e.StartTime).ToList());
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (_eventsByDay.ContainsKey(today))
+            _expandedDays.Add(today);
+        else if (_eventsByDay.Any())
+            _expandedDays.Add(_eventsByDay.Keys.First());
+
+        _loading = false;
+    }
+
+    private void ToggleDay(DateOnly day)
+    {
+        if (!_expandedDays.Remove(day)) _expandedDays.Add(day);
+    }
+
+    private void OpenAddForm()
+    {
+        _editingId = Guid.Empty;
+        _fTitle = ""; _fLocation = null; _fDesc = null;
+        _fDate = DateTime.Today; _fStart = new TimeSpan(9, 0, 0); _fEnd = null;
+        _fType = ScheduleEventType.Activity;
+        _showForm = true;
+    }
+
+    private void OpenEditForm(ScheduleEvent ev)
+    {
+        _editingId  = ev.ScheduleEventId;
+        _fTitle     = ev.Title;
+        _fLocation  = ev.LocationDisplayName;
+        _fDesc      = ev.Description;
+        _fDate      = ev.CampDay.ToDateTime(TimeOnly.MinValue);
+        _fStart     = ev.StartTime.ToTimeSpan();
+        _fEnd       = ev.EndTime?.ToTimeSpan();
+        _fType      = ev.EventType;
+        _showForm   = true;
+    }
+
+    private void CloseForm() => _showForm = false;
+
+    private async Task SaveEvent()
+    {
+        if (string.IsNullOrWhiteSpace(_fTitle) || _fDate is null || _fStart is null) return;
+
+        var dto = new ScheduleEventDto(
+            _editingId,
+            SeedService.Id.EventCcn2026,
+            DateOnly.FromDateTime(_fDate.Value),
+            TimeOnly.FromTimeSpan(_fStart.Value),
+            _fEnd.HasValue ? TimeOnly.FromTimeSpan(_fEnd.Value) : null,
+            _fTitle, _fDesc, _fLocation, _fType, true, null, []
+        );
+        await ScheduleSvc.UpsertAsync(dto, _userId);
+        _showForm = false;
+        await LoadEvents();
+    }
+
+    private async Task DeleteEvent(Guid id)
+    {
+        await ScheduleSvc.DeleteAsync(id);
+        await LoadEvents();
+    }
+
+    private static string EventTypeBadgeColor(ScheduleEventType t) => t switch
+    {
+        ScheduleEventType.Meal      => "#E67E22",
+        ScheduleEventType.Travel    => "#2980B9",
+        ScheduleEventType.Free      => "#27AE60",
+        ScheduleEventType.Mandatory => "#D12B2B",
+        _                           => "#8E44AD"
+    };
+}
