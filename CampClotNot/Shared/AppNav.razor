@@ -214,6 +214,10 @@
                     }
                 </div>
 
+                <AuthorizeView Roles="Admin,Staff" Context="hubDesktopCtx">
+                    <a href="/hub" class="nav-link" style="@ActiveStyle("/hub", "#2980B9")">📋 Hub</a>
+                </AuthorizeView>
+
                 <AuthorizeView Roles="Admin" Context="adminCtx">
                     <a href="/transactions" class="nav-link" style="@ActiveStyle("/transactions", "#2563C4")">📋 Transactions</a>
 
@@ -264,6 +268,12 @@
                 <span class="tab-icon">🎮</span>
                 <span>Activities</span>
             </button>
+            <AuthorizeView Roles="Admin,Staff" Context="hubMobileCtx">
+                <a href="/hub/schedule" class="nav-tab @(IsActive("/hub") ? "active" : "")">
+                    <span class="tab-icon">📋</span>
+                    <span>Hub</span>
+                </a>
+            </AuthorizeView>
             <AuthorizeView Roles="Admin" Context="mobileAdminCtx">
                 <button class="nav-tab @(_adminSheetOpen ? "active" : "")"
                         @onclick="() => { _adminSheetOpen = !_adminSheetOpen; _activitiesSheetOpen = false; }">
