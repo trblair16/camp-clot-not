@@ -1,0 +1,118 @@
+@page "/hub/staff"
+@attribute [Authorize(Roles = "Admin,Staff")]
+@inject StaffDirectoryService StaffSvc
+@inject AuthenticationStateProvider Auth
+
+<PageTitle>Staff — Camp Clot Not</PageTitle>
+
+<HubSubNav />
+
+<div style="padding: 0 16px 100px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0">👥 Staff Directory</h2>
+        @if (_isAdmin)
+        {
+            <button class="ccn-btn" @onclick="OpenAdd">+ Add Staff</button>
+        }
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_members.Any())
+    {
+        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No staff listed yet.</p>
+    }
+    else
+    {
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+            @foreach (var m in _members)
+            {
+                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center">
+                    <div style="font-size:36px;margin-bottom:8px">@m.AvatarEmoji</div>
+                    <div style="font-family:'Fredoka One',cursive;font-size:15px">@m.DisplayName</div>
+                    <div style="font-size:12px;color:var(--text-light);margin-bottom:8px">@m.RoleTitle</div>
+                    @if (!string.IsNullOrEmpty(m.Phone))
+                    {
+                        <a href="tel:@m.Phone" style="display:block;font-size:13px;color:var(--color-primary);text-decoration:none;margin-bottom:4px">@m.Phone</a>
+                    }
+                    @if (!string.IsNullOrEmpty(m.Email))
+                    {
+                        <a href="mailto:@m.Email" style="display:block;font-size:13px;color:var(--color-primary);text-decoration:none">@m.Email</a>
+                    }
+                    @if (_isAdmin)
+                    {
+                        <div style="display:flex;gap:4px;margin-top:10px;justify-content:center">
+                            <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEdit(m)">Edit</button>
+                            <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => Delete(m.StaffMemberId)">Del</button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @if (_showForm && _isAdmin)
+    {
+        <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" @onclick="Close">
+            <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:4px 4px 0 var(--black);padding:24px;width:100%;max-width:400px" @onclick:stopPropagation>
+                <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_form.StaffMemberId == Guid.Empty ? "Add Staff Member" : "Edit Staff Member")</h3>
+                <MudTextField @bind-Value="_form.DisplayName" Label="Name" Required="true" Class="mb-2" />
+                <MudTextField @bind-Value="_form.RoleTitle"   Label="Role/Title" Class="mb-2" />
+                <MudTextField @bind-Value="_form.AvatarEmoji" Label="Avatar Emoji" Class="mb-2" />
+                <MudTextField @bind-Value="_form.Phone"       Label="Phone (optional)" Class="mb-2" />
+                <MudTextField @bind-Value="_form.Email"       Label="Email (optional)" Class="mb-2" />
+                <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="Color.Primary" Class="mb-2" />
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                    <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="Close">Cancel</button>
+                    <button class="ccn-btn" @onclick="Save">Save</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _isAdmin;
+    private bool _showForm;
+    private List<StaffMember> _members = [];
+    private StaffMember _form = new() { AvatarEmoji = "👤", IsVisible = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await Auth.GetAuthenticationStateAsync();
+        _isAdmin = authState.User.IsInRole("Admin");
+        _members = _isAdmin ? await StaffSvc.GetAllAsync() : await StaffSvc.GetVisibleAsync();
+        _loading = false;
+    }
+
+    private void OpenAdd() { _form = new() { AvatarEmoji = "👤", IsVisible = true }; _showForm = true; }
+
+    private void OpenEdit(StaffMember m)
+    {
+        _form = new()
+        {
+            StaffMemberId = m.StaffMemberId, DisplayName = m.DisplayName, RoleTitle = m.RoleTitle,
+            AvatarEmoji = m.AvatarEmoji, Phone = m.Phone, Email = m.Email,
+            IsVisible = m.IsVisible, SortOrder = m.SortOrder, LinkedUserId = m.LinkedUserId
+        };
+        _showForm = true;
+    }
+
+    private void Close() => _showForm = false;
+
+    private async Task Save()
+    {
+        await StaffSvc.UpsertAsync(_form);
+        _showForm = false;
+        await OnInitializedAsync();
+    }
+
+    private async Task Delete(Guid id)
+    {
+        await StaffSvc.DeleteAsync(id);
+        await OnInitializedAsync();
+    }
+}
