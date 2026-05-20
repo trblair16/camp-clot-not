@@ -43,6 +43,7 @@ try
         .AddCookie(opt =>
         {
             opt.LoginPath = "/login";
+            opt.AccessDeniedPath = "/";
             opt.ExpireTimeSpan = TimeSpan.FromHours(24);
             opt.SlidingExpiration = true;
         });
@@ -59,6 +60,10 @@ try
     builder.Services.AddScoped<TransactionService>();
     builder.Services.AddScoped<BoardService>();
     builder.Services.AddScoped<MiniGameService>();
+    builder.Services.AddScoped<InfoPageService>();
+    builder.Services.AddScoped<StaffDirectoryService>();
+    builder.Services.AddScoped<AnnouncementService>();
+    builder.Services.AddScoped<ScheduleService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<SeedService>();
 
