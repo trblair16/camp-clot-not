@@ -69,9 +69,6 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid Group2 = new("0000000a-000a-000a-000a-000000000002");
         public static readonly Guid Group3 = new("0000000a-000a-000a-000a-000000000003");
         public static readonly Guid Group4 = new("0000000a-000a-000a-000a-000000000004");
-        public static readonly Guid Group5 = new("0000000a-000a-000a-000a-000000000005");
-        public static readonly Guid Group6 = new("0000000a-000a-000a-000a-000000000006");
-
         // ActivityTypes — one placeholder per board space category + MinuteToWinIt
         public static readonly Guid ActTypeBoardStart      = new("0000000b-000b-000b-000b-000000000001");
         public static readonly Guid ActTypeBoardCoinBonus  = new("0000000b-000b-000b-000b-000000000002");
@@ -351,19 +348,6 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
                 existing.Color          = def.Color;
                 existing.TokenAssetPath = def.Logo;
             }
-        }
-
-        // Remove placeholder groups 5 & 6 and their dependent rows if they exist
-        foreach (var staleId in new[] { Id.Group5, Id.Group6 })
-        {
-            var pos = await db.GroupBoardPositions.FindAsync(staleId);
-            if (pos is not null) db.GroupBoardPositions.Remove(pos);
-
-            var scripts = db.ScriptedBlockHits.Where(s => s.GroupId == staleId);
-            db.ScriptedBlockHits.RemoveRange(scripts);
-
-            var stale = await db.Groups.FindAsync(staleId);
-            if (stale is not null) db.Groups.Remove(stale);
         }
 
         await db.SaveChangesAsync();
