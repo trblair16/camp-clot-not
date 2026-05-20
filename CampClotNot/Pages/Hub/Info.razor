@@ -1,0 +1,96 @@
+@page "/hub/info"
+@attribute [Authorize(Roles = "Admin,Staff")]
+@inject InfoPageService InfoSvc
+@inject AuthenticationStateProvider Auth
+@inject NavigationManager Nav
+
+<PageTitle>Info — Camp Clot Not</PageTitle>
+
+<HubSubNav />
+
+<div style="padding: 0 16px 100px">
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+            <div style="min-width:160px;border:3px solid var(--black);border-radius:10px;overflow:hidden;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg)">
+                @foreach (var p in _pages)
+                {
+                    <a href="/hub/info?slug=@p.Slug"
+                       style="display:block;padding:12px 16px;font-family:'Fredoka One',cursive;font-size:14px;text-decoration:none;border-bottom:2px solid #E8E0CC;color:@(p.Slug == _activeSlug ? "white" : "var(--black)");background:@(p.Slug == _activeSlug ? "var(--black)" : "transparent")">
+                        @p.IconEmoji @p.Title
+                    </a>
+                }
+            </div>
+
+            <div style="flex:1;min-width:260px">
+                @if (_activePage is not null)
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                        <h2 style="font-family:'Fredoka One',cursive;font-size:20px;margin:0">@_activePage.IconEmoji @_activePage.Title</h2>
+                        @if (_isAdmin && !_editing)
+                        {
+                            <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="StartEdit">Edit</button>
+                        }
+                    </div>
+
+                    @if (_editing && _isAdmin)
+                    {
+                        <textarea @bind="_editBody" rows="16"
+                                  style="width:100%;font-family:monospace;font-size:13px;padding:12px;border:3px solid var(--black);border-radius:8px;background:var(--bg-base);resize:vertical;box-sizing:border-box"></textarea>
+                        <div style="display:flex;gap:8px;margin-top:8px">
+                            <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="() => _editing = false">Cancel</button>
+                            <button class="ccn-btn" @onclick="SaveEdit">Save</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="border:3px solid var(--black);border-radius:10px;padding:20px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
+                            @((MarkupString)Markdig.Markdown.ToHtml(_activePage.Body ?? ""))
+                        </div>
+                        <p style="font-size:12px;color:var(--text-light);margin-top:8px">
+                            Last updated @_activePage.UpdatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                        </p>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _isAdmin;
+    private bool _editing;
+    private Guid _userId;
+    private List<InfoPage> _pages = [];
+    private InfoPage? _activePage;
+    private string _activeSlug = "";
+    private string _editBody = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await Auth.GetAuthenticationStateAsync();
+        _isAdmin = authState.User.IsInRole("Admin");
+        Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
+
+        _pages = await InfoSvc.GetAllAsync();
+        var qs = System.Web.HttpUtility.ParseQueryString(new Uri(Nav.Uri).Query);
+        _activeSlug = qs["slug"] ?? _pages.FirstOrDefault()?.Slug ?? "";
+        _activePage = _pages.FirstOrDefault(p => p.Slug == _activeSlug);
+        _loading = false;
+    }
+
+    private void StartEdit() { _editBody = _activePage?.Body ?? ""; _editing = true; }
+
+    private async Task SaveEdit()
+    {
+        if (_activePage is null) return;
+        await InfoSvc.UpdateBodyAsync(_activePage.PageId, _editBody, _userId);
+        _activePage.Body = _editBody;
+        _editing = false;
+    }
+}
