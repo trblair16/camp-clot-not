@@ -14,6 +14,12 @@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link href="app.css" rel="stylesheet" />
     @RenderSection("HeadOutlet", required: false)
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#3d0066" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Clot Not" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 </head>
 <body>
     @RenderBody()
@@ -25,5 +31,11 @@
     <script src="_framework/blazor.server.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/board.js?v=3"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .catch(function(err) { console.warn('SW registration failed:', err); });
+        }
+    </script>
 </body>
 </html>
