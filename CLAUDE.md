@@ -8,10 +8,10 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-05-16)
+## Current State (as of 2026-05-25)
 
-**Active branch:** `feature/96-mini-game-spinner`  
-**Released to dev:** v0.3.1 — UI Overhaul (PR #95, merged)
+**Active branch:** `feature/99-camp-info-hub`  
+**Released to dev:** v0.4.0 — Mini-Game Spinner
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -50,7 +50,20 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - Two new MinuteToWinIt activities seeded: "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay"
 - `gh` CLI installed at `$env:LOCALAPPDATA\Programs\gh\gh.exe` (user PATH)
 
-**Next:** v0.5.0 — Camp Info Hub + PWA
+**v0.5.0 — Done (Camp Info Hub + PWA, feature/99):**
+- `HubSubNav.razor` — shared sub-nav for all Hub pages (Schedule / Announcements / Staff / Info)
+- `/hub/schedule` — day-grouped collapsible timeline; per-group Activity + Location + Note overrides via `ScheduleEventGroup`; today auto-expanded; Admin/Staff/Volunteer access
+- `/hub/announcements` — priority feed (pinned → newest); urgent red badge; dismissible banner on Dashboard; pin/archive Admin-only
+- `/hub/staff` — card grid; emoji avatars; tap-to-call/email links; "Import from Users" admin shortcut; event-scoped
+- `/hub/info` — sidebar page list + Markdig markdown body; Admin inline edit; fixed slug set seeded (`rules`, `faq`, `medical`, `schedule-overview`, `packing`)
+- `Location` entity + `/admin/locations` — full CRUD; FK referenced by `ScheduleEvent` and `ScheduleEventGroup`; replaces old `LocationDisplayName` string column
+- `ScheduleEventGroup` extended beyond spec: per-group Activity, Location override, and Note fields
+- `Volunteer` role finalized in `Role` enum; `Display` role removed — projector pages (`/board/display`, `/minigames/display`) are now Admin-only; `ViewDisplay` permission removed
+- PWA fixes: `manifest.json` theme/background → `#F2ECD8`; service worker → network-first for navigation, cache-first for static assets; bumped to `ccn-shell-v2`
+- `railway.toml` added with `/health` healthcheck, `ON_FAILURE` restart policy
+- Railway production: project `camp-clot-not` live; Postgres running (SFO); env vars set (`DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`, `Seed__AdminPassword`)
+
+**Next:** v1.0.0-rc — Dry Run
 
 ---
 
@@ -74,8 +87,14 @@ Do not rely on `height:100vh` + flex centering on a wrapper inside a Blazor layo
 **6. Read the request before touching anything.**  
 If asked to "make cells more visible against the cream background," that means style the cells — not replace the entire page background. Do not make sweeping changes beyond the stated scope.
 
-**7. Image background removal requires flood fill, not crop.**  
+**7. Image background removal requires flood fill, not crop.**    
 Python Pillow `img.getbbox()` + `crop()` only removes surrounding whitespace — it does not make the background transparent. Use a flood fill from all four edges with a colour tolerance to make the actual background pixels transparent. See the Python script used for `ccn-logo-2026.png` for the pattern.
+
+**8. The `Display` role is gone — do not re-add it.**  
+`/board/display` and `/minigames/display` are `[Authorize(Roles = "Admin")]` only. The `Display` enum value, `ViewDisplay` permission, and `RoleDisplay` seed GUID have all been removed in v0.5.0. Projector pages are Tyler's laptop only — no separate role is needed.
+
+**9. `Location` is a proper entity, not a display string.**  
+`ScheduleEvent` has a `LocationId` FK to the `Location` table. The old `LocationDisplayName` string column was dropped in migration `20260523234951_AddLocation`. Admins must create locations at `/admin/locations` before they can be assigned to schedule events or group overrides.
 
 ---
 

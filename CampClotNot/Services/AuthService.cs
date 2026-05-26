@@ -49,7 +49,7 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
     public async Task LogoutAsync(HttpContext httpContext) =>
         await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-    public async Task<User> CreateUserAsync(string firstName, string lastName, string email, string plainPassword, Role role)
+    public async Task<User> CreateUserAsync(string firstName, string lastName, string email, string plainPassword, Role role, Guid? groupId = null)
     {
         var userRole = await users.GetRoleAsync(role)
             ?? throw new InvalidOperationException($"Role '{role}' has not been seeded.");
@@ -62,7 +62,8 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
             LastName     = lastName,
             Email        = email.ToLowerInvariant(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(plainPassword),
-            IsActive     = true
+            IsActive     = true,
+            GroupId      = groupId
         });
     }
 
