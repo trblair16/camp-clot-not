@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["dotnet-sdk_8"]
+
+[phases.install]
+cmds = ["dotnet restore CampClotNot/CampClotNot.csproj"]
+
+[phases.build]
+cmds = ["dotnet publish CampClotNot/CampClotNot.csproj -c Release -o out"]
+
+[start]
+cmd = "dotnet out/CampClotNot.dll"
