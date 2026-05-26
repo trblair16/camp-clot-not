@@ -1,0 +1,69 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@if (_show)
+{
+    <div style="position:fixed;bottom:70px;left:0;right:0;z-index:200;padding:0 12px;pointer-events:none">
+        <div style="background:#1A1A1A;color:white;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:auto">
+            <span style="font-size:22px;flex-shrink:0">📲</span>
+            <span style="flex:1;font-size:14px">@_message</span>
+            @if (_isAndroid)
+            {
+                <button onclick="window.installPrompt.trigger()"
+                        style="background:var(--color-primary);color:white;border:none;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
+                    Install
+                </button>
+            }
+            <button @onclick="Dismiss"
+                    style="background:transparent;border:none;color:#aaa;font-size:22px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0">
+                ×
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _show;
+    private bool _isAndroid;
+    private string _message = "";
+    private DotNetObjectReference<InstallPromptBanner>? _ref;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var dismissed = await JS.InvokeAsync<bool>("installPrompt.isDismissed");
+        if (dismissed) return;
+        _ref = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("installPrompt.init", _ref);
+    }
+
+    [JSInvokable]
+    public void ShowAndroidBanner()
+    {
+        _isAndroid = true;
+        _message = "Install this app for quick access during camp.";
+        _show = true;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void ShowIosBanner()
+    {
+        _isAndroid = false;
+        _message = "Add to your home screen: tap Share then Add to Home Screen.";
+        _show = true;
+        StateHasChanged();
+    }
+
+    private async Task Dismiss()
+    {
+        await JS.InvokeVoidAsync("installPrompt.dismiss");
+        _show = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _ref?.Dispose();
+        await Task.CompletedTask;
+    }
+}

@@ -3,6 +3,7 @@ using System;
 using CampClotNot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CampClotNot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523234951_AddLocation")]
+    partial class AddLocation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -650,9 +653,6 @@ namespace CampClotNot.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("CampEventId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -677,8 +677,6 @@ namespace CampClotNot.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("StaffMemberId");
-
-                    b.HasIndex("CampEventId");
 
                     b.HasIndex("LinkedUserId");
 
@@ -1103,17 +1101,9 @@ namespace CampClotNot.Migrations
 
             modelBuilder.Entity("CampClotNot.Data.Entities.StaffMember", b =>
                 {
-                    b.HasOne("CampClotNot.Data.Entities.Event", "CampEvent")
-                        .WithMany()
-                        .HasForeignKey("CampEventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("CampClotNot.Data.Entities.User", "LinkedUser")
                         .WithMany()
                         .HasForeignKey("LinkedUserId");
-
-                    b.Navigation("CampEvent");
 
                     b.Navigation("LinkedUser");
                 });

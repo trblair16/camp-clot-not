@@ -1,6 +1,6 @@
 @page "/board/display"
 @layout DisplayLayout
-@attribute [Authorize(Roles = "Display,Admin")]
+@attribute [Authorize(Roles = "Admin")]
 @inject GroupService GroupSvc
 @inject BoardService BoardSvc
 @inject NavigationManager Nav

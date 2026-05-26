@@ -1,88 +1,172 @@
 @page "/admin/users"
 @attribute [Authorize(Roles = "Admin")]
 @inject AuthService AuthSvc
+@inject GroupService GroupSvc
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@using CampClotNot.Data.Entities
 
 <PageTitle>Manage Users — Camp Clot Not</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">User Accounts</MudText>
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">👤 User Accounts</h2>
 
-<MudGrid>
-    <MudItem xs="12" md="5">
-        <MudPaper Class="pa-4" Elevation="2">
-            <MudText Typo="Typo.h6" Class="mb-3">Create Account</MudText>
-            <MudTextField @bind-Value="_form.FirstName" Label="First Name" Variant="Variant.Outlined" Class="mb-3" />
-            <MudTextField @bind-Value="_form.LastName" Label="Last Name" Variant="Variant.Outlined" Class="mb-3" />
-            <MudTextField @bind-Value="_form.Email" Label="Email" InputType="InputType.Email" Variant="Variant.Outlined" Class="mb-3" />
-            <MudTextField @bind-Value="_form.Password" Label="Temporary Password" InputType="InputType.Password" Variant="Variant.Outlined" Class="mb-3" />
-            <MudSelect @bind-Value="_form.Role" Label="Role" Variant="Variant.Outlined" Class="mb-4">
-                <MudSelectItem Value="Role.Staff">Staff / Volunteer</MudSelectItem>
-                <MudSelectItem Value="Role.Admin">Admin</MudSelectItem>
-                <MudSelectItem Value="Role.Display">Display (Projector)</MudSelectItem>
-            </MudSelect>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">Create</MudButton>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" md="7">
-        @if (_loading)
-        {
-            <MudProgressCircular Indeterminate="true" />
-        }
-        else
-        {
-            <MudTable Items="_users" Hover="true" Striped="true">
-                <HeaderContent>
-                    <MudTh>Name</MudTh>
-                    <MudTh>Email</MudTh>
-                    <MudTh>Role</MudTh>
-                    <MudTh>Active</MudTh>
-                    <MudTh>Actions</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd>@context.FirstName @context.LastName</MudTd>
-                    <MudTd>@context.Email</MudTd>
-                    <MudTd><MudChip Size="Size.Small">@context.UserRole.SystemName</MudChip></MudTd>
-                    <MudTd>@(context.IsActive ? "✓" : "—")</MudTd>
-                    <MudTd>
-                        <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small"
-                                       Color="Color.Info" OnClick="() => OpenResetDialog(context)"
-                                       Title="Reset password" />
-                        @if (context.IsActive)
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+        @* ── Create Account form ── *@
+        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
+            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">Create Account</h3>
+
+            <div style="display:flex;gap:10px;margin-bottom:14px">
+                <div style="flex:1">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">First Name</div>
+                    <input type="text" @bind="_form.FirstName" placeholder="First"
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                </div>
+                <div style="flex:1">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Last Name</div>
+                    <input type="text" @bind="_form.LastName" placeholder="Last"
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                </div>
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Email</div>
+                <input type="email" @bind="_form.Email" placeholder="you@example.com"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Temporary Password</div>
+                <input type="password" @bind="_form.Password" placeholder="••••••••"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Role</div>
+                <select value="@_form.Role.ToString()"
+                        @onchange="e => _form.Role = Enum.Parse<Role>(e.Value?.ToString() ?? nameof(Role.Staff))"
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                    <option value="Staff">Staff</option>
+                    <option value="Volunteer">Volunteer / Counselor</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+
+            @if (_form.Role == Role.Volunteer)
+            {
+                <div style="margin-bottom:14px">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Assigned Group</div>
+                    <select value="@(_form.GroupId?.ToString() ?? "")"
+                            @onchange="e => _form.GroupId = Guid.TryParse(e.Value?.ToString(), out var gid) ? gid : null"
+                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                        <option value="">— None —</option>
+                        @foreach (var g in _groups)
                         {
-                            <MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small"
-                                           Color="Color.Warning" OnClick="() => DeactivateAsync(context)"
-                                           Title="Deactivate" />
+                            <option value="@g.GroupId">@g.Name</option>
                         }
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-        }
-    </MudItem>
-</MudGrid>
+                    </select>
+                </div>
+            }
 
-<MudDialog @bind-IsVisible="_resetOpen">
-    <TitleContent>
-        <MudText Typo="Typo.h6">Reset Password — @_resetting?.FirstName @_resetting?.LastName</MudText>
-    </TitleContent>
-    <DialogContent>
-        <MudTextField @bind-Value="_resetPassword" Label="New Password" InputType="InputType.Password"
-                      Variant="Variant.Outlined" Class="mb-3" />
-        <MudTextField @bind-Value="_resetConfirm" Label="Confirm Password" InputType="InputType.Password"
-                      Variant="Variant.Outlined" />
-        @if (_resetError is not null)
-        {
-            <MudText Color="Color.Error" Class="mt-2">@_resetError</MudText>
-        }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="CloseResetDialog">Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitResetAsync">Reset</MudButton>
-    </DialogActions>
-</MudDialog>
+            <button class="ccn-btn" style="width:100%;margin-top:4px" @onclick="CreateAsync">Create Account</button>
+        </div>
+
+        @* ── Users table ── *@
+        <div style="flex:1;min-width:260px">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_users.Any())
+            {
+                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No users yet.</p>
+            }
+            else
+            {
+                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                    <div style="overflow-x:auto">
+                        <table style="width:100%;border-collapse:collapse;min-width:600px">
+                            <thead>
+                                <tr style="background:var(--black)">
+                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
+                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Email</th>
+                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Role</th>
+                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Group</th>
+                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Active</th>
+                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var u in _users)
+                                {
+                                    <tr style="border-bottom:2px solid #E8E0CC">
+                                        <td style="padding:10px 14px;font-size:13px;font-weight:700">@u.FirstName @u.LastName</td>
+                                        <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@u.Email</td>
+                                        <td style="padding:10px 14px">
+                                            <span style="background:var(--black);color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">@u.UserRole.SystemName</span>
+                                        </td>
+                                        <td style="padding:10px 14px;font-size:13px">@(_groups.FirstOrDefault(g => g.GroupId == u.GroupId)?.ShortName ?? "—")</td>
+                                        <td style="padding:10px 14px;font-size:13px">@(u.IsActive ? "✓" : "—")</td>
+                                        <td style="padding:8px 10px">
+                                            <div style="display:flex;gap:4px;flex-wrap:wrap">
+                                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => OpenResetDialog(u)">Reset PW</button>
+                                                @if (u.IsActive)
+                                                {
+                                                    <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#E67E22;color:white" @onclick="() => DeactivateAsync(u)">Deactivate</button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@* ── Reset Password modal ── *@
+@if (_resetOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease"
+         @onclick="CloseResetDialog">
+        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:6px 6px 0 var(--black);padding:24px;width:100%;max-width:400px;animation:popIn .2s ease"
+             @onclick:stopPropagation>
+            <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 18px">Reset Password</h3>
+            <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">@_resetting?.FirstName @_resetting?.LastName</p>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">New Password</div>
+                <input type="password" @bind="_resetPassword" placeholder="••••••••"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Confirm Password</div>
+                <input type="password" @bind="_resetConfirm" placeholder="••••••••"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            @if (_resetError is not null)
+            {
+                <div style="background:#FEE2E2;border:2px solid #E83030;border-radius:7px;padding:8px 12px;margin-bottom:14px;font-size:13px;font-weight:700;color:#C0392B">⚠️ @_resetError</div>
+            }
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+                <button class="ccn-btn" style="background:transparent" @onclick="CloseResetDialog">Cancel</button>
+                <button class="ccn-btn" @onclick="SubmitResetAsync">Reset Password</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private List<User> _users = new();
+    private List<Group> _groups = new();
     private bool _loading = true;
     private UserForm _form = new();
 
@@ -94,14 +178,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _users = await AuthSvc.GetAllUsersAsync();
+        _groups = await GroupSvc.GetAllAsync();
+        _users  = await AuthSvc.GetAllUsersAsync();
         _loading = false;
     }
 
     private async Task CreateAsync()
     {
         if (string.IsNullOrWhiteSpace(_form.Email) || string.IsNullOrWhiteSpace(_form.Password)) return;
-        await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role);
+        var groupId = _form.Role == Role.Volunteer ? _form.GroupId : null;
+        await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role, groupId);
         Snackbar.Add($"Account created for {_form.FirstName} {_form.LastName}.", Severity.Success);
         _form = new();
         _users = await AuthSvc.GetAllUsersAsync();
@@ -157,5 +243,6 @@
         public string Email { get; set; } = "";
         public string Password { get; set; } = "";
         public Role Role { get; set; } = Role.Staff;
+        public Guid? GroupId { get; set; }
     }
 }

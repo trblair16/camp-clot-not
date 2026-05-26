@@ -4,7 +4,7 @@ public enum Currency { Primary, Prestige }
 
 public enum AwardKind { Named, BigStick, Branch }
 
-public enum Role { Admin, Staff, Display }
+public enum Role { Admin, Staff, Volunteer }
 
 public enum Feature { BoardGame, CoinShop, MiniGameSpinner, Announcements, Itinerary }
 
@@ -18,6 +18,5 @@ public enum Permission
     ManageGroups,
     ManageBoard,
     ManageShop,
-    ViewDisplay,
     AccessAdminPanel
 }

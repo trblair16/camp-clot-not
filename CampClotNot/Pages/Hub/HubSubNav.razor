@@ -1,0 +1,62 @@
+@inject NavigationManager Nav
+
+<style>
+    .hub-subnav {
+        display: flex;
+        border: 3px solid var(--black);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        background: var(--panel-bg);
+        box-shadow: 4px 4px 0 var(--black);
+        overflow: hidden;
+    }
+    .hub-tab {
+        flex: 1;
+        padding: 12px 8px;
+        text-align: center;
+        font-family: 'Fredoka One', cursive;
+        font-size: 13px;
+        color: var(--text-mid);
+        text-decoration: none;
+        border-bottom: 4px solid transparent;
+        transition: color .1s, border-color .1s, background .1s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+    .hub-tab:hover {
+        background: rgba(26,26,26,0.05);
+        color: var(--black);
+    }
+    .hub-tab .tab-icon { font-size: 18px; line-height: 1; }
+    .hub-tab.active {
+        color: var(--black);
+        border-bottom-color: var(--black);
+        background: var(--bg-base);
+    }
+    @@media (min-width: 480px) {
+        .hub-tab { font-size: 14px; flex-direction: row; justify-content: center; gap: 6px; }
+    }
+</style>
+
+<nav class="hub-subnav">
+    <a href="/hub/schedule"      class="hub-tab @(IsActive("/hub/schedule")      ? "active" : "")">
+        <span class="tab-icon">📅</span><span>Schedule</span>
+    </a>
+    <a href="/hub/announcements" class="hub-tab @(IsActive("/hub/announcements") ? "active" : "")">
+        <span class="tab-icon">📣</span><span>Announcements</span>
+    </a>
+    <a href="/hub/staff"         class="hub-tab @(IsActive("/hub/staff")         ? "active" : "")">
+        <span class="tab-icon">👥</span><span>Staff</span>
+    </a>
+    <a href="/hub/info"          class="hub-tab @(IsActive("/hub/info")          ? "active" : "")">
+        <span class="tab-icon">📋</span><span>Info</span>
+    </a>
+</nav>
+
+@code {
+    private bool IsActive(string href) =>
+        ("/" + Nav.ToBaseRelativePath(Nav.Uri))
+            .StartsWith(href, StringComparison.OrdinalIgnoreCase);
+}

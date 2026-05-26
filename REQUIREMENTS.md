@@ -35,10 +35,10 @@ A working React prototype mockup exists in the project files (`ccn-mockup-v2.jsx
 | Role | Permissions |
 |---|---|
 | Admin (Tyler / Katelyn / Vicki) | Full access: pre-load board, configure themes, award coins/stars, void any transaction, manage groups, trigger block hit, manage user accounts, pin/urgent announcements, edit info pages, edit staff directory |
-| Staff / Volunteer | Award coins and stars to groups, add optional note, view dashboard and board, post normal-priority announcements, view all Hub features. Cannot void others' transactions or access admin config. |
-| Display (Projector) | Read-only: board, leaderboard, current scores, block hit animation. No transaction capability. No access to Hub features. |
+| Staff | Award coins and stars to groups, add optional note, view dashboard and board, post normal-priority announcements, view all Hub features. Cannot void others' transactions or access admin config. |
+| Volunteer | Log transactions only. View Hub features. No admin access. GroupId assigned to filter schedule view. |
 
-⚠️ **PENDING:** Should display/projector mode require a login, or be a PIN-protected URL (`/display?pin=XXXX`)? Recommendation: PIN-protected URL — no full account needed for the projector.
+✅ **DECIDED:** Projector display pages (`/board/display`, `/minigames/display`) are Admin-only. Tyler opens them as a separate browser window on his laptop. No `Display` role — removed in v0.5.0.
 
 ---
 
@@ -349,8 +349,9 @@ All items below need resolution at or immediately after the Monday planning meet
 - Free public URL: `yourapp.up.railway.app` — no domain purchase required for camp
 - Estimated cost for 2-week camp window: $2-4, likely within free $5/month credit
 - WebSocket support built in — required for Blazor Server SignalR
-- Two Railway services: Blazor app (public URL) + PostgreSQL (internal only)
-- Staging environment mirrors production for periodic deploy verification
+- Two Railway services: Blazor app (`web`) + PostgreSQL (internal only, SFO region)
+- Production project `camp-clot-not` is live; env vars set; deploy triggers on push to `main`
+- Staging environment: defer until needed — use local dev + production dry run
 
 ---
 
@@ -528,7 +529,7 @@ Camp is June 20-25, 2026.
 | ~May 28 | v0.3.0 — Board & Block Hit ✅ | SVG board, pre-scripted block hit, step-by-step token movement animation |
 | ~May 28 | v0.3.1 — UI Overhaul ✅ | Neo-brutalist redesign, cream bg, rank rows, ccn-coin/star assets, real group names & logos |
 | ~May 16 | v0.4.0 — Mini-Games & Display ✅ | Mini-game spinner (3-way split: /minigames, /minigames/display, /admin/games), LiveHub rename, Activities dropdown nav, login page redesign |
-| ~June 7 | v0.5.0 — Camp Info Hub + PWA | Hub features (§8.1–8.4), PWA manifest + service worker + install flow (§8.9) |
+| ~June 7 | v0.5.0 — Camp Info Hub + PWA ✅ | Hub features (§8.1–8.4), PWA manifest + service worker + install flow (§8.9), Railway production setup |
 | ~June 7-8 | v1.0.0-rc — Dry Run | Full dress rehearsal. Staff test on real devices. Projector verified. Issues logged. |
 | ~June 13 | v1.0.0 — Camp Ready | Dry run issues resolved. Production seeded. Staff briefed. One week buffer. |
 | June 20 | 🏕️ CAMP | Super Clot Not Party '26 is live |
@@ -921,8 +922,8 @@ Each is independently deployable as its own EF Core migration.
   "description": "Staff dashboard for Super Clot Not Party 2026",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#3d0066",
-  "theme_color": "#3d0066",
+  "background_color": "#F2ECD8",
+  "theme_color": "#F2ECD8",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
@@ -942,7 +943,7 @@ Each is independently deployable as its own EF Core migration.
 <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 ```
 
-**Service worker** (`wwwroot/service-worker.js`): Cache-first for static shell assets only. No caching of SignalR or API responses.
+**Service worker** (`wwwroot/service-worker.js`): Network-first for Blazor navigation requests (falls back to `/offline.html` on failure). Cache-first for static shell assets only. No caching of SignalR or API responses. Cache name: `ccn-shell-v2`.
 
 **Offline fallback** (`wwwroot/offline.html`): Static HTML, no Blazor dependency. Shows CCN logo, "You're offline" message, last-known score snapshot from localStorage, and a "Try again" reload button.
 

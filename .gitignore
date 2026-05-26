@@ -16,3 +16,9 @@ appsettings.Staging.json
 
 # Mockup preview dev server (source is mockup/ccn-mockup-v2.jsx)
 mockup/preview/
+
+# Claude Code local settings (personal overrides, not for team)
+.claude/settings.local.json
+
+# Brainstorming session files
+.superpowers/
