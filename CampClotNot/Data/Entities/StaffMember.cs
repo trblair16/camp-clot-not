@@ -3,6 +3,8 @@ namespace CampClotNot.Data.Entities;
 public class StaffMember
 {
     public Guid StaffMemberId { get; set; }
+    public Guid CampEventId { get; set; }
+    public Event CampEvent { get; set; } = null!;
     public string DisplayName { get; set; } = "";
     public string RoleTitle { get; set; } = "";
     public string? Phone { get; set; }

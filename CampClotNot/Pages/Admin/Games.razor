@@ -6,248 +6,254 @@
 
 <PageTitle>Game Admin — Camp Clot Not</PageTitle>
 
-<MudText Typo="Typo.h5" Style="font-family:'Fredoka One',cursive;margin-bottom:24px">
-    🎮 Game Admin
-</MudText>
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🎮 Game Admin</h2>
 
-<MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
 
-    @* ── TAB 1: BOARD SPACES ───────────────────────────────────────────────── *@
-    <MudTabPanel Text="Board Spaces">
-        <MudText Typo="Typo.body2" Style="margin-bottom:16px;color:#888">
-            20-space layout seeded from mockup. Adjust XPos/YPos in SeedService and restart to reposition.
-        </MudText>
+        @* ── TAB 1: BOARD SPACES ───────────────────────────────────────────────── *@
+        <MudTabPanel Text="Board Spaces">
+            <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">
+                20-space layout seeded from mockup. Adjust XPos/YPos in SeedService and restart to reposition.
+            </p>
 
-        @if (_spaces is null)
-        {
-            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
-        }
-        else
-        {
-            <MudTable Items="_spaces" Dense="true" Striped="true" Hover="true" Elevation="0">
-                <HeaderContent>
-                    <MudTh>#</MudTh>
-                    <MudTh>Type</MudTh>
-                    <MudTh>Activity</MudTh>
-                    <MudTh>X</MudTh>
-                    <MudTh>Y</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd>@context.SpaceIndex</MudTd>
-                    <MudTd>
-                        <MudChip T="string" Size="Size.Small" Style="@($"background:{SpaceColor(context.CategorySystemName)};color:white")">
-                            @SpaceIcon(context.CategorySystemName) @context.CategorySystemName
-                        </MudChip>
-                    </MudTd>
-                    <MudTd>@context.ActivityName</MudTd>
-                    <MudTd>@context.XPos</MudTd>
-                    <MudTd>@context.YPos</MudTd>
-                </RowTemplate>
-            </MudTable>
-        }
-    </MudTabPanel>
-
-    @* ── TAB 2: BLOCK HIT SCRIPTS ──────────────────────────────────────────── *@
-    <MudTabPanel Text="Block Hit Scripts">
-        <MudText Typo="Typo.body2" Style="margin-bottom:16px;color:#888">
-            Set the destination space for each group per camp day. Cannot edit after triggered.
-        </MudText>
-
-        @if (_groups is null || _blockHitScripts is null)
-        {
-            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
-        }
-        else
-        {
-            <div style="overflow-x:auto">
-                <table style="border-collapse:collapse;width:100%;min-width:480px">
-                    <thead>
-                        <tr>
-                            <th style="@ThStyle()">Group</th>
-                            @for (var d = 1; d <= 5; d++)
+            @if (_spaces is null)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else
+            {
+                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:var(--black)">
+                                <th style="@ThStyle()">#</th>
+                                <th style="@ThStyle()">Type</th>
+                                <th style="@ThStyle()">Activity</th>
+                                <th style="@ThStyle()">X</th>
+                                <th style="@ThStyle()">Y</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var space in _spaces)
                             {
-                                <th style="@ThStyle()">Day @d</th>
+                                <tr style="border-bottom:2px solid #E8E0CC">
+                                    <td style="@TdStyle()">@space.SpaceIndex</td>
+                                    <td style="@TdStyle()">
+                                        <span style="@($"background:{SpaceColor(space.CategorySystemName)};color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px")">
+                                            @SpaceIcon(space.CategorySystemName) @space.CategorySystemName
+                                        </span>
+                                    </td>
+                                    <td style="@TdStyle()">@space.ActivityName</td>
+                                    <td style="@TdStyle()">@space.XPos</td>
+                                    <td style="@TdStyle()">@space.YPos</td>
+                                </tr>
                             }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var group in _groups)
-                        {
-                            <tr>
-                                <td style="@TdStyle()">
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div style="@($"width:12px;height:12px;border-radius:50%;background:{group.Color};flex-shrink:0")"></div>
-                                        <span style="font-weight:700;font-size:13px">@group.ShortName</span>
-                                        <span style="color:#888;font-size:12px">@group.Name</span>
-                                    </div>
-                                </td>
-                                @for (var day = 1; day <= 5; day++)
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </MudTabPanel>
+
+        @* ── TAB 2: BLOCK HIT SCRIPTS ──────────────────────────────────────────── *@
+        <MudTabPanel Text="Block Hit Scripts">
+            <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">
+                Set the destination space for each group per camp day. Cannot edit after triggered.
+            </p>
+
+            @if (_groups is null || _blockHitScripts is null)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else
+            {
+                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                    <div style="overflow-x:auto">
+                        <table style="border-collapse:collapse;width:100%;min-width:480px">
+                            <thead>
+                                <tr style="background:var(--black)">
+                                    <th style="@ThStyle()">Group</th>
+                                    @for (var d = 1; d <= 5; d++)
+                                    {
+                                        <th style="@ThStyle()">Day @d</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var group in _groups)
                                 {
-                                    var d = day;
-                                    var script = _blockHitScripts.FirstOrDefault(s => s.GroupId == group.GroupId && s.CampDay == d);
+                                    <tr style="border-bottom:2px solid #E8E0CC">
+                                        <td style="@TdStyle()">
+                                            <div style="display:flex;align-items:center;gap:8px">
+                                                <div style="@($"width:12px;height:12px;border-radius:50%;background:{group.Color};flex-shrink:0")"></div>
+                                                <span style="font-weight:700;font-size:13px">@group.ShortName</span>
+                                                <span style="color:var(--text-light);font-size:12px">@group.Name</span>
+                                            </div>
+                                        </td>
+                                        @for (var day = 1; day <= 5; day++)
+                                        {
+                                            var d = day;
+                                            var script = _blockHitScripts.FirstOrDefault(s => s.GroupId == group.GroupId && s.CampDay == d);
+                                            <td style="@TdStyle()">
+                                                @if (script?.IsTriggered == true)
+                                                {
+                                                    <span style="background:#27AE60;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">✓ @script.DestinationSpaceIndex</span>
+                                                }
+                                                else
+                                                {
+                                                    <input type="number" min="0" max="19" placeholder="—"
+                                                           value="@(script?.DestinationSpaceIndex.ToString() ?? "")"
+                                                           @onchange="async e => { if (int.TryParse(e.Value?.ToString(), out var v)) await OnBlockHitDestChanged(group.GroupId, d, v); }"
+                                                           style="width:70px;padding:6px 8px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;text-align:center;box-sizing:border-box" />
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @if (_blockHitSaveMsg is not null)
+                {
+                    <div style="margin-top:12px;padding:10px 16px;border:2px solid var(--black);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_blockHitSaveMsg</div>
+                }
+            }
+        </MudTabPanel>
+
+        @* ── TAB 3: MINI-GAME SCRIPTS ──────────────────────────────────────────── *@
+        <MudTabPanel Text="Mini-Game Scripts">
+            <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">
+                Set the activity revealed for each camp day's evening mini-game. Cannot edit after triggered.
+            </p>
+
+            @if (_miniGameActivities is null || _miniGameScripts is null)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (_miniGameActivities.Count == 0)
+            {
+                <div style="padding:14px 16px;border:2px solid var(--black);border-radius:8px;background:#E3F2FD;font-size:13px">
+                    ℹ️ No MinuteToWinIt activities seeded yet. Add activities with category "MinuteToWinIt" in SeedService and restart.
+                </div>
+            }
+            else
+            {
+                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden;max-width:640px">
+                    <table style="border-collapse:collapse;width:100%">
+                        <thead>
+                            <tr style="background:var(--black)">
+                                <th style="@ThStyle()">Camp Day</th>
+                                <th style="@ThStyle()">Activity</th>
+                                <th style="@ThStyle()">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var day = 1; day <= 5; day++)
+                            {
+                                var d = day;
+                                var script = _miniGameScripts.FirstOrDefault(s => s.CampDay == d);
+                                <tr style="border-bottom:2px solid #E8E0CC">
+                                    <td style="@TdStyle()"><span style="font-weight:700">Day @d</span></td>
                                     <td style="@TdStyle()">
                                         @if (script?.IsTriggered == true)
                                         {
-                                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
-                                                ✓ Space @script.DestinationSpaceIndex
-                                            </MudChip>
+                                            <span style="font-size:13px;color:var(--text-light)">@script.ActivityName</span>
                                         }
                                         else
                                         {
-                                            <MudNumericField T="int?" Value="@(script?.DestinationSpaceIndex)"
-                                                             ValueChanged="@(v => OnBlockHitDestChanged(group.GroupId, d, v))"
-                                                             Min="0" Max="19" Variant="Variant.Outlined"
-                                                             Margin="Margin.Dense" Style="width:80px"
-                                                             Placeholder="—" />
+                                            <select value="@(script?.ActivityId.ToString() ?? "")"
+                                                    @onchange="async e => { if (Guid.TryParse(e.Value?.ToString(), out var g)) await OnMiniGameActivityChanged(d, g); }"
+                                                    style="min-width:200px;padding:7px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer;box-sizing:border-box">
+                                                <option value="">— pick activity —</option>
+                                                @foreach (var activity in _miniGameActivities)
+                                                {
+                                                    <option value="@activity.ActivityId">@activity.Name</option>
+                                                }
+                                            </select>
                                         }
                                     </td>
-                                }
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                                    <td style="@TdStyle()">
+                                        @if (script?.IsTriggered == true)
+                                        {
+                                            <span style="background:#27AE60;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">✓ Triggered</span>
+                                        }
+                                        else if (script is not null)
+                                        {
+                                            <span style="background:#E67E22;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">Scripted</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="background:#95A5A6;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">Not set</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
 
-            @if (_blockHitSaveMsg is not null)
-            {
-                <MudAlert Severity="Severity.Success" Dense="true" Style="margin-top:12px">@_blockHitSaveMsg</MudAlert>
+                @if (_miniGameSaveMsg is not null)
+                {
+                    <div style="margin-top:12px;padding:10px 16px;border:2px solid var(--black);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_miniGameSaveMsg</div>
+                }
             }
-        }
-    </MudTabPanel>
+        </MudTabPanel>
 
-    @* ── TAB 3: MINI-GAME SCRIPTS ──────────────────────────────────────────── *@
-    <MudTabPanel Text="Mini-Game Scripts">
-        <MudText Typo="Typo.body2" Style="margin-bottom:16px;color:#888">
-            Set the activity revealed for each camp day's evening mini-game. Cannot edit after triggered.
-        </MudText>
+        @* ── TAB 4: RESET (dev/testing) ────────────────────────────────────────── *@
+        <MudTabPanel Text="Reset">
+            <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">
+                Testing utilities — reset scripted sequences so animations can be re-run.
+            </p>
 
-        @if (_miniGameActivities is null || _miniGameScripts is null)
-        {
-            <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
-        }
-        else if (_miniGameActivities.Count == 0)
-        {
-            <MudAlert Severity="Severity.Info">
-                No MinuteToWinIt activities seeded yet. Add activities with category "MinuteToWinIt" in SeedService and restart.
-            </MudAlert>
-        }
-        else
-        {
-            <div style="overflow-x:auto">
-                <table style="border-collapse:collapse;width:100%;max-width:640px">
-                    <thead>
-                        <tr>
-                            <th style="@ThStyle()">Camp Day</th>
-                            <th style="@ThStyle()">Activity</th>
-                            <th style="@ThStyle()">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (var day = 1; day <= 5; day++)
-                        {
-                            var d = day;
-                            var script = _miniGameScripts.FirstOrDefault(s => s.CampDay == d);
-                            <tr>
-                                <td style="@TdStyle()">
-                                    <span style="font-weight:700;font-size:13px">Day @d</span>
-                                </td>
-                                <td style="@TdStyle()">
-                                    @if (script?.IsTriggered == true)
-                                    {
-                                        <span style="font-size:13px;color:#888">@script.ActivityName</span>
-                                    }
-                                    else
-                                    {
-                                        <MudSelect T="Guid?" Value="@(script?.ActivityId)"
-                                                   ValueChanged="@(v => OnMiniGameActivityChanged(d, v))"
-                                                   Variant="Variant.Outlined" Margin="Margin.Dense"
-                                                   Style="min-width:220px" Placeholder="— pick activity —">
-                                            @foreach (var activity in _miniGameActivities)
-                                            {
-                                                <MudSelectItem T="Guid?" Value="@((Guid?)activity.ActivityId)">
-                                                    @activity.Name
-                                                </MudSelectItem>
-                                            }
-                                        </MudSelect>
-                                    }
-                                </td>
-                                <td style="@TdStyle()">
-                                    @if (script?.IsTriggered == true)
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">✓ Triggered</MudChip>
-                                    }
-                                    else if (script is not null)
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">Scripted</MudChip>
-                                    }
-                                    else
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Not set</MudChip>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;max-width:480px">
 
-            @if (_miniGameSaveMsg is not null)
-            {
-                <MudAlert Severity="Severity.Success" Dense="true" Style="margin-top:12px">@_miniGameSaveMsg</MudAlert>
-            }
-        }
-    </MudTabPanel>
-
-    @* ── TAB 4: RESET (dev/testing) ────────────────────────────────────────── *@
-    <MudTabPanel Text="Reset">
-        <MudText Typo="Typo.body2" Style="margin-bottom:20px;color:#888">
-            Testing utilities — reset scripted sequences so animations can be re-run.
-        </MudText>
-
-        <div style="display:flex;flex-direction:column;gap:24px;max-width:480px">
-            <div>
-                <MudText Typo="Typo.subtitle2" Style="margin-bottom:12px">Block Hit — Reset Day</MudText>
-                <MudText Typo="Typo.body2" Style="margin-bottom:12px;color:#888">
-                    Moves all groups back to space 0 and un-triggers all block hit scripts for the selected day.
-                </MudText>
-                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-                    <MudNumericField T="int" @bind-Value="_resetDay" Label="Camp Day" Min="1" Max="5"
-                                     Variant="Variant.Outlined" Style="width:120px" />
-                    <MudButton Variant="Variant.Filled" Color="Color.Warning"
-                               Disabled="@_resettingBoard" OnClick="ResetBoardDayAsync">
-                        @(_resettingBoard ? "Resetting…" : "⟳ Reset Board Day")
-                    </MudButton>
+                <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px">
+                    <h3 style="font-family:'Fredoka One',cursive;font-size:15px;margin:0 0 6px">Block Hit — Reset Day</h3>
+                    <p style="font-size:13px;color:var(--text-light);margin:0 0 14px">Moves all groups back to space 0 and un-triggers all block hit scripts for the selected day.</p>
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                        <div>
+                            <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Camp Day</div>
+                            <input type="number" @bind="_resetDay" min="1" max="5"
+                                   style="width:90px;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;text-align:center" />
+                        </div>
+                        <button class="ccn-btn" style="background:var(--color-accent);color:white;margin-top:18px"
+                                disabled="@_resettingBoard" @onclick="ResetBoardDayAsync">
+                            @(_resettingBoard ? "Resetting…" : "⟳ Reset Board Day")
+                        </button>
+                    </div>
                     @if (_resetBoardMsg is not null)
                     {
-                        <MudAlert Severity="Severity.Info" Dense="true">@_resetBoardMsg</MudAlert>
+                        <div style="margin-top:12px;padding:8px 14px;border:2px solid var(--black);border-radius:7px;background:#FFF8E1;font-family:'Fredoka One',cursive;font-size:13px">@_resetBoardMsg</div>
                     }
                 </div>
-            </div>
 
-            <MudDivider />
-
-            <div>
-                <MudText Typo="Typo.subtitle2" Style="margin-bottom:12px">Mini-Game — Reset Day</MudText>
-                <MudText Typo="Typo.body2" Style="margin-bottom:12px;color:#888">
-                    Un-triggers the mini-game script for the selected day so the spinner can be re-run.
-                </MudText>
-                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-                    <MudNumericField T="int" @bind-Value="_resetMiniGameDay" Label="Camp Day" Min="1" Max="5"
-                                     Variant="Variant.Outlined" Style="width:120px" />
-                    <MudButton Variant="Variant.Filled" Color="Color.Warning"
-                               Disabled="@_resettingMiniGame" OnClick="ResetMiniGameDayAsync">
-                        @(_resettingMiniGame ? "Resetting…" : "⟳ Reset Mini-Game Day")
-                    </MudButton>
+                <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px">
+                    <h3 style="font-family:'Fredoka One',cursive;font-size:15px;margin:0 0 6px">Mini-Game — Reset Day</h3>
+                    <p style="font-size:13px;color:var(--text-light);margin:0 0 14px">Un-triggers the mini-game script for the selected day so the spinner can be re-run.</p>
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                        <div>
+                            <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Camp Day</div>
+                            <input type="number" @bind="_resetMiniGameDay" min="1" max="5"
+                                   style="width:90px;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;text-align:center" />
+                        </div>
+                        <button class="ccn-btn" style="background:var(--color-accent);color:white;margin-top:18px"
+                                disabled="@_resettingMiniGame" @onclick="ResetMiniGameDayAsync">
+                            @(_resettingMiniGame ? "Resetting…" : "⟳ Reset Mini-Game Day")
+                        </button>
+                    </div>
                     @if (_resetMiniGameMsg is not null)
                     {
-                        <MudAlert Severity="Severity.Info" Dense="true">@_resetMiniGameMsg</MudAlert>
+                        <div style="margin-top:12px;padding:8px 14px;border:2px solid var(--black);border-radius:7px;background:#FFF8E1;font-family:'Fredoka One',cursive;font-size:13px">@_resetMiniGameMsg</div>
                     }
                 </div>
-            </div>
-        </div>
-    </MudTabPanel>
 
-</MudTabs>
+            </div>
+        </MudTabPanel>
+
+    </MudTabs>
+</div>
 
 @code {
     private List<BoardSpaceView>?      _spaces;
@@ -363,8 +369,8 @@
     };
 
     private static string ThStyle() =>
-        "padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08)";
+        "padding:10px 14px;text-align:left;font-family:'Fredoka One',cursive;font-size:12px;letter-spacing:.5px;color:white";
 
     private static string TdStyle() =>
-        "padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle";
+        "padding:10px 14px;border-bottom:2px solid #E8E0CC;vertical-align:middle;font-size:13px";
 }

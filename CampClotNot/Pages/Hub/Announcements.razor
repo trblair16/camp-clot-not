@@ -1,5 +1,5 @@
 @page "/hub/announcements"
-@attribute [Authorize(Roles = "Admin,Staff")]
+@attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
 @inject AnnouncementService AnnouncementSvc
 @inject AuthenticationStateProvider Auth
 
@@ -16,6 +16,8 @@
     }
     else
     {
+        @if (_canPost)
+        {
         <div style="border:3px solid var(--black);border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg)">
             <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 12px">New Announcement</h3>
             <MudTextField @bind-Value="_newTitle" Label="Title" Required="true" Class="mb-2" />
@@ -29,6 +31,7 @@
             }
             <button class="ccn-btn" @onclick="Post" disabled="@string.IsNullOrWhiteSpace(_newTitle)">Post</button>
         </div>
+        }
 
         @foreach (var a in _feed)
         {
@@ -72,6 +75,7 @@
 @code {
     private bool _loading = true;
     private bool _isAdmin;
+    private bool _canPost;
     private Guid _userId;
     private List<Announcement> _feed = [];
     private string _newTitle = "";
@@ -81,7 +85,8 @@
     protected override async Task OnInitializedAsync()
     {
         var authState = await Auth.GetAuthenticationStateAsync();
-        _isAdmin = authState.User.IsInRole("Admin");
+        _isAdmin  = authState.User.IsInRole("Admin");
+        _canPost  = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
         _feed = await AnnouncementSvc.GetFeedAsync();
         _loading = false;

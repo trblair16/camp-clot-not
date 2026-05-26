@@ -220,7 +220,7 @@
                     }
                 </div>
 
-                <AuthorizeView Roles="Admin,Staff" Context="hubDesktopCtx">
+                <AuthorizeView Roles="Admin,Staff,Volunteer" Context="hubDesktopCtx">
                     <a href="/hub" class="nav-link" style="@ActiveStyle("/hub", "#2980B9")">📋 Hub</a>
                 </AuthorizeView>
 
@@ -240,9 +240,10 @@
                         @if (_adminDropdownOpen)
                         {
                             <div class="nav-admin-panel">
-                                <a href="/admin/games"  @onclick="() => _adminDropdownOpen = false">🎮 Game Admin</a>
-                                <a href="/admin/groups" @onclick="() => _adminDropdownOpen = false">👥 Groups</a>
-                                <a href="/admin/users"  @onclick="() => _adminDropdownOpen = false">🔑 Users</a>
+                                <a href="/admin/games"     @onclick="() => _adminDropdownOpen = false">🎮 Game Admin</a>
+                                <a href="/admin/groups"    @onclick="() => _adminDropdownOpen = false">👥 Groups</a>
+                                <a href="/admin/users"     @onclick="() => _adminDropdownOpen = false">🔑 Users</a>
+                                <a href="/admin/locations" @onclick="() => _adminDropdownOpen = false">📍 Locations</a>
                             </div>
                         }
                     </div>
@@ -274,7 +275,7 @@
                 <span class="tab-icon">🎮</span>
                 <span>Activities</span>
             </button>
-            <AuthorizeView Roles="Admin,Staff" Context="hubMobileCtx">
+            <AuthorizeView Roles="Admin,Staff,Volunteer" Context="hubMobileCtx">
                 <a href="/hub/schedule" class="nav-tab @(IsActive("/hub") ? "active" : "")">
                     <span class="tab-icon">📋</span>
                     <span>Hub</span>
@@ -310,10 +311,11 @@
     <div style="position:fixed;inset:0;z-index:44;background:rgba(26,26,26,.4)"
          @onclick="() => _adminSheetOpen = false"></div>
     <div class="nav-admin-sheet">
-        <a href="/transactions" @onclick="() => _adminSheetOpen = false">📋 Transactions</a>
-        <a href="/admin/games"  @onclick="() => _adminSheetOpen = false">🎮 Game Admin</a>
-        <a href="/admin/groups" @onclick="() => _adminSheetOpen = false">👥 Groups</a>
-        <a href="/admin/users"  @onclick="() => _adminSheetOpen = false">🔑 Users</a>
+        <a href="/transactions"    @onclick="() => _adminSheetOpen = false">📋 Transactions</a>
+        <a href="/admin/games"     @onclick="() => _adminSheetOpen = false">🎮 Game Admin</a>
+        <a href="/admin/groups"    @onclick="() => _adminSheetOpen = false">👥 Groups</a>
+        <a href="/admin/users"     @onclick="() => _adminSheetOpen = false">🔑 Users</a>
+        <a href="/admin/locations" @onclick="() => _adminSheetOpen = false">📍 Locations</a>
         <button onclick="window.location='/logout'">🚪 Sign Out</button>
     </div>
 }

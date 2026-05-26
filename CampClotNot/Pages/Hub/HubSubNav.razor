@@ -3,9 +3,12 @@
 <style>
     .hub-subnav {
         display: flex;
-        border-bottom: 3px solid var(--black);
+        border: 3px solid var(--black);
+        border-radius: 10px;
         margin-bottom: 20px;
         background: var(--panel-bg);
+        box-shadow: 4px 4px 0 var(--black);
+        overflow: hidden;
     }
     .hub-tab {
         flex: 1;
@@ -13,14 +16,18 @@
         text-align: center;
         font-family: 'Fredoka One', cursive;
         font-size: 13px;
-        color: var(--text-light);
+        color: var(--text-mid);
         text-decoration: none;
         border-bottom: 4px solid transparent;
-        transition: color .1s, border-color .1s;
+        transition: color .1s, border-color .1s, background .1s;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 2px;
+    }
+    .hub-tab:hover {
+        background: rgba(26,26,26,0.05);
+        color: var(--black);
     }
     .hub-tab .tab-icon { font-size: 18px; line-height: 1; }
     .hub-tab.active {

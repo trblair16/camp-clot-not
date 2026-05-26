@@ -10,9 +10,9 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     public static class Id
     {
         // UserRoles
-        public static readonly Guid RoleAdmin   = new("00000001-0001-0001-0001-000000000001");
-        public static readonly Guid RoleStaff   = new("00000001-0001-0001-0001-000000000002");
-        public static readonly Guid RoleDisplay = new("00000001-0001-0001-0001-000000000003");
+        public static readonly Guid RoleAdmin     = new("00000001-0001-0001-0001-000000000001");
+        public static readonly Guid RoleStaff     = new("00000001-0001-0001-0001-000000000002");
+        public static readonly Guid RoleVolunteer = new("00000001-0001-0001-0001-000000000004");
 
         // Authorities
         public static readonly Guid AuthLogTransaction   = new("00000002-0002-0002-0002-000000000001");
@@ -23,7 +23,6 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid AuthManageGroups     = new("00000002-0002-0002-0002-000000000006");
         public static readonly Guid AuthManageBoard      = new("00000002-0002-0002-0002-000000000007");
         public static readonly Guid AuthManageShop       = new("00000002-0002-0002-0002-000000000008");
-        public static readonly Guid AuthViewDisplay      = new("00000002-0002-0002-0002-000000000009");
         public static readonly Guid AuthAccessAdminPanel = new("00000002-0002-0002-0002-000000000010");
 
         // EventTypes
@@ -143,12 +142,17 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedUserRolesAsync(AppDbContext db)
     {
-        if (await db.UserRoles.AnyAsync()) return;
-        db.UserRoles.AddRange(
-            new UserRole { UserRoleId = Id.RoleAdmin,   Name = "Admin",   Description = "Full system access",           SystemName = nameof(Role.Admin) },
-            new UserRole { UserRoleId = Id.RoleStaff,   Name = "Staff",   Description = "Staff and volunteers",          SystemName = nameof(Role.Staff) },
-            new UserRole { UserRoleId = Id.RoleDisplay, Name = "Display", Description = "Projector display (read-only)", SystemName = nameof(Role.Display) }
-        );
+        var defs = new[]
+        {
+            new { Id = Id.RoleAdmin,     Name = "Admin",     Description = "Full system access",                       SystemName = nameof(Role.Admin) },
+            new { Id = Id.RoleStaff,     Name = "Staff",     Description = "Camp staff — full Hub access",             SystemName = nameof(Role.Staff) },
+            new { Id = Id.RoleVolunteer, Name = "Volunteer", Description = "Counselor / volunteer — limited access",   SystemName = nameof(Role.Volunteer) },
+        };
+        foreach (var def in defs)
+        {
+            if (!await db.UserRoles.AnyAsync(r => r.UserRoleId == def.Id))
+                db.UserRoles.Add(new UserRole { UserRoleId = def.Id, Name = def.Name, Description = def.Description, SystemName = def.SystemName });
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded UserRoles.");
     }
@@ -165,7 +169,6 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             new Authority { AuthorityId = Id.AuthManageGroups,     Name = "Manage Groups",      Description = "Create and edit groups",                SystemName = nameof(Permission.ManageGroups) },
             new Authority { AuthorityId = Id.AuthManageBoard,      Name = "Manage Board",       Description = "Configure board spaces and scripting",  SystemName = nameof(Permission.ManageBoard) },
             new Authority { AuthorityId = Id.AuthManageShop,       Name = "Manage Shop",        Description = "Configure the coin shop",               SystemName = nameof(Permission.ManageShop) },
-            new Authority { AuthorityId = Id.AuthViewDisplay,      Name = "View Display",       Description = "Access the projector display page",     SystemName = nameof(Permission.ViewDisplay) },
             new Authority { AuthorityId = Id.AuthAccessAdminPanel, Name = "Access Admin Panel", Description = "Access admin-only pages and controls",  SystemName = nameof(Permission.AccessAdminPanel) }
         );
         await db.SaveChangesAsync();
@@ -174,22 +177,28 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedUserRoleAuthoritiesAsync(AppDbContext db)
     {
-        if (await db.UserRoleAuthorityLinks.AnyAsync()) return;
-
-        var adminLinks = new[]
+        var defs = new[]
         {
-            Id.AuthLogTransaction, Id.AuthVoidTransaction, Id.AuthTriggerBlockHit,
-            Id.AuthTriggerScoreLock, Id.AuthManageUsers, Id.AuthManageGroups,
-            Id.AuthManageBoard, Id.AuthManageShop, Id.AuthViewDisplay, Id.AuthAccessAdminPanel
-        }.Select(authId => new UserRoleAuthorityLink { UserRoleId = Id.RoleAdmin, AuthorityId = authId });
-
-        var staffLinks = new[] { Id.AuthLogTransaction, Id.AuthViewDisplay }
-            .Select(authId => new UserRoleAuthorityLink { UserRoleId = Id.RoleStaff, AuthorityId = authId });
-
-        var displayLinks = new[] { Id.AuthViewDisplay }
-            .Select(authId => new UserRoleAuthorityLink { UserRoleId = Id.RoleDisplay, AuthorityId = authId });
-
-        db.UserRoleAuthorityLinks.AddRange(adminLinks.Concat(staffLinks).Concat(displayLinks));
+            // Admin: all permissions
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthLogTransaction },
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthVoidTransaction },
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthTriggerBlockHit },
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthTriggerScoreLock },
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthManageUsers },
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthManageGroups },
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthManageBoard },
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthManageShop },
+            new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthAccessAdminPanel },
+            // Staff: transactions
+            new { RoleId = Id.RoleStaff,     AuthId = Id.AuthLogTransaction },
+            // Volunteer: transactions only
+            new { RoleId = Id.RoleVolunteer, AuthId = Id.AuthLogTransaction },
+        };
+        foreach (var def in defs)
+        {
+            if (!await db.UserRoleAuthorityLinks.AnyAsync(l => l.UserRoleId == def.RoleId && l.AuthorityId == def.AuthId))
+                db.UserRoleAuthorityLinks.Add(new UserRoleAuthorityLink { UserRoleId = def.RoleId, AuthorityId = def.AuthId });
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded UserRoleAuthorityLinks.");
     }

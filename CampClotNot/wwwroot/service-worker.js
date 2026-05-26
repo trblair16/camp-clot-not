@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ccn-shell-v1';
+const CACHE_NAME = 'ccn-shell-v2';
 const SHELL_ASSETS = [
     '/offline.html',
     '/app.css',
@@ -34,6 +34,15 @@ self.addEventListener('fetch', function(event) {
     var url = new URL(event.request.url);
     var skip = SKIP_PREFIXES.some(function(p) { return url.pathname.startsWith(p); });
     if (skip || event.request.method !== 'GET') return;
+
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request).catch(function() {
+                return caches.match('/offline.html');
+            })
+        );
+        return;
+    }
 
     event.respondWith(
         caches.match(event.request).then(function(cached) {

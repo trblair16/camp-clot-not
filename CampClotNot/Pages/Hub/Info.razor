@@ -1,5 +1,5 @@
 @page "/hub/info"
-@attribute [Authorize(Roles = "Admin,Staff")]
+@attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
 @inject InfoPageService InfoSvc
 @inject AuthenticationStateProvider Auth
 @inject NavigationManager Nav

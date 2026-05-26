@@ -1,7 +1,12 @@
 @page "/hub/schedule"
-@attribute [Authorize(Roles = "Admin,Staff")]
+@attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
 @inject ScheduleService ScheduleSvc
+@inject LocationService LocationSvc
+@inject MiniGameService MiniGameSvc
+@inject IDbContextFactory<AppDbContext> DbFactory
 @inject AuthenticationStateProvider Auth
+@using CampClotNot.Data
+@using Microsoft.EntityFrameworkCore
 
 <PageTitle>Schedule — Camp Clot Not</PageTitle>
 
@@ -41,6 +46,10 @@
                     <div style="padding:8px 0">
                         @foreach (var ev in events)
                         {
+                            var myAssignment = _userGroupId.HasValue
+                                ? ev.EventGroups.FirstOrDefault(eg => eg.GroupId == _userGroupId.Value)
+                                : null;
+
                             <div style="padding:10px 16px;border-bottom:2px solid #E8E0CC;display:flex;gap:12px;align-items:flex-start">
                                 <div style="min-width:70px;font-family:'Fredoka One',cursive;font-size:13px;color:var(--text-light)">
                                     @ev.StartTime.ToString("h:mm tt")
@@ -49,25 +58,65 @@
                                         <br />@ev.EndTime.Value.ToString("h:mm tt")
                                     }
                                 </div>
-                                <div style="flex:1">
-                                    <div style="font-family:'Fredoka One',cursive;font-size:15px">@ev.Title</div>
-                                    @if (!string.IsNullOrEmpty(ev.LocationDisplayName))
+                                <div style="flex:1;min-width:0">
+                                    @* Title: show assigned activity name for volunteers/staff with a group *@
+                                    @if (myAssignment?.Activity is not null)
                                     {
-                                        <div style="font-size:13px;color:var(--text-light)">📍 @ev.LocationDisplayName</div>
+                                        <div style="font-family:'Fredoka One',cursive;font-size:15px">@myAssignment.Activity.Name</div>
+                                        <div style="font-size:12px;color:var(--text-light);font-style:italic">@ev.Title</div>
                                     }
+                                    else
+                                    {
+                                        <div style="font-family:'Fredoka One',cursive;font-size:15px">@ev.Title</div>
+                                    }
+
+                                    @* Location: group override takes priority *@
+                                    @{
+                                        var displayLocation = myAssignment?.Location ?? ev.Location;
+                                    }
+                                    @if (displayLocation is not null)
+                                    {
+                                        <div style="font-size:13px;color:var(--text-light)">📍 @displayLocation.Name</div>
+                                    }
+                                    else if (!string.IsNullOrEmpty(myAssignment?.Note))
+                                    {
+                                        <div style="font-size:13px;color:var(--text-light)">@myAssignment.Note</div>
+                                    }
+
                                     <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@EventTypeBadgeColor(ev.EventType);color:white;font-family:'Fredoka One',cursive">
                                         @ev.EventType
                                     </span>
-                                    @if (!ev.AppliesToAllGroups && ev.EventGroups.Any())
+
+                                    @* Admin/Staff: show all-groups assignment table *@
+                                    @if (_isAdminOrStaff && ev.EventGroups.Any())
                                     {
-                                        <span style="font-size:12px;color:var(--text-light);margin-left:6px">
-                                            @string.Join(", ", ev.EventGroups.Select(eg => eg.Group.ShortName))
-                                        </span>
+                                        <details style="margin-top:8px">
+                                            <summary style="font-size:12px;color:var(--text-light);cursor:pointer;font-family:'Fredoka One',cursive">
+                                                Group assignments (@ev.EventGroups.Count)
+                                            </summary>
+                                            <div style="margin-top:6px;border:2px solid #E8E0CC;border-radius:6px;overflow:hidden">
+                                                @foreach (var eg in ev.EventGroups.OrderBy(x => x.Group.Name))
+                                                {
+                                                    <div style="display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid #E8E0CC;font-size:13px">
+                                                        <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px">@eg.Group.ShortName</span>
+                                                        <span style="flex:1">@(eg.Activity?.Name ?? "—")</span>
+                                                        @if (eg.Location is not null)
+                                                        {
+                                                            <span style="color:var(--text-light)">📍 @eg.Location.Name</span>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(eg.Note))
+                                                        {
+                                                            <span style="color:var(--text-light);font-style:italic">@eg.Note</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        </details>
                                     }
                                 </div>
                                 @if (_canEdit)
                                 {
-                                    <div style="display:flex;gap:4px">
+                                    <div style="display:flex;gap:4px;flex-shrink:0">
                                         <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEditForm(ev)">Edit</button>
                                         <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => DeleteEvent(ev.ScheduleEventId)">Del</button>
                                     </div>
@@ -79,54 +128,155 @@
             </div>
         }
     }
+</div>
 
-    @if (_showForm)
-    {
-        <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" @onclick="CloseForm">
-            <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:4px 4px 0 var(--black);padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto" @onclick:stopPropagation>
-                <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Event" : "Edit Event")</h3>
-                <MudTextField @bind-Value="_fTitle"    Label="Title" Required="true" Class="mb-3" />
-                <MudDatePicker @bind-Date="_fDate"     Label="Day" Required="true" Class="mb-3" />
-                <MudTimePicker @bind-Time="_fStart"    Label="Start Time" Required="true" Class="mb-3" />
-                <MudTimePicker @bind-Time="_fEnd"      Label="End Time (optional)" Class="mb-3" />
-                <MudSelect @bind-Value="_fType"        Label="Event Type" Class="mb-3">
-                    @foreach (var t in Enum.GetValues<ScheduleEventType>())
-                    {
-                        <MudSelectItem Value="@t">@t</MudSelectItem>
-                    }
-                </MudSelect>
-                <MudTextField @bind-Value="_fLocation" Label="Location (optional)" Class="mb-3" />
-                <MudTextField @bind-Value="_fDesc"     Label="Description (optional)" Lines="2" Class="mb-3" />
-                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-                    <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CloseForm">Cancel</button>
-                    <button class="ccn-btn" @onclick="SaveEvent">Save</button>
-                </div>
+@if (_showForm)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" @onclick="CloseForm">
+        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:4px 4px 0 var(--black);padding:24px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto" @onclick:stopPropagation>
+            <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Event" : "Edit Event")</h3>
+
+            <MudTextField @bind-Value="_fTitle"    Label="Title" Required="true" Class="mb-3" />
+            <MudDatePicker @bind-Date="_fDate"     Label="Day" Required="true" Class="mb-3" />
+            <MudTimePicker @bind-Time="_fStart"    Label="Start Time" Required="true" Class="mb-3" />
+            <MudTimePicker @bind-Time="_fEnd"      Label="End Time (optional)" Class="mb-3" />
+            <MudSelect @bind-Value="_fType"        Label="Event Type" Class="mb-3">
+                @foreach (var t in Enum.GetValues<ScheduleEventType>())
+                {
+                    <MudSelectItem Value="@t">@t</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField @bind-Value="_fDesc"     Label="Description (optional)" Lines="2" Class="mb-3" />
+
+            @* Location picker *@
+            <MudSelect @bind-Value="_fLocationId" Label="Location (optional)" Class="mb-3" Clearable="true">
+                @foreach (var loc in _locations)
+                {
+                    <MudSelectItem Value="@((Guid?)loc.LocationId)">@loc.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            @* Group assignments section — collapsible, optional *@
+            @{
+                var assignedCount = _fAssignments.Count(a => a.ActivityId.HasValue || a.LocationId.HasValue || !string.IsNullOrEmpty(a.Note));
+            }
+            <div style="border:2px solid #E8E0CC;border-radius:8px;margin-bottom:16px;overflow:hidden">
+                <button style="width:100%;padding:12px 14px;background:#F8F4EC;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"
+                        @onclick="() => _assignmentsExpanded = !_assignmentsExpanded">
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-family:'Fredoka One',cursive;font-size:14px">Group Assignments</span>
+                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:#E8E0CC;color:var(--text-light);font-family:'Fredoka One',cursive">
+                            @(assignedCount > 0 ? $"{assignedCount} set" : "Optional")
+                        </span>
+                    </div>
+                    <span style="font-size:12px;color:var(--text-light)">@(_assignmentsExpanded ? "▲ collapse" : "▼ expand")</span>
+                </button>
+                @if (!_assignmentsExpanded)
+                {
+                    <div style="padding:8px 14px 10px;font-size:12px;color:var(--text-light);border-top:1px solid #E8E0CC">
+                        Use for rotation slots where each group does a different activity. Skip for meals, free time, and whole-group sessions.
+                    </div>
+                }
+                else
+                {
+                    <div style="padding:14px">
+                        @foreach (var ga in _fAssignments)
+                        {
+                            var group = _groups.FirstOrDefault(g => g.GroupId == ga.GroupId);
+                            <div style="margin-bottom:10px;padding:10px;background:#F8F4EC;border-radius:6px">
+                                <div style="font-family:'Fredoka One',cursive;font-size:13px;color:@(group?.Color ?? "#555");margin-bottom:6px">
+                                    @(group?.Name ?? ga.GroupId.ToString())
+                                </div>
+                                <MudSelect Value="ga.ActivityId"
+                                           ValueChanged="@((Guid? v) => ga.ActivityId = v)"
+                                           Label="Activity" Class="mb-2" Clearable="true">
+                                    @foreach (var act in _activities)
+                                    {
+                                        <MudSelectItem Value="@((Guid?)act.ActivityId)">@act.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudSelect Value="ga.LocationId"
+                                           ValueChanged="@((Guid? v) => ga.LocationId = v)"
+                                           Label="Location override" Class="mb-2" Clearable="true">
+                                    @foreach (var loc in _locations)
+                                    {
+                                        <MudSelectItem Value="@((Guid?)loc.LocationId)">@loc.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudTextField Value="ga.Note"
+                                              ValueChanged="@((string? v) => ga.Note = v)"
+                                              Label="Note (optional)" />
+                            </div>
+                        }
+                        @if (!_locations.Any())
+                        {
+                            <p style="font-size:12px;color:var(--text-light);margin:0">
+                                No locations yet — add them at <a href="/admin/locations">Admin → Locations</a> first.
+                            </p>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CloseForm">Cancel</button>
+                <button class="ccn-btn" @onclick="SaveEvent">Save</button>
             </div>
         </div>
-    }
-</div>
+    </div>
+}
 
 @code {
     private bool _loading = true;
     private bool _canEdit;
+    private bool _isAdminOrStaff;
     private bool _showForm;
+    private Guid? _userGroupId;
     private Dictionary<DateOnly, List<ScheduleEvent>> _eventsByDay = [];
     private HashSet<DateOnly> _expandedDays = [];
+    private List<Location> _locations = [];
+    private List<Activity> _activities = [];
+    private List<Group> _groups = [];
     private Guid _editingId;
     private Guid _userId;
+
+    // Form fields
     private string _fTitle = "";
-    private string? _fLocation;
     private string? _fDesc;
     private DateTime? _fDate;
     private TimeSpan? _fStart;
     private TimeSpan? _fEnd;
     private ScheduleEventType _fType = ScheduleEventType.Activity;
+    private Guid? _fLocationId;
+    private List<AssignmentFormRow> _fAssignments = [];
+    private bool _assignmentsExpanded;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await Auth.GetAuthenticationStateAsync();
-        _canEdit = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
+        _canEdit       = authState.User.IsInRole("Admin");
+        _isAdminOrStaff = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
+
+        // Load the user's group (for Volunteer schedule filtering)
+        if (!_isAdminOrStaff && _userId != Guid.Empty)
+        {
+            using var db = DbFactory.CreateDbContext();
+            _userGroupId = await db.Users
+                .Where(u => u.UserId == _userId)
+                .Select(u => u.GroupId)
+                .FirstOrDefaultAsync();
+        }
+
+        _locations = await LocationSvc.GetAllAsync();
+        var allActs = await MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
+        _activities = allActs;
+
+        using var dbGroups = DbFactory.CreateDbContext();
+        _groups = await dbGroups.Groups
+            .Where(g => g.EventId == SeedService.Id.EventCcn2026)
+            .OrderBy(g => g.Name)
+            .ToListAsync();
 
         await LoadEvents();
     }
@@ -134,6 +284,11 @@
     private async Task LoadEvents()
     {
         var events = await ScheduleSvc.GetByEventAsync(SeedService.Id.EventCcn2026);
+
+        // Volunteers without a group see all-groups events only
+        if (!_isAdminOrStaff && !_userGroupId.HasValue)
+            events = events.Where(e => e.AppliesToAllGroups).ToList();
+
         _eventsByDay = events
             .GroupBy(e => e.CampDay)
             .OrderBy(g => g.Key)
@@ -155,24 +310,40 @@
 
     private void OpenAddForm()
     {
-        _editingId = Guid.Empty;
-        _fTitle = ""; _fLocation = null; _fDesc = null;
-        _fDate = DateTime.Today; _fStart = new TimeSpan(9, 0, 0); _fEnd = null;
-        _fType = ScheduleEventType.Activity;
-        _showForm = true;
+        _editingId   = Guid.Empty;
+        _fTitle      = ""; _fDesc = null;
+        _fDate       = DateTime.Today;
+        _fStart      = new TimeSpan(9, 0, 0); _fEnd = null;
+        _fType       = ScheduleEventType.Activity;
+        _fLocationId = null;
+        _fAssignments        = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
+        _assignmentsExpanded = false;
+        _showForm            = true;
     }
 
     private void OpenEditForm(ScheduleEvent ev)
     {
-        _editingId  = ev.ScheduleEventId;
-        _fTitle     = ev.Title;
-        _fLocation  = ev.LocationDisplayName;
-        _fDesc      = ev.Description;
-        _fDate      = ev.CampDay.ToDateTime(TimeOnly.MinValue);
-        _fStart     = ev.StartTime.ToTimeSpan();
-        _fEnd       = ev.EndTime?.ToTimeSpan();
-        _fType      = ev.EventType;
-        _showForm   = true;
+        _editingId   = ev.ScheduleEventId;
+        _fTitle      = ev.Title;
+        _fDesc       = ev.Description;
+        _fDate       = ev.CampDay.ToDateTime(TimeOnly.MinValue);
+        _fStart      = ev.StartTime.ToTimeSpan();
+        _fEnd        = ev.EndTime?.ToTimeSpan();
+        _fType       = ev.EventType;
+        _fLocationId = ev.LocationId;
+        _fAssignments = _groups.Select(g =>
+        {
+            var existing = ev.EventGroups.FirstOrDefault(eg => eg.GroupId == g.GroupId);
+            return new AssignmentFormRow
+            {
+                GroupId    = g.GroupId,
+                ActivityId = existing?.ActivityId,
+                LocationId = existing?.LocationId,
+                Note       = existing?.Note
+            };
+        }).ToList();
+        _assignmentsExpanded = ev.EventGroups.Any();
+        _showForm = true;
     }
 
     private void CloseForm() => _showForm = false;
@@ -181,13 +352,20 @@
     {
         if (string.IsNullOrWhiteSpace(_fTitle) || _fDate is null || _fStart is null) return;
 
+        var assignments = _fAssignments
+            .Where(a => a.ActivityId.HasValue || a.LocationId.HasValue || !string.IsNullOrEmpty(a.Note))
+            .Select(a => new GroupAssignmentDto(a.GroupId, a.ActivityId, a.LocationId, a.Note))
+            .ToList();
+
         var dto = new ScheduleEventDto(
             _editingId,
             SeedService.Id.EventCcn2026,
             DateOnly.FromDateTime(_fDate.Value),
             TimeOnly.FromTimeSpan(_fStart.Value),
             _fEnd.HasValue ? TimeOnly.FromTimeSpan(_fEnd.Value) : null,
-            _fTitle, _fDesc, _fLocation, _fType, true, null, []
+            _fTitle, _fDesc, _fLocationId, _fType,
+            !assignments.Any(),   // AppliesToAllGroups = true when no group assignments set
+            null, assignments
         );
         await ScheduleSvc.UpsertAsync(dto, _userId);
         _showForm = false;
@@ -208,4 +386,12 @@
         ScheduleEventType.Mandatory => "#D12B2B",
         _                           => "#8E44AD"
     };
+
+    private class AssignmentFormRow
+    {
+        public Guid    GroupId    { get; set; }
+        public Guid?   ActivityId { get; set; }
+        public Guid?   LocationId { get; set; }
+        public string? Note       { get; set; }
+    }
 }

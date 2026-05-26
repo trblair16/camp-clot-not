@@ -6,19 +6,65 @@ namespace CampClotNot.Services;
 
 public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory)
 {
-    public async Task<List<StaffMember>> GetVisibleAsync()
+    public async Task<List<StaffMember>> GetVisibleAsync(Guid campEventId)
     {
         using var db = factory.CreateDbContext();
         return await db.StaffMembers
-            .Where(s => s.IsVisible)
+            .Where(s => s.CampEventId == campEventId && s.IsVisible)
             .OrderBy(s => s.SortOrder)
             .ToListAsync();
     }
 
-    public async Task<List<StaffMember>> GetAllAsync()
+    public async Task<List<StaffMember>> GetAllAsync(Guid campEventId)
     {
         using var db = factory.CreateDbContext();
-        return await db.StaffMembers.OrderBy(s => s.SortOrder).ToListAsync();
+        return await db.StaffMembers
+            .Where(s => s.CampEventId == campEventId)
+            .OrderBy(s => s.SortOrder)
+            .ToListAsync();
+    }
+
+    // Users eligible to be imported: active Admin/Staff/Volunteer not already in this event's directory
+    public async Task<List<User>> GetEligibleUsersAsync(Guid campEventId)
+    {
+        using var db = factory.CreateDbContext();
+        var linkedIds = await db.StaffMembers
+            .Where(s => s.CampEventId == campEventId && s.LinkedUserId != null)
+            .Select(s => s.LinkedUserId!.Value)
+            .ToListAsync();
+
+        return await db.Users
+            .Include(u => u.UserRole)
+            .Where(u => u.IsActive
+                && (u.UserRole.SystemName == nameof(Role.Admin)
+                    || u.UserRole.SystemName == nameof(Role.Staff)
+                    || u.UserRole.SystemName == nameof(Role.Volunteer))
+                && !linkedIds.Contains(u.UserId))
+            .OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
+            .ToListAsync();
+    }
+
+    public async Task ImportUserAsync(Guid campEventId, Guid userId)
+    {
+        using var db = factory.CreateDbContext();
+        var user = await db.Users.Include(u => u.UserRole)
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+        if (user is null) return;
+        if (await db.StaffMembers.AnyAsync(s => s.CampEventId == campEventId && s.LinkedUserId == userId))
+            return;
+        db.StaffMembers.Add(new StaffMember
+        {
+            StaffMemberId = Guid.NewGuid(),
+            CampEventId   = campEventId,
+            DisplayName   = $"{user.FirstName} {user.LastName}".Trim(),
+            RoleTitle     = user.UserRole.SystemName,
+            Email         = user.Email,
+            AvatarEmoji   = "👤",
+            IsVisible     = true,
+            SortOrder     = 0,
+            LinkedUserId  = userId
+        });
+        await db.SaveChangesAsync();
     }
 
     public async Task UpsertAsync(StaffMember member)

@@ -16,19 +16,37 @@ Longer term, the platform is intended to replace the chapter's Yapp subscription
 
 ## Core Features
 
-**Released (v0.2.0):**
+**Released (v0.1.0–v0.2.0):**
 - Real-time leaderboard ranked by stars then coins, live-updating via SignalR
 - Coin and star transaction logging with staff attribution and optional note
-- Transaction audit log — admins can void transactions (with confirmation) or reinstate voided ones; voided rows are visually distinguished
-- Full-screen projector display at `/display` for ceremonies, live via SignalR
-- Role-based access — Admin / Staff / Display roles with per-authority RBAC
+- Transaction audit log — admins can void/reinstate transactions; voided rows visually distinguished
+- Full-screen projector display at `/board/display` for ceremonies, live via SignalR
+- Role-based access — Admin / Staff / Volunteer / Display roles with per-authority RBAC
 - Group management with color picker and team logo upload (stored in PostgreSQL)
 - User management — create, deactivate, reset password for staff accounts
 
-**Planned:**
-- SVG board game with pre-scripted block hit mechanic and token animations (v0.3.0)
-- Evening mini-game spinner, pre-scripted (v0.4.0)
-- Full projector board display with real-time token movement (v0.4.0)
+**Released (v0.3.0–v0.3.1):**
+- SVG board game with winding snake path and animated group tokens
+- Pre-scripted block hit — admin triggers via `/admin/games`, animation plays on projector via SignalR
+- Neo-brutalist UI redesign — cream background (`#F2ECD8`), black borders, offset shadows, Fredoka One headings
+- ThemeService CSS variable system — single source of truth for all colors and shadow tokens
+
+**Released (v0.4.0):**
+- Evening mini-game spinner — pre-scripted by admin, triggered from `/minigames`, revealed on `/minigames/display`
+- Spinner animation: yellow cells cycle → land green + pulse, result revealed via SignalR
+- `/admin/games` — combined game admin with tabs: Board Spaces, Block Hit Scripts, Mini-Game Scripts, Reset
+- Activities nav dropdown with Board Game and Mini-Game links
+
+**In Progress (v0.5.0 — Camp Info Hub + PWA):**
+- Camp Info Hub at `/hub` — Staff Directory, Schedule, Announcements tabs
+- Volunteer role — counselors assigned to a specific group, visible on staff directory
+- Location entity — `/admin/locations` for named camp venues with capacity and sort order
+- Schedule with group assignment support and rotation management
+- PWA — `manifest.json`, service worker with offline fallback, installable on tablets
+- Full neo-brutalist restyle of all admin pages (Groups, Users, Locations, Games)
+
+**Planned (v1.0.0):**
+- Camp-ready hardening, final QA, Railway production deploy
 
 ---
 
@@ -64,9 +82,11 @@ feature/N-name — feature branches cut from dev
 |---|---|---|
 | v0.1.0 | Foundation — auth, RBAC, user/group management, Railway | Released |
 | v0.2.0 | Competition core — leaderboard, transactions, display | Released |
-| v0.3.0 | Board game — SVG board, block hit animation | Planned ~May 19 |
-| v0.4.0 | Mini-games + projector board | Planned ~May 30 |
-| v1.0.0 | Camp-ready | Target June 8 |
+| v0.3.0 | Board game — SVG board, block hit animation | Released |
+| v0.3.1 | UI Overhaul — neo-brutalist redesign, ThemeService | Released |
+| v0.4.0 | Mini-game spinner — admin scripts, projector display | Released |
+| v0.5.0 | Camp Info Hub — staff directory, schedule, PWA | In Progress |
+| v1.0.0 | Camp-ready | Target June 2026 |
 
 ### Code Conventions
 

@@ -1,5 +1,5 @@
 @page "/hub/staff"
-@attribute [Authorize(Roles = "Admin,Staff")]
+@attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
 @inject StaffDirectoryService StaffSvc
 @inject AuthenticationStateProvider Auth
 
@@ -8,14 +8,53 @@
 <HubSubNav />
 
 <div style="padding: 0 16px 100px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0">👥 Staff Directory</h2>
         @if (_isAdmin)
         {
-            <button class="ccn-btn" @onclick="OpenAdd">+ Add Staff</button>
+            <div style="display:flex;gap:8px">
+                <button class="ccn-btn" style="font-size:13px" @onclick="() => { _showImport = !_showImport; _showForm = false; }">
+                    @(_showImport ? "▲ Close Import" : "📥 Import from Users")
+                </button>
+                <button class="ccn-btn" @onclick="OpenAdd">+ Add Staff</button>
+            </div>
         }
     </div>
 
+    @* ── Import from Users panel ── *@
+    @if (_showImport && _isAdmin)
+    {
+        <div style="border:3px solid var(--black);border-radius:10px;margin-bottom:20px;box-shadow:3px 3px 0 var(--black);overflow:hidden">
+            <div style="padding:12px 16px;background:#F8F4EC;border-bottom:2px solid #E8E0CC">
+                <span style="font-family:'Fredoka One',cursive;font-size:15px">Import from User Accounts</span>
+                <span style="font-size:12px;color:var(--text-light);margin-left:8px">Admin, Staff, and Volunteer users not yet in this event's directory</span>
+            </div>
+            @if (!_eligibleUsers.Any())
+            {
+                <p style="padding:16px;color:var(--text-light);font-family:'Fredoka One',cursive;margin:0">
+                    All eligible user accounts are already in the directory.
+                </p>
+            }
+            else
+            {
+                @foreach (var u in _eligibleUsers)
+                {
+                    <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:2px solid #E8E0CC">
+                        <div style="flex:1;min-width:0">
+                            <div style="font-family:'Fredoka One',cursive;font-size:14px">@u.FirstName @u.LastName</div>
+                            <div style="font-size:12px;color:var(--text-light)">@u.UserRole.SystemName · @u.Email</div>
+                        </div>
+                        <button class="ccn-btn" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+                                @onclick="() => ImportUser(u.UserId)">
+                            + Add
+                        </button>
+                    </div>
+                }
+            }
+        </div>
+    }
+
+    @* ── Directory cards ── *@
     @if (_loading)
     {
         <MudProgressCircular Indeterminate="true" />
@@ -41,6 +80,10 @@
                     {
                         <a href="mailto:@m.Email" style="display:block;font-size:13px;color:var(--color-primary);text-decoration:none">@m.Email</a>
                     }
+                    @if (m.LinkedUserId.HasValue)
+                    {
+                        <div style="font-size:10px;color:var(--text-light);margin-top:4px">🔗 linked account</div>
+                    }
                     @if (_isAdmin)
                     {
                         <div style="display:flex;gap:4px;margin-top:10px;justify-content:center">
@@ -52,53 +95,73 @@
             }
         </div>
     }
+</div>
 
-    @if (_showForm && _isAdmin)
-    {
-        <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" @onclick="Close">
-            <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:4px 4px 0 var(--black);padding:24px;width:100%;max-width:400px" @onclick:stopPropagation>
-                <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_form.StaffMemberId == Guid.Empty ? "Add Staff Member" : "Edit Staff Member")</h3>
-                <MudTextField @bind-Value="_form.DisplayName" Label="Name" Required="true" Class="mb-2" />
-                <MudTextField @bind-Value="_form.RoleTitle"   Label="Role/Title" Class="mb-2" />
-                <MudTextField @bind-Value="_form.AvatarEmoji" Label="Avatar Emoji" Class="mb-2" />
-                <MudTextField @bind-Value="_form.Phone"       Label="Phone (optional)" Class="mb-2" />
-                <MudTextField @bind-Value="_form.Email"       Label="Email (optional)" Class="mb-2" />
-                <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="Color.Primary" Class="mb-2" />
-                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-                    <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="Close">Cancel</button>
-                    <button class="ccn-btn" @onclick="Save">Save</button>
-                </div>
+@* ── Add / Edit modal ── *@
+@if (_showForm && _isAdmin)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" @onclick="Close">
+        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:4px 4px 0 var(--black);padding:24px;width:100%;max-width:400px" @onclick:stopPropagation>
+            <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_form.StaffMemberId == Guid.Empty ? "Add Staff Member" : "Edit Staff Member")</h3>
+            <MudTextField @bind-Value="_form.DisplayName" Label="Name" Required="true" Class="mb-2" />
+            <MudTextField @bind-Value="_form.RoleTitle"   Label="Role/Title" Class="mb-2" />
+            <MudTextField @bind-Value="_form.AvatarEmoji" Label="Avatar Emoji" Class="mb-2" />
+            <MudTextField @bind-Value="_form.Phone"       Label="Phone (optional)" Class="mb-2" />
+            <MudTextField @bind-Value="_form.Email"       Label="Email (optional)" Class="mb-2" />
+            <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="Color.Primary" Class="mb-2" />
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="Close">Cancel</button>
+                <button class="ccn-btn" @onclick="Save">Save</button>
             </div>
         </div>
-    }
-</div>
+    </div>
+}
 
 @code {
     private bool _loading = true;
     private bool _isAdmin;
     private bool _showForm;
+    private bool _showImport;
     private List<StaffMember> _members = [];
+    private List<User> _eligibleUsers = [];
     private StaffMember _form = new() { AvatarEmoji = "👤", IsVisible = true };
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await Auth.GetAuthenticationStateAsync();
         _isAdmin = authState.User.IsInRole("Admin");
-        _members = _isAdmin ? await StaffSvc.GetAllAsync() : await StaffSvc.GetVisibleAsync();
+        await Reload();
         _loading = false;
     }
 
-    private void OpenAdd() { _form = new() { AvatarEmoji = "👤", IsVisible = true }; _showForm = true; }
+    private async Task Reload()
+    {
+        var eventId = SeedService.Id.EventCcn2026;
+        _members = _isAdmin
+            ? await StaffSvc.GetAllAsync(eventId)
+            : await StaffSvc.GetVisibleAsync(eventId);
+        if (_isAdmin)
+            _eligibleUsers = await StaffSvc.GetEligibleUsersAsync(eventId);
+    }
+
+    private void OpenAdd()
+    {
+        _form = new() { CampEventId = SeedService.Id.EventCcn2026, AvatarEmoji = "👤", IsVisible = true };
+        _showForm   = true;
+        _showImport = false;
+    }
 
     private void OpenEdit(StaffMember m)
     {
         _form = new()
         {
-            StaffMemberId = m.StaffMemberId, DisplayName = m.DisplayName, RoleTitle = m.RoleTitle,
+            StaffMemberId = m.StaffMemberId, CampEventId = m.CampEventId,
+            DisplayName = m.DisplayName, RoleTitle = m.RoleTitle,
             AvatarEmoji = m.AvatarEmoji, Phone = m.Phone, Email = m.Email,
             IsVisible = m.IsVisible, SortOrder = m.SortOrder, LinkedUserId = m.LinkedUserId
         };
-        _showForm = true;
+        _showForm   = true;
+        _showImport = false;
     }
 
     private void Close() => _showForm = false;
@@ -107,12 +170,18 @@
     {
         await StaffSvc.UpsertAsync(_form);
         _showForm = false;
-        await OnInitializedAsync();
+        await Reload();
     }
 
     private async Task Delete(Guid id)
     {
         await StaffSvc.DeleteAsync(id);
-        await OnInitializedAsync();
+        await Reload();
+    }
+
+    private async Task ImportUser(Guid userId)
+    {
+        await StaffSvc.ImportUserAsync(SeedService.Id.EventCcn2026, userId);
+        await Reload();
     }
 }

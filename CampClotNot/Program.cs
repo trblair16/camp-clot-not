@@ -60,6 +60,7 @@ try
     builder.Services.AddScoped<TransactionService>();
     builder.Services.AddScoped<BoardService>();
     builder.Services.AddScoped<MiniGameService>();
+    builder.Services.AddScoped<LocationService>();
     builder.Services.AddScoped<InfoPageService>();
     builder.Services.AddScoped<StaffDirectoryService>();
     builder.Services.AddScoped<AnnouncementService>();

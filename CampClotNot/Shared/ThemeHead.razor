@@ -81,4 +81,39 @@
     @@media (max-width: 768px) {
         .ccn-fab-mobile { bottom: 80px !important; }
     }
+
+    /* ── MudTabs neo-brutalist override ── */
+    .mud-tabs {
+        border: 3px solid var(--black);
+        border-radius: 10px;
+        box-shadow: 4px 4px 0 var(--black);
+        overflow: hidden;
+    }
+    .mud-tabs-header {
+        background: var(--panel-bg) !important;
+        border-bottom: 3px solid var(--black) !important;
+    }
+    .mud-tabs-header .mud-tab {
+        font-family: 'Fredoka One', cursive !important;
+        font-size: 13px !important;
+        color: var(--text-mid) !important;
+        opacity: 1 !important;
+        transition: color .15s, background-color .15s !important;
+    }
+    .mud-tabs-header .mud-tab:hover {
+        background-color: rgba(26,26,26,0.05) !important;
+        color: var(--black) !important;
+    }
+    .mud-tabs-header .mud-tab.mud-tab-active {
+        color: var(--black) !important;
+        background-color: var(--bg-base) !important;
+    }
+    .mud-tab-slider {
+        background: var(--black) !important;
+        background-color: var(--black) !important;
+        height: 4px !important;
+    }
+    .mud-tabs-panels {
+        background: var(--panel-bg) !important;
+    }
 </style>
