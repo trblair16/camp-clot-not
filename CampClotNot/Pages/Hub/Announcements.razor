@@ -77,7 +77,7 @@
     private bool _isAdmin;
     private bool _canPost;
     private Guid _userId;
-    private List<Announcement> _feed = [];
+    private List<Announcement> _feed = new();
     private string _newTitle = "";
     private string _newBody = "";
     private AnnouncementPriority _newPriority = AnnouncementPriority.Normal;

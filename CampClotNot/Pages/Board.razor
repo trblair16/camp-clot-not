@@ -240,14 +240,14 @@
 
     private static readonly Guid EventId = SeedService.Id.EventCcn2026;
 
-    private static readonly (string Label, string Icon, string Color)[] _legend =
-    [
+    private static readonly (string Label, string Icon, string Color)[] _legend = new (string Label, string Icon, string Color)[]
+    {
         ("Start",     "🏁", "#95A5A6"),
         ("Coin Bonus","🪙", "#FCCF00"),
         ("Star Space","⭐", "#E74C3C"),
         ("Bowser!",   "👹", "#C0392B"),
         ("Mini-Game", "🎮", "#9B59B6"),
-    ];
+    };
 
     protected override async Task OnInitializedAsync()
     {
