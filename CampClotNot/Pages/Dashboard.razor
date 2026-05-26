@@ -195,6 +195,11 @@ else
     {
         await RefreshAsync();
         _loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
 
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("/livehub"))
