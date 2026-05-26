@@ -120,6 +120,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     public async Task SeedAsync()
     {
         using var db = factory.CreateDbContext();
+        await db.Database.MigrateAsync();
         await SeedUserRolesAsync(db);
         await SeedAuthoritiesAsync(db);
         await SeedUserRoleAuthoritiesAsync(db);
