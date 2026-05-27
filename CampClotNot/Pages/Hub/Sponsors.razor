@@ -1,0 +1,78 @@
+@page "/hub/sponsors"
+@attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
+@inject SponsorService SponsorSvc
+
+<PageTitle>Sponsors — Camp Clot Not</PageTitle>
+
+<HubSubNav />
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🏆 Sponsors</h2>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_sponsors.Any())
+    {
+        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No sponsors yet.</p>
+    }
+    else
+    {
+        <div style="display:flex;flex-wrap:wrap;gap:16px">
+            @foreach (var s in _sponsors)
+            {
+                @if (!string.IsNullOrWhiteSpace(s.Website))
+                {
+                    <a href="@s.Website" target="_blank" rel="noopener noreferrer" style="text-decoration:none">
+                        <div class="sponsor-tile">
+                            <img src="@s.LogoUrl" alt="@s.Name" style="height:80px;width:auto;max-width:160px;object-fit:contain" />
+                            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--black);margin-top:8px;text-align:center">@s.Name</div>
+                        </div>
+                    </a>
+                }
+                else
+                {
+                    <div class="sponsor-tile">
+                        <img src="@s.LogoUrl" alt="@s.Name" style="height:80px;width:auto;max-width:160px;object-fit:contain" />
+                        <div style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--black);margin-top:8px;text-align:center">@s.Name</div>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .sponsor-tile {
+        background: var(--panel-bg);
+        border: 3px solid var(--black);
+        border-radius: 10px;
+        box-shadow: 4px 4px 0 var(--black);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 140px;
+        cursor: default;
+        transition: transform .1s;
+    }
+    a .sponsor-tile {
+        cursor: pointer;
+    }
+    a:hover .sponsor-tile {
+        transform: translate(-2px, -2px);
+        box-shadow: 6px 6px 0 var(--black);
+    }
+</style>
+
+@code {
+    private List<Sponsor> _sponsors = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _sponsors = await SponsorSvc.GetAllForEventAsync(Services.SeedService.Id.EventCcn2026);
+        _loading  = false;
+    }
+}
