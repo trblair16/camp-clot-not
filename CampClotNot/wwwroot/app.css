@@ -2,6 +2,41 @@
     font-family: 'Nunito', sans-serif;
 }
 
+/* ── Bottom nav bar — static so Blazor re-renders never cause a flash ── */
+.nav-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-start;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 40;
+}
+.nav-tab {
+    flex: 1;
+    height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: none;
+    border-top: 3px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: 'Fredoka One', cursive;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    transition: color .15s, border-color .15s;
+}
+.nav-tab.active {
+    border-top-color: var(--black, #1A1A1A);
+    color: var(--black, #1A1A1A);
+}
+.nav-tab .tab-icon { font-size: 20px; line-height: 1; }
+
 h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-appbar-text {
     font-family: 'Fredoka One', cursive;
 }
