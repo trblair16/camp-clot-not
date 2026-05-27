@@ -8,10 +8,10 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-05-25)
+## Current State (as of 2026-05-27)
 
-**Active branch:** `feature/99-camp-info-hub`  
-**Released to dev:** v0.4.0 — Mini-Game Spinner
+**Active branch:** `feature/103-mobile-pwa-fixes` (v0.5.1 in progress — uncommitted)
+**Released to dev:** v0.5.0 — Camp Info Hub + PWA
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -55,13 +55,27 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - `/hub/schedule` — day-grouped collapsible timeline; per-group Activity + Location + Note overrides via `ScheduleEventGroup`; today auto-expanded; Admin/Staff/Volunteer access
 - `/hub/announcements` — priority feed (pinned → newest); urgent red badge; dismissible banner on Dashboard; pin/archive Admin-only
 - `/hub/staff` — card grid; emoji avatars; tap-to-call/email links; "Import from Users" admin shortcut; event-scoped
-- `/hub/info` — sidebar page list + Markdig markdown body; Admin inline edit; fixed slug set seeded (`rules`, `faq`, `medical`, `schedule-overview`, `packing`)
+- `/hub/info` — sidebar page list + Markdig markdown body; Admin inline edit; seeded slugs: `rules`, `faq`, `medical` (`schedule-overview` and `packing` removed in v0.5.1)
 - `Location` entity + `/admin/locations` — full CRUD; FK referenced by `ScheduleEvent` and `ScheduleEventGroup`; replaces old `LocationDisplayName` string column
 - `ScheduleEventGroup` extended beyond spec: per-group Activity, Location override, and Note fields
 - `Volunteer` role finalized in `Role` enum; `Display` role removed — projector pages (`/board/display`, `/minigames/display`) are now Admin-only; `ViewDisplay` permission removed
 - PWA fixes: `manifest.json` theme/background → `#F2ECD8`; service worker → network-first for navigation, cache-first for static assets; bumped to `ccn-shell-v2`
 - `railway.toml` added with `/health` healthcheck, `ON_FAILURE` restart policy
 - Railway production: project `camp-clot-not` live; Postgres running (SFO); env vars set (`DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`, `Seed__AdminPassword`)
+
+**v0.5.1 — In Progress (feature/103-mobile-pwa-fixes, uncommitted):**
+- User edit dialog on `/admin/users`; PWA `short_name` → "CCN 2026"; `viewport-fit=cover`; desktop nav mobile suppression; bottom nav safe-area padding; Activities → Transactions swap in mobile nav (Admin); PWA icons regenerated from tall 3-row CCN logo; Children's Harbor logo extracted to `wwwroot/img/childrens-harbor-logo.png`
+- `IncidentReport` entity + `IncidentReportService` — submit, list, acknowledge
+- `Sponsor` entity + `SponsorService` — CRUD, ordered by SortOrder
+- `PrintLayout.razor` — bare layout (ThemeHead only, no nav, no MudBlazor providers) for print views
+- `/hub/incidents` — Admin-only incident list with Acknowledge button and Print link
+- `/hub/incidents/{id}/print` — uses `PrintLayout`; mirrors Children's Harbor paper form
+- `/hub/sponsors` — responsive logo tile grid; all roles
+- `/admin/sponsors` — Admin CRUD; matches `/admin/locations` pattern
+- `HubSubNav.razor` — Sponsors + Incidents (Admin-only) tabs added; floating 🚨 Report Incident FAB + modal
+- `AppNav.razor` — `/admin/sponsors` in desktop Admin dropdown and mobile admin sheet
+- `SeedService` — `schedule-overview` and `packing` removed from InfoPage seed (and from `SeedService.Id`)
+- EF migration `AddIncidentReportAndSponsor` added and applied
 
 **Next:** v1.0.0-rc — Dry Run
 
@@ -95,6 +109,15 @@ Python Pillow `img.getbbox()` + `crop()` only removes surrounding whitespace —
 
 **9. `Location` is a proper entity, not a display string.**  
 `ScheduleEvent` has a `LocationId` FK to the `Location` table. The old `LocationDisplayName` string column was dropped in migration `20260523234951_AddLocation`. Admins must create locations at `/admin/locations` before they can be assigned to schedule events or group overrides.
+
+**10. Worktrees do not inherit `appsettings.Development.json`.**  
+This file is gitignored and won't exist in a new worktree. EF migrations (`dotnet ef migrations add`) fail at design-time with "No database connection string found." Fix: copy from the main repo before running any EF commands in a worktree: `Copy-Item "..\..\CampClotNot\appsettings.Development.json" ".\CampClotNot\"`. Also set `$env:ASPNETCORE_ENVIRONMENT = "Development"` in the same PowerShell session.
+
+**11. FAB button positioning — always use `ccn-fab-mobile` class.**  
+Floating action buttons (like "Log Score" and "Report Incident") must use the class `ccn-fab-mobile` with `position:fixed;bottom:24px;right:24px`. The global `ThemeHead.razor` media query `@media (max-width:768px) { .ccn-fab-mobile { bottom: 80px !important; } }` handles bottom-nav clearance on mobile automatically. Do NOT hardcode `calc(80px + env(safe-area-inset-bottom))` — that is always elevated and misses the desktop position.
+
+**12. Modal dialogs — always use the `fadeIn`/`popIn` pattern from `LogTransactionDialog`.**  
+All form modals must use: backdrop `animation:fadeIn .2s ease` with `rgba(26,26,26,.65)`, panel `ccn-panel` class with `animation:popIn .25s ease` and `box-shadow:8px 8px 0 var(--black)`, and centered with `display:flex;align-items:center;justify-content:center;padding:20px`. Do not use bottom-sheet patterns for forms — they lack the popIn animation and feel inconsistent. A shared `CcnDialog.razor` wrapper is planned post-v0.5.1 once a third dialog exists.
 
 ---
 
@@ -148,6 +171,7 @@ Groups 5 & 6 removed from seed. SeedGroupsAsync upserts by ID and purges stale e
 | Competition | `CurrencyType`, `Group`, `Transaction`, `BoardSpace`, `GroupBoardPos`, `ScriptedBlockHit`, `ScriptedMiniGame` |
 | Awards | `AwardType`, `CamperAward` |
 | Auth/RBAC | `UserRole`, `Authority`, `UserRoleAuthorityLink`, `UserAuthorityLink`, `User` |
+| Hub (Camp Info) | `Location`, `InfoPage`, `StaffMember`, `Announcement`, `ScheduleEvent`, `ScheduleEventGroup`, `IncidentReport`, `Sponsor` |
 
 **Column convention:** `Name` + `Description` + `SystemName` on all reference/catalog tables.
 
@@ -185,13 +209,21 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 | `CampClotNot/Services/ThemeService.cs` | CSS variable tokens — `ThemeConfig.CssVariables` injected via `ThemeHead.razor` |
 | `CampClotNot/Shared/ThemeHead.razor` | Injects CSS vars into `:root`, defines body styles, shared animations |
 | `CampClotNot/Shared/LoginLayout.razor` | Bare layout for login page — ThemeHead only, no nav |
+| `CampClotNot/Shared/PrintLayout.razor` | Bare layout for print views — ThemeHead only, no nav, no MudBlazor providers |
 | `CampClotNot/Pages/Login.razor` | Login page — uses `LoginLayout`, `position:fixed` centering |
 | `CampClotNot/Pages/Board.razor` | Board game trigger — Admin + Staff |
 | `CampClotNot/Pages/BoardDisplay.razor` | Board projector display at `/board/display` — Admin + Display |
 | `CampClotNot/Pages/MiniGames.razor` | Mini-game trigger at `/minigames` — Admin only |
 | `CampClotNot/Pages/MiniGamesDisplay.razor` | Mini-game projector at `/minigames/display` — Admin only |
 | `CampClotNot/Pages/Admin/Games.razor` | Combined game admin at `/admin/games` |
-| `CampClotNot/appsettings.Development.json` | Local DB + seed credentials (gitignored) |
+| `CampClotNot/Pages/Admin/Sponsors.razor` | Sponsor CRUD at `/admin/sponsors` |
+| `CampClotNot/Pages/Hub/HubSubNav.razor` | Shared Hub sub-nav + floating Report Incident FAB + modal |
+| `CampClotNot/Pages/Hub/Incidents.razor` | Admin incident list at `/hub/incidents` |
+| `CampClotNot/Pages/Hub/IncidentPrint.razor` | Print view at `/hub/incidents/{id}/print` — uses `PrintLayout` |
+| `CampClotNot/Pages/Hub/Sponsors.razor` | Public sponsor grid at `/hub/sponsors` |
+| `CampClotNot/Services/IncidentReportService.cs` | Submit, list, acknowledge incident reports |
+| `CampClotNot/Services/SponsorService.cs` | Sponsor CRUD scoped to CCN 2026 event |
+| `CampClotNot/appsettings.Development.json` | Local DB + seed credentials (gitignored — must copy to worktrees manually) |
 
 ---
 

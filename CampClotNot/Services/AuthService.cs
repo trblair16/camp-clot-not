@@ -67,6 +67,24 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         });
     }
 
+    public async Task UpdateUserAsync(Guid userId, string firstName, string lastName, string email, Role role, Guid? groupId)
+    {
+        var all = await users.GetAllAsync();
+        var user = all.FirstOrDefault(u => u.UserId == userId)
+            ?? throw new InvalidOperationException($"User {userId} not found.");
+
+        var userRole = await users.GetRoleAsync(role)
+            ?? throw new InvalidOperationException($"Role '{role}' has not been seeded.");
+
+        user.FirstName  = firstName;
+        user.LastName   = lastName;
+        user.Email      = email.ToLowerInvariant();
+        user.UserRoleId = userRole.UserRoleId;
+        user.GroupId    = role == Role.Volunteer ? groupId : null;
+
+        await users.UpdateAsync(user);
+    }
+
     public async Task ResetPasswordAsync(Guid userId, string newPassword)
     {
         var all = await users.GetAllAsync();

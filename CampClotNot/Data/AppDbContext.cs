@@ -46,6 +46,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<ScheduleEvent> ScheduleEvents => Set<ScheduleEvent>();
     public DbSet<ScheduleEventGroup> ScheduleEventGroups => Set<ScheduleEventGroup>();
+    public DbSet<IncidentReport> IncidentReports => Set<IncidentReport>();
+    public DbSet<Sponsor> Sponsors => Set<Sponsor>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

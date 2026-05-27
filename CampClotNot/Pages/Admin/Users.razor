@@ -110,6 +110,7 @@
                                         <td style="padding:10px 14px;font-size:13px">@(u.IsActive ? "✓" : "—")</td>
                                         <td style="padding:8px 10px">
                                             <div style="display:flex;gap:4px;flex-wrap:wrap">
+                                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => OpenEditDialog(u)">Edit</button>
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => OpenResetDialog(u)">Reset PW</button>
                                                 @if (u.IsActive)
                                                 {
@@ -128,6 +129,74 @@
 
     </div>
 </div>
+
+@* ── Edit User modal ── *@
+@if (_editOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease"
+         @onclick="CloseEditDialog">
+        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:6px 6px 0 var(--black);padding:24px;width:100%;max-width:440px;animation:popIn .2s ease"
+             @onclick:stopPropagation>
+            <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 18px">Edit User</h3>
+
+            <div style="display:flex;gap:10px;margin-bottom:14px">
+                <div style="flex:1">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">First Name</div>
+                    <input type="text" @bind="_editForm.FirstName" placeholder="First"
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                </div>
+                <div style="flex:1">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Last Name</div>
+                    <input type="text" @bind="_editForm.LastName" placeholder="Last"
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                </div>
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Email</div>
+                <input type="email" @bind="_editForm.Email" placeholder="you@example.com"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Role</div>
+                <select value="@_editForm.Role.ToString()"
+                        @onchange="e => _editForm.Role = Enum.Parse<Role>(e.Value?.ToString() ?? nameof(Role.Staff))"
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                    <option value="Staff">Staff</option>
+                    <option value="Volunteer">Volunteer / Counselor</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+
+            @if (_editForm.Role == Role.Volunteer)
+            {
+                <div style="margin-bottom:14px">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Assigned Group</div>
+                    <select value="@(_editForm.GroupId?.ToString() ?? "")"
+                            @onchange="e => _editForm.GroupId = Guid.TryParse(e.Value?.ToString(), out var gid) ? gid : null"
+                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                        <option value="">— None —</option>
+                        @foreach (var g in _groups)
+                        {
+                            <option value="@g.GroupId">@g.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (_editError is not null)
+            {
+                <div style="background:#FEE2E2;border:2px solid #E83030;border-radius:7px;padding:8px 12px;margin-bottom:14px;font-size:13px;font-weight:700;color:#C0392B">⚠️ @_editError</div>
+            }
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+                <button class="ccn-btn" style="background:transparent" @onclick="CloseEditDialog">Cancel</button>
+                <button class="ccn-btn" @onclick="SubmitEditAsync">Save Changes</button>
+            </div>
+        </div>
+    </div>
+}
 
 @* ── Reset Password modal ── *@
 @if (_resetOpen)
@@ -170,6 +239,11 @@
     private bool _loading = true;
     private UserForm _form = new();
 
+    private bool _editOpen;
+    private User? _editing;
+    private EditUserForm _editForm = new();
+    private string? _editError;
+
     private bool _resetOpen;
     private User? _resetting;
     private string _resetPassword = "";
@@ -191,6 +265,41 @@
         Snackbar.Add($"Account created for {_form.FirstName} {_form.LastName}.", Severity.Success);
         _form = new();
         _users = await AuthSvc.GetAllUsersAsync();
+    }
+
+    private void OpenEditDialog(User u)
+    {
+        _editing = u;
+        _editForm = new EditUserForm
+        {
+            FirstName = u.FirstName,
+            LastName  = u.LastName,
+            Email     = u.Email,
+            Role      = Enum.TryParse<Role>(u.UserRole.SystemName, out var r) ? r : Role.Staff,
+            GroupId   = u.GroupId
+        };
+        _editError = null;
+        _editOpen = true;
+    }
+
+    private void CloseEditDialog()
+    {
+        _editOpen = false;
+        _editing = null;
+    }
+
+    private async Task SubmitEditAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_editForm.FirstName) || string.IsNullOrWhiteSpace(_editForm.Email))
+        {
+            _editError = "First name and email are required.";
+            return;
+        }
+        var groupId = _editForm.Role == Role.Volunteer ? _editForm.GroupId : null;
+        await AuthSvc.UpdateUserAsync(_editing!.UserId, _editForm.FirstName, _editForm.LastName, _editForm.Email, _editForm.Role, groupId);
+        Snackbar.Add($"{_editForm.FirstName} {_editForm.LastName} updated.", Severity.Success);
+        _users = await AuthSvc.GetAllUsersAsync();
+        CloseEditDialog();
     }
 
     private void OpenResetDialog(User u)
@@ -242,6 +351,15 @@
         public string LastName { get; set; } = "";
         public string Email { get; set; } = "";
         public string Password { get; set; } = "";
+        public Role Role { get; set; } = Role.Staff;
+        public Guid? GroupId { get; set; }
+    }
+
+    private class EditUserForm
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Email { get; set; } = "";
         public Role Role { get; set; } = Role.Staff;
         public Guid? GroupId { get; set; }
     }

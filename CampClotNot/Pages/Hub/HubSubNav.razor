@@ -1,4 +1,5 @@
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider Auth
 
 <style>
     .hub-subnav {
@@ -38,6 +39,34 @@
     @@media (min-width: 480px) {
         .hub-tab { font-size: 14px; flex-direction: row; justify-content: center; gap: 6px; }
     }
+
+    @@media print {
+        .report-incident-btn { display: none; }
+    }
+
+    .incident-field-label {
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 5px;
+    }
+    .incident-input {
+        width: 100%;
+        padding: 9px 12px;
+        background: var(--bg-base);
+        border: 3px solid var(--black);
+        border-radius: 7px;
+        font-size: 14px;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        color: var(--text-dark);
+        box-shadow: 2px 2px 0 var(--black);
+        outline: none;
+        box-sizing: border-box;
+        resize: vertical;
+    }
 </style>
 
 <nav class="hub-subnav">
@@ -50,13 +79,157 @@
     <a href="/hub/staff"         class="hub-tab @(IsActive("/hub/staff")         ? "active" : "")">
         <span class="tab-icon">👥</span><span>Staff</span>
     </a>
+    <a href="/hub/sponsors"      class="hub-tab @(IsActive("/hub/sponsors")      ? "active" : "")">
+        <span class="tab-icon">🏆</span><span>Sponsors</span>
+    </a>
     <a href="/hub/info"          class="hub-tab @(IsActive("/hub/info")          ? "active" : "")">
         <span class="tab-icon">📋</span><span>Info</span>
     </a>
+    <AuthorizeView Roles="Admin">
+        <a href="/hub/incidents"  class="hub-tab @(IsActive("/hub/incidents")    ? "active" : "")">
+            <span class="tab-icon">🚨</span><span>Incidents</span>
+        </a>
+    </AuthorizeView>
 </nav>
+
+@* ── Floating Report Incident button ── *@
+<button class="ccn-btn ccn-fab-mobile report-incident-btn"
+        style="position:fixed;bottom:24px;right:24px;background:#D12B2B;color:white;
+               font-size:13px;padding:13px 20px;border-radius:50px;border-color:var(--black);
+               box-shadow:4px 4px 0 var(--black);z-index:50;white-space:nowrap"
+        @onclick="OpenModal">🚨 Report Incident</button>
+
+@* ── Report Incident modal ── *@
+@if (_modalOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;
+                display:flex;align-items:center;justify-content:center;padding:20px;
+                animation:fadeIn .2s ease"
+         @onclick="CloseModal">
+        <div class="ccn-panel" style="padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;
+                                      box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease"
+             @onclick:stopPropagation="true">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0">🚨 Report Incident</h3>
+                <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-mid)" @onclick="CloseModal">✕</button>
+            </div>
+
+            <div style="display:flex;gap:16px;margin-bottom:14px">
+                <div style="flex:1">
+                    <div class="incident-field-label">Date of Incident *</div>
+                    <input type="date" class="incident-input"
+                           value="@_fDateOfIncident.ToString("yyyy-MM-dd")"
+                           @onchange="e => { if (DateTime.TryParse(e.Value?.ToString(), out var d)) _fDateOfIncident = d; }"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div style="flex:1">
+                    <div class="incident-field-label">Date Completed</div>
+                    <input type="date" class="incident-input"
+                           value="@_fDateCompleted.ToString("yyyy-MM-dd")"
+                           @onchange="e => { if (DateTime.TryParse(e.Value?.ToString(), out var d)) _fDateCompleted = d; }" />
+                </div>
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div class="incident-field-label">Persons Involved *</div>
+                <textarea class="incident-input" rows="2" @bind="_fPersonsInvolved"
+                          placeholder="Names of all persons involved"></textarea>
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div class="incident-field-label">Description of the Incident *</div>
+                <textarea class="incident-input" rows="4" @bind="_fDescription"
+                          placeholder="Include what led up to and responses to the incident"></textarea>
+            </div>
+
+            <div style="margin-bottom:20px">
+                <div class="incident-field-label">Recommended Action</div>
+                <textarea class="incident-input" rows="3" @bind="_fRecommendedAction"
+                          placeholder="Optional"></textarea>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_errorMsg))
+            {
+                <div style="color:#D12B2B;font-size:13px;margin-bottom:12px">@_errorMsg</div>
+            }
+
+            <div style="display:flex;gap:10px;margin-top:4px">
+                <button class="ccn-btn" style="background:transparent" @onclick="CloseModal">Cancel</button>
+                <button class="ccn-btn" style="flex:2;background:#D12B2B;color:white"
+                        disabled="@_submitting" @onclick="SubmitAsync">
+                    @(_submitting ? "Submitting…" : "Submit Report")
+                </button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private bool IsActive(string href) =>
         ("/" + Nav.ToBaseRelativePath(Nav.Uri))
             .StartsWith(href, StringComparison.OrdinalIgnoreCase);
+
+    // Modal state
+    private bool _modalOpen;
+    private bool _submitting;
+    private string _errorMsg = "";
+
+    // Form fields
+    private DateTime _fDateOfIncident = DateTime.Today;
+    private DateTime _fDateCompleted  = DateTime.Today;
+    private string _fPersonsInvolved    = "";
+    private string _fDescription        = "";
+    private string _fRecommendedAction  = "";
+
+    // Injected via parameter from parent — avoids cascading inject issues in component tree
+    [Inject] private IncidentReportService IncidentSvc { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
+    private void OpenModal()
+    {
+        _fDateOfIncident   = DateTime.Today;
+        _fDateCompleted    = DateTime.Today;
+        _fPersonsInvolved  = "";
+        _fDescription      = "";
+        _fRecommendedAction = "";
+        _errorMsg          = "";
+        _modalOpen         = true;
+    }
+
+    private void CloseModal() => _modalOpen = false;
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_fPersonsInvolved) || string.IsNullOrWhiteSpace(_fDescription))
+        {
+            _errorMsg = "Persons Involved and Description are required.";
+            return;
+        }
+
+        _submitting = true;
+        _errorMsg   = "";
+
+        var state  = await Auth.GetAuthenticationStateAsync();
+        var user   = state.User;
+        var userId = Guid.TryParse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : Guid.Empty;
+        var name   = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Unknown";
+        var role   = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Unknown";
+
+        await IncidentSvc.SubmitAsync(new IncidentReport
+        {
+            EventId            = Services.SeedService.Id.EventCcn2026,
+            DateOfIncident     = _fDateOfIncident,
+            DateCompleted      = _fDateCompleted,
+            PersonsInvolved    = _fPersonsInvolved.Trim(),
+            Description        = _fDescription.Trim(),
+            RecommendedAction  = _fRecommendedAction.Trim(),
+            SubmittedByUserId  = userId,
+            SubmittedByName    = name,
+            SubmittedByRole    = role,
+        });
+
+        _submitting = false;
+        _modalOpen  = false;
+        Snackbar.Add("Incident report submitted.", Severity.Success);
+    }
 }

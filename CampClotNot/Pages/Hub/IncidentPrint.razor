@@ -1,0 +1,147 @@
+@page "/hub/incidents/{Id:guid}/print"
+@layout PrintLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IncidentReportService IncidentSvc
+
+<PageTitle>Incident Report — Camp Clot Not</PageTitle>
+
+<style>
+    .print-page {
+        max-width: 750px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        font-family: 'Nunito', sans-serif;
+        color: #1A1A1A;
+    }
+    .print-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+    .print-title {
+        font-family: 'Fredoka One', cursive;
+        font-size: 26px;
+        text-align: center;
+        flex: 1;
+        margin: 0;
+    }
+    .print-logo {
+        height: 60px;
+        width: auto;
+    }
+    .print-row {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 16px;
+    }
+    .print-field {
+        flex: 1;
+        margin-bottom: 16px;
+    }
+    .print-label {
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #666;
+        margin-bottom: 6px;
+    }
+    .print-value {
+        border: 2px solid #1A1A1A;
+        border-radius: 6px;
+        padding: 10px 12px;
+        min-height: 40px;
+        font-size: 14px;
+        white-space: pre-wrap;
+    }
+    .print-value.tall {
+        min-height: 100px;
+    }
+    .print-footer {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 2px solid #1A1A1A;
+        font-size: 13px;
+        color: #444;
+    }
+    .print-btn-bar {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    @@media print {
+        .print-btn-bar { display: none; }
+    }
+</style>
+
+@if (_report is null)
+{
+    @if (_loading)
+    {
+        <div style="padding:40px;text-align:center">
+            <MudProgressCircular Indeterminate="true" />
+        </div>
+    }
+    else
+    {
+        <div style="padding:40px;text-align:center;font-family:'Fredoka One',cursive">Report not found.</div>
+    }
+}
+else
+{
+    <div class="print-btn-bar">
+        <button class="ccn-btn" onclick="window.print()">🖨️ Print</button>
+    </div>
+
+    <div class="print-page">
+        <div class="print-header">
+            <div style="width:80px"></div>
+            <h1 class="print-title">INCIDENT REPORT FORM</h1>
+            <img src="/img/childrens-harbor-logo.png" alt="Children's Harbor" class="print-logo" />
+        </div>
+
+        <div class="print-row">
+            <div class="print-field">
+                <div class="print-label">Date of Incident</div>
+                <div class="print-value">@_report.DateOfIncident.ToString("MMMM d, yyyy")</div>
+            </div>
+            <div class="print-field">
+                <div class="print-label">Date Completed</div>
+                <div class="print-value">@_report.DateCompleted.ToString("MMMM d, yyyy")</div>
+            </div>
+        </div>
+
+        <div class="print-field">
+            <div class="print-label">Persons Involved</div>
+            <div class="print-value">@_report.PersonsInvolved</div>
+        </div>
+
+        <div class="print-field">
+            <div class="print-label">Description of the Incident (include what led up to and responses to the incident)</div>
+            <div class="print-value tall">@_report.Description</div>
+        </div>
+
+        <div class="print-field">
+            <div class="print-label">Recommended Action</div>
+            <div class="print-value tall">@_report.RecommendedAction</div>
+        </div>
+
+        <div class="print-footer">
+            Submitted by: <strong>@_report.SubmittedByName</strong> (@_report.SubmittedByRole)
+            on @_report.SubmittedAt.ToLocalTime().ToString("MMMM d, yyyy 'at' h:mm tt")
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private IncidentReport? _report;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _report  = await IncidentSvc.GetByIdAsync(Id);
+        _loading = false;
+    }
+}
