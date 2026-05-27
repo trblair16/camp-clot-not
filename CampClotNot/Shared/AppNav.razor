@@ -7,10 +7,15 @@
     .nav-desktop-header { display: none; }
     .nav-bottom-bar     { display: flex; }
 
-    @@media (min-width: 769px) {
+    @@media (min-width: 1024px) {
         .nav-mobile-header  { display: none; }
         .nav-desktop-header { display: flex; }
         .nav-bottom-bar     { display: none; }
+    }
+
+    /* Belt-and-suspenders: keep desktop header off on phone landscape */
+    @@media (max-width: 1023px) {
+        .nav-desktop-header { display: none !important; }
     }
 
     /* ── Mobile header ── */
@@ -18,9 +23,9 @@
         width: 100%;
         background: var(--black);
         border-bottom: 4px solid var(--color-primary);
-        height: 72px;
-        padding: 0 16px;
-        align-items: center;
+        height: calc(72px + env(safe-area-inset-top));
+        padding: env(safe-area-inset-top) 16px 0;
+        align-items: flex-end;
         justify-content: space-between;
         position: sticky;
         top: 0;
