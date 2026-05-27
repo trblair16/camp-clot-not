@@ -109,12 +109,10 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid Space18 = new("0000000d-000d-000d-000d-000000000013");
         public static readonly Guid Space19 = new("0000000d-000d-000d-000d-000000000014");
 
-        // InfoPages — CCN 2026 handbook pages (slug set fixed in v0.5.0)
-        public static readonly Guid InfoPageRules            = new("0000000e-000e-000e-000e-000000000001");
-        public static readonly Guid InfoPageFaq              = new("0000000e-000e-000e-000e-000000000002");
-        public static readonly Guid InfoPageMedical          = new("0000000e-000e-000e-000e-000000000003");
-        public static readonly Guid InfoPageScheduleOverview = new("0000000e-000e-000e-000e-000000000004");
-        public static readonly Guid InfoPagePacking          = new("0000000e-000e-000e-000e-000000000005");
+        // InfoPages — CCN 2026 handbook pages (schedule-overview and packing removed in v0.5.1)
+        public static readonly Guid InfoPageRules   = new("0000000e-000e-000e-000e-000000000001");
+        public static readonly Guid InfoPageFaq     = new("0000000e-000e-000e-000e-000000000002");
+        public static readonly Guid InfoPageMedical = new("0000000e-000e-000e-000e-000000000003");
     }
 
     public async Task SeedAsync()
@@ -552,11 +550,9 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
         var pages = new[]
         {
-            new { Id = Id.InfoPageRules,            Slug = "rules",             Title = "Camp Rules",        Icon = "📋", Order = 1 },
-            new { Id = Id.InfoPageFaq,              Slug = "faq",               Title = "FAQ",               Icon = "❓", Order = 2 },
-            new { Id = Id.InfoPageMedical,          Slug = "medical",           Title = "Medical Info",      Icon = "🏥", Order = 3 },
-            new { Id = Id.InfoPageScheduleOverview, Slug = "schedule-overview", Title = "Schedule Overview", Icon = "📅", Order = 4 },
-            new { Id = Id.InfoPagePacking,          Slug = "packing",           Title = "Packing List",      Icon = "🎒", Order = 5 },
+            new { Id = Id.InfoPageRules,   Slug = "rules",   Title = "Camp Rules",   Icon = "📋", Order = 1 },
+            new { Id = Id.InfoPageFaq,     Slug = "faq",     Title = "FAQ",          Icon = "❓", Order = 2 },
+            new { Id = Id.InfoPageMedical, Slug = "medical", Title = "Medical Info", Icon = "🏥", Order = 3 },
         };
 
         foreach (var def in pages)

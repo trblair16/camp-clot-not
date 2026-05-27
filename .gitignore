@@ -22,3 +22,6 @@ mockup/preview/
 
 # Brainstorming session files
 .superpowers/
+
+# Git worktrees (local workspace isolation)
+.worktrees/

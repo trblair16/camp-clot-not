@@ -300,15 +300,21 @@ CamperAward        — AwardId, GroupId, RecipientName, AwardType (enum: Named/B
 CampSeason         — SeasonId, ThemeId, Year, IsLocked, LockedAt?, LockedBy?
 
 -- Beta / Hub Features (Part 8)
-ScheduleEvent      — EventId, CampDay, StartTime, EndTime, Title, Description,
-                     LocationDisplayName, EventType (enum), AppliesToAllGroups, CreatedBy, UpdatedAt
-ScheduleEventGroup — EventId, GroupId
-Announcement       — AnnouncementId, Title, Body, Priority (enum: Normal|Urgent), IsPinned,
-                     AuthorId, CreatedAt, ExpiresAt?, IsArchived
-StaffMember        — StaffMemberId, DisplayName, RoleTitle, Phone?, Email?,
+Location           — LocationId, EventId, Name, Description?, Capacity?, SortOrder
+ScheduleEvent      — ScheduleEventId, EventId, CampDay, StartTime, EndTime, Title, Description?,
+                     LocationId (FK), AppliesToAllGroups, CreatedBy, UpdatedAt
+ScheduleEventGroup — ScheduleEventId, GroupId, ActivityId?, LocationId?, Note?
+Announcement       — AnnouncementId, EventId, Title, Body, Priority (enum: Normal|Urgent),
+                     IsPinned, AuthorId, CreatedAt, ExpiresAt?, IsArchived
+StaffMember        — StaffMemberId, EventId, DisplayName, RoleTitle, Phone?, Email?,
                      AvatarEmoji, IsVisible, SortOrder, LinkedUserId?
-InfoPage           — PageId, Slug (unique), Title, Body (markdown), IconEmoji,
+InfoPage           — PageId, EventId, Slug (unique), Title, Body (markdown), IconEmoji,
                      SortOrder, UpdatedAt, UpdatedByUserId
+IncidentReport     — IncidentReportId, EventId, DateOfIncident, DateCompleted,
+                     PersonsInvolved, Description, RecommendedAction,
+                     SubmittedByUserId, SubmittedByName, SubmittedByRole, SubmittedAt,
+                     IsAcknowledged, AcknowledgedByUserId?, AcknowledgedByName?, AcknowledgedAt?
+Sponsor            — SponsorId, EventId, Name, LogoUrl, Website?, SortOrder
 
 -- Future / v1.1+
 PushSubscription   — SubscriptionId, UserId, Endpoint, P256DH, Auth,
@@ -530,6 +536,7 @@ Camp is June 20-25, 2026.
 | ~May 28 | v0.3.1 — UI Overhaul ✅ | Neo-brutalist redesign, cream bg, rank rows, ccn-coin/star assets, real group names & logos |
 | ~May 16 | v0.4.0 — Mini-Games & Display ✅ | Mini-game spinner (3-way split: /minigames, /minigames/display, /admin/games), LiveHub rename, Activities dropdown nav, login page redesign |
 | ~June 7 | v0.5.0 — Camp Info Hub + PWA ✅ | Hub features (§8.1–8.4), PWA manifest + service worker + install flow (§8.9), Railway production setup |
+| ~May 28 | v0.5.1 — Hub Additions (in progress) | Mobile/PWA fixes, Incident Reports (§8.10), Sponsors (§8.11), Info seed cleanup, PrintLayout |
 | ~June 7-8 | v1.0.0-rc — Dry Run | Full dress rehearsal. Staff test on real devices. Projector verified. Issues logged. |
 | ~June 13 | v1.0.0 — Camp Ready | Dry run issues resolved. Production seeded. Staff briefed. One week buffer. |
 | June 20 | 🏕️ CAMP | Super Clot Not Party '26 is live |
@@ -755,7 +762,7 @@ Claude Code must use system names for all variables, routes, DB fields, and comp
 
 ## Part 8 — Beta Features: Camp Info Hub (Yapp Replacement)
 
-**Status:** Beta — time-permitting, targeting v0.5.0. Not camp-critical. All four features ship together under a single **"📋 Hub"** nav tab with internal sub-navigation (Schedule / Announcements / Staff / Info). This keeps the main nav at 5 tabs total and respects the 375px mobile min-width constraint.
+**Status:** v0.5.0 shipped. v0.5.1 adds Sponsors and Incident Reports. Hub sub-navigation (Schedule / Announcements / Staff / Sponsors / Info / Incidents[Admin]) under a single **"📋 Hub"** main nav tab.
 
 **Milestone:** `v0.5.0 — Camp Info Hub` | Target ~June 7 if capacity exists. If not complete by June 13, defer to post-camp v1.1.0.
 
@@ -851,7 +858,8 @@ InfoPage — PageId, Slug (unique), Title, Body (markdown), IconEmoji,
 - Staff: read-only
 - Pages cannot be created or deleted in beta — slug list is fixed at seed time
 
-**Predefined seed slugs for 2026:** `rules`, `faq`, `medical`, `schedule-overview`, `packing`
+**Predefined seed slugs for 2026:** `rules`, `faq`, `medical`  
+(`schedule-overview` and `packing` removed in v0.5.1 — redundant with the Schedule tab and pre-camp only scope respectively. Existing DB records are not deleted.)
 
 **Scope boundary:** Markdown body only — no file attachments, no embedded images in beta.
 
@@ -861,19 +869,23 @@ InfoPage — PageId, Slug (unique), Title, Body (markdown), IconEmoji,
 
 ### 8.5 Role Permission Matrix
 
-| Feature | Admin | Staff | Display |
+| Feature | Admin | Staff | Volunteer |
 |---|---|---|---|
-| View Schedule | ✅ | ✅ | ❌ |
+| View Schedule | ✅ | ✅ | ✅ |
 | Edit Schedule | ✅ | ✅ | ❌ |
-| View Announcements | ✅ | ✅ | ❌ |
+| View Announcements | ✅ | ✅ | ✅ |
 | Post Announcement (Normal) | ✅ | ✅ | ❌ |
 | Post Urgent / Pin | ✅ | ❌ | ❌ |
-| View Staff Directory | ✅ | ✅ | ❌ |
+| View Staff Directory | ✅ | ✅ | ✅ |
 | Edit Staff Directory | ✅ | ❌ | ❌ |
-| View Info Pages | ✅ | ✅ | ❌ |
+| View Info Pages | ✅ | ✅ | ✅ |
 | Edit Info Page Body | ✅ | ❌ | ❌ |
+| View Sponsors | ✅ | ✅ | ✅ |
+| Manage Sponsors | ✅ | ❌ | ❌ |
+| Submit Incident Report | ✅ | ✅ | ✅ |
+| View / Acknowledge Incidents | ✅ | ❌ | ❌ |
 
-Display mode has no access to Hub features — the `/display` route remains competition-only.
+Projector display pages (`/board/display`, `/minigames/display`) are Admin-only — no Hub access.
 
 ---
 
@@ -975,6 +987,42 @@ Neither banner blocks UI. Both disappear permanently after one dismissal.
 #### 8.9.6 Implementation Order Within v0.5.0
 
 Implement PWA last, after all Hub features are functional. No logic dependencies — manifest, service worker, icons, install tip component. Estimated effort: ~4-6 hours once icon assets are generated.
+
+---
+
+### 8.10 Incident Reports (v0.5.1)
+
+A floating "🚨 Report Incident" button appears on all Hub pages (rendered in `HubSubNav.razor`). Any logged-in user (Admin, Staff, Volunteer) can submit. Only Admin can view submitted reports.
+
+**Form fields:** Date of Incident, Date Completed (auto-today), Persons Involved, Description (including lead-up and responses), Recommended Action. Submitter info auto-captured from auth claims — no signature fields.
+
+**Admin view:** `/hub/incidents` — lists all reports newest-first. Each row: date, submitter name/role, persons involved (truncated), Acknowledge button, Print link. Acknowledged rows show who acknowledged and when.
+
+**Print view:** `/hub/incidents/{id}/print` — uses `PrintLayout` (bare layout, no nav). Mirrors the Children's Harbor paper form: logo top-right, "INCIDENT REPORT FORM" centered title, fields in paper layout order, submitter footer. Print button calls `window.print()` and is hidden via `@media print`.
+
+**System name:** `IncidentReport` / `IncidentReportService` / `/hub/incidents`
+
+---
+
+### 8.11 Sponsors (v0.5.1)
+
+Admin manages a list of event sponsors (name, logo URL, optional website link, sort order). All users can view a Sponsors tab in the Hub.
+
+**Display page:** `/hub/sponsors` — responsive grid of logo tiles. Each tile: logo (constrained 80px height), sponsor name below. If Website is set, the tile is a link. Visible to Admin, Staff, Volunteer.
+
+**Admin CRUD:** `/admin/sponsors` — same table/form panel pattern as `/admin/locations`. Accessible from Admin desktop dropdown and mobile admin sheet.
+
+**Logo storage:** External URL only — no file upload in v0.5.1.
+
+**System name:** `Sponsor` / `SponsorService` / `/hub/sponsors`
+
+---
+
+### 8.12 Shared Dialog Pattern (planned v0.5.2)
+
+All form modals use the same visual shell: `rgba(26,26,26,.65)` backdrop with `animation:fadeIn .2s ease`, centered `ccn-panel` with `animation:popIn .25s ease` and `box-shadow:8px 8px 0 var(--black)`. Currently duplicated across `LogTransactionDialog` and the Report Incident modal in `HubSubNav.razor`.
+
+**Planned:** Extract a `CcnDialog.razor` wrapper component once a third dialog exists, so animation and backdrop styling only live in one place. Individual dialogs declare title and body only.
 
 ---
 
@@ -1197,4 +1245,4 @@ Each exclusion is a deliberate decision, not an oversight. Revisit only if a spe
 ---
 
 *Camp Clot Not · Super Party 2026 · Requirements, Asset Spec & Architecture Guide · Tyler Blair*  
-*Last updated: May 2026 — Parts 8 & 9 added (Hub features, PWA, scale strategy)*
+*Last updated: 2026-05-27 — v0.5.1: §8.10 Incident Reports, §8.11 Sponsors, §8.12 shared dialog pattern; §8.4 seed slugs updated; §8.5 permission matrix updated; data model updated; milestone added*

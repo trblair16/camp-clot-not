@@ -1,0 +1,106 @@
+@page "/hub/incidents"
+@attribute [Authorize(Roles = "Admin")]
+@inject IncidentReportService IncidentSvc
+@inject AuthenticationStateProvider Auth
+@inject ISnackbar Snackbar
+
+<PageTitle>Incidents — Camp Clot Not</PageTitle>
+
+<HubSubNav />
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🚨 Incident Reports</h2>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_reports.Any())
+    {
+        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No incident reports submitted yet.</p>
+    }
+    else
+    {
+        <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+            <table style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="background:var(--black)">
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Date</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Submitted By</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Persons Involved</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Status</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in _reports)
+                    {
+                        <tr style="border-bottom:2px solid #E8E0CC">
+                            <td style="padding:10px 14px;font-size:13px;font-weight:700;white-space:nowrap">
+                                @r.DateOfIncident.ToString("MM/dd/yyyy")
+                            </td>
+                            <td style="padding:10px 14px;font-size:13px">
+                                @r.SubmittedByName<br />
+                                <span style="font-size:11px;color:var(--text-light)">@r.SubmittedByRole</span>
+                            </td>
+                            <td style="padding:10px 14px;font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                @(r.PersonsInvolved.Length > 60 ? r.PersonsInvolved[..60] + "…" : r.PersonsInvolved)
+                            </td>
+                            <td style="padding:10px 14px;font-size:12px">
+                                @if (r.IsAcknowledged)
+                                {
+                                    <span style="color:var(--text-mid)">✅ @r.AcknowledgedByName<br />@r.AcknowledgedAt?.ToString("MM/dd/yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span style="color:#D12B2B;font-weight:700">Pending</span>
+                                }
+                            </td>
+                            <td style="padding:8px 10px;white-space:nowrap">
+                                <div style="display:flex;gap:4px;flex-wrap:wrap">
+                                    <a href="/hub/incidents/@r.IncidentReportId/print" target="_blank"
+                                       style="font-size:11px;padding:4px 10px" class="ccn-btn">🖨️ Print</a>
+                                    @if (!r.IsAcknowledged)
+                                    {
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 10px"
+                                                @onclick="() => AcknowledgeAsync(r)">Acknowledge</button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<IncidentReport> _reports = [];
+    private bool _loading = true;
+    private Guid _adminId;
+    private string _adminName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await Auth.GetAuthenticationStateAsync();
+        var user = state.User;
+        _adminId   = Guid.TryParse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : Guid.Empty;
+        _adminName = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "";
+
+        await Reload();
+        _loading = false;
+    }
+
+    private async Task Reload()
+    {
+        _reports = await IncidentSvc.GetAllForEventAsync(Services.SeedService.Id.EventCcn2026);
+    }
+
+    private async Task AcknowledgeAsync(IncidentReport r)
+    {
+        await IncidentSvc.AcknowledgeAsync(r.IncidentReportId, _adminId, _adminName);
+        Snackbar.Add("Report acknowledged.", Severity.Success);
+        await Reload();
+    }
+}
