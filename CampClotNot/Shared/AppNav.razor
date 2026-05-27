@@ -111,12 +111,13 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: calc(56px + env(safe-area-inset-bottom));
+        height: 56px;
         background: var(--bg-base);
         border-top: 4px solid var(--black);
         z-index: 40;
         justify-content: stretch;
         align-items: stretch;
+        overflow: hidden;
     }
     .nav-tab {
         flex: 1;
@@ -135,7 +136,6 @@
         font-family: 'Fredoka One', cursive;
         font-size: 10px;
         letter-spacing: 0.5px;
-        min-height: 56px;
         transition: color .15s, border-color .15s;
     }
     .nav-tab.active {
@@ -148,14 +148,14 @@
     .nav-admin-sheet,
     .nav-activities-sheet {
         position: fixed;
-        bottom: calc(60px + env(safe-area-inset-bottom));
+        bottom: 60px;
         left: 0;
         right: 0;
         background: var(--panel-bg);
         border-top: 4px solid var(--black);
         border-radius: 16px 16px 0 0;
         box-shadow: 0 -4px 0 var(--black);
-        z-index: 45;
+        z-index: 52;
         animation: slideUp .2s ease;
     }
     .nav-admin-sheet a,
@@ -316,7 +316,7 @@
 @* ── ACTIVITIES BOTTOM SHEET (mobile) ────────────────────────────── *@
 @if (_activitiesSheetOpen)
 {
-    <div style="position:fixed;inset:0;z-index:44;background:rgba(26,26,26,.4)"
+    <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _activitiesSheetOpen = false"></div>
     <div class="nav-activities-sheet">
         <a href="/board"     @onclick="() => _activitiesSheetOpen = false">🗺️ Board Game</a>
@@ -329,7 +329,7 @@
 @* ── ADMIN BOTTOM SHEET (mobile) ─────────────────────────────────── *@
 @if (_adminSheetOpen)
 {
-    <div style="position:fixed;inset:0;z-index:44;background:rgba(26,26,26,.4)"
+    <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _adminSheetOpen = false"></div>
     <div class="nav-admin-sheet">
         <a href="/transactions"    @onclick="() => _adminSheetOpen = false">📋 Transactions</a>
