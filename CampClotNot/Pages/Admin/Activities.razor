@@ -1,0 +1,134 @@
+@page "/admin/activities"
+@attribute [Authorize(Roles = "Admin")]
+@inject MiniGameService MiniGameSvc
+@inject ISnackbar Snackbar
+
+<PageTitle>Activities — Camp Clot Not</PageTitle>
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 4px">🎲 Activities</h2>
+    <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">
+        Mini-game activities available in the evening spinner and schedule group assignments.
+    </p>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+        @* ── Form panel ── *@
+        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 300px;min-width:240px">
+            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Activity" : "Edit Activity")</h3>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name</div>
+                <input type="text" @bind="_fName" placeholder="e.g. Mushroom Kingdom Trivia"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:16px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Description (optional)</div>
+                <input type="text" @bind="_fDescription" placeholder="Short description"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="display:flex;gap:8px">
+                <button class="ccn-btn" @onclick="SaveAsync">@(_editingId == Guid.Empty ? "Add Activity" : "Save Changes")</button>
+                @if (_editingId != Guid.Empty)
+                {
+                    <button class="ccn-btn" style="background:transparent" @onclick="CancelEdit">Cancel</button>
+                }
+            </div>
+        </div>
+
+        @* ── Table ── *@
+        <div style="flex:1;min-width:240px">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_activities.Any())
+            {
+                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No activities yet. Add the first one →</p>
+            }
+            else
+            {
+                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:var(--black)">
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Description</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in _activities)
+                            {
+                                <tr style="border-bottom:2px solid #E8E0CC">
+                                    <td style="padding:10px 14px;font-size:13px;font-weight:700">@a.Name</td>
+                                    <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(string.IsNullOrEmpty(a.Description) ? "—" : a.Description)</td>
+                                    <td style="padding:8px 10px">
+                                        <div style="display:flex;gap:4px">
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(a)">Edit</button>
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(a)">Del</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private List<Activity> _activities = new();
+    private bool _loading = true;
+    private Guid _editingId;
+    private string _fName = "";
+    private string _fDescription = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Reload();
+        _loading = false;
+    }
+
+    private async Task Reload()
+    {
+        _activities = await MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
+    }
+
+    private void StartEdit(Activity a)
+    {
+        _editingId    = a.ActivityId;
+        _fName        = a.Name;
+        _fDescription = a.Description;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = Guid.Empty;
+        _fName = ""; _fDescription = "";
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_fName)) return;
+        await MiniGameSvc.UpsertActivityAsync(_editingId, SeedService.Id.EventCcn2026, _fName.Trim(), _fDescription.Trim());
+        Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
+        CancelEdit();
+        await Reload();
+    }
+
+    private async Task DeleteAsync(Activity a)
+    {
+        var deleted = await MiniGameSvc.DeleteActivityAsync(a.ActivityId);
+        if (deleted)
+            Snackbar.Add($"{a.Name} deleted.", Severity.Info);
+        else
+            Snackbar.Add($"{a.Name} is assigned to a mini-game script and cannot be deleted.", Severity.Warning);
+        await Reload();
+    }
+}
