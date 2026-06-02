@@ -6,6 +6,12 @@ namespace CampClotNot.Services;
 
 public class SponsorService(IDbContextFactory<AppDbContext> factory)
 {
+    public async Task<Sponsor?> GetByIdAsync(Guid sponsorId)
+    {
+        using var db = factory.CreateDbContext();
+        return await db.Sponsors.FindAsync(sponsorId);
+    }
+
     public async Task<List<Sponsor>> GetAllForEventAsync(Guid eventId)
     {
         using var db = factory.CreateDbContext();
@@ -27,10 +33,15 @@ public class SponsorService(IDbContextFactory<AppDbContext> factory)
         }
         else
         {
-            existing.Name      = s.Name;
-            existing.LogoUrl   = s.LogoUrl;
-            existing.Website   = s.Website;
-            existing.SortOrder = s.SortOrder;
+            existing.Name            = s.Name;
+            existing.LogoUrl         = s.LogoUrl;
+            existing.Website         = s.Website;
+            existing.SortOrder       = s.SortOrder;
+            if (s.LogoData is not null)
+            {
+                existing.LogoData        = s.LogoData;
+                existing.LogoContentType = s.LogoContentType;
+            }
         }
         await db.SaveChangesAsync();
         return s;

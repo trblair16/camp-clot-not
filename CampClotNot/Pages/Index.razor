@@ -1,0 +1,15 @@
+@page "/"
+@attribute [Authorize]
+@inject NavigationManager Nav
+@inject IHttpContextAccessor HttpContextAccessor
+
+@code {
+    protected override void OnInitialized()
+    {
+        var ctx = HttpContextAccessor.HttpContext;
+        if (ctx is not null && !ctx.Response.HasStarted)
+            ctx.Response.Redirect("/hub/schedule");
+        else
+            Nav.NavigateTo("/hub/schedule", replace: true);
+    }
+}

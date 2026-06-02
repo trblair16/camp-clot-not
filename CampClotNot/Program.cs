@@ -120,13 +120,21 @@ try
         var email    = form["email"].ToString();
         var password = form["password"].ToString();
         var ok = await auth.LoginAsync(ctx, email, password);
-        return ok ? Results.Redirect("/") : Results.Redirect("/login?error=true");
+        return ok ? Results.Redirect("/hub/schedule") : Results.Redirect("/login?error=true");
     });
 
     app.MapGet("/logout", async (HttpContext ctx) =>
     {
         await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         ctx.Response.Redirect("/login");
+    });
+
+    // Serve sponsor logos stored as bytea in the database
+    app.MapGet("/sponsors/logo/{id:guid}", async (Guid id, SponsorService svc) =>
+    {
+        var s = await svc.GetByIdAsync(id);
+        if (s?.LogoData is null) return Results.NotFound();
+        return Results.File(s.LogoData, s.LogoContentType ?? "image/jpeg");
     });
 
     app.MapHub<LiveHub>("/livehub");
