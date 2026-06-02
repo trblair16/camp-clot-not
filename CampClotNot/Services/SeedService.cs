@@ -309,7 +309,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             EventTypeId = Id.EventTypeCcn,
             ThemeId     = Id.ThemeSuperMarioParty2026,
             Name        = "Camp Clot Not 2026",
-            EffDate     = new DateOnly(2026, 6, 20),
+            EffDate     = new DateOnly(2026, 6, 19),
             ExpDate     = new DateOnly(2026, 6, 25),
             IsActive    = true
         });
