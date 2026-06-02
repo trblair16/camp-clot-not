@@ -106,4 +106,40 @@ public class MiniGameService(
         await db.SaveChangesAsync();
         await hub.Clients.All.SendAsync("MiniGameSpinReset");
     }
+
+    public async Task UpsertActivityAsync(Guid activityId, Guid eventId, string name, string description)
+    {
+        using var db = factory.CreateDbContext();
+        var existing = await db.Activities.FindAsync(activityId);
+        if (existing is null)
+        {
+            db.Activities.Add(new Activity
+            {
+                ActivityId     = activityId == Guid.Empty ? Guid.NewGuid() : activityId,
+                EventId        = eventId,
+                ActivityTypeId = SeedService.Id.ActTypeMtwiPlaceholder,
+                Name           = name,
+                Description    = description
+            });
+        }
+        else
+        {
+            existing.Name        = name;
+            existing.Description = description;
+        }
+        await db.SaveChangesAsync();
+    }
+
+    // Returns false if the activity is referenced by a triggered script (cannot delete).
+    public async Task<bool> DeleteActivityAsync(Guid activityId)
+    {
+        using var db = factory.CreateDbContext();
+        var inUse = await db.ScriptedMiniGames.AnyAsync(s => s.ActivityId == activityId);
+        if (inUse) return false;
+        var activity = await db.Activities.FindAsync(activityId);
+        if (activity is null) return true;
+        db.Activities.Remove(activity);
+        await db.SaveChangesAsync();
+        return true;
+    }
 }
