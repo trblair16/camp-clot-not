@@ -70,8 +70,9 @@
         line-height: 1.4;
     }
 
-    /* ── Desktop dropdown panels (activities + admin share the same panel style) ── */
-    .nav-activities-dropdown,
+    /* ── Desktop dropdown panels ── */
+    .nav-hub-dropdown,
+    .nav-game-dropdown,
     .nav-admin-dropdown { position: relative; }
     .nav-admin-panel {
         position: absolute;
@@ -143,9 +144,9 @@
     }
     .nav-tab .tab-icon { font-size: 20px; line-height: 1; }
 
-    /* ── Bottom sheets (activities + admin share the same sheet style) ── */
+    /* ── Bottom sheets ── */
     .nav-admin-sheet,
-    .nav-activities-sheet {
+    .nav-game-sheet {
         position: fixed;
         bottom: calc(60px + env(safe-area-inset-bottom));
         left: 0;
@@ -159,8 +160,8 @@
     }
     .nav-admin-sheet a,
     .nav-admin-sheet button,
-    .nav-activities-sheet a,
-    .nav-activities-sheet button {
+    .nav-game-sheet a,
+    .nav-game-sheet button {
         display: flex;
         align-items: center;
         padding: 16px 20px;
@@ -177,8 +178,8 @@
     }
     .nav-admin-sheet a:last-child,
     .nav-admin-sheet button:last-child,
-    .nav-activities-sheet a:last-child,
-    .nav-activities-sheet button:last-child { border-bottom: none; }
+    .nav-game-sheet a:last-child,
+    .nav-game-sheet button:last-child { border-bottom: none; }
 </style>
 
 @* ── MOBILE HEADER ──────────────────────────────────────────────── *@
@@ -205,35 +206,58 @@
     <AuthorizeView>
         <Authorized>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                <a href="/" class="nav-link" style="@ActiveStyle("/", "#D12B2B")">📊 Dashboard</a>
+                <a href="/hub/schedule" class="nav-link" style="@ActiveStyle("/hub/schedule", "#2980B9")">📅 Schedule</a>
 
-                @* ── Activities dropdown ── *@
-                <div class="nav-activities-dropdown">
-                    @if (_activitiesDropdownOpen)
+                @* ── Hub dropdown ── *@
+                <div class="nav-hub-dropdown">
+                    @if (_hubDropdownOpen)
                     {
                         <div style="position:fixed;inset:0;z-index:49"
-                             @onclick="() => _activitiesDropdownOpen = false"></div>
+                             @onclick="() => _hubDropdownOpen = false"></div>
                     }
-                    <button class="nav-link" style="@ActivitiesDropdownStyle()"
-                            @onclick="() => { _activitiesDropdownOpen = !_activitiesDropdownOpen; _adminDropdownOpen = false; }">
-                        🎮 Activities @(_activitiesDropdownOpen ? "▲" : "▼")
+                    <button class="nav-link" style="@HubDropdownStyle()"
+                            @onclick="() => { _hubDropdownOpen = !_hubDropdownOpen; _gameDropdownOpen = false; _adminDropdownOpen = false; }">
+                        📋 Hub @(_hubDropdownOpen ? "▲" : "▼")
                     </button>
-                    @if (_activitiesDropdownOpen)
+                    @if (_hubDropdownOpen)
                     {
                         <div class="nav-admin-panel">
-                            <a href="/board"     @onclick="() => _activitiesDropdownOpen = false">🗺️ Board Game</a>
-                            <AuthorizeView Roles="Admin" Context="actAdminCtx">
-                                <a href="/minigames" @onclick="() => _activitiesDropdownOpen = false">🎲 Mini-Game</a>
+                            <a href="/hub/announcements" @onclick="() => _hubDropdownOpen = false">📣 Announcements</a>
+                            <a href="/hub/staff"         @onclick="() => _hubDropdownOpen = false">👥 Staff</a>
+                            <a href="/hub/sponsors"      @onclick="() => _hubDropdownOpen = false">🏆 Sponsors</a>
+                            <a href="/hub/info"          @onclick="() => _hubDropdownOpen = false">📋 Info</a>
+                            <AuthorizeView Roles="Admin" Context="hubAdminCtx">
+                                <a href="/hub/incidents" @onclick="() => _hubDropdownOpen = false">🚨 Incidents</a>
                             </AuthorizeView>
                         </div>
                     }
                 </div>
 
-                <AuthorizeView Roles="Admin,Staff,Volunteer" Context="hubDesktopCtx">
-                    <a href="/hub" class="nav-link" style="@ActiveStyle("/hub", "#2980B9")">📋 Hub</a>
-                </AuthorizeView>
+                @* ── Game dropdown ── *@
+                <div class="nav-game-dropdown">
+                    @if (_gameDropdownOpen)
+                    {
+                        <div style="position:fixed;inset:0;z-index:49"
+                             @onclick="() => _gameDropdownOpen = false"></div>
+                    }
+                    <button class="nav-link" style="@GameDropdownStyle()"
+                            @onclick="() => { _gameDropdownOpen = !_gameDropdownOpen; _hubDropdownOpen = false; _adminDropdownOpen = false; }">
+                        🎮 Game @(_gameDropdownOpen ? "▲" : "▼")
+                    </button>
+                    @if (_gameDropdownOpen)
+                    {
+                        <div class="nav-admin-panel">
+                            <a href="/" @onclick="() => _gameDropdownOpen = false">📊 Leaderboard</a>
+                            <a href="/board" @onclick="() => _gameDropdownOpen = false">🗺️ Board Game</a>
+                            <AuthorizeView Roles="Admin" Context="gameAdminCtx">
+                                <a href="/minigames" @onclick="() => _gameDropdownOpen = false">🎲 Mini-Game</a>
+                                <button @onclick="() => { _gameDropdownOpen = false; OnLeaderboardClick.InvokeAsync(); }">📺 Projector</button>
+                            </AuthorizeView>
+                        </div>
+                    }
+                </div>
 
-                <AuthorizeView Roles="Admin" Context="adminCtx">
+                <AuthorizeView Roles="Admin" Context="adminDesktopCtx">
                     <a href="/transactions" class="nav-link" style="@ActiveStyle("/transactions", "#2563C4")">📋 Transactions</a>
 
                     <div class="nav-admin-dropdown">
@@ -243,7 +267,7 @@
                                  @onclick="() => _adminDropdownOpen = false"></div>
                         }
                         <button class="nav-link" style="@AdminDropdownStyle()"
-                                @onclick="() => { _adminDropdownOpen = !_adminDropdownOpen; _activitiesDropdownOpen = false; }">
+                                @onclick="() => { _adminDropdownOpen = !_adminDropdownOpen; _hubDropdownOpen = false; _gameDropdownOpen = false; }">
                             ⚙️ Admin @(_adminDropdownOpen ? "▲" : "▼")
                         </button>
                         @if (_adminDropdownOpen)
@@ -259,10 +283,6 @@
                     </div>
                 </AuthorizeView>
 
-                <button class="nav-link" style="@ActiveStyle("/__lbd__", "#F5C800")"
-                        @onclick="OnLeaderboardClick">
-                    📺 Leaderboard
-                </button>
                 <button onclick="window.location='/logout'" class="nav-link"
                         style="border-color:#D12B2B;box-shadow:2px 2px 0 #D12B2B;color:#D12B2B;opacity:.8">
                     Sign Out
@@ -276,34 +296,22 @@
 <AuthorizeView>
     <Authorized>
         <div class="nav-bottom-bar">
-            <a href="/" class="nav-tab @(IsActive("/") ? "active" : "")">
-                <span class="tab-icon">📊</span>
-                <span>Dashboard</span>
+            <a href="/hub/schedule" class="nav-tab @(IsScheduleActive() ? "active" : "")">
+                <span class="tab-icon">📅</span>
+                <span>Schedule</span>
             </a>
-            <AuthorizeView Roles="Admin" Context="mobileActivitiesCtx">
-                <Authorized>
-                    <a href="/transactions" class="nav-tab @(IsActive("/transactions") ? "active" : "")">
-                        <span class="tab-icon">📋</span>
-                        <span>Transactions</span>
-                    </a>
-                </Authorized>
-                <NotAuthorized>
-                    <button class="nav-tab @(IsActivitiesActive() ? "active" : "")"
-                            @onclick="() => { _activitiesSheetOpen = !_activitiesSheetOpen; _adminSheetOpen = false; }">
-                        <span class="tab-icon">🎮</span>
-                        <span>Activities</span>
-                    </button>
-                </NotAuthorized>
-            </AuthorizeView>
-            <AuthorizeView Roles="Admin,Staff,Volunteer" Context="hubMobileCtx">
-                <a href="/hub/schedule" class="nav-tab @(IsActive("/hub") ? "active" : "")">
-                    <span class="tab-icon">📋</span>
-                    <span>Hub</span>
-                </a>
-            </AuthorizeView>
+            <a href="/hub/announcements" class="nav-tab @(IsHubActive() ? "active" : "")">
+                <span class="tab-icon">📋</span>
+                <span>Hub</span>
+            </a>
+            <button class="nav-tab @(IsGameActive() ? "active" : "")"
+                    @onclick="() => { _gameSheetOpen = !_gameSheetOpen; _adminSheetOpen = false; }">
+                <span class="tab-icon">🎮</span>
+                <span>Game</span>
+            </button>
             <AuthorizeView Roles="Admin" Context="mobileAdminCtx">
                 <button class="nav-tab @(_adminSheetOpen ? "active" : "")"
-                        @onclick="() => { _adminSheetOpen = !_adminSheetOpen; _activitiesSheetOpen = false; }">
+                        @onclick="() => { _adminSheetOpen = !_adminSheetOpen; _gameSheetOpen = false; }">
                     <span class="tab-icon">⚙️</span>
                     <span>Admin</span>
                 </button>
@@ -312,15 +320,16 @@
     </Authorized>
 </AuthorizeView>
 
-@* ── ACTIVITIES BOTTOM SHEET (mobile) ────────────────────────────── *@
-@if (_activitiesSheetOpen)
+@* ── GAME BOTTOM SHEET (mobile) ───────────────────────────────────── *@
+@if (_gameSheetOpen)
 {
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
-         @onclick="() => _activitiesSheetOpen = false"></div>
-    <div class="nav-activities-sheet">
-        <a href="/board"     @onclick="() => _activitiesSheetOpen = false">🗺️ Board Game</a>
+         @onclick="() => _gameSheetOpen = false"></div>
+    <div class="nav-game-sheet">
+        <a href="/"          @onclick="() => _gameSheetOpen = false">📊 Leaderboard</a>
+        <a href="/board"     @onclick="() => _gameSheetOpen = false">🗺️ Board Game</a>
         <AuthorizeView Roles="Admin">
-            <a href="/minigames" @onclick="() => _activitiesSheetOpen = false">🎲 Mini-Game</a>
+            <a href="/minigames" @onclick="() => _gameSheetOpen = false">🎲 Mini-Game</a>
         </AuthorizeView>
     </div>
 }
@@ -344,9 +353,10 @@
 @code {
     [Parameter] public EventCallback OnLeaderboardClick { get; set; }
 
-    private bool _activitiesDropdownOpen;
-    private bool _activitiesSheetOpen;
+    private bool _hubDropdownOpen;
+    private bool _gameDropdownOpen;
     private bool _adminDropdownOpen;
+    private bool _gameSheetOpen;
     private bool _adminSheetOpen;
 
     private bool IsActive(string href) =>
@@ -355,21 +365,36 @@
             : ("/" + Nav.ToBaseRelativePath(Nav.Uri))
                 .StartsWith(href, StringComparison.OrdinalIgnoreCase);
 
-    private bool IsActivitiesActive() =>
-        IsActive("/board") || IsActive("/minigames");
+    private bool IsScheduleActive() => IsActive("/hub/schedule");
+
+    private bool IsHubActive()
+    {
+        var path = "/" + Nav.ToBaseRelativePath(Nav.Uri);
+        return path.StartsWith("/hub", StringComparison.OrdinalIgnoreCase)
+            && !path.StartsWith("/hub/schedule", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsGameActive() =>
+        IsActive("/") || IsActive("/board") || IsActive("/minigames");
 
     private string ActiveStyle(string href, string color)
     {
-        var active = href.StartsWith("/__") ? false : IsActive(href);
+        var active = IsActive(href);
         return active
             ? $"border-color:{color};box-shadow:2px 2px 0 {color};background:{color};color:#1A1A1A"
             : "";
     }
 
-    private string ActivitiesDropdownStyle()
+    private string HubDropdownStyle()
     {
-        var active = IsActive("/board") || IsActive("/minigames");
-        return active
+        return IsHubActive()
+            ? "border-color:#2980B9;box-shadow:2px 2px 0 #2980B9;background:#2980B9;color:#1A1A1A"
+            : "";
+    }
+
+    private string GameDropdownStyle()
+    {
+        return IsGameActive()
             ? "border-color:#F5C800;box-shadow:2px 2px 0 #F5C800;background:#F5C800;color:#1A1A1A"
             : "";
     }

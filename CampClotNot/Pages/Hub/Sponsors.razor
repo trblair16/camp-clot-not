@@ -26,7 +26,7 @@
                 {
                     <a href="@s.Website" target="_blank" rel="noopener noreferrer" style="text-decoration:none">
                         <div class="sponsor-tile">
-                            <img src="@s.LogoUrl" alt="@s.Name" style="height:80px;width:auto;max-width:160px;object-fit:contain" />
+                            <img src="@LogoSrc(s)" alt="@s.Name" style="height:80px;width:auto;max-width:160px;object-fit:contain" />
                             <div style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--black);margin-top:8px;text-align:center">@s.Name</div>
                         </div>
                     </a>
@@ -34,7 +34,7 @@
                 else
                 {
                     <div class="sponsor-tile">
-                        <img src="@s.LogoUrl" alt="@s.Name" style="height:80px;width:auto;max-width:160px;object-fit:contain" />
+                        <img src="@LogoSrc(s)" alt="@s.Name" style="height:80px;width:auto;max-width:160px;object-fit:contain" />
                         <div style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--black);margin-top:8px;text-align:center">@s.Name</div>
                     </div>
                 }
@@ -75,4 +75,7 @@
         _sponsors = await SponsorSvc.GetAllForEventAsync(Services.SeedService.Id.EventCcn2026);
         _loading  = false;
     }
+
+    private static string LogoSrc(Sponsor s) =>
+        s.LogoData is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
 }
