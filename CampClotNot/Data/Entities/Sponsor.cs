@@ -6,7 +6,9 @@ public class Sponsor
     public Guid EventId { get; set; }
     public Event Event { get; set; } = null!;
     public string Name { get; set; } = "";
-    public string LogoUrl { get; set; } = "";
+    public string? LogoUrl { get; set; }
+    public byte[]? LogoData { get; set; }
+    public string? LogoContentType { get; set; }
     public string? Website { get; set; }
     public int SortOrder { get; set; }
 }
