@@ -76,8 +76,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // InfoPage: non-conventional PK (PageId, not InfoPageId)
         modelBuilder.Entity<InfoPage>().HasKey(p => p.PageId);
 
-        // ScheduleEvent: non-conventional PK
+        // ScheduleEvent: non-conventional PK; CreatedBy is the FK to Users (not the shadow CreatedByUserUserId)
         modelBuilder.Entity<ScheduleEvent>().HasKey(e => e.ScheduleEventId);
+        modelBuilder.Entity<ScheduleEvent>()
+            .HasOne(e => e.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(e => e.CreatedBy);
 
         // ScheduleEventGroup: composite PK
         modelBuilder.Entity<ScheduleEventGroup>()
