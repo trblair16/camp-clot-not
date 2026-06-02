@@ -247,7 +247,7 @@
                     @if (_gameDropdownOpen)
                     {
                         <div class="nav-admin-panel">
-                            <a href="/" @onclick="() => _gameDropdownOpen = false">📊 Leaderboard</a>
+                            <a href="/dashboard" @onclick="() => _gameDropdownOpen = false">📊 Leaderboard</a>
                             <a href="/board" @onclick="() => _gameDropdownOpen = false">🗺️ Board Game</a>
                             <AuthorizeView Roles="Admin" Context="gameAdminCtx">
                                 <a href="/minigames" @onclick="() => _gameDropdownOpen = false">🎲 Mini-Game</a>
@@ -326,7 +326,7 @@
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _gameSheetOpen = false"></div>
     <div class="nav-game-sheet">
-        <a href="/"          @onclick="() => _gameSheetOpen = false">📊 Leaderboard</a>
+        <a href="/dashboard" @onclick="() => _gameSheetOpen = false">📊 Leaderboard</a>
         <a href="/board"     @onclick="() => _gameSheetOpen = false">🗺️ Board Game</a>
         <AuthorizeView Roles="Admin">
             <a href="/minigames" @onclick="() => _gameSheetOpen = false">🎲 Mini-Game</a>
@@ -375,7 +375,7 @@
     }
 
     private bool IsGameActive() =>
-        IsActive("/") || IsActive("/board") || IsActive("/minigames");
+        IsActive("/dashboard") || IsActive("/board") || IsActive("/minigames");
 
     private string ActiveStyle(string href, string color)
     {
