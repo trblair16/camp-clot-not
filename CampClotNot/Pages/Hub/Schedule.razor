@@ -232,11 +232,11 @@
     private bool _isAdminOrStaff;
     private bool _showForm;
     private Guid? _userGroupId;
-    private Dictionary<DateOnly, List<ScheduleEvent>> _eventsByDay = [];
-    private HashSet<DateOnly> _expandedDays = [];
-    private List<Location> _locations = [];
-    private List<Activity> _activities = [];
-    private List<Group> _groups = [];
+    private Dictionary<DateOnly, List<ScheduleEvent>> _eventsByDay = new();
+    private HashSet<DateOnly> _expandedDays = new();
+    private List<Location> _locations = new();
+    private List<Activity> _activities = new();
+    private List<Group> _groups = new();
     private Guid _editingId;
     private Guid _userId;
 
@@ -248,7 +248,7 @@
     private TimeSpan? _fEnd;
     private ScheduleEventType _fType = ScheduleEventType.Activity;
     private Guid? _fLocationId;
-    private List<AssignmentFormRow> _fAssignments = [];
+    private List<AssignmentFormRow> _fAssignments = new();
     private bool _assignmentsExpanded;
 
     protected override async Task OnInitializedAsync()

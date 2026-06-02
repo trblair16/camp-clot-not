@@ -20,5 +20,5 @@ public class ScheduleEvent
     public Guid CreatedBy { get; set; }
     public User CreatedByUser { get; set; } = null!;
     public DateTime UpdatedAt { get; set; }
-    public List<ScheduleEventGroup> EventGroups { get; set; } = [];
+    public List<ScheduleEventGroup> EventGroups { get; set; } = new();
 }

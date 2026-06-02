@@ -122,8 +122,8 @@
     private bool _isAdmin;
     private bool _showForm;
     private bool _showImport;
-    private List<StaffMember> _members = [];
-    private List<User> _eligibleUsers = [];
+    private List<StaffMember> _members = new();
+    private List<User> _eligibleUsers = new();
     private StaffMember _form = new() { AvatarEmoji = "👤", IsVisible = true };
 
     protected override async Task OnInitializedAsync()

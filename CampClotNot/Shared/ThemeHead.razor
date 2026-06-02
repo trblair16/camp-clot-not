@@ -78,8 +78,8 @@
     @@keyframes pulseBorder { 0%,100%{opacity:.5} 50%{opacity:1} }
 
     /* FAB clears the bottom nav bar on mobile */
-    @@media (max-width: 768px) {
-        .ccn-fab-mobile { bottom: 80px !important; }
+    @@media (max-width: 1023px) {
+        .ccn-fab-mobile { bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
     }
 
     /* ── MudTabs neo-brutalist override ── */

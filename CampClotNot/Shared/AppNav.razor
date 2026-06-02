@@ -7,10 +7,15 @@
     .nav-desktop-header { display: none; }
     .nav-bottom-bar     { display: flex; }
 
-    @@media (min-width: 769px) {
+    @@media (min-width: 1024px) {
         .nav-mobile-header  { display: none; }
         .nav-desktop-header { display: flex; }
         .nav-bottom-bar     { display: none; }
+    }
+
+    /* Belt-and-suspenders: keep desktop header off on phone landscape */
+    @@media (max-width: 1023px) {
+        .nav-desktop-header { display: none !important; }
     }
 
     /* ── Mobile header ── */
@@ -18,9 +23,9 @@
         width: 100%;
         background: var(--black);
         border-bottom: 4px solid var(--color-primary);
-        height: 72px;
-        padding: 0 16px;
-        align-items: center;
+        height: calc(72px + env(safe-area-inset-top));
+        padding: env(safe-area-inset-top) 16px 0;
+        align-items: flex-end;
         justify-content: space-between;
         position: sticky;
         top: 0;
@@ -109,16 +114,17 @@
         background: var(--bg-base);
         border-top: 4px solid var(--black);
         z-index: 40;
-        justify-content: stretch;
         padding-bottom: env(safe-area-inset-bottom);
+        align-items: flex-start;
     }
     .nav-tab {
         flex: 1;
+        height: 56px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 8px 4px 6px;
+        padding: 4px;
         gap: 2px;
         border: none;
         border-top: 3px solid transparent;
@@ -129,7 +135,6 @@
         font-family: 'Fredoka One', cursive;
         font-size: 10px;
         letter-spacing: 0.5px;
-        min-height: 56px;
         transition: color .15s, border-color .15s;
     }
     .nav-tab.active {
@@ -142,14 +147,14 @@
     .nav-admin-sheet,
     .nav-activities-sheet {
         position: fixed;
-        bottom: calc(64px + env(safe-area-inset-bottom));
+        bottom: calc(60px + env(safe-area-inset-bottom));
         left: 0;
         right: 0;
         background: var(--panel-bg);
         border-top: 4px solid var(--black);
         border-radius: 16px 16px 0 0;
         box-shadow: 0 -4px 0 var(--black);
-        z-index: 45;
+        z-index: 52;
         animation: slideUp .2s ease;
     }
     .nav-admin-sheet a,
@@ -185,10 +190,6 @@
         </div>
         <ConnectionIndicator />
     </div>
-    <button class="ccn-btn" style="font-size:12px;padding:7px 14px;background:var(--color-primary)"
-            @onclick="OnLeaderboardClick">
-        📺 Leaderboard
-    </button>
 </div>
 
 @* ── DESKTOP HEADER ─────────────────────────────────────────────── *@
@@ -314,7 +315,7 @@
 @* ── ACTIVITIES BOTTOM SHEET (mobile) ────────────────────────────── *@
 @if (_activitiesSheetOpen)
 {
-    <div style="position:fixed;inset:0;z-index:44;background:rgba(26,26,26,.4)"
+    <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _activitiesSheetOpen = false"></div>
     <div class="nav-activities-sheet">
         <a href="/board"     @onclick="() => _activitiesSheetOpen = false">🗺️ Board Game</a>
@@ -327,7 +328,7 @@
 @* ── ADMIN BOTTOM SHEET (mobile) ─────────────────────────────────── *@
 @if (_adminSheetOpen)
 {
-    <div style="position:fixed;inset:0;z-index:44;background:rgba(26,26,26,.4)"
+    <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _adminSheetOpen = false"></div>
     <div class="nav-admin-sheet">
         <a href="/transactions"    @onclick="() => _adminSheetOpen = false">📋 Transactions</a>
