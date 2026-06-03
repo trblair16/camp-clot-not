@@ -314,7 +314,7 @@ IncidentReport     — IncidentReportId, EventId, DateOfIncident, DateCompleted,
                      PersonsInvolved, Description, RecommendedAction,
                      SubmittedByUserId, SubmittedByName, SubmittedByRole, SubmittedAt,
                      IsAcknowledged, AcknowledgedByUserId?, AcknowledgedByName?, AcknowledgedAt?
-Sponsor            — SponsorId, EventId, Name, LogoUrl, Website?, SortOrder
+Sponsor            — SponsorId, EventId, Name, LogoUrl?, LogoData (binary)?, LogoContentType?, Website?, SortOrder
 
 -- Future / v1.1+
 PushSubscription   — SubscriptionId, UserId, Endpoint, P256DH, Auth,
@@ -536,7 +536,10 @@ Camp is June 20-25, 2026.
 | ~May 28 | v0.3.1 — UI Overhaul ✅ | Neo-brutalist redesign, cream bg, rank rows, ccn-coin/star assets, real group names & logos |
 | ~May 16 | v0.4.0 — Mini-Games & Display ✅ | Mini-game spinner (3-way split: /minigames, /minigames/display, /admin/games), LiveHub rename, Activities dropdown nav, login page redesign |
 | ~June 7 | v0.5.0 — Camp Info Hub + PWA ✅ | Hub features (§8.1–8.4), PWA manifest + service worker + install flow (§8.9), Railway production setup |
-| ~May 28 | v0.5.1 — Hub Additions (in progress) | Mobile/PWA fixes, Incident Reports (§8.10), Sponsors (§8.11), Info seed cleanup, PrintLayout |
+| ~May 28 | v0.5.1 — Hub Additions ✅ | Mobile/PWA fixes, Incident Reports (§8.10), Sponsors (§8.11), Info seed cleanup, PrintLayout |
+| ~June 2 | v0.5.2 — Schedule Admin + Sponsor Logos ✅ | Sponsor binary logo upload, `/admin/schedule` CRUD, schedule day tabs, nav restructure, `/` → `/hub/schedule` redirect |
+| ~June 2 | v0.5.3 — Activities Admin ✅ | `/admin/activities` CRUD for MinuteToWinIt activities (Vicki/Amanda configurable) |
+| ~June 2 | v0.5.4 — Schedule Save Fix ✅ | Bug fix: EF shadow FK on `ScheduleEvent.CreatedByUser` caused circuit crash on save; explicit `HasForeignKey` + migration |
 | ~June 7-8 | v1.0.0-rc — Dry Run | Full dress rehearsal. Staff test on real devices. Projector verified. Issues logged. |
 | ~June 13 | v1.0.0 — Camp Ready | Dry run issues resolved. Production seeded. Staff briefed. One week buffer. |
 | June 20 | 🏕️ CAMP | Super Clot Not Party '26 is live |
@@ -786,9 +789,11 @@ ScheduleEventGroup — EventId, GroupId  (bridge; only populated when AppliesToA
 - Any staff role can add, edit, delete events — no approval flow
 - Empty state: "No events scheduled for this day — tap + to add one"
 
+**Admin CRUD:** `/admin/schedule` — Admin-only page for pre-loading the full week's schedule before camp. Vicki/Amanda can configure all events. Form panel + table pattern (matching `/admin/locations`). Group assignment overrides (Activity, Location, Note per group) are collapsible within the form.
+
 **Scope boundary:** Staff-only. No camper-facing view in beta. No recurring event support.
 
-**System name:** `ScheduleEvent` / `IScheduleService` / `/hub/schedule`
+**System name:** `ScheduleEvent` / `ScheduleService` / `/hub/schedule` / `/admin/schedule`
 
 ---
 
@@ -1012,13 +1017,17 @@ Admin manages a list of event sponsors (name, logo URL, optional website link, s
 
 **Admin CRUD:** `/admin/sponsors` — same table/form panel pattern as `/admin/locations`. Accessible from Admin desktop dropdown and mobile admin sheet.
 
-**Logo storage:** External URL only — no file upload in v0.5.1.
+**Logo storage:** Binary upload supported as of v0.5.2. `Sponsor` entity has `LogoData (byte[]?)` + `LogoContentType (string?)`. Logo served via streaming endpoint `/sponsor-logo/{id}`. Falls back to `LogoUrl` string if no binary data. `LogoUrl` remains nullable.
 
 **System name:** `Sponsor` / `SponsorService` / `/hub/sponsors`
 
 ---
 
-### 8.12 Shared Dialog Pattern (planned v0.5.2)
+### 8.12 Mini-Game Activities Admin (v0.5.3)
+
+Admin CRUD at `/admin/activities` for MinuteToWinIt activities (e.g. "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay"). Vicki/Amanda can add, rename, and delete activities. Deletion is blocked if the activity is assigned to a `ScriptedMiniGame`. These are the same activities used by the evening spinner and group assignment overrides on schedule events.
+
+### 8.13 Shared Dialog Pattern (planned post-v0.5.1)
 
 All form modals use the same visual shell: `rgba(26,26,26,.65)` backdrop with `animation:fadeIn .2s ease`, centered `ccn-panel` with `animation:popIn .25s ease` and `box-shadow:8px 8px 0 var(--black)`. Currently duplicated across `LogTransactionDialog` and the Report Incident modal in `HubSubNav.razor`.
 
@@ -1245,4 +1254,4 @@ Each exclusion is a deliberate decision, not an oversight. Revisit only if a spe
 ---
 
 *Camp Clot Not · Super Party 2026 · Requirements, Asset Spec & Architecture Guide · Tyler Blair*  
-*Last updated: 2026-05-27 — v0.5.1: §8.10 Incident Reports, §8.11 Sponsors, §8.12 shared dialog pattern; §8.4 seed slugs updated; §8.5 permission matrix updated; data model updated; milestone added*
+*Last updated: 2026-06-02 — v0.5.2–v0.5.4: §8.1 schedule admin CRUD added; §8.11 sponsor binary logo upload; §8.12 activities admin (MinuteToWinIt); §8.13 shared dialog pattern (renumbered); milestones updated; data model updated; Pitfall #13 (EF shadow FK) added to CLAUDE.md*
