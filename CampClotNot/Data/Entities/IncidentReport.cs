@@ -10,6 +10,10 @@ public class IncidentReport
     public string PersonsInvolved { get; set; } = "";
     public string Description { get; set; } = "";
     public string RecommendedAction { get; set; } = "";
+    public Guid? IncidentLocationId { get; set; }
+    public Location? IncidentLocation { get; set; }
+    public string? IncidentLocationOther { get; set; }
+    public IncidentReportType ReportType { get; set; } = IncidentReportType.Internal;
     public Guid SubmittedByUserId { get; set; }
     public string SubmittedByName { get; set; } = "";
     public string SubmittedByRole { get; set; } = "";

@@ -10,9 +10,10 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     public static class Id
     {
         // UserRoles
-        public static readonly Guid RoleAdmin     = new("00000001-0001-0001-0001-000000000001");
-        public static readonly Guid RoleStaff     = new("00000001-0001-0001-0001-000000000002");
-        public static readonly Guid RoleVolunteer = new("00000001-0001-0001-0001-000000000004");
+        public static readonly Guid RoleAdmin        = new("00000001-0001-0001-0001-000000000001");
+        public static readonly Guid RoleStaff        = new("00000001-0001-0001-0001-000000000002");
+        public static readonly Guid RoleMedicalStaff = new("00000001-0001-0001-0001-000000000003");
+        public static readonly Guid RoleVolunteer    = new("00000001-0001-0001-0001-000000000004");
 
         // Authorities
         public static readonly Guid AuthLogTransaction   = new("00000002-0002-0002-0002-000000000001");
@@ -143,9 +144,10 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     {
         var defs = new[]
         {
-            new { Id = Id.RoleAdmin,     Name = "Admin",     Description = "Full system access",                       SystemName = nameof(Role.Admin) },
-            new { Id = Id.RoleStaff,     Name = "Staff",     Description = "Camp staff — full Hub access",             SystemName = nameof(Role.Staff) },
-            new { Id = Id.RoleVolunteer, Name = "Volunteer", Description = "Counselor / volunteer — limited access",   SystemName = nameof(Role.Volunteer) },
+            new { Id = Id.RoleAdmin,        Name = "Admin",         Description = "Full system access",                            SystemName = nameof(Role.Admin) },
+            new { Id = Id.RoleStaff,        Name = "Staff",         Description = "Camp staff — full Hub access",                  SystemName = nameof(Role.Staff) },
+            new { Id = Id.RoleMedicalStaff, Name = "Medical Staff", Description = "Medical team — can view and act on incidents",  SystemName = nameof(Role.MedicalStaff) },
+            new { Id = Id.RoleVolunteer,    Name = "Volunteer",     Description = "Counselor / volunteer — limited access",        SystemName = nameof(Role.Volunteer) },
         };
         foreach (var def in defs)
         {
@@ -189,9 +191,11 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthManageShop },
             new { RoleId = Id.RoleAdmin,     AuthId = Id.AuthAccessAdminPanel },
             // Staff: transactions
-            new { RoleId = Id.RoleStaff,     AuthId = Id.AuthLogTransaction },
+            new { RoleId = Id.RoleStaff,        AuthId = Id.AuthLogTransaction },
+            // Medical Staff: transactions only (incident view handled by role check in UI/service, not Authority)
+            new { RoleId = Id.RoleMedicalStaff, AuthId = Id.AuthLogTransaction },
             // Volunteer: transactions only
-            new { RoleId = Id.RoleVolunteer, AuthId = Id.AuthLogTransaction },
+            new { RoleId = Id.RoleVolunteer,    AuthId = Id.AuthLogTransaction },
         };
         foreach (var def in defs)
         {
@@ -333,10 +337,9 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedGroupsAsync(AppDbContext db)
     {
-        // CCN 2026 confirmed cabin groups.
+        // CCN 2026 confirmed cabin groups — 3 groups (Mini Marios removed before camp).
         var defs = new[]
         {
-            new { Id = Id.Group1, Name = "Mini Marios",        ShortName = "MM", Color = "#E74C3C", Logo = "/img/mini-marios-logo.png" },
             new { Id = Id.Group2, Name = "Blue Shell Bandits", ShortName = "BB", Color = "#2980B9", Logo = "/img/blue-shell-bandits-logo.png" },
             new { Id = Id.Group3, Name = "Mushroom Militia",   ShortName = "MU", Color = "#27AE60", Logo = "/img/mushroom-militia-logo.png" },
             new { Id = Id.Group4, Name = "Luma Legends",       ShortName = "LL", Color = "#8E44AD", Logo = "/img/luma-legends-logo.png" },
@@ -526,7 +529,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     // Initialize all groups at the Start space (index 0); skip groups that already have a position
     private async Task SeedGroupBoardPositionsAsync(AppDbContext db)
     {
-        var groupIds = new[] { Id.Group1, Id.Group2, Id.Group3, Id.Group4 };
+        var groupIds = new[] { Id.Group2, Id.Group3, Id.Group4 };
         foreach (var groupId in groupIds)
         {
             if (!await db.GroupBoardPositions.AnyAsync(p => p.GroupId == groupId))
