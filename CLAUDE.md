@@ -338,7 +338,24 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 
 - **DB:** PostgreSQL local, database `hbda_dev`
 - **Connection string:** `CampClotNot/appsettings.Development.json` (gitignored)
-- **Run migrations:** `dotnet ef database update` from `CampClotNot/`
+- **Run migrations (local):** `dotnet ef database update` from `CampClotNot/`
 - **Start app:** `dotnet run` from `CampClotNot/` or F5 in Visual Studio
 - **Login (dev):** `tyler@hbda.local` / `DevAdmin1!` (seeded from appsettings.Development.json)
 - **gh CLI:** `& "$env:LOCALAPPDATA\Programs\gh\gh.exe" <command>` from PowerShell
+
+## Running Migrations on Production (Railway)
+
+Railway's internal DB URL does not resolve outside Railway's network. Use the `--connection` flag with the **public** TCP proxy URL from Railway → Postgres service → Settings → Public Networking.
+
+```powershell
+dotnet ef database update `
+  --project "C:\Users\TRBla\source\repos\camp-clot-not\CampClotNot" `
+  --connection 'Host=zephyr.proxy.rlwy.net;Port=13245;Database=railway;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Require;Trust Server Certificate=true'
+```
+
+**Notes:**
+- Use **single quotes** around the connection string — prevents PowerShell from expanding `$` characters in the password
+- `Port=13245` is the Railway TCP proxy port (not 5432 — Railway never uses the default port publicly)
+- `Host=zephyr.proxy.rlwy.net` — get the current host/port from Railway → Postgres → Settings → Public Networking if this changes
+- Do NOT set `DATABASE_URL` or `ASPNETCORE_ENVIRONMENT` env vars — the `--connection` flag bypasses Program.cs entirely
+- Successful output ends with: `Applying migration 'XXXXXX_MigrationName'` then `Done`
