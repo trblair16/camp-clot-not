@@ -10,9 +10,9 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ## Current State (as of 2026-06-03)
 
-**Active branch:** `feature/118-v055-improvements` (off `dev`) — ready to merge
-**Released to main:** v0.5.4 — schedule save bug fix
-**GitHub issue:** #118 — v0.5.5 scope (all items complete, pending PR)
+**Active branch:** none — start `feature/N-v056-schedule-item-types` (open GitHub issue first)
+**Released to main:** v0.5.5 — photos, sponsor enhancements, schedule improvements, dashboard
+**Next:** v0.5.6 — table-driven ScheduleItemType + rename ScheduleEvent → ScheduleItem (see below)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -137,7 +137,50 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - [x] `/hub/incidents` + `/hub/incidents/{id}/print`: `MedicalStaff` role added alongside `Admin`
 - [x] `/admin/users` role dropdown: Medical Staff option added
 
-**Next:** v1.0.0-rc — Dry Run
+**v0.5.6 — Planned (feature/N-v056-schedule-item-types, issue TBD):**
+
+*Goal:* Replace the `ScheduleEventType` C# enum with a table-driven system so Vicki/Amanda can manage schedule item types per event without a code deploy.
+
+*Rename:*
+- `ScheduleEvent` entity/table → `ScheduleItem`
+- `ScheduleEventType` enum → removed; replaced by `ScheduleItemType` entity/table
+
+*New entities:*
+- **`ScheduleItemType`** — master catalog of schedule item types
+  - `ScheduleItemTypeId (Guid PK)`
+  - `Name (string)` — display name, editable by admins
+  - `SystemName (string)` — stable code identifier (e.g. "Presentation"), used for special-case UI logic
+  - `Description (string?)`
+  - `SortOrder (int)` — controls dropdown order
+  - Seeded with current six types: Activity, Meal, Travel, Free, Mandatory, Presentation
+- **`EventScheduleItemType`** — join table, defines which types are active for a given event
+  - `EventId (Guid FK → Event)`
+  - `ScheduleItemTypeId (Guid FK → ScheduleItemType)`
+  - Seeded: CCN 2026 gets all six types enabled by default
+
+*`ScheduleItem` changes:*
+- `EventType (ScheduleEventType enum)` column dropped
+- `ScheduleItemTypeId (Guid FK → ScheduleItemType)` added
+- All other columns unchanged
+
+*Special-case UI behavior:*
+- Presenter fields (PresenterName/Bio) shown when `ScheduleItemType.SystemName == "Presentation"` — same logic as before, just keyed off SystemName string instead of enum value
+- "Travel" displays as "Arrival/Departure" in the same way — keyed off `SystemName == "Travel"`
+
+*Service changes:*
+- `ScheduleService` — update all queries to include `ScheduleItemType`, update `ScheduleEventDto` to use `ScheduleItemTypeId` instead of enum
+- `ScheduleEventDto` rename to `ScheduleItemDto`
+- New `ScheduleItemTypeService` — CRUD for schedule item types, `GetForEventAsync(eventId)` for dropdowns
+
+*Pages:*
+- `/hub/schedule` — dropdown populated from `EventScheduleItemType` for active event; type badge uses `ScheduleItemType.Name`
+- `/admin/schedule` — same dropdown; type badge
+- `/admin/schedule-item-types` (new) — Admin CRUD for `ScheduleItemType` master list + per-event enable/disable
+- `AppNav` — add `/admin/schedule-item-types` to Admin dropdown
+
+*Migration:* new migration renames table, drops enum column, adds FK column, adds two new tables. **Prod note:** existing `ScheduleEvent` rows must have their integer enum values mapped to the new `ScheduleItemTypeId` FK in a data migration step — seed IDs must be stable GUIDs set in `SeedService.Id`.
+
+**Next after v0.5.6:** v1.0.0-rc — Dry Run
 
 ---
 
