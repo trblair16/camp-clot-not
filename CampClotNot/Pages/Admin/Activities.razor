@@ -1,6 +1,7 @@
 @page "/admin/activities"
 @attribute [Authorize(Roles = "Admin")]
 @inject MiniGameService MiniGameSvc
+@inject LocationService LocationSvc
 @inject ISnackbar Snackbar
 
 <PageTitle>Activities — Camp Clot Not</PageTitle>
@@ -23,10 +24,23 @@
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
             </div>
 
-            <div style="margin-bottom:16px">
+            <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Description (optional)</div>
                 <input type="text" @bind="_fDescription" placeholder="Short description"
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:16px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Location (optional — used for board space image)</div>
+                <select value="@(_fLocationId?.ToString() ?? "")"
+                        @onchange="e => _fLocationId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null"
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box">
+                    <option value="">— No location —</option>
+                    @foreach (var loc in _locations)
+                    {
+                        <option value="@loc.LocationId">@loc.Name</option>
+                    }
+                </select>
             </div>
 
             <div style="display:flex;gap:8px">
@@ -56,15 +70,18 @@
                             <tr style="background:var(--black)">
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Description</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Location</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var a in _activities)
                             {
+                                var locName = a.LocationId.HasValue ? _locations.FirstOrDefault(l => l.LocationId == a.LocationId.Value)?.Name : null;
                                 <tr style="border-bottom:2px solid #E8E0CC">
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@a.Name</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(string.IsNullOrEmpty(a.Description) ? "—" : a.Description)</td>
+                                    <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(locName ?? "—")</td>
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(a)">Edit</button>
@@ -84,13 +101,16 @@
 
 @code {
     private List<Activity> _activities = new();
+    private List<Location> _locations = new();
     private bool _loading = true;
     private Guid _editingId;
     private string _fName = "";
     private string _fDescription = "";
+    private Guid? _fLocationId;
 
     protected override async Task OnInitializedAsync()
     {
+        _locations = await LocationSvc.GetAllAsync();
         await Reload();
         _loading = false;
     }
@@ -105,18 +125,19 @@
         _editingId    = a.ActivityId;
         _fName        = a.Name;
         _fDescription = a.Description;
+        _fLocationId  = a.LocationId;
     }
 
     private void CancelEdit()
     {
         _editingId = Guid.Empty;
-        _fName = ""; _fDescription = "";
+        _fName = ""; _fDescription = ""; _fLocationId = null;
     }
 
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(_fName)) return;
-        await MiniGameSvc.UpsertActivityAsync(_editingId, SeedService.Id.EventCcn2026, _fName.Trim(), _fDescription.Trim());
+        await MiniGameSvc.UpsertActivityAsync(_editingId, SeedService.Id.EventCcn2026, _fName.Trim(), _fDescription.Trim(), _fLocationId);
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
         CancelEdit();
         await Reload();

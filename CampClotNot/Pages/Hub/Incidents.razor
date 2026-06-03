@@ -1,5 +1,5 @@
 @page "/hub/incidents"
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,MedicalStaff")]
 @inject IncidentReportService IncidentSvc
 @inject AuthenticationStateProvider Auth
 @inject ISnackbar Snackbar
@@ -28,6 +28,8 @@
                         <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Date</th>
                         <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Submitted By</th>
                         <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Persons Involved</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Location</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Type</th>
                         <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Status</th>
                         <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
                     </tr>
@@ -43,8 +45,21 @@
                                 @r.SubmittedByName<br />
                                 <span style="font-size:11px;color:var(--text-light)">@r.SubmittedByRole</span>
                             </td>
-                            <td style="padding:10px 14px;font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                @(r.PersonsInvolved.Length > 60 ? r.PersonsInvolved[..60] + "…" : r.PersonsInvolved)
+                            <td style="padding:10px 14px;font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                @(r.PersonsInvolved.Length > 50 ? r.PersonsInvolved[..50] + "…" : r.PersonsInvolved)
+                            </td>
+                            <td style="padding:10px 14px;font-size:12px;color:var(--text-mid);white-space:nowrap">
+                                @(r.IncidentLocation?.Name ?? (r.IncidentLocationOther is not null ? $"Other: {r.IncidentLocationOther}" : "—"))
+                            </td>
+                            <td style="padding:10px 14px;font-size:11px;white-space:nowrap">
+                                @if (r.ReportType == IncidentReportType.ChildrensHarbor)
+                                {
+                                    <span style="background:#2980B9;color:white;padding:2px 7px;border-radius:4px;font-weight:700">CH</span>
+                                }
+                                else
+                                {
+                                    <span style="background:#888;color:white;padding:2px 7px;border-radius:4px;font-weight:700">INT</span>
+                                }
                             </td>
                             <td style="padding:10px 14px;font-size:12px">
                                 @if (r.IsAcknowledged)

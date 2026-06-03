@@ -143,8 +143,20 @@
                                 }
 
                                 <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@EventTypeBadgeColor(ev.EventType);color:white;font-family:'Fredoka One',cursive">
-                                    @ev.EventType
+                                    @DisplayEventType(ev.EventType)
                                 </span>
+
+                                @if (ev.EventType == ScheduleEventType.Presentation && ev.PresenterName is not null)
+                                {
+                                    <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
+                                    @if (ev.PresenterBio is not null)
+                                    {
+                                        <details style="margin-top:4px">
+                                            <summary style="font-size:12px;color:var(--text-light);cursor:pointer;font-family:'Fredoka One',cursive">About the speaker</summary>
+                                            <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">@ev.PresenterBio</div>
+                                        </details>
+                                    }
+                                }
 
                                 @if (_isAdminOrStaff && ev.EventGroups.Any())
                                 {
@@ -202,9 +214,14 @@
             <MudSelect @bind-Value="_fType"        Label="Event Type" Class="mb-3">
                 @foreach (var t in Enum.GetValues<ScheduleEventType>())
                 {
-                    <MudSelectItem Value="@t">@t</MudSelectItem>
+                    <MudSelectItem Value="@t">@DisplayEventType(t)</MudSelectItem>
                 }
             </MudSelect>
+            @if (_fType == ScheduleEventType.Presentation)
+            {
+                <MudTextField @bind-Value="_fPresenterName" Label="Presenter Name" Class="mb-3" />
+                <MudTextField @bind-Value="_fPresenterBio"  Label="Presenter Bio (optional)" Lines="3" Class="mb-3" />
+            }
             <MudTextField @bind-Value="_fDesc"     Label="Description (optional)" Lines="2" Class="mb-3" />
 
             <MudSelect @bind-Value="_fLocationId" Label="Location (optional)" Class="mb-3" Clearable="true">
@@ -306,6 +323,8 @@
     private TimeSpan? _fEnd;
     private ScheduleEventType _fType = ScheduleEventType.Activity;
     private Guid? _fLocationId;
+    private string? _fPresenterName;
+    private string? _fPresenterBio;
     private List<AssignmentFormRow> _fAssignments = new();
     private bool _assignmentsExpanded;
 
@@ -370,12 +389,13 @@
 
     private void OpenAddForm()
     {
-        _editingId   = Guid.Empty;
-        _fTitle      = ""; _fDesc = null;
-        _fDate       = _selectedDay?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
-        _fStart      = new TimeSpan(9, 0, 0); _fEnd = null;
-        _fType       = ScheduleEventType.Activity;
-        _fLocationId = null;
+        _editingId      = Guid.Empty;
+        _fTitle         = ""; _fDesc = null;
+        _fDate          = _selectedDay?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
+        _fStart         = new TimeSpan(9, 0, 0); _fEnd = null;
+        _fType          = ScheduleEventType.Activity;
+        _fLocationId    = null;
+        _fPresenterName = null; _fPresenterBio = null;
         _fAssignments        = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _showForm            = true;
@@ -383,14 +403,16 @@
 
     private void OpenEditForm(ScheduleEvent ev)
     {
-        _editingId   = ev.ScheduleEventId;
-        _fTitle      = ev.Title;
-        _fDesc       = ev.Description;
-        _fDate       = ev.CampDay.ToDateTime(TimeOnly.MinValue);
-        _fStart      = ev.StartTime.ToTimeSpan();
-        _fEnd        = ev.EndTime?.ToTimeSpan();
-        _fType       = ev.EventType;
-        _fLocationId = ev.LocationId;
+        _editingId      = ev.ScheduleEventId;
+        _fTitle         = ev.Title;
+        _fDesc          = ev.Description;
+        _fDate          = ev.CampDay.ToDateTime(TimeOnly.MinValue);
+        _fStart         = ev.StartTime.ToTimeSpan();
+        _fEnd           = ev.EndTime?.ToTimeSpan();
+        _fType          = ev.EventType;
+        _fLocationId    = ev.LocationId;
+        _fPresenterName = ev.PresenterName;
+        _fPresenterBio  = ev.PresenterBio;
         _fAssignments = _groups.Select(g =>
         {
             var existing = ev.EventGroups.FirstOrDefault(eg => eg.GroupId == g.GroupId);
@@ -417,6 +439,7 @@
             .Select(a => new GroupAssignmentDto(a.GroupId, a.ActivityId, a.LocationId, a.Note))
             .ToList();
 
+        var isPresentation = _fType == ScheduleEventType.Presentation;
         var dto = new ScheduleEventDto(
             _editingId,
             SeedService.Id.EventCcn2026,
@@ -425,7 +448,9 @@
             _fEnd.HasValue ? TimeOnly.FromTimeSpan(_fEnd.Value) : null,
             _fTitle, _fDesc, _fLocationId, _fType,
             !assignments.Any(),
-            null, assignments
+            null, assignments,
+            isPresentation ? _fPresenterName : null,
+            isPresentation ? _fPresenterBio  : null
         );
         await ScheduleSvc.UpsertAsync(dto, _userId);
 
@@ -441,13 +466,20 @@
         await LoadEvents();
     }
 
+    private static string DisplayEventType(ScheduleEventType t) => t switch
+    {
+        ScheduleEventType.Travel => "Arrival/Departure",
+        _ => t.ToString()
+    };
+
     private static string EventTypeBadgeColor(ScheduleEventType t) => t switch
     {
-        ScheduleEventType.Meal      => "#E67E22",
-        ScheduleEventType.Travel    => "#2980B9",
-        ScheduleEventType.Free      => "#27AE60",
-        ScheduleEventType.Mandatory => "#D12B2B",
-        _                           => "#8E44AD"
+        ScheduleEventType.Meal         => "#E67E22",
+        ScheduleEventType.Travel       => "#2980B9",
+        ScheduleEventType.Free         => "#27AE60",
+        ScheduleEventType.Mandatory    => "#D12B2B",
+        ScheduleEventType.Presentation => "#8E44AD",
+        _                              => "#8E44AD"
     };
 
     private class AssignmentFormRow

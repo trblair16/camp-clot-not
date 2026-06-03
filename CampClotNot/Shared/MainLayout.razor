@@ -11,7 +11,7 @@
 
 <AppNav OnLeaderboardClick="@(() => _showProjector = true)" />
 
-<div style="padding:20px 18px 80px">
+<div style="padding:20px 18px calc(80px + env(safe-area-inset-bottom))">
     @Body
 </div>
 

@@ -312,9 +312,12 @@ InfoPage           — PageId, EventId, Slug (unique), Title, Body (markdown), I
                      SortOrder, UpdatedAt, UpdatedByUserId
 IncidentReport     — IncidentReportId, EventId, DateOfIncident, DateCompleted,
                      PersonsInvolved, Description, RecommendedAction,
+                     IncidentLocationId (FK→Location)?, IncidentLocationOther?,
+                     ReportType (enum: Internal|ChildrensHarbor),
                      SubmittedByUserId, SubmittedByName, SubmittedByRole, SubmittedAt,
                      IsAcknowledged, AcknowledgedByUserId?, AcknowledgedByName?, AcknowledgedAt?
-Sponsor            — SponsorId, EventId, Name, LogoUrl?, LogoData (binary)?, LogoContentType?, Website?, SortOrder
+Sponsor            — SponsorId, EventId, Name, LogoUrl?, LogoData (binary)?, LogoContentType?,
+                     Website?, ContactName?, Phone?, SortOrder
 
 -- Future / v1.1+
 PushSubscription   — SubscriptionId, UserId, Endpoint, P256DH, Auth,
@@ -540,6 +543,7 @@ Camp is June 20-25, 2026.
 | ~June 2 | v0.5.2 — Schedule Admin + Sponsor Logos ✅ | Sponsor binary logo upload, `/admin/schedule` CRUD, schedule day tabs, nav restructure, `/` → `/hub/schedule` redirect |
 | ~June 2 | v0.5.3 — Activities Admin ✅ | `/admin/activities` CRUD for MinuteToWinIt activities (Vicki/Amanda configurable) |
 | ~June 2 | v0.5.4 — Schedule Save Fix ✅ | Bug fix: EF shadow FK on `ScheduleEvent.CreatedByUser` caused circuit crash on save; explicit `HasForeignKey` + migration |
+| ~June 7 | v0.5.5 — UX Improvements | Dashboard landing page, incident enhancements, staff photos, Medical Staff role, sponsor improvements, schedule improvements (see §8.14) |
 | ~June 7-8 | v1.0.0-rc — Dry Run | Full dress rehearsal. Staff test on real devices. Projector verified. Issues logged. |
 | ~June 13 | v1.0.0 — Camp Ready | Dry run issues resolved. Production seeded. Staff briefed. One week buffer. |
 | June 20 | 🏕️ CAMP | Super Clot Not Party '26 is live |
@@ -874,21 +878,23 @@ InfoPage — PageId, Slug (unique), Title, Body (markdown), IconEmoji,
 
 ### 8.5 Role Permission Matrix
 
-| Feature | Admin | Staff | Volunteer |
-|---|---|---|---|
-| View Schedule | ✅ | ✅ | ✅ |
-| Edit Schedule | ✅ | ✅ | ❌ |
-| View Announcements | ✅ | ✅ | ✅ |
-| Post Announcement (Normal) | ✅ | ✅ | ❌ |
-| Post Urgent / Pin | ✅ | ❌ | ❌ |
-| View Staff Directory | ✅ | ✅ | ✅ |
-| Edit Staff Directory | ✅ | ❌ | ❌ |
-| View Info Pages | ✅ | ✅ | ✅ |
-| Edit Info Page Body | ✅ | ❌ | ❌ |
-| View Sponsors | ✅ | ✅ | ✅ |
-| Manage Sponsors | ✅ | ❌ | ❌ |
-| Submit Incident Report | ✅ | ✅ | ✅ |
-| View / Acknowledge Incidents | ✅ | ❌ | ❌ |
+| Feature | Admin | Staff | MedicalStaff | Volunteer |
+|---|---|---|---|---|
+| View Schedule | ✅ | ✅ | ✅ | ✅ |
+| Edit Schedule | ✅ | ✅ | ❌ | ❌ |
+| View Announcements | ✅ | ✅ | ✅ | ✅ |
+| Post Announcement (Normal) | ✅ | ✅ | ❌ | ❌ |
+| Post Urgent / Pin | ✅ | ❌ | ❌ | ❌ |
+| View Staff Directory | ✅ | ✅ | ✅ | ✅ |
+| Edit Staff Directory | ✅ | ❌ | ❌ | ❌ |
+| View Info Pages | ✅ | ✅ | ✅ | ✅ |
+| Edit Info Page Body | ✅ | ❌ | ❌ | ❌ |
+| View Sponsors | ✅ | ✅ | ✅ | ✅ |
+| Manage Sponsors | ✅ | ❌ | ❌ | ❌ |
+| Log Transactions | ✅ | ✅ | ✅ | ✅ |
+| Submit Incident Report | ✅ | ✅ | ✅ | ✅ |
+| View / Acknowledge Incidents | ✅ | ❌ | ✅ | ❌ |
+| Select Children's Harbor Report Type | ✅ | ❌ | ❌ | ❌ |
 
 Projector display pages (`/board/display`, `/minigames/display`) are Admin-only — no Hub access.
 
@@ -995,29 +1001,45 @@ Implement PWA last, after all Hub features are functional. No logic dependencies
 
 ---
 
-### 8.10 Incident Reports (v0.5.1)
+### 8.10 Incident Reports (v0.5.1 base; enhancements in v0.5.5)
 
-A floating "🚨 Report Incident" button appears on all Hub pages (rendered in `HubSubNav.razor`). Any logged-in user (Admin, Staff, Volunteer) can submit. Only Admin can view submitted reports.
+A floating "🚨 Report Incident" button appears on all Hub pages (rendered in `HubSubNav.razor`). Any logged-in user (Admin, Staff, Volunteer, MedicalStaff) can submit. Admin and MedicalStaff can view submitted reports.
 
-**Form fields:** Date of Incident, Date Completed (auto-today), Persons Involved, Description (including lead-up and responses), Recommended Action. Submitter info auto-captured from auth claims — no signature fields.
+**Form fields (v0.5.5 additions in bold):**
+- Date of Incident, Date Completed (auto-today), Persons Involved, Description (including lead-up and responses), Recommended Action
+- **Incident Location:** dropdown populated from active event's `Location` records, with "Other" always appended. When "Other" is selected, a free-text input appears and saves to `IncidentLocationOther`. Display: Location name if FK set, else "Other: {IncidentLocationOther}".
+- **Report Type** (`IncidentReportType` enum): `Internal` (default, selectable by all) or `ChildrensHarbor` (Admin-only). Non-admin submitters see only "Internal" — the field is auto-set and not shown. Admin submitters see a dropdown to choose.
 
-**Admin view:** `/hub/incidents` — lists all reports newest-first. Each row: date, submitter name/role, persons involved (truncated), Acknowledge button, Print link. Acknowledged rows show who acknowledged and when.
+**Admin/MedicalStaff view:** `/hub/incidents` — lists all reports newest-first. Visible to Admin and MedicalStaff roles.
 
-**Print view:** `/hub/incidents/{id}/print` — uses `PrintLayout` (bare layout, no nav). Mirrors the Children's Harbor paper form: logo top-right, "INCIDENT REPORT FORM" centered title, fields in paper layout order, submitter footer. Print button calls `window.print()` and is hidden via `@media print`.
+**Print view:** `/hub/incidents/{id}/print` — uses `PrintLayout`. Mirrors the Children's Harbor paper form. Report Type shown in header.
 
 **System name:** `IncidentReport` / `IncidentReportService` / `/hub/incidents`
 
+**Data model (v0.5.5):**
+```
+IncidentReport — ... (existing fields) ...
+                 IncidentLocationId (Guid? FK → Location),
+                 IncidentLocationOther (string?),
+                 ReportType (IncidentReportType: Internal=0, ChildrensHarbor=1)
+```
+
 ---
 
-### 8.11 Sponsors (v0.5.1)
+### 8.11 Sponsors (v0.5.1 base; enhancements in v0.5.5)
 
-Admin manages a list of event sponsors (name, logo URL, optional website link, sort order). All users can view a Sponsors tab in the Hub.
+Admin manages a list of event sponsors. All users can view a Sponsors tab in the Hub. Sponsors are prominently featured on the Dashboard landing page (Vicki emphasis).
 
-**Display page:** `/hub/sponsors` — responsive grid of logo tiles. Each tile: logo (constrained 80px height), sponsor name below. If Website is set, the tile is a link. Visible to Admin, Staff, Volunteer.
+**Display page:** `/hub/sponsors` — responsive grid of logo tiles. Each tile: logo (constrained 80px height), sponsor name, **contact name + clickable `tel:` phone link (v0.5.5)** when present. If Website is set, the tile is a link.
 
-**Admin CRUD:** `/admin/sponsors` — same table/form panel pattern as `/admin/locations`. Accessible from Admin desktop dropdown and mobile admin sheet.
+**Admin CRUD:** `/admin/sponsors` — form panel + table pattern. **Drag-and-drop row reordering (v0.5.5)**: admin can drag rows to reorder; `SortOrder` is persisted to DB on drop. Order on `/hub/sponsors` (all roles) reflects the saved `SortOrder`. Implementation: HTML5 drag events via Blazor (no third-party library).
 
-**Logo storage:** Binary upload supported as of v0.5.2. `Sponsor` entity has `LogoData (byte[]?)` + `LogoContentType (string?)`. Logo served via streaming endpoint `/sponsor-logo/{id}`. Falls back to `LogoUrl` string if no binary data. `LogoUrl` remains nullable.
+**Logo storage:** `LogoData (byte[]?)` + `LogoContentType (string?)` — served via `/sponsor-logo/{id}`.
+
+**Data model (v0.5.5 additions):**
+```
+Sponsor — ... (existing) ..., ContactName (string?), Phone (string?)
+```
 
 **System name:** `Sponsor` / `SponsorService` / `/hub/sponsors`
 
@@ -1026,6 +1048,93 @@ Admin manages a list of event sponsors (name, logo URL, optional website link, s
 ### 8.12 Mini-Game Activities Admin (v0.5.3)
 
 Admin CRUD at `/admin/activities` for MinuteToWinIt activities (e.g. "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay"). Vicki/Amanda can add, rename, and delete activities. Deletion is blocked if the activity is assigned to a `ScriptedMiniGame`. These are the same activities used by the evening spinner and group assignment overrides on schedule events.
+
+### 8.14 v0.5.5 Feature Set
+
+**Branch:** `feature/118-v055-improvements` | **Issue:** #118
+
+#### 8.14.1 Schedule Improvements
+
+**New event type — Presentation:**
+- `ScheduleEventType.Presentation` added to enum
+- Presenter fields (`PresenterName`, `PresenterBio`) on `ScheduleEvent` are **only shown in admin form and hub view when EventType = Presentation**. On save with any other type, these fields are nulled.
+- In `/hub/schedule`: when EventType = Presentation and PresenterName is set, show presenter name below event title; when PresenterBio is set, show collapsible "About the speaker" section.
+
+**Travel → "Arrival/Departure" display label:**
+- `ScheduleEventType.Travel` keeps its code name (renaming would require a migration + data rewrite).
+- All UI display strings render `Travel` as "Arrival/Departure" — badge in hub view, dropdown label in admin form.
+- Implement via a display helper or switch expression on the enum.
+
+**12-hour time format:**
+- All time display in `/hub/schedule` and `/admin/schedule` uses `h:mm tt` format (e.g. "9:00 AM").
+
+**Data model addition:**
+```
+ScheduleEvent — ... (existing) ..., PresenterName (string?), PresenterBio (string?)
+```
+
+#### 8.14.2 Staff Headshot Photos
+
+- `StaffMember` gets `PhotoData (byte[]?)` + `PhotoContentType (string?)`.
+- Served via `/staff-photo/{id}` endpoint (same streaming pattern as `/sponsor-logo/{id}`).
+- `/hub/staff` card: show `<img>` when photo exists; fall back to `AvatarEmoji` otherwise.
+- Admin staff edit dialog: add `InputFile` photo upload.
+
+#### 8.14.3 Medical Staff Role
+
+- `Role.MedicalStaff` added to enum.
+- Seed: add `MedicalStaff` `UserRole` record in `SeedService`.
+- Permission matrix:
+  - Can log transactions
+  - Can view and acknowledge incident reports (unlike Staff/Volunteer — only submit)
+  - Can view all Hub features (schedule, announcements, staff directory, sponsors, info)
+  - Cannot post/pin announcements, edit info pages, edit staff directory
+  - No access to `/admin/*`
+- User creation/edit dropdown: add `MedicalStaff` option.
+
+#### 8.14.4 Location Images + Board Space Integration
+
+**Location images:**
+- `Location` gets `ImageData (byte[]?)` + `ImageContentType (string?)`.
+- Served via `/location-image/{id}` endpoint.
+- Upload in `/admin/locations` form.
+
+**Activity → Location link (board space integration):**
+- `Activity` gets `LocationId (Guid? FK → Location)` — an activity optionally takes place at a named camp location.
+- `/admin/activities` form: add optional Location dropdown.
+- Board rendering (Board.razor, BoardDisplay.razor): when a board space's activity has a `LocationId` with image data, show the location image on the board space instead of/alongside the activity type icon.
+- EF Core: configure explicit FK to avoid shadow property bug (see Pitfall #13).
+
+#### 8.14.5 Dashboard Landing Page
+
+- `Dashboard.razor` at `/dashboard` — the post-login landing page (replacing `/hub/schedule` as the redirect target from `Index.razor`).
+- Widget layout (neo-brutalist `ccn-panel` sections, Fredoka One headings):
+  1. **Sponsors** (prominent — first widget or largest visual weight; Vicki emphasis): logo tile grid or "View Sponsors" CTA linking to `/hub/sponsors`
+  2. **Today's Schedule**: events for today from `ScheduleService`; time + title; "View Full Schedule" link
+  3. **Latest Announcement**: most recent non-archived, non-expired announcement; title + body preview; "View All" link
+  4. **Quick Nav**: styled nav cards for Schedule, Game Leaderboard, and other key pages
+- Welcome message (camp name + current date).
+- `Index.razor`: change redirect target from `/hub/schedule` to `/dashboard`.
+
+#### 8.14.6 Remove Mini Marios Group
+
+- Remove Group1 (Mini Marios, #E74C3C) from `SeedService.SeedGroupsAsync`.
+- Remaining 3 groups: Blue Shell Bandits (BB, blue), Mushroom Militia (MU, green), Luma Legends (LL, purple).
+- **Production DB note:** `SeedGroupsAsync` purges stale groups on restart. If Mini Marios has FK-referenced rows (transactions, board positions) in the target DB, the purge will fail on a FK constraint. Delete those rows first or handle the purge with a try-catch and log.
+
+#### 8.14.7 Migration
+
+**`AddV055Enhancements`** (single migration or split if simpler):
+- `IncidentReport`: add `IncidentLocationId (uuid nullable FK→Locations)`, `IncidentLocationOther (text nullable)`, `ReportType (int not null default 0)`
+- `StaffMember`: add `PhotoData (bytea nullable)`, `PhotoContentType (text nullable)`
+- `ScheduleEvent`: add `PresenterName (text nullable)`, `PresenterBio (text nullable)`
+- `Sponsor`: add `ContactName (text nullable)`, `Phone (text nullable)`
+- `Location`: add `ImageData (bytea nullable)`, `ImageContentType (text nullable)`
+- `Activity`: add `LocationId (uuid nullable FK→Locations)`
+
+C#-only enum additions (no schema change): `Role.MedicalStaff`, `ScheduleEventType.Presentation`, `IncidentReportType` (new enum in `Enums.cs`).
+
+---
 
 ### 8.13 Shared Dialog Pattern (planned post-v0.5.1)
 

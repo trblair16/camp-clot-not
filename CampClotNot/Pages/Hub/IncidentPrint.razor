@@ -1,6 +1,6 @@
 @page "/hub/incidents/{Id:guid}/print"
 @layout PrintLayout
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,MedicalStaff")]
 @inject IncidentReportService IncidentSvc
 
 <PageTitle>Incident Report — Camp Clot Not</PageTitle>
@@ -96,7 +96,17 @@ else
     <div class="print-page">
         <div class="print-header">
             <div style="width:80px"></div>
-            <h1 class="print-title">INCIDENT REPORT FORM</h1>
+            <div style="flex:1;text-align:center">
+                <h1 class="print-title" style="margin-bottom:6px">INCIDENT REPORT FORM</h1>
+                @if (_report.ReportType == IncidentReportType.ChildrensHarbor)
+                {
+                    <span style="background:#2980B9;color:white;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700;letter-spacing:1px">CHILDREN'S HARBOR</span>
+                }
+                else
+                {
+                    <span style="background:#888;color:white;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700;letter-spacing:1px">INTERNAL</span>
+                }
+            </div>
             <img src="/img/childrens-harbor-logo.png" alt="Children's Harbor" class="print-logo" />
         </div>
 
@@ -114,6 +124,11 @@ else
         <div class="print-field">
             <div class="print-label">Persons Involved</div>
             <div class="print-value">@_report.PersonsInvolved</div>
+        </div>
+
+        <div class="print-field">
+            <div class="print-label">Location</div>
+            <div class="print-value">@(_report.IncidentLocation?.Name ?? (_report.IncidentLocationOther is not null ? $"Other: {_report.IncidentLocationOther}" : "—"))</div>
         </div>
 
         <div class="print-field">

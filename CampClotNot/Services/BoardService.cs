@@ -12,7 +12,8 @@ public record BoardSpaceView(
     float XPos,
     float YPos,
     string CategorySystemName,
-    string ActivityName
+    string ActivityName,
+    Guid? LocationId = null
 );
 
 public class BoardService(
@@ -29,6 +30,8 @@ public class BoardService(
             .Include(s => s.Activity)
                 .ThenInclude(a => a.ActivityType)
                     .ThenInclude(at => at.Category)
+            .Include(s => s.Activity)
+                .ThenInclude(a => a.Location)
             .OrderBy(s => s.SpaceIndex)
             .ToListAsync();
 
@@ -38,7 +41,8 @@ public class BoardService(
             s.XPos,
             s.YPos,
             s.Activity.ActivityType.Category.SystemName,
-            s.Activity.Name
+            s.Activity.Name,
+            s.Activity.Location?.ImageData is not null ? s.Activity.LocationId : null
         )).ToList();
     }
 

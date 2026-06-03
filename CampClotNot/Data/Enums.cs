@@ -4,7 +4,9 @@ public enum Currency { Primary, Prestige }
 
 public enum AwardKind { Named, BigStick, Branch }
 
-public enum Role { Admin, Staff, Volunteer }
+public enum Role { Admin, Staff, MedicalStaff, Volunteer }
+
+public enum IncidentReportType { Internal = 0, ChildrensHarbor = 1 }
 
 public enum Feature { BoardGame, CoinShop, MiniGameSpinner, Announcements, Itinerary }
 
