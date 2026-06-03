@@ -8,10 +8,10 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-05-27)
+## Current State (as of 2026-06-02)
 
-**Active branch:** `feature/103-mobile-pwa-fixes` (v0.5.1 in progress — uncommitted)
-**Released to dev:** v0.5.0 — Camp Info Hub + PWA
+**Active branch:** `main` / `dev` (all feature work merged)
+**Released to main:** v0.5.4 — schedule save bug fix
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -63,7 +63,7 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - `railway.toml` added with `/health` healthcheck, `ON_FAILURE` restart policy
 - Railway production: project `camp-clot-not` live; Postgres running (SFO); env vars set (`DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`, `Seed__AdminPassword`)
 
-**v0.5.1 — In Progress (feature/103-mobile-pwa-fixes, uncommitted):**
+**v0.5.1 — Done (feature/103-mobile-pwa-fixes, PR #104/105):**
 - User edit dialog on `/admin/users`; PWA `short_name` → "CCN 2026"; `viewport-fit=cover`; desktop nav mobile suppression; bottom nav safe-area padding; Activities → Transactions swap in mobile nav (Admin); PWA icons regenerated from tall 3-row CCN logo; Children's Harbor logo extracted to `wwwroot/img/childrens-harbor-logo.png`
 - `IncidentReport` entity + `IncidentReportService` — submit, list, acknowledge
 - `Sponsor` entity + `SponsorService` — CRUD, ordered by SortOrder
@@ -76,6 +76,25 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - `AppNav.razor` — `/admin/sponsors` in desktop Admin dropdown and mobile admin sheet
 - `SeedService` — `schedule-overview` and `packing` removed from InfoPage seed (and from `SeedService.Id`)
 - EF migration `AddIncidentReportAndSponsor` added and applied
+
+**v0.5.2 — Done (feature/108, PR #110/111):**
+- Sponsor logo upload: `Sponsor` entity extended with `LogoData (byte[]?)` + `LogoContentType (string?)`; logo stored in DB; `/admin/sponsors` serves logos via a streaming endpoint; display pages render `<img src="/sponsor-logo/{id}">` (or fall back to LogoUrl)
+- Nav restructure: Admin dropdown order → Game Admin → Activities → Schedule → Groups → Users → Locations → Sponsors (desktop and mobile sheet)
+- `/hub/schedule` day tabs: collapsible accordion replaced with horizontal day tabs; `_selectedDay` tracks active tab; `_campEvent` loaded for min/max date constraints; sets `_selectedDay` after save
+- `/admin/schedule` (new page): Admin CRUD for `ScheduleEvent` — form panel + table pattern (same as Locations); date/time inputs use `value`+`@onchange` string pattern; group assignments collapsible section; calls `ScheduleService.UpsertAsync`
+- `Index.razor` redirects `/` to `/hub/schedule` via `IHttpContextAccessor`; `Dashboard.razor` route changed from `@page "/"` to `@page "/dashboard"`
+- EF migration `AddSponsorLogoUpload` applied
+
+**v0.5.3 — Done (feature/112, PR #113):**
+- `/admin/activities` (new page): Admin CRUD for MinuteToWinIt activities (Name + Description) — same form panel + table pattern; delete blocked if activity is referenced by a `ScriptedMiniGame`
+- `MiniGameService.UpsertActivityAsync` and `DeleteActivityAsync` added
+- These are the activities Vicki/Amanda can configure: "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay", etc.
+
+**v0.5.4 — Done (feature/114, PR #115/116):**
+- Bug fix: schedule event save caused Blazor circuit crash (white bar + freeze)
+- Root cause: `ScheduleEvent.CreatedByUser` navigation had no explicit FK config; EF Core created shadow property `CreatedByUserUserId`; on insert it defaulted to `Guid.Empty`, violating NOT NULL FK constraint
+- Fix: `HasForeignKey(e => e.CreatedBy)` added to `OnModelCreating`
+- Migration `FixScheduleEventCreatedByFK`: drops `CreatedByUserUserId` shadow column/index/FK; wires `CreatedBy` as the real FK to `Users.UserId`
 
 **Next:** v1.0.0-rc — Dry Run
 
@@ -117,6 +136,8 @@ This file is gitignored and won't exist in a new worktree. EF migrations (`dotne
 Floating action buttons (like "Log Score" and "Report Incident") must use the class `ccn-fab-mobile` with `position:fixed;bottom:24px;right:24px`. The global `ThemeHead.razor` media query `@media (max-width:768px) { .ccn-fab-mobile { bottom: 80px !important; } }` handles bottom-nav clearance on mobile automatically. Do NOT hardcode `calc(80px + env(safe-area-inset-bottom))` — that is always elevated and misses the desktop position.
 
 **12. Modal dialogs — always use the `fadeIn`/`popIn` pattern from `LogTransactionDialog`.**  
+**13. Navigation property names must follow EF Core FK convention or be configured explicitly.**  
+If a navigation property `FooUser` references `User` but the FK property is not named `FooUserUserId` or `UserId`, EF Core creates a shadow property (e.g. `FooUserUserId`) instead of using your named property. The shadow property defaults to `Guid.Empty` on insert, causing a NOT NULL FK constraint violation that crashes the Blazor circuit. Fix: add explicit `.HasForeignKey(e => e.YourProperty)` in `OnModelCreating` whenever the FK property name doesn't match the `<NavName><PKName>` convention. This was the root cause of the v0.5.4 schedule save bug.  
 All form modals must use: backdrop `animation:fadeIn .2s ease` with `rgba(26,26,26,.65)`, panel `ccn-panel` class with `animation:popIn .25s ease` and `box-shadow:8px 8px 0 var(--black)`, and centered with `display:flex;align-items:center;justify-content:center;padding:20px`. Do not use bottom-sheet patterns for forms — they lack the popIn animation and feel inconsistent. A shared `CcnDialog.razor` wrapper is planned post-v0.5.1 once a third dialog exists.
 
 ---
@@ -217,6 +238,8 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 | `CampClotNot/Pages/MiniGamesDisplay.razor` | Mini-game projector at `/minigames/display` — Admin only |
 | `CampClotNot/Pages/Admin/Games.razor` | Combined game admin at `/admin/games` |
 | `CampClotNot/Pages/Admin/Sponsors.razor` | Sponsor CRUD at `/admin/sponsors` |
+| `CampClotNot/Pages/Admin/Schedule.razor` | Schedule event CRUD at `/admin/schedule` — Admin only |
+| `CampClotNot/Pages/Admin/Activities.razor` | MinuteToWinIt activity CRUD at `/admin/activities` — Admin only |
 | `CampClotNot/Pages/Hub/HubSubNav.razor` | Shared Hub sub-nav + floating Report Incident FAB + modal |
 | `CampClotNot/Pages/Hub/Incidents.razor` | Admin incident list at `/hub/incidents` |
 | `CampClotNot/Pages/Hub/IncidentPrint.razor` | Print view at `/hub/incidents/{id}/print` — uses `PrintLayout` |
