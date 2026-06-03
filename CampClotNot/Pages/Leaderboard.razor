@@ -1,0 +1,248 @@
+@page "/leaderboard"
+@attribute [Authorize]
+@inject GroupService GroupSvc
+@inject TransactionService TxSvc
+@inject NavigationManager Nav
+@inject IDialogService DialogService
+@inject ThemeService ThemeSvc
+@implements IAsyncDisposable
+
+<PageTitle>Leaderboard — Camp Clot Not</PageTitle>
+
+@if (_loading)
+{
+    <div style="display:flex;justify-content:center;padding:80px 0">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+    </div>
+}
+else
+{
+    @* ── STANDINGS rank rows ── *@
+    <div class="ccn-section-label">🏆 Standings</div>
+    <div class="ccn-panel" style="margin-bottom:24px;overflow:hidden;animation:slideUp .3s ease">
+        @foreach (var entry in _ranked)
+        {
+            var rankBg = entry.Rank switch
+            {
+                1 => "background:var(--color-primary)",
+                2 => "background:#E8E8E8",
+                3 => "background:#F5EED8",
+                _ => "background:var(--panel-bg)"
+            };
+            var medals  = new[] { "🥇", "🥈", "🥉", "4️⃣" };
+            var medal   = entry.Rank <= medals.Length ? medals[entry.Rank - 1] : $"#{entry.Rank}";
+            var delay   = (entry.Rank - 1) * 60;
+            var initial = entry.Group.ShortName is { Length: > 0 } s ? s[..1] : "?";
+
+            <div class="ccn-rank-row" style="@rankBg;animation:slideUp .3s ease @(delay)ms both">
+
+                @* Rank medal *@
+                <div style="font-family:'Fredoka One',cursive;font-size:22px;width:36px;text-align:center;flex-shrink:0;color:var(--black)">
+                    @medal
+                </div>
+
+                @* Group avatar *@
+                <div style="@($"width:40px;height:40px;border-radius:50%;border:3px solid var(--black);background:{entry.Group.Color};display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:16px;color:white;flex-shrink:0;box-shadow:2px 2px 0 var(--black);overflow:hidden")">
+                    @if (entry.Group.TokenAssetPath is not null)
+                    {
+                        <img src="@entry.Group.TokenAssetPath" style="width:100%;height:100%;object-fit:contain" />
+                    }
+                    else { @initial }
+                </div>
+
+                @* Name + board position *@
+                <div style="flex:1;min-width:0">
+                    <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black);
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                        @entry.Group.Name
+                    </div>
+                    @if (entry.Group.BoardPos is not null)
+                    {
+                        <div style="font-size:10px;color:var(--text-light);font-weight:700;margin-top:1px">
+                            Space @entry.Group.BoardPos.SpaceIndex
+                        </div>
+                    }
+                </div>
+
+                @* Score pills *@
+                <div style="display:flex;gap:6px;flex-shrink:0">
+                    <div style="display:flex;align-items:center;gap:5px;background:var(--color-accent);
+                                border:3px solid var(--black);border-radius:5px;padding:4px 10px;box-shadow:2px 2px 0 var(--black)">
+                        <img src="/img/ccn-coin.png" style="height:18px;width:auto" alt="coins" />
+                        <span style="font-family:'Fredoka One',cursive;font-size:17px;color:white">@entry.Coins</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px;background:#2563C4;
+                                border:3px solid var(--black);border-radius:5px;padding:4px 10px;box-shadow:2px 2px 0 var(--black)">
+                        <img src="/img/ccn-star.png" style="height:18px;width:auto" alt="stars" />
+                        <span style="font-family:'Fredoka One',cursive;font-size:17px;color:white">@entry.Stars</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ── QUICK ACTIONS group cards ── *@
+    <div class="ccn-section-label">⚡ Quick Actions</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:24px">
+        @foreach (var entry in _ranked)
+        {
+            var delay   = (entry.Rank - 1) * 60;
+            var initial = entry.Group.ShortName is { Length: > 0 } sn ? sn[..1] : "?";
+            <div class="ccn-panel" style="padding:14px;border-top:5px solid @entry.Group.Color;animation:slideUp .3s ease @(delay)ms both">
+
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                    <div style="@($"width:40px;height:40px;border-radius:50%;border:3px solid var(--black);background:{entry.Group.Color};display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:16px;color:white;flex-shrink:0;box-shadow:2px 2px 0 var(--black);overflow:hidden")">
+                        @if (entry.Group.TokenAssetPath is not null)
+                        {
+                            <img src="@entry.Group.TokenAssetPath" style="width:100%;height:100%;object-fit:contain" />
+                        }
+                        else { @initial }
+                    </div>
+                    <div>
+                        <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@entry.Group.Name</div>
+                        @if (entry.Group.BoardPos is not null)
+                        {
+                            <div style="font-size:10px;color:var(--text-light);font-weight:700;margin-top:1px">
+                                Space @entry.Group.BoardPos.SpaceIndex
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:10px;margin-bottom:12px">
+                    <div style="flex:1;border:3px solid var(--black);border-radius:7px;border-top:4px solid var(--color-primary);padding:8px 12px;text-align:center;box-shadow:2px 2px 0 var(--black)">
+                        <div style="font-family:'Fredoka One',cursive;font-size:28px;line-height:1;color:var(--black)">@entry.Coins</div>
+                        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:3px">
+                            <img src="/img/ccn-coin.png" style="height:12px;width:auto" alt="coins" />
+                            <span style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-mid)">Coins</span>
+                        </div>
+                    </div>
+                    <div style="flex:1;border:3px solid var(--black);border-radius:7px;border-top:4px solid var(--color-accent);padding:8px 12px;text-align:center;box-shadow:2px 2px 0 var(--black)">
+                        <div style="font-family:'Fredoka One',cursive;font-size:28px;line-height:1;color:var(--black)">@entry.Stars</div>
+                        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:3px">
+                            <img src="/img/ccn-star.png" style="height:12px;width:auto" alt="stars" />
+                            <span style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-mid)">Stars</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px">
+                    <button class="ccn-btn" style="flex:1;background:var(--color-primary);font-size:12px;padding:6px 10px"
+                            @onclick="@(() => OpenTransactionDialog(entry.Group.GroupId, Currency.Primary))">
+                        + Coins
+                    </button>
+                    <button class="ccn-btn" style="flex:1;background:var(--color-accent);color:white;font-size:12px;padding:6px 10px"
+                            @onclick="@(() => OpenTransactionDialog(entry.Group.GroupId, Currency.Prestige))">
+                        + Stars
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ── RECENT ACTIVITY ── *@
+    @if (_recentTransactions.Any())
+    {
+        <div class="ccn-section-label">🕐 Recent Activity</div>
+        <div class="ccn-panel" style="overflow:hidden;margin-bottom:80px">
+            @for (int i = 0; i < _recentTransactions.Count; i++)
+            {
+                var tx        = _recentTransactions[i];
+                var isPrimary = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
+                var sep       = i < _recentTransactions.Count - 1 ? "border-bottom:2px solid #E8E0CC" : "";
+
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;@sep">
+                    <div style="@($"width:36px;height:36px;border-radius:6px;border:2px solid var(--black);background:{(isPrimary ? "var(--color-primary)" : "var(--color-accent)")};display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:2px 2px 0 var(--black)")">
+                        <img src="@(isPrimary ? "/img/ccn-coin.png" : "/img/ccn-star.png")" style="height:22px;width:auto" alt="@(isPrimary ? "coin" : "star")" />
+                    </div>
+                    <div style="flex:1;min-width:0">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                            <span style="@($"font-family:'Fredoka One',cursive;font-size:13px;color:{tx.Group?.Color ?? "var(--black)"}")">@tx.Group?.Name</span>
+                            <span style="font-weight:800;font-size:13px;color:@(tx.Amount > 0 ? "var(--color-success)" : "var(--color-accent)")">
+                                @(tx.Amount > 0 ? "+" : "")@tx.Amount @(isPrimary ? "coins" : "stars")
+                            </span>
+                        </div>
+                        <div style="font-size:10px;color:var(--text-light);margin-top:2px;font-weight:700">
+                            @(tx.Note != null ? $"{tx.Note} · " : "")@tx.LoggedBy · @tx.CreatedAt.ToLocalTime().ToString("h:mm tt")
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@* ── Log Score FAB ── *@
+<button class="ccn-btn ccn-fab-mobile" style="position:fixed;bottom:24px;right:24px;background:var(--color-accent);color:white;
+                                font-size:15px;padding:13px 24px;border-radius:50px;border-color:var(--black);
+                                box-shadow:4px 4px 0 var(--black);z-index:50;
+                                display:flex;align-items:center;gap:8px"
+        @onclick="OpenTransactionDialog">
+    ＋ Log Score
+</button>
+
+<LogTransactionDialog @ref="_txDialog" OnTransactionPosted="RefreshAsync" />
+
+@code {
+    private List<GroupEntry>   _ranked             = new();
+    private List<Transaction>  _recentTransactions = new();
+    private bool               _loading            = true;
+    private LogTransactionDialog _txDialog         = null!;
+    private HubConnection?     _hub;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+        _loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/livehub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On("ScoresUpdated", async () =>
+        {
+            await RefreshAsync();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hub.StartAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        var groups  = await GroupSvc.GetAllAsync();
+        var entries = new List<GroupEntry>();
+        foreach (var g in groups)
+        {
+            var coins = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Primary);
+            var stars = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Prestige);
+            entries.Add(new GroupEntry(g, coins, stars));
+        }
+        _ranked = entries
+            .OrderByDescending(e => e.Stars)
+            .ThenByDescending(e => e.Coins)
+            .Select((e, i) => e with { Rank = i + 1 })
+            .ToList();
+
+        var allTx = await TxSvc.GetAllAsync();
+        _recentTransactions = allTx.Where(t => t.VoidedAt == null).Take(5).ToList();
+    }
+
+    private async Task OpenTransactionDialog() => await _txDialog.OpenAsync();
+
+    private async Task OpenTransactionDialog(Guid groupId, Currency currency)
+        => await _txDialog.OpenAsync(groupId, currency);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hub is not null) await _hub.DisposeAsync();
+    }
+
+    private record GroupEntry(Group Group, int Coins, int Stars, int Rank = 0);
+}

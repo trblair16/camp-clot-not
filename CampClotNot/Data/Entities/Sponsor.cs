@@ -10,5 +10,7 @@ public class Sponsor
     public byte[]? LogoData { get; set; }
     public string? LogoContentType { get; set; }
     public string? Website { get; set; }
+    public string? ContactName { get; set; }
+    public string? Phone { get; set; }
     public int SortOrder { get; set; }
 }

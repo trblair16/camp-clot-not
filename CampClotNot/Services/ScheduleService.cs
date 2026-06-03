@@ -18,7 +18,9 @@ public record ScheduleEventDto(
     ScheduleEventType EventType,
     bool AppliesToAllGroups,
     int? MaxCapacity,
-    List<GroupAssignmentDto> Assignments
+    List<GroupAssignmentDto> Assignments,
+    string? PresenterName = null,
+    string? PresenterBio = null
 );
 
 public class ScheduleService(IDbContextFactory<AppDbContext> factory)
@@ -77,6 +79,8 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
                 EventType          = dto.EventType,
                 AppliesToAllGroups = dto.AppliesToAllGroups,
                 MaxCapacity        = dto.MaxCapacity,
+                PresenterName      = dto.PresenterName,
+                PresenterBio       = dto.PresenterBio,
                 CreatedBy          = userId,
                 UpdatedAt          = DateTime.UtcNow,
                 EventGroups        = dto.Assignments
@@ -104,6 +108,8 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
             existing.EventType          = dto.EventType;
             existing.AppliesToAllGroups = dto.AppliesToAllGroups;
             existing.MaxCapacity        = dto.MaxCapacity;
+            existing.PresenterName      = dto.PresenterName;
+            existing.PresenterBio       = dto.PresenterBio;
             existing.UpdatedAt          = DateTime.UtcNow;
 
             db.ScheduleEventGroups.RemoveRange(existing.EventGroups);

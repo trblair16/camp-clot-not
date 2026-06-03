@@ -10,6 +10,7 @@ public class IncidentReportService(IDbContextFactory<AppDbContext> factory)
     {
         using var db = factory.CreateDbContext();
         return await db.IncidentReports
+            .Include(r => r.IncidentLocation)
             .Where(r => r.EventId == eventId)
             .OrderByDescending(r => r.SubmittedAt)
             .ToListAsync();
@@ -18,7 +19,9 @@ public class IncidentReportService(IDbContextFactory<AppDbContext> factory)
     public async Task<IncidentReport?> GetByIdAsync(Guid id)
     {
         using var db = factory.CreateDbContext();
-        return await db.IncidentReports.FindAsync(id);
+        return await db.IncidentReports
+            .Include(r => r.IncidentLocation)
+            .FirstOrDefaultAsync(r => r.IncidentReportId == id);
     }
 
     public async Task<IncidentReport> SubmitAsync(IncidentReport report)

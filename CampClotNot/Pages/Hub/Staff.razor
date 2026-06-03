@@ -69,7 +69,14 @@
             @foreach (var m in _members)
             {
                 <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center">
-                    <div style="font-size:36px;margin-bottom:8px">@m.AvatarEmoji</div>
+                    @if (m.PhotoData is not null)
+                    {
+                        <img src="/staff-photo/@m.StaffMemberId" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid var(--black);margin-bottom:8px" alt="@m.DisplayName" />
+                    }
+                    else
+                    {
+                        <div style="font-size:36px;margin-bottom:8px">@m.AvatarEmoji</div>
+                    }
                     <div style="font-family:'Fredoka One',cursive;font-size:15px">@m.DisplayName</div>
                     <div style="font-size:12px;color:var(--text-light);margin-bottom:8px">@m.RoleTitle</div>
                     @if (!string.IsNullOrEmpty(m.Phone))
@@ -105,7 +112,23 @@
             <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_form.StaffMemberId == Guid.Empty ? "Add Staff Member" : "Edit Staff Member")</h3>
             <MudTextField @bind-Value="_form.DisplayName" Label="Name" Required="true" Class="mb-2" />
             <MudTextField @bind-Value="_form.RoleTitle"   Label="Role/Title" Class="mb-2" />
-            <MudTextField @bind-Value="_form.AvatarEmoji" Label="Avatar Emoji" Class="mb-2" />
+            <MudTextField @bind-Value="_form.AvatarEmoji" Label="Avatar Emoji (fallback if no photo)" Class="mb-2" />
+            <div style="margin-bottom:12px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Photo (JPEG/PNG, max 2 MB)</div>
+                <InputFile OnChange="HandlePhotoUpload" accept="image/*" style="font-size:13px;font-family:'Nunito',sans-serif" />
+                @if (!string.IsNullOrWhiteSpace(_photoUploadError))
+                {
+                    <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_photoUploadError</div>
+                }
+                @if (_fPhotoData is not null)
+                {
+                    <div style="font-size:11px;color:var(--text-mid);margin-top:4px">✅ File ready to upload</div>
+                }
+                else if (_currentHasPhoto)
+                {
+                    <div style="font-size:11px;color:var(--text-mid);margin-top:4px">Current: uploaded photo (leave blank to keep)</div>
+                }
+            </div>
             <MudTextField @bind-Value="_form.Phone"       Label="Phone (optional)" Class="mb-2" />
             <MudTextField @bind-Value="_form.Email"       Label="Email (optional)" Class="mb-2" />
             <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="Color.Primary" Class="mb-2" />
@@ -125,6 +148,10 @@
     private List<StaffMember> _members = new();
     private List<User> _eligibleUsers = new();
     private StaffMember _form = new() { AvatarEmoji = "👤", IsVisible = true };
+    private byte[]? _fPhotoData;
+    private string? _fPhotoContentType;
+    private bool _currentHasPhoto;
+    private string _photoUploadError = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -147,6 +174,7 @@
     private void OpenAdd()
     {
         _form = new() { CampEventId = SeedService.Id.EventCcn2026, AvatarEmoji = "👤", IsVisible = true };
+        _fPhotoData = null; _fPhotoContentType = null; _currentHasPhoto = false; _photoUploadError = "";
         _showForm   = true;
         _showImport = false;
     }
@@ -160,17 +188,40 @@
             AvatarEmoji = m.AvatarEmoji, Phone = m.Phone, Email = m.Email,
             IsVisible = m.IsVisible, SortOrder = m.SortOrder, LinkedUserId = m.LinkedUserId
         };
+        _fPhotoData = null; _fPhotoContentType = null; _currentHasPhoto = m.PhotoData is not null; _photoUploadError = "";
         _showForm   = true;
         _showImport = false;
     }
 
-    private void Close() => _showForm = false;
+    private void Close()
+    {
+        _showForm = false;
+        _fPhotoData = null; _fPhotoContentType = null; _currentHasPhoto = false; _photoUploadError = "";
+    }
 
     private async Task Save()
     {
+        _form.PhotoData        = _fPhotoData;
+        _form.PhotoContentType = _fPhotoContentType;
         await StaffSvc.UpsertAsync(_form);
-        _showForm = false;
+        Close();
         await Reload();
+    }
+
+    private async Task HandlePhotoUpload(InputFileChangeEventArgs e)
+    {
+        _photoUploadError = "";
+        var file = e.File;
+        if (file.Size > 2 * 1024 * 1024)
+        {
+            _photoUploadError = "File too large — maximum 2 MB.";
+            return;
+        }
+        using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        _fPhotoData = ms.ToArray();
+        _fPhotoContentType = file.ContentType;
     }
 
     private async Task Delete(Guid id)

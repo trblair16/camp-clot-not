@@ -107,7 +107,7 @@ public class MiniGameService(
         await hub.Clients.All.SendAsync("MiniGameSpinReset");
     }
 
-    public async Task UpsertActivityAsync(Guid activityId, Guid eventId, string name, string description)
+    public async Task UpsertActivityAsync(Guid activityId, Guid eventId, string name, string description, Guid? locationId = null)
     {
         using var db = factory.CreateDbContext();
         var existing = await db.Activities.FindAsync(activityId);
@@ -119,13 +119,15 @@ public class MiniGameService(
                 EventId        = eventId,
                 ActivityTypeId = SeedService.Id.ActTypeMtwiPlaceholder,
                 Name           = name,
-                Description    = description
+                Description    = description,
+                LocationId     = locationId
             });
         }
         else
         {
             existing.Name        = name;
             existing.Description = description;
+            existing.LocationId  = locationId;
         }
         await db.SaveChangesAsync();
     }

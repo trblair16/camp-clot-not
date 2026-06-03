@@ -1,6 +1,6 @@
 namespace CampClotNot.Data.Entities;
 
-public enum ScheduleEventType { Activity, Meal, Travel, Free, Mandatory }
+public enum ScheduleEventType { Activity, Meal, Travel, Free, Mandatory, Presentation }
 
 public class ScheduleEvent
 {
@@ -15,6 +15,8 @@ public class ScheduleEvent
     public Guid? LocationId { get; set; }
     public Location? Location { get; set; }
     public ScheduleEventType EventType { get; set; }
+    public string? PresenterName { get; set; }
+    public string? PresenterBio { get; set; }
     public bool AppliesToAllGroups { get; set; } = true;
     public int? MaxCapacity { get; set; }       // stored silently; future registration feature
     public Guid CreatedBy { get; set; }

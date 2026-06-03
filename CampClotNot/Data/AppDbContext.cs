@@ -91,5 +91,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<InfoPage>()
             .HasIndex(p => p.Slug)
             .IsUnique();
+
+        // Activity → Location (optional): explicit FK to avoid shadow property bug
+        modelBuilder.Entity<Activity>()
+            .HasOne(a => a.Location)
+            .WithMany()
+            .HasForeignKey(a => a.LocationId)
+            .IsRequired(false);
+
+        // IncidentReport → Location (optional): explicit FK to avoid shadow property bug
+        modelBuilder.Entity<IncidentReport>()
+            .HasOne(r => r.IncidentLocation)
+            .WithMany()
+            .HasForeignKey(r => r.IncidentLocationId)
+            .IsRequired(false);
     }
 }

@@ -8,10 +8,11 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-06-02)
+## Current State (as of 2026-06-03)
 
-**Active branch:** `main` / `dev` (all feature work merged)
+**Active branch:** `feature/118-v055-improvements` (off `dev`) — ready to merge
 **Released to main:** v0.5.4 — schedule save bug fix
+**GitHub issue:** #118 — v0.5.5 scope (all items complete, pending PR)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -95,6 +96,46 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - Root cause: `ScheduleEvent.CreatedByUser` navigation had no explicit FK config; EF Core created shadow property `CreatedByUserUserId`; on insert it defaulted to `Guid.Empty`, violating NOT NULL FK constraint
 - Fix: `HasForeignKey(e => e.CreatedBy)` added to `OnModelCreating`
 - Migration `FixScheduleEventCreatedByFK`: drops `CreatedByUserUserId` shadow column/index/FK; wires `CreatedBy` as the real FK to `Users.UserId`
+
+**v0.5.5 — Done (feature/118, issue #118):**
+
+*Entities / enums changed:*
+- `Role` enum: add `MedicalStaff` (C# only — no schema change; stored via UserRole seed). Permissions: log transactions, view+acknowledge incident reports, all Hub features; no admin panel.
+- `ScheduleEventType` enum: add `Presentation` (C# only). `Travel` keeps its code name but displays as "Arrival/Departure" everywhere in the UI.
+- `IncidentReport`: add `IncidentLocationId (Guid? FK→Location)` + `IncidentLocationOther (string?)` + `ReportType (IncidentReportType enum: Internal/ChildrensHarbor)`. Incident form shows location dropdown from active event's locations + always-visible "Other" option (reveals free-text when selected). Admins can choose `ChildrensHarbor` type; all other roles default to `Internal`.
+- `StaffMember`: add `PhotoData (byte[]?)` + `PhotoContentType (string?)`; served via `/staff-photo/{id}`; shows in `/hub/staff` card (falls back to emoji); uploadable in admin dialog.
+- `ScheduleEvent`: add `PresenterName (string?)` + `PresenterBio (string?)`; ONLY shown/editable in admin form when `EventType == Presentation`; only displayed in `/hub/schedule` for Presentation events.
+- `Sponsor`: add `ContactName (string?)` + `Phone (string?)`; tap-to-call `tel:` link on `/hub/sponsors`; drag-and-drop sort in `/admin/sponsors` (admin-only, saves `SortOrder` to DB, drives order for all users).
+- `Location`: add `ImageData (byte[]?)` + `ImageContentType (string?)`; served via `/location-image/{id}`; upload in `/admin/locations` form.
+- `Activity`: add `LocationId (Guid? FK→Location)`; optional location link set in `/admin/activities`; board space rendering (Board.razor, BoardDisplay.razor) uses location image when activity has a location with image.
+
+*Other changes:*
+- Remove Mini Marios group from seed → 3 groups: Blue Shell Bandits, Mushroom Militia, Luma Legends. (Prod DB note: purge will fail if Mini Marios has FK-referenced rows — delete transactions/board positions first.)
+- 12-hour AM/PM time format everywhere in schedule display and admin.
+- Dashboard landing page at `/dashboard`: Sponsors widget (prominent per Vicki), today's schedule, latest announcement, quick nav; `Index.razor` redirects here instead of `/hub/schedule`.
+
+**Migration:** `AddV055Enhancements` (`20260603051634`) — DONE. Applied to local dev DB. Adds columns to `IncidentReport` (IncidentLocationId FK, IncidentLocationOther, ReportType), `StaffMember` (PhotoData, PhotoContentType), `ScheduleEvent` (PresenterName, PresenterBio), `Sponsor` (ContactName, Phone), `Location` (ImageData, ImageContentType), `Activity` (LocationId FK).
+
+**v0.5.5 progress as of 2026-06-03:**
+- [x] All entity files updated
+- [x] All enum additions (MedicalStaff in Role, IncidentReportType, Presentation in ScheduleEventType)
+- [x] AppDbContext: explicit FK config for Activity.LocationId and IncidentReport.IncidentLocationId
+- [x] SeedService: MedicalStaff UserRole + LogTransaction authority link; Mini Marios removed; board positions seed uses Group2/3/4
+- [x] Migration AddV055Enhancements created and applied to dev DB
+
+**v0.5.5 completed items:**
+- [x] Staff photo: endpoint `GET /staff-photo/{id}` + InputFile upload in admin staff dialog + `<img>` in `/hub/staff` card (fallback to AvatarEmoji)
+- [x] Sponsor: ContactName/Phone fields in `/admin/sponsors` form + tap-to-call display in `/hub/sponsors` tile
+- [x] Sponsor drag-and-drop sort in `/admin/sponsors` (HTML5 drag events; saves SortOrder to DB via `SponsorService.UpdateSortOrderAsync`)
+- [x] Incident form (`HubSubNav.razor` modal): location dropdown + "Other" free-text; Admin-only ReportType field
+- [x] `/hub/incidents` list + print view: IncidentLocation column + ReportType badge; MedicalStaff role access
+- [x] Schedule display (`/hub/schedule`): Travel → "Arrival/Departure"; Presentation type + PresenterName/Bio; 12-hr time format
+- [x] Schedule admin (`/admin/schedule`): same Travel label + Presentation type + conditional presenter fields + 12-hr times
+- [x] Location images: `GET /location-image/{id}` in Program.cs + InputFile upload in `/admin/locations` + board space shows location image when available
+- [x] `/admin/activities`: Location dropdown (nullable FK to Location for board image purposes)
+- [x] Dashboard (`/dashboard`): Sponsors widget, today's schedule, latest announcement, quick nav; `Index.razor` redirects here
+- [x] `/hub/incidents` + `/hub/incidents/{id}/print`: `MedicalStaff` role added alongside `Admin`
+- [x] `/admin/users` role dropdown: Medical Staff option added
 
 **Next:** v1.0.0-rc — Dry Run
 

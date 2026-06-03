@@ -26,6 +26,23 @@
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
             </div>
 
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Image (JPEG/PNG, max 2 MB)</div>
+                <InputFile OnChange="HandleImageUpload" accept="image/*" style="font-size:13px;font-family:'Nunito',sans-serif" />
+                @if (!string.IsNullOrWhiteSpace(_imageUploadError))
+                {
+                    <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_imageUploadError</div>
+                }
+                @if (_fImageData is not null)
+                {
+                    <div style="font-size:11px;color:var(--text-mid);margin-top:4px">✅ File ready to upload</div>
+                }
+                else if (_currentHasImage)
+                {
+                    <div style="font-size:11px;color:var(--text-mid);margin-top:4px">Current: uploaded image (leave blank to keep)</div>
+                }
+            </div>
+
             <div style="display:flex;gap:10px;margin-bottom:16px">
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Capacity</div>
@@ -107,6 +124,10 @@
     private string? _fDescription;
     private int? _fCapacity;
     private int _fSortOrder;
+    private byte[]? _fImageData;
+    private string? _fImageContentType;
+    private bool _currentHasImage;
+    private string _imageUploadError = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,17 +142,33 @@
 
     private void StartEdit(Location loc)
     {
-        _editingId    = loc.LocationId;
-        _fName        = loc.Name;
-        _fDescription = loc.Description;
-        _fCapacity    = loc.Capacity;
-        _fSortOrder   = loc.SortOrder;
+        _editingId       = loc.LocationId;
+        _fName           = loc.Name;
+        _fDescription    = loc.Description;
+        _fCapacity       = loc.Capacity;
+        _fSortOrder      = loc.SortOrder;
+        _fImageData      = null; _fImageContentType = null;
+        _currentHasImage = loc.ImageData is not null;
+        _imageUploadError = "";
     }
 
     private void CancelEdit()
     {
         _editingId = Guid.Empty;
         _fName = ""; _fDescription = null; _fCapacity = null; _fSortOrder = 0;
+        _fImageData = null; _fImageContentType = null; _currentHasImage = false; _imageUploadError = "";
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        _imageUploadError = "";
+        var file = e.File;
+        if (file.Size > 2 * 1024 * 1024) { _imageUploadError = "File too large — maximum 2 MB."; return; }
+        using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        _fImageData = ms.ToArray();
+        _fImageContentType = file.ContentType;
     }
 
     private async Task SaveAsync()
@@ -139,11 +176,13 @@
         if (string.IsNullOrWhiteSpace(_fName)) return;
         await LocationSvc.UpsertAsync(new Location
         {
-            LocationId  = _editingId,
-            Name        = _fName.Trim(),
-            Description = _fDescription,
-            Capacity    = _fCapacity,
-            SortOrder   = _fSortOrder
+            LocationId        = _editingId,
+            Name              = _fName.Trim(),
+            Description       = _fDescription,
+            Capacity          = _fCapacity,
+            SortOrder         = _fSortOrder,
+            ImageData         = _fImageData,
+            ImageContentType  = _fImageContentType
         });
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
         CancelEdit();

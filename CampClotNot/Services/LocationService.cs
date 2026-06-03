@@ -27,6 +27,11 @@ public class LocationService(IDbContextFactory<AppDbContext> factory)
             existing.Description = loc.Description;
             existing.Capacity    = loc.Capacity;
             existing.SortOrder   = loc.SortOrder;
+            if (loc.ImageData is not null)
+            {
+                existing.ImageData        = loc.ImageData;
+                existing.ImageContentType = loc.ImageContentType;
+            }
         }
         await db.SaveChangesAsync();
         return loc;
