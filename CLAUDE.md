@@ -10,8 +10,9 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ## Current State (as of 2026-06-02)
 
-**Active branch:** `main` / `dev` (all feature work merged)
+**Active branch:** `feature/118-v055-improvements` (off `dev`)
 **Released to main:** v0.5.4 — schedule save bug fix
+**GitHub issue:** #118 — v0.5.5 scope (see below)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -95,6 +96,18 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - Root cause: `ScheduleEvent.CreatedByUser` navigation had no explicit FK config; EF Core created shadow property `CreatedByUserUserId`; on insert it defaulted to `Guid.Empty`, violating NOT NULL FK constraint
 - Fix: `HasForeignKey(e => e.CreatedBy)` added to `OnModelCreating`
 - Migration `FixScheduleEventCreatedByFK`: drops `CreatedByUserUserId` shadow column/index/FK; wires `CreatedBy` as the real FK to `Users.UserId`
+
+**v0.5.5 — In Progress (feature/118, issue #118):**
+- `IncidentReport` enhancements: `IncidentLocation (string?)` field + `IncidentReportType` enum (`Internal`/`ChildrensHarbor`); Admins can select CH type; all other roles default to `Internal`
+- Remove Mini Marios group from seed → 3 groups total: Blue Shell Bandits, Mushroom Militia, Luma Legends
+- `StaffMember` headshot photo upload: `PhotoData (byte[]?)` + `PhotoContentType (string?)`; `/staff-photo/{id}` endpoint; show in `/hub/staff` card, upload in admin dialog
+- `MedicalStaff` role added to `Role` enum: can log transactions, view+acknowledge incident reports, view all Hub features; no admin panel
+- `Sponsor` enhancements: `ContactName?` + `Phone?` fields; tap-to-call on `/hub/sponsors`; drag-and-drop sort order in `/admin/sponsors`
+- `ScheduleEvent` presenter bios: `PresenterName?` + `PresenterBio?`; shown in `/hub/schedule`; editable in `/admin/schedule`
+- 12-hour AM/PM time format throughout schedule display and admin
+- Dashboard landing page at `/dashboard`: welcome message, Sponsors widget (prominent), today's schedule widget, latest announcement widget, quick nav buttons; `Index.razor` redirects here
+
+**Migration:** `AddV055Enhancements` — adds columns to `IncidentReport`, `StaffMember`, `ScheduleEvent`, `Sponsor`; `Role` enum gets `MedicalStaff` (C# only, no schema change)
 
 **Next:** v1.0.0-rc — Dry Run
 
