@@ -33,10 +33,12 @@ public class SponsorService(IDbContextFactory<AppDbContext> factory)
         }
         else
         {
-            existing.Name            = s.Name;
-            existing.LogoUrl         = s.LogoUrl;
-            existing.Website         = s.Website;
-            existing.SortOrder       = s.SortOrder;
+            existing.Name        = s.Name;
+            existing.LogoUrl     = s.LogoUrl;
+            existing.Website     = s.Website;
+            existing.ContactName = s.ContactName;
+            existing.Phone       = s.Phone;
+            existing.SortOrder   = s.SortOrder;
             if (s.LogoData is not null)
             {
                 existing.LogoData        = s.LogoData;
@@ -45,6 +47,19 @@ public class SponsorService(IDbContextFactory<AppDbContext> factory)
         }
         await db.SaveChangesAsync();
         return s;
+    }
+
+    public async Task UpdateSortOrderAsync(List<Sponsor> ordered)
+    {
+        using var db = factory.CreateDbContext();
+        var ids = ordered.Select(s => s.SponsorId).ToList();
+        var existing = await db.Sponsors.Where(s => ids.Contains(s.SponsorId)).ToListAsync();
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            var match = existing.FirstOrDefault(s => s.SponsorId == ordered[i].SponsorId);
+            if (match is not null) match.SortOrder = i;
+        }
+        await db.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(Guid sponsorId)

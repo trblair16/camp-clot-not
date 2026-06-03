@@ -8,8 +8,8 @@
     {
         var ctx = HttpContextAccessor.HttpContext;
         if (ctx is not null && !ctx.Response.HasStarted)
-            ctx.Response.Redirect("/hub/schedule");
+            ctx.Response.Redirect("/dashboard");
         else
-            Nav.NavigateTo("/hub/schedule", replace: true);
+            Nav.NavigateTo("/dashboard", replace: true);
     }
 }

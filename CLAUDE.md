@@ -8,11 +8,11 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-06-02)
+## Current State (as of 2026-06-03)
 
-**Active branch:** `feature/118-v055-improvements` (off `dev`)
+**Active branch:** `feature/118-v055-improvements` (off `dev`) — ready to merge
 **Released to main:** v0.5.4 — schedule save bug fix
-**GitHub issue:** #118 — v0.5.5 scope (see below)
+**GitHub issue:** #118 — v0.5.5 scope (all items complete, pending PR)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -97,7 +97,7 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - Fix: `HasForeignKey(e => e.CreatedBy)` added to `OnModelCreating`
 - Migration `FixScheduleEventCreatedByFK`: drops `CreatedByUserUserId` shadow column/index/FK; wires `CreatedBy` as the real FK to `Users.UserId`
 
-**v0.5.5 — In Progress (feature/118, issue #118):**
+**v0.5.5 — Done (feature/118, issue #118):**
 
 *Entities / enums changed:*
 - `Role` enum: add `MedicalStaff` (C# only — no schema change; stored via UserRole seed). Permissions: log transactions, view+acknowledge incident reports, all Hub features; no admin panel.
@@ -123,19 +123,19 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - [x] SeedService: MedicalStaff UserRole + LogTransaction authority link; Mini Marios removed; board positions seed uses Group2/3/4
 - [x] Migration AddV055Enhancements created and applied to dev DB
 
-**v0.5.5 remaining (UI + service layer — pick up here next session):**
-- [ ] Staff photo: endpoint `GET /staff-photo/{id}` (same streaming pattern as `/sponsor-logo/{id}` in Program.cs) + InputFile upload in admin staff dialog + `<img>` in `/hub/staff` card (fallback to AvatarEmoji)
-- [ ] Sponsor: ContactName/Phone fields in `/admin/sponsors` form + tap-to-call display in `/hub/sponsors` tile
-- [ ] Sponsor drag-and-drop sort in `/admin/sponsors` (HTML5 drag events via Blazor, saves SortOrder to DB via SponsorService.UpdateSortOrderAsync or similar)
-- [ ] Incident form (`HubSubNav.razor` modal): location dropdown from LocationService (active event locations) + "Other" option that reveals free-text; ReportType field shown only to Admin (default Internal for others)
-- [ ] `/hub/incidents` list + print view: show IncidentLocation name (or "Other: {text}") + ReportType badge
-- [ ] Schedule display (`/hub/schedule`): Travel renders as "Arrival/Departure"; Presentation events show PresenterName/PresenterBio; all times in `h:mm tt` 12-hour format
-- [ ] Schedule admin (`/admin/schedule`): Travel label; Presentation in event type dropdown; PresenterName/PresenterBio inputs conditional on EventType==Presentation; times display in 12-hour in table
-- [ ] Location images: endpoint `GET /location-image/{id}` in Program.cs + InputFile upload in `/admin/locations` + board space rendering in Board.razor and BoardDisplay.razor loads `Activity.Location` include and shows image
-- [ ] `/admin/activities` page: add Location dropdown (nullable, links activity to a Location for board image purposes)
-- [ ] Dashboard (`/dashboard`): new page with Sponsors widget (prominent), today's schedule widget, latest announcement widget, quick nav buttons; update `Index.razor` redirect from `/hub/schedule` → `/dashboard`
-- [ ] `/hub/incidents` role check: add `MedicalStaff` alongside `Admin` on the `[Authorize]` or inline role check
-- [ ] `/admin/users` role dropdown: add `Medical Staff` option
+**v0.5.5 completed items:**
+- [x] Staff photo: endpoint `GET /staff-photo/{id}` + InputFile upload in admin staff dialog + `<img>` in `/hub/staff` card (fallback to AvatarEmoji)
+- [x] Sponsor: ContactName/Phone fields in `/admin/sponsors` form + tap-to-call display in `/hub/sponsors` tile
+- [x] Sponsor drag-and-drop sort in `/admin/sponsors` (HTML5 drag events; saves SortOrder to DB via `SponsorService.UpdateSortOrderAsync`)
+- [x] Incident form (`HubSubNav.razor` modal): location dropdown + "Other" free-text; Admin-only ReportType field
+- [x] `/hub/incidents` list + print view: IncidentLocation column + ReportType badge; MedicalStaff role access
+- [x] Schedule display (`/hub/schedule`): Travel → "Arrival/Departure"; Presentation type + PresenterName/Bio; 12-hr time format
+- [x] Schedule admin (`/admin/schedule`): same Travel label + Presentation type + conditional presenter fields + 12-hr times
+- [x] Location images: `GET /location-image/{id}` in Program.cs + InputFile upload in `/admin/locations` + board space shows location image when available
+- [x] `/admin/activities`: Location dropdown (nullable FK to Location for board image purposes)
+- [x] Dashboard (`/dashboard`): Sponsors widget, today's schedule, latest announcement, quick nav; `Index.razor` redirects here
+- [x] `/hub/incidents` + `/hub/incidents/{id}/print`: `MedicalStaff` role added alongside `Admin`
+- [x] `/admin/users` role dropdown: Medical Staff option added
 
 **Next:** v1.0.0-rc — Dry Run
 

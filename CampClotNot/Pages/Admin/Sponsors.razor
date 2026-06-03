@@ -50,6 +50,18 @@
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
             </div>
 
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Contact Name (optional)</div>
+                <input type="text" @bind="_fContactName" placeholder="e.g. Jane Smith"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Phone (optional — tap-to-call)</div>
+                <input type="tel" @bind="_fPhone" placeholder="e.g. (205) 555-1234"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
             <div style="margin-bottom:16px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Sort Order</div>
                 <input type="number" @bind="_fSortOrder"
@@ -82,21 +94,31 @@
             }
             else
             {
+                <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">Drag rows to reorder. Changes save immediately.</div>
                 <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">
+                                <th style="padding:10px 8px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;width:28px"></th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Logo</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Website</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Order</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var s in _sponsors)
+                            @for (int i = 0; i < _sponsors.Count; i++)
                             {
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                var s = _sponsors[i];
+                                var idx = i;
+                                <tr draggable="true"
+                                    style="border-bottom:2px solid #E8E0CC;background:@(_dragOverIndex == idx ? "#EDE7D0" : "transparent")"
+                                    @ondragstart="() => _dragIndex = idx"
+                                    @ondragover:preventDefault="true"
+                                    @ondragover="() => _dragOverIndex = idx"
+                                    @ondrop="() => DropAsync(idx)"
+                                    @ondragleave="() => { if (_dragOverIndex == idx) _dragOverIndex = -1; }">
+                                    <td style="padding:10px 8px;color:var(--text-light);cursor:grab;font-size:16px;text-align:center">⠿</td>
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@s.Name</td>
                                     <td style="padding:8px 14px">
                                         <img src="@LogoSrc(s)" alt="@s.Name"
@@ -109,7 +131,6 @@
                                         }
                                         else { <span>—</span> }
                                     </td>
-                                    <td style="padding:10px 14px;font-size:13px">@s.SortOrder</td>
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(s)">Edit</button>
@@ -131,9 +152,13 @@
     private List<Sponsor> _sponsors = [];
     private bool _loading = true;
     private Guid _editingId;
+    private int _dragIndex = -1;
+    private int _dragOverIndex = -1;
     private string _fName = "";
     private string? _fLogoUrl;
     private string? _fWebsite;
+    private string? _fContactName;
+    private string? _fPhone;
     private int _fSortOrder;
     private byte[]? _fLogoData;
     private string? _fLogoContentType;
@@ -174,6 +199,8 @@
         _fName          = s.Name;
         _fLogoUrl       = s.LogoUrl;
         _fWebsite       = s.Website;
+        _fContactName   = s.ContactName;
+        _fPhone         = s.Phone;
         _fSortOrder     = s.SortOrder;
         _fLogoData      = null;
         _fLogoContentType = null;
@@ -185,7 +212,7 @@
     private void CancelEdit()
     {
         _editingId = Guid.Empty;
-        _fName = ""; _fLogoUrl = null; _fWebsite = null; _fSortOrder = 0;
+        _fName = ""; _fLogoUrl = null; _fWebsite = null; _fContactName = null; _fPhone = null; _fSortOrder = 0;
         _fLogoData = null; _fLogoContentType = null; _currentHasFile = false;
         _uploadError = ""; _saveError = "";
     }
@@ -212,6 +239,8 @@
             LogoData         = _fLogoData,
             LogoContentType  = _fLogoContentType,
             Website          = string.IsNullOrWhiteSpace(_fWebsite) ? null : _fWebsite.Trim(),
+            ContactName      = string.IsNullOrWhiteSpace(_fContactName) ? null : _fContactName.Trim(),
+            Phone            = string.IsNullOrWhiteSpace(_fPhone) ? null : _fPhone.Trim(),
             SortOrder        = _fSortOrder
         });
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
@@ -223,6 +252,18 @@
     {
         await SponsorSvc.DeleteAsync(s.SponsorId);
         Snackbar.Add($"{s.Name} deleted.", Severity.Info);
+        await Reload();
+    }
+
+    private async Task DropAsync(int dropIndex)
+    {
+        _dragOverIndex = -1;
+        if (_dragIndex < 0 || _dragIndex == dropIndex) { _dragIndex = -1; return; }
+        var item = _sponsors[_dragIndex];
+        _sponsors.RemoveAt(_dragIndex);
+        _sponsors.Insert(dropIndex, item);
+        _dragIndex = -1;
+        await SponsorSvc.UpdateSortOrderAsync(_sponsors);
         await Reload();
     }
 

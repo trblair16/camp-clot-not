@@ -206,6 +206,7 @@
     <AuthorizeView>
         <Authorized>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <a href="/dashboard" class="nav-link" style="@ActiveStyle("/dashboard", "#27AE60")">🏠 Home</a>
                 <a href="/hub/schedule" class="nav-link" style="@ActiveStyle("/hub/schedule", "#2980B9")">📅 Schedule</a>
 
                 @* ── Hub dropdown ── *@
@@ -247,8 +248,10 @@
                     @if (_gameDropdownOpen)
                     {
                         <div class="nav-admin-panel">
-                            <a href="/dashboard" @onclick="() => _gameDropdownOpen = false">📊 Leaderboard</a>
-                            <a href="/board" @onclick="() => _gameDropdownOpen = false">🗺️ Board Game</a>
+                            <a href="/leaderboard" @onclick="() => _gameDropdownOpen = false">📊 Leaderboard</a>
+                            <AuthorizeView Roles="Admin,Staff" Context="boardCtx">
+                                <a href="/board" @onclick="() => _gameDropdownOpen = false">🗺️ Board Game</a>
+                            </AuthorizeView>
                             <AuthorizeView Roles="Admin" Context="gameAdminCtx">
                                 <a href="/minigames" @onclick="() => _gameDropdownOpen = false">🎲 Mini-Game</a>
                                 <button @onclick="() => { _gameDropdownOpen = false; OnLeaderboardClick.InvokeAsync(); }">📺 Projector</button>
@@ -298,6 +301,10 @@
 <AuthorizeView>
     <Authorized>
         <div class="nav-bottom-bar">
+            <a href="/dashboard" class="nav-tab @(IsDashboardActive() ? "active" : "")">
+                <span class="tab-icon">🏠</span>
+                <span>Home</span>
+            </a>
             <a href="/hub/schedule" class="nav-tab @(IsScheduleActive() ? "active" : "")">
                 <span class="tab-icon">📅</span>
                 <span>Schedule</span>
@@ -328,8 +335,10 @@
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _gameSheetOpen = false"></div>
     <div class="nav-game-sheet">
-        <a href="/dashboard" @onclick="() => _gameSheetOpen = false">📊 Leaderboard</a>
-        <a href="/board"     @onclick="() => _gameSheetOpen = false">🗺️ Board Game</a>
+        <a href="/leaderboard" @onclick="() => _gameSheetOpen = false">📊 Leaderboard</a>
+        <AuthorizeView Roles="Admin,Staff">
+            <a href="/board" @onclick="() => _gameSheetOpen = false">🗺️ Board Game</a>
+        </AuthorizeView>
         <AuthorizeView Roles="Admin">
             <a href="/minigames" @onclick="() => _gameSheetOpen = false">🎲 Mini-Game</a>
         </AuthorizeView>
@@ -369,6 +378,8 @@
             : ("/" + Nav.ToBaseRelativePath(Nav.Uri))
                 .StartsWith(href, StringComparison.OrdinalIgnoreCase);
 
+    private bool IsDashboardActive() => IsActive("/dashboard");
+
     private bool IsScheduleActive() => IsActive("/hub/schedule");
 
     private bool IsHubActive()
@@ -379,7 +390,7 @@
     }
 
     private bool IsGameActive() =>
-        IsActive("/dashboard") || IsActive("/board") || IsActive("/minigames");
+        IsActive("/leaderboard") || IsActive("/board") || IsActive("/minigames");
 
     private string ActiveStyle(string href, string color)
     {

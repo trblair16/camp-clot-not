@@ -54,10 +54,24 @@
                         style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box">
                     @foreach (var t in Enum.GetValues<ScheduleEventType>())
                     {
-                        <option value="@t">@t</option>
+                        <option value="@t">@DisplayEventType(t)</option>
                     }
                 </select>
             </div>
+
+            @if (_fType == ScheduleEventType.Presentation)
+            {
+                <div style="margin-bottom:14px">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Presenter Name</div>
+                    <input type="text" @bind="_fPresenterName" placeholder="e.g. Dr. Jane Smith"
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                </div>
+                <div style="margin-bottom:14px">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Presenter Bio (optional)</div>
+                    <textarea @bind="_fPresenterBio" rows="3" placeholder="Short bio shown to attendees"
+                              style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;resize:vertical"></textarea>
+                </div>
+            }
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Location (optional)</div>
@@ -206,7 +220,7 @@
                                     </td>
                                     <td style="padding:8px 14px">
                                         <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@EventTypeBadgeColor(ev.EventType);color:white;font-family:'Fredoka One',cursive">
-                                            @ev.EventType
+                                            @DisplayEventType(ev.EventType)
                                         </span>
                                     </td>
                                     <td style="padding:8px 14px;font-size:12px;color:var(--text-mid)">@(ev.Location?.Name ?? "—")</td>
@@ -243,6 +257,8 @@
     private ScheduleEventType _fType = ScheduleEventType.Activity;
     private Guid? _fLocationId;
     private string? _fDesc;
+    private string? _fPresenterName;
+    private string? _fPresenterBio;
     private List<AssignmentFormRow> _fAssignments = new();
     private bool _assignmentsExpanded;
     private string _error = "";
@@ -289,14 +305,16 @@
 
     private void StartEdit(ScheduleEvent ev)
     {
-        _editingId   = ev.ScheduleEventId;
-        _fTitle      = ev.Title;
-        _fDesc       = ev.Description;
-        _fDateStr    = ev.CampDay.ToString("yyyy-MM-dd");
-        _fStartStr   = ev.StartTime.ToString("HH:mm");
-        _fEndStr     = ev.EndTime?.ToString("HH:mm") ?? "";
-        _fType       = ev.EventType;
-        _fLocationId = ev.LocationId;
+        _editingId      = ev.ScheduleEventId;
+        _fTitle         = ev.Title;
+        _fDesc          = ev.Description;
+        _fDateStr       = ev.CampDay.ToString("yyyy-MM-dd");
+        _fStartStr      = ev.StartTime.ToString("HH:mm");
+        _fEndStr        = ev.EndTime?.ToString("HH:mm") ?? "";
+        _fType          = ev.EventType;
+        _fLocationId    = ev.LocationId;
+        _fPresenterName = ev.PresenterName;
+        _fPresenterBio  = ev.PresenterBio;
         _fAssignments = _groups.Select(g =>
         {
             var existing = ev.EventGroups.FirstOrDefault(eg => eg.GroupId == g.GroupId);
@@ -322,6 +340,8 @@
         _fEndStr             = "";
         _fType               = ScheduleEventType.Activity;
         _fLocationId         = null;
+        _fPresenterName      = null;
+        _fPresenterBio       = null;
         _fAssignments        = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _error               = "";
@@ -343,6 +363,7 @@
             .Select(a => new GroupAssignmentDto(a.GroupId, a.ActivityId, a.LocationId, a.Note))
             .ToList();
 
+        var isPresentation = _fType == ScheduleEventType.Presentation;
         var dto = new ScheduleEventDto(
             _editingId,
             SeedService.Id.EventCcn2026,
@@ -350,7 +371,9 @@
             _fTitle.Trim(), _fDesc,
             _fLocationId, _fType,
             !assignments.Any(),
-            null, assignments
+            null, assignments,
+            isPresentation ? _fPresenterName : null,
+            isPresentation ? _fPresenterBio  : null
         );
         await ScheduleSvc.UpsertAsync(dto, _userId);
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fTitle} added." : $"{_fTitle} updated.", Severity.Success);
@@ -365,13 +388,20 @@
         await Reload();
     }
 
+    private static string DisplayEventType(ScheduleEventType t) => t switch
+    {
+        ScheduleEventType.Travel => "Arrival/Departure",
+        _ => t.ToString()
+    };
+
     private static string EventTypeBadgeColor(ScheduleEventType t) => t switch
     {
-        ScheduleEventType.Meal      => "#E67E22",
-        ScheduleEventType.Travel    => "#2980B9",
-        ScheduleEventType.Free      => "#27AE60",
-        ScheduleEventType.Mandatory => "#D12B2B",
-        _                           => "#8E44AD"
+        ScheduleEventType.Meal         => "#E67E22",
+        ScheduleEventType.Travel       => "#2980B9",
+        ScheduleEventType.Free         => "#27AE60",
+        ScheduleEventType.Mandatory    => "#D12B2B",
+        ScheduleEventType.Presentation => "#8E44AD",
+        _                              => "#8E44AD"
     };
 
     private class AssignmentFormRow

@@ -1,17 +1,27 @@
 @inject NavigationManager Nav
 @inject IHttpContextAccessor HttpCtx
+@inject AuthenticationStateProvider AuthState
 
 @code {
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         var http = HttpCtx.HttpContext;
-        // During prerendering HttpContext is available — use a real HTTP redirect
-        // so NavigationException never bubbles up through the dev exception page.
-        // During the interactive SignalR circuit HttpContext is null, so fall back
-        // to NavigateTo which Blazor's router handles correctly.
         if (http is not null && !http.Response.HasStarted)
-            http.Response.Redirect("/login");
+        {
+            // During prerendering: authenticated users who lack a role go to dashboard,
+            // unauthenticated users go to login.
+            if (http.User.Identity?.IsAuthenticated == true)
+                http.Response.Redirect("/dashboard");
+            else
+                http.Response.Redirect("/login");
+        }
         else
-            Nav.NavigateTo("/login", forceLoad: true);
+        {
+            var state = await AuthState.GetAuthenticationStateAsync();
+            if (state.User.Identity?.IsAuthenticated == true)
+                Nav.NavigateTo("/dashboard", replace: true);
+            else
+                Nav.NavigateTo("/login", forceLoad: true);
+        }
     }
 }

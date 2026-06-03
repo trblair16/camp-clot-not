@@ -87,6 +87,11 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory)
             existing.IsVisible    = member.IsVisible;
             existing.SortOrder    = member.SortOrder;
             existing.LinkedUserId = member.LinkedUserId;
+            if (member.PhotoData is not null)
+            {
+                existing.PhotoData        = member.PhotoData;
+                existing.PhotoContentType = member.PhotoContentType;
+            }
         }
         await db.SaveChangesAsync();
     }

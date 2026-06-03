@@ -144,11 +144,41 @@
                           placeholder="Include what led up to and responses to the incident"></textarea>
             </div>
 
-            <div style="margin-bottom:20px">
+            <div style="margin-bottom:14px">
                 <div class="incident-field-label">Recommended Action</div>
                 <textarea class="incident-input" rows="3" @bind="_fRecommendedAction"
                           placeholder="Optional"></textarea>
             </div>
+
+            <div style="margin-bottom:14px">
+                <div class="incident-field-label">Location</div>
+                <select class="incident-input"
+                        value="@_fLocationSelection"
+                        @onchange="e => HandleLocationChange(e.Value?.ToString())">
+                    <option value="">— Select location —</option>
+                    @foreach (var loc in _locations)
+                    {
+                        <option value="@loc.LocationId">@loc.Name</option>
+                    }
+                    <option value="other">Other</option>
+                </select>
+                @if (_showOtherLocation)
+                {
+                    <input type="text" class="incident-input" style="margin-top:8px"
+                           @bind="_fLocationOther" placeholder="Describe location" />
+                }
+            </div>
+
+            @if (_isAdmin)
+            {
+                <div style="margin-bottom:14px">
+                    <div class="incident-field-label">Report Type</div>
+                    <select class="incident-input" @bind="_fReportType">
+                        <option value="@IncidentReportType.Internal">Internal</option>
+                        <option value="@IncidentReportType.ChildrensHarbor">Children's Harbor</option>
+                    </select>
+                </div>
+            }
 
             @if (!string.IsNullOrWhiteSpace(_errorMsg))
             {
@@ -182,10 +212,25 @@
     private string _fPersonsInvolved    = "";
     private string _fDescription        = "";
     private string _fRecommendedAction  = "";
+    private string _fLocationSelection  = "";
+    private Guid? _fLocationId;
+    private string? _fLocationOther;
+    private bool _showOtherLocation;
+    private IncidentReportType _fReportType = IncidentReportType.Internal;
+    private bool _isAdmin;
+    private List<Location> _locations = [];
 
     // Injected via parameter from parent — avoids cascading inject issues in component tree
     [Inject] private IncidentReportService IncidentSvc { get; set; } = default!;
+    [Inject] private LocationService LocationSvc { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await Auth.GetAuthenticationStateAsync();
+        _isAdmin = state.User.IsInRole("Admin");
+        _locations = await LocationSvc.GetAllAsync();
+    }
 
     private void OpenModal()
     {
@@ -194,8 +239,29 @@
         _fPersonsInvolved  = "";
         _fDescription      = "";
         _fRecommendedAction = "";
+        _fLocationSelection = "";
+        _fLocationId        = null;
+        _fLocationOther     = null;
+        _showOtherLocation  = false;
+        _fReportType        = IncidentReportType.Internal;
         _errorMsg          = "";
         _modalOpen         = true;
+    }
+
+    private void HandleLocationChange(string? value)
+    {
+        _fLocationSelection = value ?? "";
+        if (string.IsNullOrEmpty(value) || value == "other")
+        {
+            _fLocationId = null;
+            _showOtherLocation = value == "other";
+        }
+        else if (Guid.TryParse(value, out var id))
+        {
+            _fLocationId = id;
+            _showOtherLocation = false;
+            _fLocationOther = null;
+        }
     }
 
     private void CloseModal() => _modalOpen = false;
@@ -219,15 +285,18 @@
 
         await IncidentSvc.SubmitAsync(new IncidentReport
         {
-            EventId            = Services.SeedService.Id.EventCcn2026,
-            DateOfIncident     = _fDateOfIncident,
-            DateCompleted      = _fDateCompleted,
-            PersonsInvolved    = _fPersonsInvolved.Trim(),
-            Description        = _fDescription.Trim(),
-            RecommendedAction  = _fRecommendedAction.Trim(),
-            SubmittedByUserId  = userId,
-            SubmittedByName    = name,
-            SubmittedByRole    = role,
+            EventId                = Services.SeedService.Id.EventCcn2026,
+            DateOfIncident         = _fDateOfIncident,
+            DateCompleted          = _fDateCompleted,
+            PersonsInvolved        = _fPersonsInvolved.Trim(),
+            Description            = _fDescription.Trim(),
+            RecommendedAction      = _fRecommendedAction.Trim(),
+            SubmittedByUserId      = userId,
+            SubmittedByName        = name,
+            SubmittedByRole        = role,
+            IncidentLocationId     = _fLocationId,
+            IncidentLocationOther  = _showOtherLocation ? _fLocationOther?.Trim() : null,
+            ReportType             = _isAdmin ? _fReportType : IncidentReportType.Internal,
         });
 
         _submitting = false;

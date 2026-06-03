@@ -120,7 +120,7 @@ try
         var email    = form["email"].ToString();
         var password = form["password"].ToString();
         var ok = await auth.LoginAsync(ctx, email, password);
-        return ok ? Results.Redirect("/hub/schedule") : Results.Redirect("/login?error=true");
+        return ok ? Results.Redirect("/dashboard") : Results.Redirect("/login?error=true");
     });
 
     app.MapGet("/logout", async (HttpContext ctx) =>
@@ -136,6 +136,22 @@ try
         if (s?.LogoData is null) return Results.NotFound();
         return Results.File(s.LogoData, s.LogoContentType ?? "image/jpeg");
     });
+
+    app.MapGet("/staff-photo/{id:guid}", async (Guid id, IDbContextFactory<AppDbContext> factory) =>
+    {
+        using var db = factory.CreateDbContext();
+        var member = await db.StaffMembers.FindAsync(id);
+        if (member?.PhotoData is null) return Results.NotFound();
+        return Results.File(member.PhotoData, member.PhotoContentType ?? "image/jpeg");
+    }).AllowAnonymous();
+
+    app.MapGet("/location-image/{id:guid}", async (Guid id, IDbContextFactory<AppDbContext> factory) =>
+    {
+        using var db = factory.CreateDbContext();
+        var loc = await db.Locations.FindAsync(id);
+        if (loc?.ImageData is null) return Results.NotFound();
+        return Results.File(loc.ImageData, loc.ImageContentType ?? "image/jpeg");
+    }).AllowAnonymous();
 
     app.MapHub<LiveHub>("/livehub");
     app.MapBlazorHub();

@@ -36,11 +36,17 @@
             @* Space circle *@
             <circle cx="@sx" cy="@sy" r="18" fill="@spColor" stroke="#0e1628" stroke-width="3" opacity="0.93" />
 
-            @* Space icon — wrapped in <g> so Razor parses <text> as SVG not pseudo-element *@
-            <g>
-                <text x="@sx" y="@(sy + 1)" text-anchor="middle" dominant-baseline="middle" font-size="13">@spIcon</text>
-                <text x="@sx" y="@(sy + 28)" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.35)">@space.SpaceIndex</text>
-            </g>
+            @* Space icon or location image *@
+            @if (space.LocationId is not null)
+            {
+                <image href="/location-image/@space.LocationId" x="@(sx - 14)" y="@(sy - 14)" width="28" height="28"
+                       preserveAspectRatio="xMidYMid slice" />
+            }
+            else
+            {
+                <g><text x="@sx" y="@(sy + 1)" text-anchor="middle" dominant-baseline="middle" font-size="13">@spIcon</text></g>
+            }
+            <g><text x="@sx" y="@(sy + 28)" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.35)">@space.SpaceIndex</text></g>
 
             </g>
     }
