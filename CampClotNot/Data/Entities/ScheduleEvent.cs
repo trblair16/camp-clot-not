@@ -1,11 +1,9 @@
 namespace CampClotNot.Data.Entities;
 
-public enum ScheduleEventType { Activity, Meal, Travel, Free, Mandatory, Presentation }
-
-public class ScheduleEvent
+public class ScheduleItem
 {
-    public Guid ScheduleEventId { get; set; }
-    public Guid CampEventId { get; set; }       // FK to Event — scopes to CCN 2026
+    public Guid ScheduleItemId { get; set; }
+    public Guid CampEventId { get; set; }
     public Event CampEvent { get; set; } = null!;
     public DateOnly CampDay { get; set; }
     public TimeOnly StartTime { get; set; }
@@ -14,13 +12,14 @@ public class ScheduleEvent
     public string? Description { get; set; }
     public Guid? LocationId { get; set; }
     public Location? Location { get; set; }
-    public ScheduleEventType EventType { get; set; }
+    public Guid ScheduleItemTypeId { get; set; }
+    public ScheduleItemType ScheduleItemType { get; set; } = null!;
     public string? PresenterName { get; set; }
     public string? PresenterBio { get; set; }
     public bool AppliesToAllGroups { get; set; } = true;
-    public int? MaxCapacity { get; set; }       // stored silently; future registration feature
+    public int? MaxCapacity { get; set; }
     public Guid CreatedBy { get; set; }
     public User CreatedByUser { get; set; } = null!;
     public DateTime UpdatedAt { get; set; }
-    public List<ScheduleEventGroup> EventGroups { get; set; } = new();
+    public List<ScheduleItemGroup> ItemGroups { get; set; } = new();
 }

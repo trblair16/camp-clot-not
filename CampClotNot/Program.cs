@@ -65,6 +65,7 @@ try
     builder.Services.AddScoped<StaffDirectoryService>();
     builder.Services.AddScoped<AnnouncementService>();
     builder.Services.AddScoped<ScheduleService>();
+    builder.Services.AddScoped<ScheduleItemTypeService>();
     builder.Services.AddScoped<IncidentReportService>();
     builder.Services.AddScoped<SponsorService>();
     builder.Services.AddScoped<AuthService>();

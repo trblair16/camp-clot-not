@@ -44,8 +44,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<InfoPage> InfoPages => Set<InfoPage>();
     public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
-    public DbSet<ScheduleEvent> ScheduleEvents => Set<ScheduleEvent>();
-    public DbSet<ScheduleEventGroup> ScheduleEventGroups => Set<ScheduleEventGroup>();
+    public DbSet<ScheduleItem> ScheduleItems => Set<ScheduleItem>();
+    public DbSet<ScheduleItemGroup> ScheduleItemGroups => Set<ScheduleItemGroup>();
+    public DbSet<ScheduleItemType> ScheduleItemTypes => Set<ScheduleItemType>();
+    public DbSet<EventScheduleItemType> EventScheduleItemTypes => Set<EventScheduleItemType>();
     public DbSet<IncidentReport> IncidentReports => Set<IncidentReport>();
     public DbSet<Sponsor> Sponsors => Set<Sponsor>();
 
@@ -76,16 +78,36 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // InfoPage: non-conventional PK (PageId, not InfoPageId)
         modelBuilder.Entity<InfoPage>().HasKey(p => p.PageId);
 
-        // ScheduleEvent: non-conventional PK; CreatedBy is the FK to Users (not the shadow CreatedByUserUserId)
-        modelBuilder.Entity<ScheduleEvent>().HasKey(e => e.ScheduleEventId);
-        modelBuilder.Entity<ScheduleEvent>()
+        // ScheduleItem: explicit PK + FK configs to avoid shadow property bugs
+        modelBuilder.Entity<ScheduleItem>().HasKey(e => e.ScheduleItemId);
+        modelBuilder.Entity<ScheduleItem>()
             .HasOne(e => e.CreatedByUser)
             .WithMany()
             .HasForeignKey(e => e.CreatedBy);
+        modelBuilder.Entity<ScheduleItem>()
+            .HasOne(e => e.ScheduleItemType)
+            .WithMany()
+            .HasForeignKey(e => e.ScheduleItemTypeId);
 
-        // ScheduleEventGroup: composite PK
-        modelBuilder.Entity<ScheduleEventGroup>()
-            .HasKey(eg => new { eg.ScheduleEventId, eg.GroupId });
+        // ScheduleItemGroup: composite PK
+        modelBuilder.Entity<ScheduleItemGroup>()
+            .HasKey(eg => new { eg.ScheduleItemId, eg.GroupId });
+        modelBuilder.Entity<ScheduleItemGroup>()
+            .HasOne(eg => eg.ScheduleItem)
+            .WithMany(e => e.ItemGroups)
+            .HasForeignKey(eg => eg.ScheduleItemId);
+
+        // EventScheduleItemType: composite PK + FK configs
+        modelBuilder.Entity<EventScheduleItemType>()
+            .HasKey(e => new { e.EventId, e.ScheduleItemTypeId });
+        modelBuilder.Entity<EventScheduleItemType>()
+            .HasOne(e => e.Event)
+            .WithMany()
+            .HasForeignKey(e => e.EventId);
+        modelBuilder.Entity<EventScheduleItemType>()
+            .HasOne(e => e.ScheduleItemType)
+            .WithMany()
+            .HasForeignKey(e => e.ScheduleItemTypeId);
 
         // InfoPage: unique index on Slug
         modelBuilder.Entity<InfoPage>()

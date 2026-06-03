@@ -1,0 +1,198 @@
+@page "/admin/schedule-item-types"
+@attribute [Authorize(Roles = "Admin")]
+@inject ScheduleItemTypeService ScheduleItemTypeSvc
+@inject ISnackbar Snackbar
+
+<PageTitle>Schedule Types Admin — Camp Clot Not</PageTitle>
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🗂️ Schedule Item Types</h2>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+        @* ── Form panel ── *@
+        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
+            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Type" : "Edit Type")</h3>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name</div>
+                <input type="text" @bind="_fName" placeholder="e.g. Workshop"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Description (optional)</div>
+                <input type="text" @bind="_fDescription" placeholder="Brief description"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Sort Order</div>
+                <input type="number" @bind="_fSortOrder" min="1"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_error</div>
+            }
+
+            <div style="display:flex;gap:8px">
+                <button class="ccn-btn" @onclick="SaveAsync">@(_editingId == Guid.Empty ? "Add Type" : "Save Changes")</button>
+                @if (_editingId != Guid.Empty)
+                {
+                    <button class="ccn-btn" style="background:transparent" @onclick="CancelEdit">Cancel</button>
+                }
+            </div>
+        </div>
+
+        @* ── Table ── *@
+        <div style="flex:1;min-width:300px">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_types.Any())
+            {
+                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No types yet. Add the first one →</p>
+            }
+            else
+            {
+                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden;margin-bottom:24px">
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:var(--black)">
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">#</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">System Name</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Enabled '26</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in _types)
+                            {
+                                var enabled = _enabledIds.Contains(t.ScheduleItemTypeId);
+                                <tr style="border-bottom:2px solid #E8E0CC">
+                                    <td style="padding:8px 14px;font-size:13px;color:var(--text-light)">@t.SortOrder</td>
+                                    <td style="padding:8px 14px;font-size:13px;font-weight:700">
+                                        @t.Name
+                                        @if (!string.IsNullOrEmpty(t.Description))
+                                        {
+                                            <div style="font-size:11px;color:var(--text-light);font-weight:400">@t.Description</div>
+                                        }
+                                    </td>
+                                    <td style="padding:8px 14px;font-size:12px;color:var(--text-mid);font-family:monospace">@t.SystemName</td>
+                                    <td style="padding:8px 14px">
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:@(enabled ? "#27AE60" : "transparent");color:@(enabled ? "white" : "var(--text-dark)")"
+                                                @onclick="() => ToggleEventTypeAsync(t.ScheduleItemTypeId, !enabled)">
+                                            @(enabled ? "✓ On" : "Off")
+                                        </button>
+                                    </td>
+                                    <td style="padding:8px 10px">
+                                        <div style="display:flex;gap:4px">
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(t)">Edit</button>
+                                            @if (string.IsNullOrEmpty(t.SystemName) || !IsBuiltIn(t.SystemName))
+                                            {
+                                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(t)">Del</button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="font-size:12px;color:var(--text-light);font-family:'Nunito',sans-serif">
+                    <strong>System Name</strong> is a stable code identifier used for special UI logic (e.g. Presentation shows speaker fields, Travel shows as "Arrival/Departure"). Built-in types cannot be deleted.
+                </div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private List<ScheduleItemType> _types = new();
+    private HashSet<Guid> _enabledIds = new();
+    private bool _loading = true;
+    private Guid _editingId;
+
+    private string _fName = "";
+    private string? _fDescription;
+    private int _fSortOrder = 10;
+    private string _error = "";
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _types      = await ScheduleItemTypeSvc.GetAllAsync();
+        _enabledIds = (await ScheduleItemTypeSvc.GetEnabledIdsForEventAsync(SeedService.Id.EventCcn2026)).ToHashSet();
+        _loading    = false;
+    }
+
+    private void StartEdit(ScheduleItemType t)
+    {
+        _editingId    = t.ScheduleItemTypeId;
+        _fName        = t.Name;
+        _fDescription = t.Description;
+        _fSortOrder   = t.SortOrder;
+        _error        = "";
+    }
+
+    private void CancelEdit()
+    {
+        _editingId    = Guid.Empty;
+        _fName        = "";
+        _fDescription = null;
+        _fSortOrder   = 10;
+        _error        = "";
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = "";
+        if (string.IsNullOrWhiteSpace(_fName)) { _error = "Name is required."; return; }
+
+        var existing = _editingId != Guid.Empty
+            ? _types.FirstOrDefault(t => t.ScheduleItemTypeId == _editingId)
+            : null;
+
+        var type = new ScheduleItemType
+        {
+            ScheduleItemTypeId = _editingId == Guid.Empty ? Guid.Empty : _editingId,
+            Name               = _fName.Trim(),
+            SystemName         = existing?.SystemName ?? _fName.Trim().Replace(" ", ""),
+            Description        = _fDescription,
+            SortOrder          = _fSortOrder,
+        };
+
+        await ScheduleItemTypeSvc.UpsertAsync(type);
+        Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
+        CancelEdit();
+        await Reload();
+    }
+
+    private async Task DeleteAsync(ScheduleItemType t)
+    {
+        var ok = await ScheduleItemTypeSvc.DeleteAsync(t.ScheduleItemTypeId);
+        if (!ok)
+            Snackbar.Add($"Cannot delete \"{t.Name}\" — it is assigned to schedule items.", Severity.Warning);
+        else
+        {
+            Snackbar.Add($"{t.Name} deleted.", Severity.Info);
+            await Reload();
+        }
+    }
+
+    private async Task ToggleEventTypeAsync(Guid typeId, bool enabled)
+    {
+        await ScheduleItemTypeSvc.SetEventTypeEnabledAsync(SeedService.Id.EventCcn2026, typeId, enabled);
+        if (enabled) _enabledIds.Add(typeId); else _enabledIds.Remove(typeId);
+    }
+
+    private static bool IsBuiltIn(string systemName) =>
+        systemName is "Activity" or "Meal" or "Travel" or "Free" or "Mandatory" or "Presentation";
+}
