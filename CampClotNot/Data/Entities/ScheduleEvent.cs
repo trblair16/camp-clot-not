@@ -12,6 +12,9 @@ public class ScheduleItem
     public string? Description { get; set; }
     public Guid? LocationId { get; set; }
     public Location? Location { get; set; }
+    public string? LocationOther { get; set; }
+    public Guid? ActivityId { get; set; }
+    public Activity? Activity { get; set; }
     public Guid ScheduleItemTypeId { get; set; }
     public ScheduleItemType ScheduleItemType { get; set; } = null!;
     public string? PresenterName { get; set; }

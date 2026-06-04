@@ -15,12 +15,14 @@ public record ScheduleItemDto(
     string Title,
     string? Description,
     Guid? LocationId,
+    Guid? ActivityId,
     Guid ScheduleItemTypeId,
     bool AppliesToAllGroups,
     int? MaxCapacity,
     List<GroupAssignmentDto> Assignments,
     string? PresenterName = null,
-    string? PresenterBio = null
+    string? PresenterBio = null,
+    string? LocationOther = null
 );
 
 public class ScheduleService(IDbContextFactory<AppDbContext> factory)
@@ -32,6 +34,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
             .Where(e => e.CampEventId == campEventId)
             .Include(e => e.ScheduleItemType)
             .Include(e => e.Location)
+            .Include(e => e.Activity)
             .Include(e => e.ItemGroups)
                 .ThenInclude(eg => eg.Group)
             .Include(e => e.ItemGroups)
@@ -49,6 +52,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
             .Where(e => e.CampEventId == campEventId && e.CampDay == day)
             .Include(e => e.ScheduleItemType)
             .Include(e => e.Location)
+            .Include(e => e.Activity)
             .Include(e => e.ItemGroups)
                 .ThenInclude(eg => eg.Group)
             .Include(e => e.ItemGroups)
@@ -78,6 +82,8 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
                 Title              = dto.Title,
                 Description        = dto.Description,
                 LocationId         = dto.LocationId,
+                LocationOther      = dto.LocationOther,
+                ActivityId         = dto.ActivityId,
                 ScheduleItemTypeId = dto.ScheduleItemTypeId,
                 AppliesToAllGroups = dto.AppliesToAllGroups,
                 MaxCapacity        = dto.MaxCapacity,
@@ -107,6 +113,8 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
             existing.Title              = dto.Title;
             existing.Description        = dto.Description;
             existing.LocationId         = dto.LocationId;
+            existing.LocationOther      = dto.LocationOther;
+            existing.ActivityId         = dto.ActivityId;
             existing.ScheduleItemTypeId = dto.ScheduleItemTypeId;
             existing.AppliesToAllGroups = dto.AppliesToAllGroups;
             existing.MaxCapacity        = dto.MaxCapacity;

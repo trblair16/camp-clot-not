@@ -92,6 +92,7 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory)
                 existing.PhotoData        = member.PhotoData;
                 existing.PhotoContentType = member.PhotoContentType;
             }
+            existing.PhotoObjectPosition = member.PhotoObjectPosition;
         }
         await db.SaveChangesAsync();
     }

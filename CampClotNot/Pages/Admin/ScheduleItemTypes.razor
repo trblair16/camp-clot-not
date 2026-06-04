@@ -1,12 +1,26 @@
 @page "/admin/schedule-item-types"
 @attribute [Authorize(Roles = "Admin")]
+@using Microsoft.EntityFrameworkCore
 @inject ScheduleItemTypeService ScheduleItemTypeSvc
+@inject IDbContextFactory<AppDbContext> DbFactory
 @inject ISnackbar Snackbar
 
 <PageTitle>Schedule Types Admin — Camp Clot Not</PageTitle>
 
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🗂️ Schedule Item Types</h2>
+
+    @* ── Event selector ── *@
+    <div style="margin-bottom:20px;max-width:340px">
+        <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Configure for Event</div>
+        <select @onchange="OnEventChanged"
+                style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none">
+            @foreach (var ev in _events)
+            {
+                <option value="@ev.EventId" selected="@(ev.EventId == _selectedEventId)">@ev.Name</option>
+            }
+        </select>
+    </div>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
@@ -65,7 +79,7 @@
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">#</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">System Name</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Enabled '26</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Enabled</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
                             </tr>
                         </thead>
@@ -114,6 +128,9 @@
 </div>
 
 @code {
+    private List<Event> _events = new();
+    private Guid _selectedEventId;
+
     private List<ScheduleItemType> _types = new();
     private HashSet<Guid> _enabledIds = new();
     private bool _loading = true;
@@ -124,12 +141,27 @@
     private int _fSortOrder = 10;
     private string _error = "";
 
-    protected override async Task OnInitializedAsync() => await Reload();
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        _events = await db.Events.OrderByDescending(e => e.EffDate).ToListAsync();
+        _selectedEventId = _events.FirstOrDefault(e => e.IsActive)?.EventId
+                        ?? _events.FirstOrDefault()?.EventId
+                        ?? SeedService.Id.EventCcn2026;
+        await Reload();
+    }
+
+    private async Task OnEventChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+            _selectedEventId = id;
+        await Reload();
+    }
 
     private async Task Reload()
     {
         _types      = await ScheduleItemTypeSvc.GetAllAsync();
-        _enabledIds = (await ScheduleItemTypeSvc.GetEnabledIdsForEventAsync(SeedService.Id.EventCcn2026)).ToHashSet();
+        _enabledIds = (await ScheduleItemTypeSvc.GetEnabledIdsForEventAsync(_selectedEventId)).ToHashSet();
         _loading    = false;
     }
 
@@ -189,10 +221,10 @@
 
     private async Task ToggleEventTypeAsync(Guid typeId, bool enabled)
     {
-        await ScheduleItemTypeSvc.SetEventTypeEnabledAsync(SeedService.Id.EventCcn2026, typeId, enabled);
+        await ScheduleItemTypeSvc.SetEventTypeEnabledAsync(_selectedEventId, typeId, enabled);
         if (enabled) _enabledIds.Add(typeId); else _enabledIds.Remove(typeId);
     }
 
     private static bool IsBuiltIn(string systemName) =>
-        systemName is "Activity" or "Meal" or "Travel" or "Free" or "Mandatory" or "Presentation";
+        systemName is "Activity" or "Meal" or "Travel" or "Presentation";
 }

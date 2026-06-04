@@ -123,6 +123,8 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid SitFree         = new("0000000f-000f-000f-000f-000000000004");
         public static readonly Guid SitMandatory    = new("0000000f-000f-000f-000f-000000000005");
         public static readonly Guid SitPresentation = new("0000000f-000f-000f-000f-000000000006");
+        public static readonly Guid SitMeeting      = new("0000000f-000f-000f-000f-000000000007");
+        public static readonly Guid SitTask         = new("0000000f-000f-000f-000f-000000000008");
     }
 
     public async Task SeedAsync()
@@ -594,12 +596,12 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     {
         var defs = new[]
         {
-            new { Id = Id.SitActivity,     Name = "Activity",     SystemName = "Activity",     Description = (string?)"Scheduled camp activity",         SortOrder = 1 },
-            new { Id = Id.SitMeal,         Name = "Meal",         SystemName = "Meal",         Description = (string?)"Breakfast, lunch, or dinner",     SortOrder = 2 },
-            new { Id = Id.SitTravel,       Name = "Travel",       SystemName = "Travel",       Description = (string?)"Arrival or departure",            SortOrder = 3 },
-            new { Id = Id.SitFree,         Name = "Free Time",    SystemName = "Free",         Description = (string?)"Unstructured free time",          SortOrder = 4 },
-            new { Id = Id.SitMandatory,    Name = "Mandatory",    SystemName = "Mandatory",    Description = (string?)"All-group required session",      SortOrder = 5 },
-            new { Id = Id.SitPresentation, Name = "Presentation", SystemName = "Presentation", Description = (string?)"Speaker or educational session",  SortOrder = 6 },
+            new { Id = Id.SitActivity,     Name = "Activity",     SystemName = "Activity",     Description = (string?)"Scheduled camp activity",        SortOrder = 1 },
+            new { Id = Id.SitMeal,         Name = "Meal",         SystemName = "Meal",         Description = (string?)"Breakfast, lunch, or dinner",    SortOrder = 2 },
+            new { Id = Id.SitTravel,       Name = "Travel",       SystemName = "Travel",       Description = (string?)"Arrival or departure",           SortOrder = 3 },
+            new { Id = Id.SitPresentation, Name = "Presentation", SystemName = "Presentation", Description = (string?)"Speaker or educational session", SortOrder = 4 },
+            new { Id = Id.SitMeeting,      Name = "Meeting",      SystemName = "Meeting",      Description = (string?)"Staff or group meeting",         SortOrder = 5 },
+            new { Id = Id.SitTask,         Name = "Task",         SystemName = "Task",         Description = (string?)"Action item or to-do",           SortOrder = 6 },
         };
 
         foreach (var def in defs)
@@ -625,7 +627,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         var typeIds = new[]
         {
             Id.SitActivity, Id.SitMeal, Id.SitTravel,
-            Id.SitFree, Id.SitMandatory, Id.SitPresentation,
+            Id.SitPresentation, Id.SitMeeting, Id.SitTask,
         };
 
         foreach (var typeId in typeIds)

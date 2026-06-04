@@ -88,6 +88,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(e => e.ScheduleItemType)
             .WithMany()
             .HasForeignKey(e => e.ScheduleItemTypeId);
+        modelBuilder.Entity<ScheduleItem>()
+            .HasOne(e => e.Activity)
+            .WithMany()
+            .HasForeignKey(e => e.ActivityId);
 
         // ScheduleItemGroup: composite PK
         modelBuilder.Entity<ScheduleItemGroup>()

@@ -11,6 +11,7 @@ public class StaffMember
     public string? Email { get; set; }
     public byte[]? PhotoData { get; set; }
     public string? PhotoContentType { get; set; }
+    public string? PhotoObjectPosition { get; set; }
     public string AvatarEmoji { get; set; } = "👤";
     public bool IsVisible { get; set; } = true;
     public int SortOrder { get; set; }

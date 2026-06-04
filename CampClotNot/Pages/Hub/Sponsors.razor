@@ -40,7 +40,7 @@
                     }
                     @if (!string.IsNullOrEmpty(s.Phone))
                     {
-                        <a href="tel:@s.Phone" style="font-size:.85rem;font-weight:700;color:var(--color-primary);text-decoration:none;text-align:center;display:block">@s.Phone</a>
+                        <a href="@TelHref(s.Phone)" style="font-size:.85rem;font-weight:700;color:var(--color-primary);text-decoration:none;text-align:center;display:block">@s.Phone</a>
                     }
                 </div>
             }
@@ -82,4 +82,11 @@
 
     private static string LogoSrc(Sponsor s) =>
         s.LogoData is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
+
+    private static string TelHref(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return "tel:";
+        var digits = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
+        return $"tel:+1{digits}";
+    }
 }

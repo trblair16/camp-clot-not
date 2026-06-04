@@ -37,14 +37,12 @@
             <div style="display:flex;gap:10px;margin-bottom:14px">
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Start</div>
-                    <input type="time" value="@_fStartStr"
-                           @onchange="e => _fStartStr = e.Value?.ToString() ?? string.Empty"
+                    <input type="text" @bind="_fStartStr" placeholder="9:30 AM"
                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
                 </div>
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">End (optional)</div>
-                    <input type="time" value="@_fEndStr"
-                           @onchange="e => _fEndStr = e.Value?.ToString() ?? string.Empty"
+                    <input type="text" @bind="_fEndStr" placeholder="10:30 AM"
                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
                 </div>
             </div>
@@ -89,9 +87,28 @@
             </div>
 
             <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Additional location / other (optional)</div>
+                <input type="text" @bind="_fLocationOther" placeholder="e.g. Gym + Pool deck"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Description (optional)</div>
                 <input type="text" @bind="_fDesc" placeholder="Short description"
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Activity (optional)</div>
+                <select value="@(_fActivityId?.ToString() ?? "")"
+                        @onchange="e => _fActivityId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null"
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box">
+                    <option value="">— N/A —</option>
+                    @foreach (var act in _activities)
+                    {
+                        <option value="@act.ActivityId">@act.Name</option>
+                    }
+                </select>
             </div>
 
             @* ── Group Assignments ── *@
@@ -225,7 +242,18 @@
                                             @DisplayItemType(ev.ScheduleItemType)
                                         </span>
                                     </td>
-                                    <td style="padding:8px 14px;font-size:12px;color:var(--text-mid)">@(ev.Location?.Name ?? "—")</td>
+                                    <td style="padding:8px 14px;font-size:12px;color:var(--text-mid)">
+                        @if (ev.Location is not null || !string.IsNullOrEmpty(ev.LocationOther))
+                        {
+                            @(ev.Location?.Name ?? "")
+                            @if (ev.Location is not null && !string.IsNullOrEmpty(ev.LocationOther)) { <span> + </span> }
+                            @(ev.LocationOther ?? "")
+                        }
+                        else
+                        {
+                            <span>—</span>
+                        }
+                    </td>
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(ev)">Edit</button>
@@ -259,6 +287,8 @@
     private string _fEndStr = "";
     private Guid _fTypeId;
     private Guid? _fLocationId;
+    private string? _fLocationOther;
+    private Guid? _fActivityId;
     private string? _fDesc;
     private string? _fPresenterName;
     private string? _fPresenterBio;
@@ -317,11 +347,13 @@
         _editingId      = ev.ScheduleItemId;
         _fTitle         = ev.Title;
         _fDesc          = ev.Description;
-        _fDateStr       = ev.CampDay.ToString("yyyy-MM-dd");
-        _fStartStr      = ev.StartTime.ToString("HH:mm");
-        _fEndStr        = ev.EndTime?.ToString("HH:mm") ?? "";
+        _fDateStr  = ev.CampDay.ToString("yyyy-MM-dd");
+        _fStartStr = ev.StartTime.ToString("h:mm tt");
+        _fEndStr   = ev.EndTime?.ToString("h:mm tt") ?? "";
         _fTypeId        = ev.ScheduleItemTypeId;
         _fLocationId    = ev.LocationId;
+        _fLocationOther = ev.LocationOther;
+        _fActivityId    = ev.ActivityId;
         _fPresenterName = ev.PresenterName;
         _fPresenterBio  = ev.PresenterBio;
         _fAssignments = _groups.Select(g =>
@@ -344,11 +376,13 @@
         _editingId           = Guid.Empty;
         _fTitle              = "";
         _fDesc               = null;
-        _fDateStr            = _minDate;
-        _fStartStr           = "";
-        _fEndStr             = "";
+        _fDateStr  = _minDate;
+        _fStartStr = "";
+        _fEndStr   = "";
         _fTypeId             = _scheduleItemTypes.FirstOrDefault()?.ScheduleItemTypeId ?? Guid.Empty;
         _fLocationId         = null;
+        _fLocationOther      = null;
+        _fActivityId         = null;
         _fPresenterName      = null;
         _fPresenterBio       = null;
         _fAssignments        = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
@@ -363,10 +397,11 @@
         if (string.IsNullOrWhiteSpace(_fDateStr))  { _error = "Day is required."; return; }
         if (string.IsNullOrWhiteSpace(_fStartStr)) { _error = "Start time is required."; return; }
         if (_fTypeId == Guid.Empty)                { _error = "Type is required."; return; }
-        if (!DateOnly.TryParseExact(_fDateStr,  "yyyy-MM-dd", out var day))   { _error = "Invalid date."; return; }
-        if (!TimeOnly.TryParseExact(_fStartStr, "HH:mm", out var start))      { _error = "Invalid start time."; return; }
-        TimeOnly? end = string.IsNullOrEmpty(_fEndStr) ? null
-            : TimeOnly.TryParseExact(_fEndStr, "HH:mm", out var et) ? et : null;
+        if (!DateOnly.TryParseExact(_fDateStr, "yyyy-MM-dd", out var day)) { _error = "Invalid date."; return; }
+        if (!DateTime.TryParse(_fStartStr, out var startDt)) { _error = "Invalid start time — try \"9:30 AM\"."; return; }
+        var start = TimeOnly.FromDateTime(startDt);
+        TimeOnly? end = string.IsNullOrWhiteSpace(_fEndStr) ? null
+            : DateTime.TryParse(_fEndStr, out var endDt) ? TimeOnly.FromDateTime(endDt) : null;
 
         var assignments = _fAssignments
             .Where(a => a.ActivityId.HasValue || a.LocationId.HasValue || !string.IsNullOrEmpty(a.Note))
@@ -379,11 +414,12 @@
             SeedService.Id.EventCcn2026,
             day, start, end,
             _fTitle.Trim(), _fDesc,
-            _fLocationId, _fTypeId,
+            _fLocationId, _fActivityId, _fTypeId,
             !assignments.Any(),
             null, assignments,
             isPresentation ? _fPresenterName : null,
-            isPresentation ? _fPresenterBio  : null
+            isPresentation ? _fPresenterBio  : null,
+            string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim()
         );
         await ScheduleSvc.UpsertAsync(dto, _userId);
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fTitle} added." : $"{_fTitle} updated.", Severity.Success);
@@ -398,8 +434,7 @@
         await Reload();
     }
 
-    private static string DisplayItemType(ScheduleItemType? t) =>
-        t?.SystemName == "Travel" ? "Arrival/Departure" : (t?.Name ?? "—");
+    private static string DisplayItemType(ScheduleItemType? t) => t?.Name ?? "—";
 
     private static string ItemTypeBadgeColor(string? systemName) => systemName switch
     {

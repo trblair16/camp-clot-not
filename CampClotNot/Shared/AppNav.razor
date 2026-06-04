@@ -105,6 +105,28 @@
     .nav-admin-panel button:last-child { border-bottom: none; }
     .nav-admin-panel a:hover,
     .nav-admin-panel button:hover { background: #F5EED8; }
+    .nav-admin-section {
+        padding: 5px 16px 4px;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--text-light);
+        background: #EDE6D6;
+        border-bottom: 1px solid #DDD5C0;
+        cursor: default;
+    }
+    .nav-admin-sheet-section {
+        padding: 7px 20px 5px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--text-light);
+        background: #EDE6D6;
+        border-bottom: 1px solid #DDD5C0;
+        cursor: default;
+    }
 
     /* ── Bottom bar ── */
     .nav-bottom-bar {
@@ -276,12 +298,16 @@
                         @if (_adminDropdownOpen)
                         {
                             <div class="nav-admin-panel">
+                                <div class="nav-admin-section">Game</div>
                                 <a href="/admin/games"               @onclick="() => _adminDropdownOpen = false">🎮 Game Admin</a>
                                 <a href="/admin/activities"          @onclick="() => _adminDropdownOpen = false">🎲 Activities</a>
+                                <div class="nav-admin-section">Schedule</div>
                                 <a href="/admin/schedule"            @onclick="() => _adminDropdownOpen = false">📅 Schedule</a>
-                                <a href="/admin/schedule-item-types" @onclick="() => _adminDropdownOpen = false">🗂️ Schedule Types</a>
-                                <a href="/admin/groups"              @onclick="() => _adminDropdownOpen = false">👥 Groups</a>
+                                <a href="/admin/schedule-item-types" @onclick="() => _adminDropdownOpen = false">🗂️ Types</a>
+                                <div class="nav-admin-section">People</div>
                                 <a href="/admin/users"               @onclick="() => _adminDropdownOpen = false">🔑 Users</a>
+                                <a href="/admin/groups"              @onclick="() => _adminDropdownOpen = false">👥 Groups</a>
+                                <div class="nav-admin-section">Venue & Content</div>
                                 <a href="/admin/locations"           @onclick="() => _adminDropdownOpen = false">📍 Locations</a>
                                 <a href="/admin/sponsors"            @onclick="() => _adminDropdownOpen = false">🏆 Sponsors</a>
                             </div>
@@ -353,12 +379,16 @@
          @onclick="() => _adminSheetOpen = false"></div>
     <div class="nav-admin-sheet">
         <a href="/transactions"              @onclick="() => _adminSheetOpen = false">📋 Transactions</a>
+        <div class="nav-admin-sheet-section">Game</div>
         <a href="/admin/games"               @onclick="() => _adminSheetOpen = false">🎮 Game Admin</a>
         <a href="/admin/activities"          @onclick="() => _adminSheetOpen = false">🎲 Activities</a>
+        <div class="nav-admin-sheet-section">Schedule</div>
         <a href="/admin/schedule"            @onclick="() => _adminSheetOpen = false">📅 Schedule</a>
-        <a href="/admin/schedule-item-types" @onclick="() => _adminSheetOpen = false">🗂️ Schedule Types</a>
-        <a href="/admin/groups"              @onclick="() => _adminSheetOpen = false">👥 Groups</a>
+        <a href="/admin/schedule-item-types" @onclick="() => _adminSheetOpen = false">🗂️ Types</a>
+        <div class="nav-admin-sheet-section">People</div>
         <a href="/admin/users"               @onclick="() => _adminSheetOpen = false">🔑 Users</a>
+        <a href="/admin/groups"              @onclick="() => _adminSheetOpen = false">👥 Groups</a>
+        <div class="nav-admin-sheet-section">Venue & Content</div>
         <a href="/admin/locations"           @onclick="() => _adminSheetOpen = false">📍 Locations</a>
         <a href="/admin/sponsors"            @onclick="() => _adminSheetOpen = false">🏆 Sponsors</a>
         <button onclick="window.location='/logout'">🚪 Sign Out</button>
