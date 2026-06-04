@@ -114,6 +114,17 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid InfoPageRules   = new("0000000e-000e-000e-000e-000000000001");
         public static readonly Guid InfoPageFaq     = new("0000000e-000e-000e-000e-000000000002");
         public static readonly Guid InfoPageMedical = new("0000000e-000e-000e-000e-000000000003");
+
+        // ScheduleItemTypes — stable IDs used for data migration (int enum → Guid FK)
+        // Order matches original ScheduleEventType enum: Activity=0, Meal=1, Travel=2, Free=3, Mandatory=4, Presentation=5
+        public static readonly Guid SitActivity     = new("0000000f-000f-000f-000f-000000000001");
+        public static readonly Guid SitMeal         = new("0000000f-000f-000f-000f-000000000002");
+        public static readonly Guid SitTravel       = new("0000000f-000f-000f-000f-000000000003");
+        public static readonly Guid SitFree         = new("0000000f-000f-000f-000f-000000000004");
+        public static readonly Guid SitMandatory    = new("0000000f-000f-000f-000f-000000000005");
+        public static readonly Guid SitPresentation = new("0000000f-000f-000f-000f-000000000006");
+        public static readonly Guid SitMeeting      = new("0000000f-000f-000f-000f-000000000007");
+        public static readonly Guid SitTask         = new("0000000f-000f-000f-000f-000000000008");
     }
 
     public async Task SeedAsync()
@@ -138,6 +149,8 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         await SeedBoardSpacesAsync(db);
         await SeedGroupBoardPositionsAsync(db);
         await SeedInfoPagesAsync(db);
+        await SeedScheduleItemTypesAsync(db);
+        await SeedEventScheduleItemTypesAsync(db);
     }
 
     private async Task SeedUserRolesAsync(AppDbContext db)
@@ -577,5 +590,58 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded/verified CCN 2026 info pages.");
+    }
+
+    private async Task SeedScheduleItemTypesAsync(AppDbContext db)
+    {
+        var defs = new[]
+        {
+            new { Id = Id.SitActivity,     Name = "Activity",     SystemName = "Activity",     Description = (string?)"Scheduled camp activity",        SortOrder = 1 },
+            new { Id = Id.SitMeal,         Name = "Meal",         SystemName = "Meal",         Description = (string?)"Breakfast, lunch, or dinner",    SortOrder = 2 },
+            new { Id = Id.SitTravel,       Name = "Travel",       SystemName = "Travel",       Description = (string?)"Arrival or departure",           SortOrder = 3 },
+            new { Id = Id.SitPresentation, Name = "Presentation", SystemName = "Presentation", Description = (string?)"Speaker or educational session", SortOrder = 4 },
+            new { Id = Id.SitMeeting,      Name = "Meeting",      SystemName = "Meeting",      Description = (string?)"Staff or group meeting",         SortOrder = 5 },
+            new { Id = Id.SitTask,         Name = "Task",         SystemName = "Task",         Description = (string?)"Action item or to-do",           SortOrder = 6 },
+        };
+
+        foreach (var def in defs)
+        {
+            if (!await db.ScheduleItemTypes.AnyAsync(t => t.ScheduleItemTypeId == def.Id))
+            {
+                db.ScheduleItemTypes.Add(new Data.Entities.ScheduleItemType
+                {
+                    ScheduleItemTypeId = def.Id,
+                    Name               = def.Name,
+                    SystemName         = def.SystemName,
+                    Description        = def.Description,
+                    SortOrder          = def.SortOrder,
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+        logger.LogInformation("Seeded ScheduleItemTypes.");
+    }
+
+    private async Task SeedEventScheduleItemTypesAsync(AppDbContext db)
+    {
+        var typeIds = new[]
+        {
+            Id.SitActivity, Id.SitMeal, Id.SitTravel,
+            Id.SitPresentation, Id.SitMeeting, Id.SitTask,
+        };
+
+        foreach (var typeId in typeIds)
+        {
+            if (!await db.EventScheduleItemTypes.AnyAsync(e => e.EventId == Id.EventCcn2026 && e.ScheduleItemTypeId == typeId))
+            {
+                db.EventScheduleItemTypes.Add(new Data.Entities.EventScheduleItemType
+                {
+                    EventId            = Id.EventCcn2026,
+                    ScheduleItemTypeId = typeId,
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+        logger.LogInformation("Seeded EventScheduleItemTypes for CCN 2026.");
     }
 }

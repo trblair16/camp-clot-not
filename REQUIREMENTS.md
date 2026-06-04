@@ -300,14 +300,23 @@ CamperAward        — AwardId, GroupId, RecipientName, AwardType (enum: Named/B
 CampSeason         — SeasonId, ThemeId, Year, IsLocked, LockedAt?, LockedBy?
 
 -- Beta / Hub Features (Part 8)
-Location           — LocationId, EventId, Name, Description?, Capacity?, SortOrder
-ScheduleEvent      — ScheduleEventId, EventId, CampDay, StartTime, EndTime, Title, Description?,
-                     LocationId (FK), AppliesToAllGroups, CreatedBy, UpdatedAt
-ScheduleEventGroup — ScheduleEventId, GroupId, ActivityId?, LocationId?, Note?
+Location           — LocationId, EventId, Name, Description?, Capacity?, SortOrder,
+                     ImageData (binary)?, ImageContentType?
+ScheduleItemType   — ScheduleItemTypeId, Name, SystemName, Description?, SortOrder
+                     (seeded: Activity, Meal, Travel, Free, Mandatory, Presentation)
+EventScheduleItemType — EventId (FK→Event), ScheduleItemTypeId (FK→ScheduleItemType)
+                     (join; CCN 2026 has all 6 types enabled)
+ScheduleItem       — ScheduleItemId, EventId, CampDay, StartTime, EndTime?, Title, Description?,
+                     LocationId (FK)?, LocationOther?, ScheduleItemTypeId (FK),
+                     AppliesToAllGroups, MaxCapacity?, PresenterName?, PresenterBio?,
+                     CreatedBy, UpdatedAt
+ScheduleItemGroup  — ScheduleItemId, GroupId, ActivityId?, LocationId?, Note?
+                     (bridge; only populated when AppliesToAllGroups = false)
 Announcement       — AnnouncementId, EventId, Title, Body, Priority (enum: Normal|Urgent),
                      IsPinned, AuthorId, CreatedAt, ExpiresAt?, IsArchived
 StaffMember        — StaffMemberId, EventId, DisplayName, RoleTitle, Phone?, Email?,
-                     AvatarEmoji, IsVisible, SortOrder, LinkedUserId?
+                     AvatarEmoji, PhotoData (binary)?, PhotoContentType?,
+                     PhotoObjectPosition?, IsVisible, SortOrder, LinkedUserId?
 InfoPage           — PageId, EventId, Slug (unique), Title, Body (markdown), IconEmoji,
                      SortOrder, UpdatedAt, UpdatedByUserId
 IncidentReport     — IncidentReportId, EventId, DateOfIncident, DateCompleted,
@@ -543,9 +552,11 @@ Camp is June 20-25, 2026.
 | ~June 2 | v0.5.2 — Schedule Admin + Sponsor Logos ✅ | Sponsor binary logo upload, `/admin/schedule` CRUD, schedule day tabs, nav restructure, `/` → `/hub/schedule` redirect |
 | ~June 2 | v0.5.3 — Activities Admin ✅ | `/admin/activities` CRUD for MinuteToWinIt activities (Vicki/Amanda configurable) |
 | ~June 2 | v0.5.4 — Schedule Save Fix ✅ | Bug fix: EF shadow FK on `ScheduleEvent.CreatedByUser` caused circuit crash on save; explicit `HasForeignKey` + migration |
-| ~June 7 | v0.5.5 — UX Improvements | Dashboard landing page, incident enhancements, staff photos, Medical Staff role, sponsor improvements, schedule improvements (see §8.14) |
-| ~June 7-8 | v1.0.0-rc — Dry Run | Full dress rehearsal. Staff test on real devices. Projector verified. Issues logged. |
-| ~June 13 | v1.0.0 — Camp Ready | Dry run issues resolved. Production seeded. Staff briefed. One week buffer. |
+| ~June 7 | v0.5.5 — UX Improvements ✅ | Dashboard landing page, incident enhancements, staff photos, Medical Staff role, sponsor improvements, schedule improvements (see §8.14) |
+| ~June 7 | v0.5.6 — Schedule Types + UX Polish ✅ | Table-driven ScheduleItemType, ScheduleEvent→ScheduleItem rename, LocationOther field, tel: E.164 fix, staff photo position, locations lightbox, password visibility, users sort/filter/search, admin nav section headers |
+| ~June 7-8 | v0.5.7 — Info Overhaul + UX Polish | PDF uploads for info pages, dashboard sponsor widget, staff/schedule UI fixes, transactions table style |
+| ~June 13-14 | v1.0.0-rc — Dry Run | Full dress rehearsal. Staff test on real devices. Projector verified. Issues logged. |
+| ~June 17 | v1.0.0 — Camp Ready | Dry run issues resolved. Production seeded. Staff briefed. Three-day buffer. |
 | June 20 | 🏕️ CAMP | Super Clot Not Party '26 is live |
 | Post-camp | v1.1.0 | Push notifications, member identity system, Azure SignalR backplane |
 
@@ -797,7 +808,7 @@ ScheduleEventGroup — EventId, GroupId  (bridge; only populated when AppliesToA
 
 **Scope boundary:** Staff-only. No camper-facing view in beta. No recurring event support.
 
-**System name:** `ScheduleEvent` / `ScheduleService` / `/hub/schedule` / `/admin/schedule`
+**System name:** `ScheduleItem` / `ScheduleItemType` / `ScheduleService` / `ScheduleItemTypeService` / `/hub/schedule` / `/admin/schedule` / `/admin/schedule-item-types`
 
 ---
 
@@ -868,9 +879,15 @@ InfoPage — PageId, Slug (unique), Title, Body (markdown), IconEmoji,
 - Pages cannot be created or deleted in beta — slug list is fixed at seed time
 
 **Predefined seed slugs for 2026:** `rules`, `faq`, `medical`  
-(`schedule-overview` and `packing` removed in v0.5.1 — redundant with the Schedule tab and pre-camp only scope respectively. Existing DB records are not deleted.)
+(`schedule-overview` and `packing` removed in v0.5.1 — redundant with Schedule tab and pre-camp only scope respectively. `faq` planned for removal in v0.5.7 — redundant with schedule.)
 
-**Scope boundary:** Markdown body only — no file attachments, no embedded images in beta.
+**v0.5.7 planned additions:**
+- PDF upload per info page: `PdfData (byte[]?)` + `PdfContentType (string?)`; served via `/hub/info/{slug}/pdf`
+- Display: native PDF viewer (`<iframe>`) or new-tab link
+- Role-based PDF visibility: per-page flag controlling which roles can access
+- Emergency contacts PDF on `medical` page: visible to MedicalStaff + Admin only
+
+**Scope boundary (current):** Markdown body only — PDF upload planned for v0.5.7 (see above).
 
 **System name:** `InfoPage` / `IInfoPageService` / `/hub/info`
 
@@ -1136,6 +1153,61 @@ C#-only enum additions (no schema change): `Role.MedicalStaff`, `ScheduleEventTy
 
 ---
 
+### 8.15 v0.5.7 Feature Set (Planned)
+
+**Branch:** `feature/N-v057-...` | **Issue:** TBD — open before branching
+
+#### 8.15.1 Info Section Overhaul
+
+- Remove `faq` info page from seed — content is redundant with the Schedule tab
+- Restructure `medical` page for emergency contacts use
+- Add PDF upload to `InfoPage` entity: `PdfData (byte[]?)` + `PdfContentType (string?)`
+- Serve via `GET /hub/info/{slug}/pdf` endpoint (same streaming pattern as other binary endpoints)
+- Display: `<iframe>` native PDF viewer with fallback "Open in new tab" link
+- Role-based PDF visibility: per-page admin flag controlling which roles can download
+- Emergency contacts PDF on `medical` page — accessible to MedicalStaff + Admin only
+
+**Data model addition:**
+```
+InfoPage — ... (existing) ..., PdfData (binary)?, PdfContentType (string?), PdfVisibleRoles (string?)
+```
+
+#### 8.15.2 Dashboard Sponsor Widget
+
+- Current widget caps sponsors at 8; remove the cap
+- Use full available width (remove excess whitespace on sides)
+
+#### 8.15.3 Hub/Sponsors — Mobile Report Incident FAB
+
+- Remove the floating "🚨 Report Incident" FAB on `/hub/sponsors` on mobile only
+- The FAB overlaps sponsor tile content on narrow viewports
+- Other Hub pages retain the FAB; only Sponsors page hides it at mobile breakpoint
+
+#### 8.15.4 Staff Directory Fixes
+
+- Fix email addresses overflowing card borders — add `overflow-wrap:break-word` or truncate with `text-overflow:ellipsis`
+- Fix pixelated staff photos — investigate stored image resolution vs. render size; may need to store at higher resolution or apply `image-rendering` hint
+
+#### 8.15.5 Schedule Admin Improvements
+
+- Show uploaded location image thumbnail on schedule item rows in the admin table (expandable lightbox on click)
+- Rearrange schedule item admin form layout — content currently squished on the left side
+- Mobile: remove Edit/Delete action buttons from `/hub/schedule` item rows (these are admin actions and don't belong on the staff-facing hub page)
+
+#### 8.15.6 Transactions Table Styling
+
+- Apply CCN neo-brutalist table style to the transactions table (currently unstyled, inconsistent with other admin pages)
+
+#### 8.15.7 Schedule Item Cell Backgrounds
+
+- Make schedule item cell backgrounds opaque (currently transparent or missing background color, makes text hard to read over patterned background)
+
+#### 8.15.8 Migrations
+
+**`AddInfoPagePdf`**: adds `PdfData (bytea nullable)`, `PdfContentType (text nullable)`, `PdfVisibleRoles (text nullable)` to `InfoPages`
+
+---
+
 ### 8.13 Shared Dialog Pattern (planned post-v0.5.1)
 
 All form modals use the same visual shell: `rgba(26,26,26,.65)` backdrop with `animation:fadeIn .2s ease`, centered `ccn-panel` with `animation:popIn .25s ease` and `box-shadow:8px 8px 0 var(--black)`. Currently duplicated across `LogTransactionDialog` and the Report Incident modal in `HubSubNav.razor`.
@@ -1363,4 +1435,4 @@ Each exclusion is a deliberate decision, not an oversight. Revisit only if a spe
 ---
 
 *Camp Clot Not · Super Party 2026 · Requirements, Asset Spec & Architecture Guide · Tyler Blair*  
-*Last updated: 2026-06-02 — v0.5.2–v0.5.4: §8.1 schedule admin CRUD added; §8.11 sponsor binary logo upload; §8.12 activities admin (MinuteToWinIt); §8.13 shared dialog pattern (renumbered); milestones updated; data model updated; Pitfall #13 (EF shadow FK) added to CLAUDE.md*
+*Last updated: 2026-06-04 — v0.5.5 marked done; v0.5.6 done: ScheduleEvent→ScheduleItem rename, table-driven ScheduleItemType, LocationOther, UX polish (tel: E.164, photo position, lightbox, password visibility, users sort, admin nav sections); v0.5.7 planned in §8.15; data model updated; milestones updated; §8.4 PDF upload plan noted; §8.1 system name updated*
