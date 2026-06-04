@@ -1,15 +1,22 @@
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace CampClotNot.Migrations
 {
     /// <inheritdoc />
-    public partial class AddInfoPagePdf : Migration
+    public partial class AddV057Features : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<bool>(
+                name: "MustChangePassword",
+                table: "Users",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
             migrationBuilder.AddColumn<byte[]>(
                 name: "PdfData",
                 table: "InfoPages",
@@ -32,9 +39,10 @@ namespace CampClotNot.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(name: "PdfData",         table: "InfoPages");
-            migrationBuilder.DropColumn(name: "PdfContentType",  table: "InfoPages");
-            migrationBuilder.DropColumn(name: "PdfVisibleRoles", table: "InfoPages");
+            migrationBuilder.DropColumn(name: "MustChangePassword", table: "Users");
+            migrationBuilder.DropColumn(name: "PdfData",            table: "InfoPages");
+            migrationBuilder.DropColumn(name: "PdfContentType",     table: "InfoPages");
+            migrationBuilder.DropColumn(name: "PdfVisibleRoles",    table: "InfoPages");
         }
     }
 }
