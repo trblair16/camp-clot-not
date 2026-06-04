@@ -3,6 +3,7 @@ using System;
 using CampClotNot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CampClotNot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260604001727_AddScheduleItemActivity")]
+    partial class AddScheduleItemActivity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -625,9 +628,6 @@ namespace CampClotNot.Migrations
                     b.Property<Guid?>("LocationId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("LocationOther")
-                        .HasColumnType("text");
-
                     b.Property<int?>("MaxCapacity")
                         .HasColumnType("integer");
 
@@ -850,9 +850,6 @@ namespace CampClotNot.Migrations
 
                     b.Property<byte[]>("PhotoData")
                         .HasColumnType("bytea");
-
-                    b.Property<string>("PhotoObjectPosition")
-                        .HasColumnType("text");
 
                     b.Property<string>("RoleTitle")
                         .IsRequired()

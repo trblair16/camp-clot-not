@@ -35,28 +35,20 @@
                 }
                 @if (_fImageData is not null)
                 {
-                    <div style="font-size:11px;color:var(--text-mid);margin-top:4px">✅ File ready to upload</div>
+                    <img src="data:@_fImageContentType;base64,@Convert.ToBase64String(_fImageData)"
+                         style="display:block;max-width:100%;max-height:120px;object-fit:contain;border:2px solid var(--black);border-radius:6px;margin-top:8px" alt="Preview" />
                 }
-                else if (_currentHasImage)
+                else if (_currentHasImage && _editingId != Guid.Empty)
                 {
-                    <div style="font-size:11px;color:var(--text-mid);margin-top:4px">Current: uploaded image (leave blank to keep)</div>
+                    <img src="/location-image/@_editingId"
+                         style="display:block;max-width:100%;max-height:120px;object-fit:contain;border:2px solid var(--black);border-radius:6px;margin-top:8px" alt="Current image" />
                 }
             </div>
 
-            <div style="display:flex;gap:10px;margin-bottom:16px">
-                <div style="flex:1">
-                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Capacity</div>
-                    <input type="number" min="0"
-                           value="@(_fCapacity?.ToString() ?? "")"
-                           @onchange="e => _fCapacity = int.TryParse(e.Value?.ToString(), out var v) ? v : null"
-                           placeholder="—"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
-                </div>
-                <div style="flex:1">
-                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Sort Order</div>
-                    <input type="number" @bind="_fSortOrder"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
-                </div>
+            <div style="margin-bottom:16px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Sort Order</div>
+                <input type="number" @bind="_fSortOrder"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="display:flex;gap:8px">
@@ -86,7 +78,7 @@
                             <tr style="background:var(--black)">
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Description</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Capacity</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Image</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Order</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
                             </tr>
@@ -97,7 +89,19 @@
                                 <tr style="border-bottom:2px solid #E8E0CC">
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@loc.Name</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(loc.Description ?? "—")</td>
-                                    <td style="padding:10px 14px;font-size:13px">@(loc.Capacity?.ToString() ?? "—")</td>
+                                    <td style="padding:6px 10px">
+                                        @if (loc.ImageData is not null)
+                                        {
+                                            <img src="/location-image/@loc.LocationId"
+                                                 style="width:56px;height:40px;object-fit:cover;border-radius:4px;border:2px solid var(--black);cursor:zoom-in"
+                                                 alt="@loc.Name"
+                                                 @onclick='() => _lightboxSrc = $"/location-image/{loc.LocationId}"' />
+                                        }
+                                        else
+                                        {
+                                            <span style="font-size:12px;color:var(--text-light)">—</span>
+                                        }
+                                    </td>
                                     <td style="padding:10px 14px;font-size:13px">@loc.SortOrder</td>
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
@@ -116,9 +120,22 @@
     </div>
 </div>
 
+@if (_lightboxSrc is not null)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.85);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease;cursor:zoom-out"
+         @onclick="() => _lightboxSrc = null">
+        <img src="@_lightboxSrc"
+             style="max-width:92vw;max-height:88vh;object-fit:contain;border:3px solid var(--black);border-radius:10px;box-shadow:6px 6px 0 var(--black);animation:popIn .2s ease"
+             alt="Location image" @onclick:stopPropagation />
+        <button style="position:fixed;top:16px;right:20px;background:none;border:none;color:white;font-size:28px;cursor:pointer;line-height:1"
+                @onclick="() => _lightboxSrc = null">✕</button>
+    </div>
+}
+
 @code {
     private List<Location> _locations = new();
     private bool _loading = true;
+    private string? _lightboxSrc;
     private Guid _editingId;
     private string _fName = "";
     private string? _fDescription;

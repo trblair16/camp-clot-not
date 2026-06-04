@@ -6,8 +6,8 @@ namespace CampClotNot.Services;
 
 public record GroupAssignmentDto(Guid GroupId, Guid? ActivityId, Guid? LocationId, string? Note);
 
-public record ScheduleEventDto(
-    Guid ScheduleEventId,
+public record ScheduleItemDto(
+    Guid ScheduleItemId,
     Guid CampEventId,
     DateOnly CampDay,
     TimeOnly StartTime,
@@ -15,60 +15,66 @@ public record ScheduleEventDto(
     string Title,
     string? Description,
     Guid? LocationId,
-    ScheduleEventType EventType,
+    Guid? ActivityId,
+    Guid ScheduleItemTypeId,
     bool AppliesToAllGroups,
     int? MaxCapacity,
     List<GroupAssignmentDto> Assignments,
     string? PresenterName = null,
-    string? PresenterBio = null
+    string? PresenterBio = null,
+    string? LocationOther = null
 );
 
 public class ScheduleService(IDbContextFactory<AppDbContext> factory)
 {
-    public async Task<List<ScheduleEvent>> GetByEventAsync(Guid campEventId)
+    public async Task<List<ScheduleItem>> GetByEventAsync(Guid campEventId)
     {
         using var db = factory.CreateDbContext();
-        return await db.ScheduleEvents
+        return await db.ScheduleItems
             .Where(e => e.CampEventId == campEventId)
+            .Include(e => e.ScheduleItemType)
             .Include(e => e.Location)
-            .Include(e => e.EventGroups)
+            .Include(e => e.Activity)
+            .Include(e => e.ItemGroups)
                 .ThenInclude(eg => eg.Group)
-            .Include(e => e.EventGroups)
+            .Include(e => e.ItemGroups)
                 .ThenInclude(eg => eg.Activity)
-            .Include(e => e.EventGroups)
+            .Include(e => e.ItemGroups)
                 .ThenInclude(eg => eg.Location)
             .OrderBy(e => e.CampDay).ThenBy(e => e.StartTime)
             .ToListAsync();
     }
 
-    public async Task<List<ScheduleEvent>> GetForDayAsync(Guid campEventId, DateOnly day)
+    public async Task<List<ScheduleItem>> GetForDayAsync(Guid campEventId, DateOnly day)
     {
         using var db = factory.CreateDbContext();
-        return await db.ScheduleEvents
+        return await db.ScheduleItems
             .Where(e => e.CampEventId == campEventId && e.CampDay == day)
+            .Include(e => e.ScheduleItemType)
             .Include(e => e.Location)
-            .Include(e => e.EventGroups)
+            .Include(e => e.Activity)
+            .Include(e => e.ItemGroups)
                 .ThenInclude(eg => eg.Group)
-            .Include(e => e.EventGroups)
+            .Include(e => e.ItemGroups)
                 .ThenInclude(eg => eg.Activity)
-            .Include(e => e.EventGroups)
+            .Include(e => e.ItemGroups)
                 .ThenInclude(eg => eg.Location)
             .OrderBy(e => e.StartTime)
             .ToListAsync();
     }
 
-    public async Task<ScheduleEvent> UpsertAsync(ScheduleEventDto dto, Guid userId)
+    public async Task<ScheduleItem> UpsertAsync(ScheduleItemDto dto, Guid userId)
     {
         using var db = factory.CreateDbContext();
-        var existing = await db.ScheduleEvents
-            .Include(e => e.EventGroups)
-            .FirstOrDefaultAsync(e => e.ScheduleEventId == dto.ScheduleEventId);
+        var existing = await db.ScheduleItems
+            .Include(e => e.ItemGroups)
+            .FirstOrDefaultAsync(e => e.ScheduleItemId == dto.ScheduleItemId);
 
         if (existing is null)
         {
-            var ev = new ScheduleEvent
+            var ev = new ScheduleItem
             {
-                ScheduleEventId    = dto.ScheduleEventId == Guid.Empty ? Guid.NewGuid() : dto.ScheduleEventId,
+                ScheduleItemId     = dto.ScheduleItemId == Guid.Empty ? Guid.NewGuid() : dto.ScheduleItemId,
                 CampEventId        = dto.CampEventId,
                 CampDay            = dto.CampDay,
                 StartTime          = dto.StartTime,
@@ -76,24 +82,26 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
                 Title              = dto.Title,
                 Description        = dto.Description,
                 LocationId         = dto.LocationId,
-                EventType          = dto.EventType,
+                LocationOther      = dto.LocationOther,
+                ActivityId         = dto.ActivityId,
+                ScheduleItemTypeId = dto.ScheduleItemTypeId,
                 AppliesToAllGroups = dto.AppliesToAllGroups,
                 MaxCapacity        = dto.MaxCapacity,
                 PresenterName      = dto.PresenterName,
                 PresenterBio       = dto.PresenterBio,
                 CreatedBy          = userId,
                 UpdatedAt          = DateTime.UtcNow,
-                EventGroups        = dto.Assignments
-                    .Select(a => new ScheduleEventGroup
+                ItemGroups         = dto.Assignments
+                    .Select(a => new ScheduleItemGroup
                     {
-                        ScheduleEventId = Guid.Empty, // set by EF after insert
-                        GroupId         = a.GroupId,
-                        ActivityId      = a.ActivityId,
-                        LocationId      = a.LocationId,
-                        Note            = a.Note
+                        ScheduleItemId = Guid.Empty, // set by EF after insert
+                        GroupId        = a.GroupId,
+                        ActivityId     = a.ActivityId,
+                        LocationId     = a.LocationId,
+                        Note           = a.Note
                     }).ToList()
             };
-            db.ScheduleEvents.Add(ev);
+            db.ScheduleItems.Add(ev);
             await db.SaveChangesAsync();
             return ev;
         }
@@ -105,22 +113,24 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
             existing.Title              = dto.Title;
             existing.Description        = dto.Description;
             existing.LocationId         = dto.LocationId;
-            existing.EventType          = dto.EventType;
+            existing.LocationOther      = dto.LocationOther;
+            existing.ActivityId         = dto.ActivityId;
+            existing.ScheduleItemTypeId = dto.ScheduleItemTypeId;
             existing.AppliesToAllGroups = dto.AppliesToAllGroups;
             existing.MaxCapacity        = dto.MaxCapacity;
             existing.PresenterName      = dto.PresenterName;
             existing.PresenterBio       = dto.PresenterBio;
             existing.UpdatedAt          = DateTime.UtcNow;
 
-            db.ScheduleEventGroups.RemoveRange(existing.EventGroups);
-            existing.EventGroups = dto.Assignments
-                .Select(a => new ScheduleEventGroup
+            db.ScheduleItemGroups.RemoveRange(existing.ItemGroups);
+            existing.ItemGroups = dto.Assignments
+                .Select(a => new ScheduleItemGroup
                 {
-                    ScheduleEventId = existing.ScheduleEventId,
-                    GroupId         = a.GroupId,
-                    ActivityId      = a.ActivityId,
-                    LocationId      = a.LocationId,
-                    Note            = a.Note
+                    ScheduleItemId = existing.ScheduleItemId,
+                    GroupId        = a.GroupId,
+                    ActivityId     = a.ActivityId,
+                    LocationId     = a.LocationId,
+                    Note           = a.Note
                 }).ToList();
 
             await db.SaveChangesAsync();
@@ -128,15 +138,15 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
         }
     }
 
-    public async Task DeleteAsync(Guid scheduleEventId)
+    public async Task DeleteAsync(Guid scheduleItemId)
     {
         using var db = factory.CreateDbContext();
-        var ev = await db.ScheduleEvents
-            .Include(e => e.EventGroups)
-            .FirstOrDefaultAsync(e => e.ScheduleEventId == scheduleEventId);
+        var ev = await db.ScheduleItems
+            .Include(e => e.ItemGroups)
+            .FirstOrDefaultAsync(e => e.ScheduleItemId == scheduleItemId);
         if (ev is null) return;
-        db.ScheduleEventGroups.RemoveRange(ev.EventGroups);
-        db.ScheduleEvents.Remove(ev);
+        db.ScheduleItemGroups.RemoveRange(ev.ItemGroups);
+        db.ScheduleItems.Remove(ev);
         await db.SaveChangesAsync();
     }
 }

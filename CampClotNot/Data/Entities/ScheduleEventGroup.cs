@@ -1,9 +1,9 @@
 namespace CampClotNot.Data.Entities;
 
-public class ScheduleEventGroup
+public class ScheduleItemGroup
 {
-    public Guid ScheduleEventId { get; set; }
-    public ScheduleEvent ScheduleEvent { get; set; } = null!;
+    public Guid ScheduleItemId { get; set; }
+    public ScheduleItem ScheduleItem { get; set; } = null!;
     public Guid GroupId { get; set; }
     public Group Group { get; set; } = null!;
     public Guid? ActivityId { get; set; }

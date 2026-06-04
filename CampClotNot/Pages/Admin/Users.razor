@@ -38,8 +38,14 @@
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Temporary Password</div>
-                <input type="password" @bind="_form.Password" placeholder="••••••••"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                <div style="position:relative">
+                    <input type="@(_showCreatePw ? "text" : "password")" @bind="_form.Password" placeholder="••••••••"
+                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                    <button type="button" @onclick="() => _showCreatePw = !_showCreatePw"
+                            style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;color:var(--text-light)">
+                        @(_showCreatePw ? "🙈" : "👁")
+                    </button>
+                </div>
             </div>
 
             <div style="margin-bottom:14px">
@@ -85,21 +91,41 @@
             }
             else
             {
+                @* Search / filter toolbar *@
+                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+                    <input type="text" @bind="_search" @bind:event="oninput" placeholder="Search name or email…"
+                           style="flex:1;min-width:160px;padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                    <select @bind="_roleFilter"
+                            style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+                        <option value="">All roles</option>
+                        <option value="Admin">Admin</option>
+                        <option value="MedicalStaff">Medical Staff</option>
+                        <option value="Staff">Staff</option>
+                        <option value="Volunteer">Volunteer</option>
+                    </select>
+                </div>
+
                 <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <div style="overflow-x:auto">
                         <table style="width:100%;border-collapse:collapse;min-width:600px">
                             <thead>
                                 <tr style="background:var(--black)">
-                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
+                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;cursor:pointer;user-select:none"
+                                        @onclick='() => SetSort("name")'>
+                                        Name @SortIndicator("name")
+                                    </th>
                                     <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Email</th>
-                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Role</th>
+                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;cursor:pointer;user-select:none"
+                                        @onclick='() => SetSort("role")'>
+                                        Role @SortIndicator("role")
+                                    </th>
                                     <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Group</th>
                                     <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Active</th>
                                     <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var u in _users)
+                                @foreach (var u in FilteredUsers)
                                 {
                                     <tr style="border-bottom:2px solid #E8E0CC">
                                         <td style="padding:10px 14px;font-size:13px;font-weight:700">@u.FirstName @u.LastName</td>
@@ -118,6 +144,14 @@
                                                     <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#E67E22;color:white" @onclick="() => DeactivateAsync(u)">Deactivate</button>
                                                 }
                                             </div>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!FilteredUsers.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" style="padding:16px 14px;font-size:13px;color:var(--text-light);font-style:italic">
+                                            No users match your search.
                                         </td>
                                     </tr>
                                 }
@@ -212,14 +246,26 @@
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">New Password</div>
-                <input type="password" @bind="_resetPassword" placeholder="••••••••"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                <div style="position:relative">
+                    <input type="@(_showResetPw ? "text" : "password")" @bind="_resetPassword" placeholder="••••••••"
+                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                    <button type="button" @onclick="() => _showResetPw = !_showResetPw"
+                            style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;color:var(--text-light)">
+                        @(_showResetPw ? "🙈" : "👁")
+                    </button>
+                </div>
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Confirm Password</div>
-                <input type="password" @bind="_resetConfirm" placeholder="••••••••"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                <div style="position:relative">
+                    <input type="@(_showResetConfirm ? "text" : "password")" @bind="_resetConfirm" placeholder="••••••••"
+                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                    <button type="button" @onclick="() => _showResetConfirm = !_showResetConfirm"
+                            style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;color:var(--text-light)">
+                        @(_showResetConfirm ? "🙈" : "👁")
+                    </button>
+                </div>
             </div>
 
             @if (_resetError is not null)
@@ -251,6 +297,56 @@
     private string _resetPassword = "";
     private string _resetConfirm = "";
     private string? _resetError;
+
+    private bool _showCreatePw;
+    private bool _showResetPw;
+    private bool _showResetConfirm;
+
+    private string _search = "";
+    private string _roleFilter = "";
+    private string _sortColumn = "role";
+    private bool _sortAsc = true;
+
+    private static int RoleRank(string systemName) => systemName switch
+    {
+        "Admin"        => 0,
+        "MedicalStaff" => 1,
+        "Staff"        => 2,
+        _              => 3
+    };
+
+    private IEnumerable<User> FilteredUsers
+    {
+        get
+        {
+            var q = _users.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(_search))
+                q = q.Where(u =>
+                    u.FirstName.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                    u.LastName.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                    u.Email.Contains(_search, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(_roleFilter))
+                q = q.Where(u => u.UserRole.SystemName == _roleFilter);
+            return _sortColumn switch
+            {
+                "name" => _sortAsc
+                    ? q.OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
+                    : q.OrderByDescending(u => u.LastName).ThenByDescending(u => u.FirstName),
+                _ => _sortAsc
+                    ? q.OrderBy(u => RoleRank(u.UserRole.SystemName)).ThenBy(u => u.LastName).ThenBy(u => u.FirstName)
+                    : q.OrderByDescending(u => RoleRank(u.UserRole.SystemName)).ThenBy(u => u.LastName).ThenBy(u => u.FirstName)
+            };
+        }
+    }
+
+    private void SetSort(string col)
+    {
+        if (_sortColumn == col) _sortAsc = !_sortAsc;
+        else { _sortColumn = col; _sortAsc = true; }
+    }
+
+    private string SortIndicator(string col) =>
+        _sortColumn == col ? (_sortAsc ? "▲" : "▼") : "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -310,6 +406,8 @@
         _resetPassword = "";
         _resetConfirm = "";
         _resetError = null;
+        _showResetPw = false;
+        _showResetConfirm = false;
         _resetOpen = true;
     }
 
@@ -317,6 +415,8 @@
     {
         _resetOpen = false;
         _resetting = null;
+        _showResetPw = false;
+        _showResetConfirm = false;
     }
 
     private async Task SubmitResetAsync()

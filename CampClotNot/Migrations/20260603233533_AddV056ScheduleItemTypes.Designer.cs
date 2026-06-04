@@ -3,6 +3,7 @@ using System;
 using CampClotNot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CampClotNot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260603233533_AddV056ScheduleItemTypes")]
+    partial class AddV056ScheduleItemTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -601,9 +604,6 @@ namespace CampClotNot.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ActivityId")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("AppliesToAllGroups")
                         .HasColumnType("boolean");
 
@@ -624,9 +624,6 @@ namespace CampClotNot.Migrations
 
                     b.Property<Guid?>("LocationId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("LocationOther")
-                        .HasColumnType("text");
 
                     b.Property<int?>("MaxCapacity")
                         .HasColumnType("integer");
@@ -651,8 +648,6 @@ namespace CampClotNot.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("ScheduleItemId");
-
-                    b.HasIndex("ActivityId");
 
                     b.HasIndex("CampEventId");
 
@@ -850,9 +845,6 @@ namespace CampClotNot.Migrations
 
                     b.Property<byte[]>("PhotoData")
                         .HasColumnType("bytea");
-
-                    b.Property<string>("PhotoObjectPosition")
-                        .HasColumnType("text");
 
                     b.Property<string>("RoleTitle")
                         .IsRequired()
@@ -1236,10 +1228,6 @@ namespace CampClotNot.Migrations
 
             modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItem", b =>
                 {
-                    b.HasOne("CampClotNot.Data.Entities.Activity", "Activity")
-                        .WithMany()
-                        .HasForeignKey("ActivityId");
-
                     b.HasOne("CampClotNot.Data.Entities.Event", "CampEvent")
                         .WithMany()
                         .HasForeignKey("CampEventId")
@@ -1261,8 +1249,6 @@ namespace CampClotNot.Migrations
                         .HasForeignKey("ScheduleItemTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Activity");
 
                     b.Navigation("CampEvent");
 

@@ -1,8 +1,10 @@
 @page "/dashboard"
 @attribute [Authorize]
+@using Microsoft.EntityFrameworkCore
 @inject SponsorService SponsorSvc
 @inject ScheduleService ScheduleSvc
 @inject AnnouncementService AnnouncementSvc
+@inject IDbContextFactory<AppDbContext> DbFactory
 
 <PageTitle>Home — Camp Clot Not</PageTitle>
 
@@ -98,7 +100,9 @@ else
         @* Today's Schedule *@
         <div class="ccn-panel" style="padding:18px;animation:slideUp .3s ease;border-top:5px solid #2980B9">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--black)">📅 Today's Schedule</div>
+                <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--black)">
+                    📅 @(_scheduleDay != DateOnly.FromDateTime(DateTime.Today) ? $"{_scheduleDay:MMM d} Schedule" : "Today's Schedule")
+                </div>
                 <a href="/hub/schedule" style="font-size:11px;font-family:'Fredoka One',cursive;
                                                color:#2980B9;text-decoration:none">Full →</a>
             </div>
@@ -188,16 +192,37 @@ else
 
 @code {
     private List<Sponsor>       _sponsors           = new();
-    private List<ScheduleEvent> _todayEvents        = new();
+    private List<ScheduleItem>  _todayEvents        = new();
     private Announcement?       _latestAnnouncement;
     private bool                _loading            = true;
+    private DateOnly            _scheduleDay;
+    private bool                _showingFirstDay;
 
     protected override async Task OnInitializedAsync()
     {
         _sponsors = await SponsorSvc.GetAllForEventAsync(SeedService.Id.EventCcn2026);
 
         var today = DateOnly.FromDateTime(DateTime.Today);
-        _todayEvents = await ScheduleSvc.GetForDayAsync(SeedService.Id.EventCcn2026, today);
+        using var db = DbFactory.CreateDbContext();
+        var campEvent = await db.Events.FindAsync(SeedService.Id.EventCcn2026);
+
+        if (campEvent is not null)
+        {
+            if (today < campEvent.EffDate)
+            {
+                _scheduleDay     = campEvent.EffDate;
+                _showingFirstDay = true;
+            }
+            else
+            {
+                _scheduleDay = today <= campEvent.ExpDate ? today : campEvent.ExpDate;
+            }
+        }
+        else
+        {
+            _scheduleDay = today;
+        }
+        _todayEvents = await ScheduleSvc.GetForDayAsync(SeedService.Id.EventCcn2026, _scheduleDay);
 
         var feed = await AnnouncementSvc.GetFeedAsync();
         _latestAnnouncement = feed.FirstOrDefault();
