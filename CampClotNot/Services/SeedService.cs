@@ -564,11 +564,21 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Email == config["Seed:AdminEmail"]);
         var adminId = adminUser?.UserId ?? Guid.Empty;
 
+        // Remove faq page — removed in v0.5.7 (redundant with Schedule tab)
+        var faqPage = await db.InfoPages.FindAsync(Id.InfoPageFaq);
+        if (faqPage is not null)
+        {
+            db.InfoPages.Remove(faqPage);
+            await db.SaveChangesAsync();
+            logger.LogInformation("Removed faq info page (v0.5.7 cleanup).");
+        }
+
         var pages = new[]
         {
-            new { Id = Id.InfoPageRules,   Slug = "rules",   Title = "Camp Rules",   Icon = "📋", Order = 1 },
-            new { Id = Id.InfoPageFaq,     Slug = "faq",     Title = "FAQ",          Icon = "❓", Order = 2 },
-            new { Id = Id.InfoPageMedical, Slug = "medical", Title = "Medical Info", Icon = "🏥", Order = 3 },
+            new { Id = Id.InfoPageRules,   Slug = "rules",   Title = "Camp Rules",   Icon = "📋", Order = 1,
+                  Body = "# Camp Rules\n\nContent coming soon — an Admin will update this before camp." },
+            new { Id = Id.InfoPageMedical, Slug = "medical", Title = "Medical Info", Icon = "🏥", Order = 2,
+                  Body = "# Medical Info & Emergency Contacts\n\n## Emergency Numbers\n- **Camp Emergency:** TBD\n- **Children's Harbor:** (205) 939-9583\n- **Nearest Hospital:** TBD\n\n## On-Site Medical Staff\nSee the Staff Directory for on-site medical contacts.\n\n## Incident Reporting\nUse the 🚨 Report Incident button to document any medical incident." },
         };
 
         foreach (var def in pages)
@@ -582,7 +592,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
                     Title           = def.Title,
                     IconEmoji       = def.Icon,
                     SortOrder       = def.Order,
-                    Body            = $"# {def.Title}\n\nContent coming soon — an Admin will update this before camp.",
+                    Body            = def.Body,
                     UpdatedAt       = DateTime.UtcNow,
                     UpdatedByUserId = adminId,
                 });

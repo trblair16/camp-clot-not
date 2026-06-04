@@ -154,6 +154,23 @@ try
         return Results.File(loc.ImageData, loc.ImageContentType ?? "image/jpeg");
     }).AllowAnonymous();
 
+    app.MapGet("/hub/info/{slug}/pdf", async (string slug, HttpContext ctx, IDbContextFactory<AppDbContext> factory) =>
+    {
+        using var db = factory.CreateDbContext();
+        var page = await db.InfoPages.FirstOrDefaultAsync(p => p.Slug == slug);
+        if (page?.PdfData is null) return Results.NotFound();
+        if (!string.IsNullOrEmpty(page.PdfVisibleRoles))
+        {
+            var allowed = page.PdfVisibleRoles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var userRoles = ctx.User.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value);
+            if (!ctx.User.IsInRole("Admin") && !userRoles.Any(r => allowed.Contains(r, StringComparer.OrdinalIgnoreCase)))
+                return Results.Forbid();
+        }
+        return Results.File(page.PdfData, page.PdfContentType ?? "application/pdf");
+    }).RequireAuthorization();
+
     app.MapHub<LiveHub>("/livehub");
     app.MapBlazorHub();
     app.MapFallbackToPage("/_Host");

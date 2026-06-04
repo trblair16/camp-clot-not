@@ -555,6 +555,15 @@ namespace CampClotNot.Migrations
                     b.Property<Guid>("UpdatedByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<byte[]>("PdfData")
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("PdfContentType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PdfVisibleRoles")
+                        .HasColumnType("text");
+
                     b.HasKey("PageId");
 
                     b.HasIndex("Slug")
