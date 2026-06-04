@@ -87,7 +87,7 @@
                     }
                     @if (!string.IsNullOrEmpty(m.Email))
                     {
-                        <a href="mailto:@m.Email" style="display:block;font-size:13px;color:#1a5fa8;text-decoration:none">@m.Email</a>
+                        <a href="mailto:@m.Email" style="display:block;font-size:13px;color:#1a5fa8;text-decoration:none;overflow-wrap:break-word;word-break:break-all">@m.Email</a>
                     }
                     @if (m.LinkedUserId.HasValue)
                     {
