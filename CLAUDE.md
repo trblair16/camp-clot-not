@@ -10,10 +10,10 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ## Current State (as of 2026-06-04)
 
-**Active branch:** none — start `feature/N-v057-...` (open GitHub issue first)
+**Active branch:** `feature/124-v057-info-overhaul-ux-polish` — v0.5.7 in progress (final v0.5.x)
 **On dev (pending main PR):** v0.5.6 — table-driven schedule item types + UX polish
 **Released to main:** v0.5.5 — photos, sponsor enhancements, schedule improvements, dashboard
-**Next:** v0.5.7 — info section overhaul, UX polish round 2 (see below)
+**Next:** v0.5.7 (current branch) → then v1.0.0-rc.1 (see versioning below)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -200,7 +200,27 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 *Schedule item cells:*
 - Make schedule item cell backgrounds opaque
 
-**Next after v0.5.7:** v1.0.0-rc — Dry Run
+**v0.5.7 is the last v0.5.x release.** All subsequent versions use the `v1.0.0-rc.N` → `v1.0.0` convention (see Branching & Versioning).
+
+---
+
+**v1.0.0-rc.1 — Planned (next branch after v0.5.7 merges):**
+
+*Reconnect UX overhaul (no migrations required — HTML/CSS/JS only):*
+- Remove `ConnectionIndicator.razor` and `connection-indicator.js` — the dot never turns red because `invokeMethodAsync` can't call back into .NET when the SignalR circuit is down; a banner makes it redundant anyway
+- Add custom `<div id="components-reconnect-modal">` to `_Layout.cshtml` with three styled states:
+  - `.components-reconnect-show` — slim non-blocking banner at top ("📶 Reconnecting…"), page content stays visible
+  - `.components-reconnect-failed` — red banner with Reload button + auto-reload countdown (~8s)
+  - `.components-reconnect-rejected` — auto-reload after ~1.5s with brief "Session expired — reloading…" (most common Railway cause)
+- Switch `blazor.server.js` to `autostart="false"` and configure `Blazor.start({ reconnectionOptions: { maxRetries: 12, retryIntervalMilliseconds: (n) => Math.min(n * 2000 + 1000, 20000) } })` for exponential backoff
+- Add `visibilitychange` listener: if app was backgrounded (PWA) and circuit already failed, silently `location.reload()` when user returns — app just "opens fresh" with no error shown
+- Remove `<ConnectionIndicator />` from `AppNav.razor`
+- Style the banner to match CCN neo-brutalist design (`#F5C800` yellow background, black border, Fredoka One font)
+
+*Dry Run prep:*
+- End-to-end smoke test of all Hub features, game triggers, board display
+- Validate MedicalStaff role access on incidents + info PDF
+- Confirm all migrations applied to prod
 
 ---
 
@@ -327,6 +347,20 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 **Release flow:** `feature/*` → PR to `dev` → PR to `main` → tag  
 **Issue-first rule:** Open a GitHub issue before creating a branch. Branch name must use the issue number GitHub assigns.  
 **`gh` CLI:** Installed at `$env:LOCALAPPDATA\Programs\gh\gh.exe`. Use PowerShell (not Bash) to invoke it.
+
+### Version Convention (updated 2026-06-04)
+
+v0.5.7 is the **last v0.5.x release**. With production live and real data being entered, the project moves to a release-candidate convention:
+
+| Version | Meaning |
+|---|---|
+| `v1.0.0-rc.1` | First RC — reconnect UX + dry run prep |
+| `v1.0.0-rc.2`, `rc.3` … | Dry run fixes (June ~14-19) |
+| `v1.0.0` | Go-live build — deployed before June 20 camp start |
+| `v1.0.1`, `v1.0.2` … | Hotfixes during/after camp |
+| `v1.1.0` | Next feature cycle (post-camp chapter Yapp replacement work) |
+
+Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-...`, etc.
 
 ---
 
