@@ -8,11 +8,12 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-06-03)
+## Current State (as of 2026-06-04)
 
-**Active branch:** none — start `feature/N-v056-schedule-item-types` (open GitHub issue first)
+**Active branch:** none — start `feature/N-v057-...` (open GitHub issue first)
+**On dev (pending main PR):** v0.5.6 — table-driven schedule item types + UX polish
 **Released to main:** v0.5.5 — photos, sponsor enhancements, schedule improvements, dashboard
-**Next:** v0.5.6 — table-driven ScheduleItemType + rename ScheduleEvent → ScheduleItem (see below)
+**Next:** v0.5.7 — info section overhaul, UX polish round 2 (see below)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -137,50 +138,69 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - [x] `/hub/incidents` + `/hub/incidents/{id}/print`: `MedicalStaff` role added alongside `Admin`
 - [x] `/admin/users` role dropdown: Medical Staff option added
 
-**v0.5.6 — Planned (feature/N-v056-schedule-item-types, issue TBD):**
+**v0.5.6 — Done (feature/121-v056-schedule-item-types, PR #122, merged to dev):**
 
-*Goal:* Replace the `ScheduleEventType` C# enum with a table-driven system so Vicki/Amanda can manage schedule item types per event without a code deploy.
+*Schema changes:*
+- `ScheduleEvent` entity/table → `ScheduleItem`; `ScheduleEventGroup` → `ScheduleItemGroup`; `ScheduleEventType` enum removed
+- New **`ScheduleItemType`** entity — `ScheduleItemTypeId`, `Name`, `SystemName`, `Description?`, `SortOrder`; seeded with 6 types (Activity, Meal, Travel, Free, Mandatory, Presentation)
+- New **`EventScheduleItemType`** join table — which types are active per event; CCN 2026 gets all 6 enabled by default
+- `ScheduleItem`: drop `EventType` enum column; add `ScheduleItemTypeId (Guid FK → ScheduleItemType)`; add `LocationOther (string?)` freetext alongside location dropdown
+- `StaffMember`: add `PhotoObjectPosition (string?)` — stored as `"X% Y%"` string, drives `object-position` CSS on hub cards
 
-*Rename:*
-- `ScheduleEvent` entity/table → `ScheduleItem`
-- `ScheduleEventType` enum → removed; replaced by `ScheduleItemType` entity/table
+*Service/page changes:*
+- `ScheduleEventDto` → `ScheduleItemDto`; all `ScheduleService` queries include `ScheduleItemType`
+- New `ScheduleItemTypeService` — CRUD + `GetForEventAsync(eventId)` for dropdowns
+- New `/admin/schedule-item-types` page — Admin CRUD + per-event enable/disable
+- Special-case UI: Presenter fields keyed off `SystemName == "Presentation"`; Travel → "Arrival/Departure" keyed off `SystemName == "Travel"`
+- Admin nav: 4 section headers in Admin dropdown (Game / Schedule / People / Venue & Content); "Types" shorthand for schedule item types
 
-*New entities:*
-- **`ScheduleItemType`** — master catalog of schedule item types
-  - `ScheduleItemTypeId (Guid PK)`
-  - `Name (string)` — display name, editable by admins
-  - `SystemName (string)` — stable code identifier (e.g. "Presentation"), used for special-case UI logic
-  - `Description (string?)`
-  - `SortOrder (int)` — controls dropdown order
-  - Seeded with current six types: Activity, Meal, Travel, Free, Mandatory, Presentation
-- **`EventScheduleItemType`** — join table, defines which types are active for a given event
-  - `EventId (Guid FK → Event)`
-  - `ScheduleItemTypeId (Guid FK → ScheduleItemType)`
-  - Seeded: CCN 2026 gets all six types enabled by default
+*UX polish:*
+- Tel: links use E.164 format (`+1XXXXXXXXXX`) via `TelHref()` helper — required for Android Chrome dialer; applied to Staff.razor + Sponsors.razor
+- Staff phone/email links darkened to `#1a5fa8`
+- Staff photo focal point: X/Y position sliders in admin dialog; `PhotoObjectPosition` stored as `"X% Y%"`; `object-position` CSS on hub cards
+- Admin Locations: Capacity hidden from UI; location image preview in form; 56×40px thumbnails in table with fullscreen lightbox on click
+- Password visibility toggle (👁/🙈) on all 3 password inputs in `/admin/users`
+- Schedule item dividers darkened to `3px solid #3a3a3a`; location chip bold requires `font-family:'Fredoka One',cursive` (not just `font-weight`)
+- Dashboard: fixed async DbContext bug (`CreateDbContext()` not `CreateDbContextAsync()`); 3-case date logic (before event → first day, during → today, after → last day)
+- Hub/schedule: default tab = today (first day if before event, last day if event has ended)
+- Admin Users: search input + role filter dropdown + sortable Name/Role columns; default sort = role rank then last name A-Z; `FilteredUsers` computed property
+- LocationOther freetext always shown alongside location dropdown; displayed as separate chip in hub view
 
-*`ScheduleItem` changes:*
-- `EventType (ScheduleEventType enum)` column dropped
-- `ScheduleItemTypeId (Guid FK → ScheduleItemType)` added
-- All other columns unchanged
+*EF migrations added:*
+- `AddScheduleItemTypes` — table renames, new ScheduleItemType + EventScheduleItemType tables, drop EventType column, add ScheduleItemTypeId FK
+- `AddStaffPhotoPosition` — adds `PhotoObjectPosition (text)` to `StaffMembers`
+- `AddScheduleItemLocationOther` — adds `LocationOther (text)` to `ScheduleItems`
 
-*Special-case UI behavior:*
-- Presenter fields (PresenterName/Bio) shown when `ScheduleItemType.SystemName == "Presentation"` — same logic as before, just keyed off SystemName string instead of enum value
-- "Travel" displays as "Arrival/Departure" in the same way — keyed off `SystemName == "Travel"`
+**v0.5.7 — Planned:**
 
-*Service changes:*
-- `ScheduleService` — update all queries to include `ScheduleItemType`, update `ScheduleEventDto` to use `ScheduleItemTypeId` instead of enum
-- `ScheduleEventDto` rename to `ScheduleItemDto`
-- New `ScheduleItemTypeService` — CRUD for schedule item types, `GetForEventAsync(eventId)` for dropdowns
+*Info section overhaul:*
+- Remove `faq` info page (redundant with schedule); `medical` page kept + restructured for emergency contacts
+- Add PDF upload support to `InfoPage` — `PdfData (byte[]?)` + `PdfContentType (string?)`; served via `/hub/info/{slug}/pdf`; display via native PDF viewer (`<iframe>`) or new-tab link
+- Role-based PDF visibility: per-page visibility flag controlling which roles can download
+- Emergency contacts PDF on `medical` page — visible to MedicalStaff + Admin only
 
-*Pages:*
-- `/hub/schedule` — dropdown populated from `EventScheduleItemType` for active event; type badge uses `ScheduleItemType.Name`
-- `/admin/schedule` — same dropdown; type badge
-- `/admin/schedule-item-types` (new) — Admin CRUD for `ScheduleItemType` master list + per-event enable/disable
-- `AppNav` — add `/admin/schedule-item-types` to Admin dropdown
+*Dashboard:*
+- Sponsor widget currently caps at 8; use full available width/whitespace to show all sponsors
 
-*Migration:* new migration renames table, drops enum column, adds FK column, adds two new tables. **Prod note:** existing `ScheduleEvent` rows must have their integer enum values mapped to the new `ScheduleItemTypeId` FK in a data migration step — seed IDs must be stable GUIDs set in `SeedService.Id`.
+*Hub/sponsors (mobile):*
+- Remove "Report Incident" FAB on `/hub/sponsors` on mobile only (FAB renders on top of content)
 
-**Next after v0.5.6:** v1.0.0-rc — Dry Run
+*Staff directory:*
+- Fix email addresses overflowing card border (overflow-wrap or truncation with tooltip)
+- Fix pixelated staff photos — review stored resolution vs. render size
+
+*Schedule:*
+- Show location image thumbnail on schedule item row in admin table (small, with lightbox expand)
+- Rearrange schedule item admin layout — currently content squished to left
+- Mobile: remove Edit/Delete buttons from `/hub/schedule` items (admin actions belong on admin page)
+
+*Transactions:*
+- Apply CCN neo-brutalist table style to transactions table (currently unstyled)
+
+*Schedule item cells:*
+- Make schedule item cell backgrounds opaque
+
+**Next after v0.5.7:** v1.0.0-rc — Dry Run
 
 ---
 
@@ -223,6 +243,14 @@ Floating action buttons (like "Log Score" and "Report Incident") must use the cl
 **13. Navigation property names must follow EF Core FK convention or be configured explicitly.**  
 If a navigation property `FooUser` references `User` but the FK property is not named `FooUserUserId` or `UserId`, EF Core creates a shadow property (e.g. `FooUserUserId`) instead of using your named property. The shadow property defaults to `Guid.Empty` on insert, causing a NOT NULL FK constraint violation that crashes the Blazor circuit. Fix: add explicit `.HasForeignKey(e => e.YourProperty)` in `OnModelCreating` whenever the FK property name doesn't match the `<NavName><PKName>` convention. This was the root cause of the v0.5.4 schedule save bug.  
 All form modals must use: backdrop `animation:fadeIn .2s ease` with `rgba(26,26,26,.65)`, panel `ccn-panel` class with `animation:popIn .25s ease` and `box-shadow:8px 8px 0 var(--black)`, and centered with `display:flex;align-items:center;justify-content:center;padding:20px`. Do not use bottom-sheet patterns for forms — they lack the popIn animation and feel inconsistent. A shared `CcnDialog.razor` wrapper is planned post-v0.5.1 once a third dialog exists.
+
+**14. Always use synchronous `DbFactory.CreateDbContext()` — never the async variant.**  
+`await using var db = await DbFactory.CreateDbContextAsync()` introduces an async disposal pattern that conflicts with how services are structured in this codebase. Use `using var db = DbFactory.CreateDbContext()` (synchronous) everywhere. The async variant caused a silent bug on `Dashboard.razor` where the first-day schedule query returned nothing despite data existing. All existing services use the synchronous call — match it.
+
+**15. Razor attribute quote conflict: use single quotes on `@onclick` when the lambda contains `$"..."` interpolated strings.**  
+If an `@onclick` (or other `@on*`) lambda contains a C# interpolated string literal, using double quotes for the HTML attribute causes parse errors (CS1525/CS1056). Wrap the outer attribute in single quotes instead:  
+`@onclick='() => _field = $"/path/{someId}"'`  
+This also applies to any event attribute whose lambda body contains a double-quoted string literal. Root cause of the lightbox onclick bug in `/admin/locations`.
 
 ---
 
@@ -276,7 +304,7 @@ Groups 5 & 6 removed from seed. SeedGroupsAsync upserts by ID and purges stale e
 | Competition | `CurrencyType`, `Group`, `Transaction`, `BoardSpace`, `GroupBoardPos`, `ScriptedBlockHit`, `ScriptedMiniGame` |
 | Awards | `AwardType`, `CamperAward` |
 | Auth/RBAC | `UserRole`, `Authority`, `UserRoleAuthorityLink`, `UserAuthorityLink`, `User` |
-| Hub (Camp Info) | `Location`, `InfoPage`, `StaffMember`, `Announcement`, `ScheduleEvent`, `ScheduleEventGroup`, `IncidentReport`, `Sponsor` |
+| Hub (Camp Info) | `Location`, `InfoPage`, `StaffMember`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor` |
 
 **Column convention:** `Name` + `Description` + `SystemName` on all reference/catalog tables.
 
@@ -322,7 +350,10 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 | `CampClotNot/Pages/MiniGamesDisplay.razor` | Mini-game projector at `/minigames/display` — Admin only |
 | `CampClotNot/Pages/Admin/Games.razor` | Combined game admin at `/admin/games` |
 | `CampClotNot/Pages/Admin/Sponsors.razor` | Sponsor CRUD at `/admin/sponsors` |
-| `CampClotNot/Pages/Admin/Schedule.razor` | Schedule event CRUD at `/admin/schedule` — Admin only |
+| `CampClotNot/Pages/Admin/Schedule.razor` | Schedule item CRUD at `/admin/schedule` — Admin only |
+| `CampClotNot/Pages/Admin/ScheduleItemTypes.razor` | Schedule item type CRUD at `/admin/schedule-item-types` — Admin only |
+| `CampClotNot/Services/ScheduleService.cs` | Schedule item CRUD — uses `ScheduleItemDto`, includes `ScheduleItemType` in all queries |
+| `CampClotNot/Services/ScheduleItemTypeService.cs` | ScheduleItemType CRUD + `GetForEventAsync(eventId)` for dropdowns |
 | `CampClotNot/Pages/Admin/Activities.razor` | MinuteToWinIt activity CRUD at `/admin/activities` — Admin only |
 | `CampClotNot/Pages/Hub/HubSubNav.razor` | Shared Hub sub-nav + floating Report Incident FAB + modal |
 | `CampClotNot/Pages/Hub/Incidents.razor` | Admin incident list at `/hub/incidents` |
