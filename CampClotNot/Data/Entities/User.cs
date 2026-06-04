@@ -9,6 +9,7 @@ public class User
     public string Email { get; set; } = "";
     public string PasswordHash { get; set; } = "";
     public bool IsActive { get; set; } = true;
+    public bool MustChangePassword { get; set; } = false;
     public Guid? GroupId { get; set; }
 
     public UserRole UserRole { get; set; } = null!;

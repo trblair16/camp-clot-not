@@ -970,6 +970,10 @@ namespace CampClotNot.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasDefaultValue(false)
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text");

@@ -115,14 +115,56 @@ try
     });
 
     // Login/logout endpoints — cookie auth requires a real HTTP response, not a Blazor SignalR circuit
-    app.MapPost("/account/login", async (HttpContext ctx, AuthService auth) =>
+    app.MapPost("/account/login", async (HttpContext ctx, AuthService auth, IDbContextFactory<AppDbContext> factory) =>
     {
-        var form = await ctx.Request.ReadFormAsync();
-        var email    = form["email"].ToString();
-        var password = form["password"].ToString();
-        var ok = await auth.LoginAsync(ctx, email, password);
-        return ok ? Results.Redirect("/dashboard") : Results.Redirect("/login?error=true");
+        var form       = await ctx.Request.ReadFormAsync();
+        var email      = form["email"].ToString();
+        var password   = form["password"].ToString();
+        var rememberMe = form["rememberMe"].ToString() is "on" or "true";
+
+        DateTimeOffset? expiresUtc = null;
+        if (rememberMe)
+        {
+            using var db    = factory.CreateDbContext();
+            var activeEvent = await db.Events.FirstOrDefaultAsync(e => e.IsActive);
+            var today       = DateOnly.FromDateTime(DateTime.UtcNow);
+            if (activeEvent is not null && today >= activeEvent.EffDate && today <= activeEvent.ExpDate)
+                expiresUtc = new DateTimeOffset(activeEvent.ExpDate.AddDays(1).ToDateTime(TimeOnly.Midnight), TimeSpan.Zero);
+            else
+                expiresUtc = DateTimeOffset.UtcNow.AddDays(7);
+        }
+
+        var result = await auth.LoginAsync(ctx, email, password, rememberMe, expiresUtc);
+        return result switch
+        {
+            LoginResult.MustChangePassword => Results.Redirect("/change-password"),
+            LoginResult.Success            => Results.Redirect("/dashboard"),
+            _                              => Results.Redirect("/login?error=true")
+        };
     });
+
+    app.MapPost("/account/change-password", async (HttpContext ctx, AuthService auth) =>
+    {
+        if (ctx.User.Identity?.IsAuthenticated != true)
+            return Results.Redirect("/login");
+
+        var form    = await ctx.Request.ReadFormAsync();
+        var newPw   = form["newPassword"].ToString();
+        var confirm = form["confirmPassword"].ToString();
+
+        if (string.IsNullOrWhiteSpace(newPw) || newPw.Length < 8)
+            return Results.Redirect("/change-password?error=tooshort");
+
+        if (newPw != confirm)
+            return Results.Redirect("/change-password?error=mismatch");
+
+        var userIdStr = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return Results.Redirect("/login");
+
+        await auth.ChangePasswordAsync(userId, newPw, ctx);
+        return Results.Redirect("/dashboard");
+    }).RequireAuthorization();
 
     app.MapGet("/logout", async (HttpContext ctx) =>
     {
