@@ -2,6 +2,8 @@
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
 @inject StaffDirectoryService StaffSvc
 @inject AuthenticationStateProvider Auth
+@using SixLabors.ImageSharp
+@using SixLabors.ImageSharp.Processing
 
 <PageTitle>Staff — Camp Clot Not</PageTitle>
 
@@ -150,7 +152,7 @@
             </div>
             <MudTextField @bind-Value="_form.Phone"       Label="Phone (optional)" Class="mb-2" />
             <MudTextField @bind-Value="_form.Email"       Label="Email (optional)" Class="mb-2" />
-            <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="Color.Primary" Class="mb-2" />
+            <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="MudBlazor.Color.Primary" Class="mb-2" />
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
                 <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="Close">Cancel</button>
                 <button class="ccn-btn" @onclick="Save">Save</button>
