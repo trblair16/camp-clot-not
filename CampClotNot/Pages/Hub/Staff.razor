@@ -2,7 +2,6 @@
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
 @inject StaffDirectoryService StaffSvc
 @inject AuthenticationStateProvider Auth
-@using SixLabors.ImageSharp.Formats.Jpeg
 
 <PageTitle>Staff — Camp Clot Not</PageTitle>
 
@@ -254,8 +253,7 @@
         await stream.CopyToAsync(ms);
 
         // Resize to max 400×400 so photos are sharp on any DPI without bloating the DB
-        ms.Position = 0;
-        using var image = SixLabors.ImageSharp.Image.Load(ms);
+        using var image = SixLabors.ImageSharp.Image.Load(ms.ToArray());
         if (image.Width > 400 || image.Height > 400)
             image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
             {
