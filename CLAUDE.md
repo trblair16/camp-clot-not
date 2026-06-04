@@ -224,7 +224,23 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-**v2.0.0 Vision — Self-Service Event Designer**
+**v1.1.0 — Post-Camp Quick Wins + Architecture Prep**
+
+*Standalone improvements (no v2.0 architecture required):*
+- Forgot password via email (SendGrid free tier — infra now in place post-v1.0)
+- Response caching for Hub read endpoints — in-memory cache on server, zero schema changes (schedule 60s, announcements 15s, info 5min, staff 2min); reduces DB load when 150+ Annual Meeting attendees hit the Hub simultaneously. *Note: unrelated to reconnect UX — this is server↔DB performance, not browser↔server connection handling.*
+- Awards UI — `AwardType` and `CamperAward` entities already in schema from day one; just needs admin CRUD + a display view + projector page for award ceremony
+- `IActiveEventService` — one-file wrapper replacing direct `SeedService.Id.EventCcn2026` references across pages/services with a runtime interface call. No migrations, no UI, no user-facing change — but makes v2.0.0 decoupling a search-and-replace rather than a surgery
+
+**v1.2.0 — Polish + Deeper v2.0 Prep**
+
+- Audit log — `AuditEntry` table + interceptor on SaveChanges; Vicki can see "Tyler deleted a schedule item at 3pm." Single migration, high ops value before chapter-scale events
+- `ScheduleTemplate` + `ScheduleTemplateItem` entity + migration (data layer only, no admin UI yet) — v2.0.0 branch starts with the schema already done and just builds the interface on top
+- Test suite foundation — service-layer unit tests for scoring, auth, and seed. Manual testing only for v1.x; want these in place before v2.0 architectural changes touch everything
+
+---
+
+**v2.0.0 — Self-Service Event Management**
 
 *Goal: Vicki can configure and launch a "Men's Retreat" (or any HBDA event) entirely within the admin UI without any developer involvement. No seed changes, no code deploys, no Tyler.*
 
@@ -236,39 +252,77 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - `/admin/schedule` — schedule item CRUD ✓
 - `Event` entity has `EffDate`, `ExpDate`, `IsActive`, `EventTypeId`, `ThemeId` ✓
 - `EventCapability` join table exists (feature flags per event) ✓
+- `ScheduleTemplate` + `ScheduleTemplateItem` entities (added in v1.2.0) ✓
 
 *What needs to be built:*
-- **`/admin/events` — Event CRUD**: create, edit, duplicate, set active event; replaces hardcoded `SeedService.Id.EventCcn2026` references with a runtime-selected active event
-- **Event duplication**: "Copy this event as a starting point" — clones groups, locations, schedule item types, and activities into a new event shell so Vicki isn't building from scratch
+- **`/admin/events` — Event CRUD**: create, edit, duplicate, set active event; replaces `IActiveEventService` stub (from v1.1.0) with full runtime-selected active event
+- **Event duplication**: "Copy this event as a starting point" — clones groups, locations, schedule item types, and activities into a new event shell
 - **`/admin/theme` — Theme config UI**: edit event name/tagline, primary color palette, logo upload; backed by DB `Theme` entity instead of `ThemeService` hardcoded values
-- **`/admin/capabilities` — Feature flags UI**: toggle which platform features (`EventCapability`) are active for a given event (e.g. a Men's Retreat might not use the board game)
-- **Decouple from hardcoded seed GUIDs**: `SeedService.Id.*` constants and hardcoded `SeedService.Id.EventCcn2026` references throughout pages/services need to become runtime lookups (e.g. `IEventContext.ActiveEventId`) so any event can be "the active one"
-- **Admin completion checklist**: dashboard widget on `/admin` showing setup progress — "0 locations added," "no schedule items yet," etc.
+- **`/admin/capabilities` — Feature flags UI**: toggle which platform features are active per event (e.g. Men's Retreat might not use the board game)
+- **Schedule template admin UI**: template CRUD + apply-template action on `/admin/events`; "Save current schedule as template" reverse flow
+- **Admin completion checklist**: dashboard widget showing setup progress — "0 locations added," "no schedule items yet," etc.
 
 *UX — Event Designer subnav under Admin:*
 
 ```
 Admin → Event Designer
-  ├── Events          /admin/events
-  ├── Theme           /admin/theme
-  ├── Groups          /admin/groups        (already exists, fold in)
-  ├── Locations       /admin/locations     (already exists, fold in)
-  ├── Schedule Types  /admin/schedule-item-types  (already exists, fold in)
-  ├── Activities      /admin/activities    (already exists, fold in)
-  └── Capabilities    /admin/capabilities
+  ├── Events              /admin/events
+  ├── Theme               /admin/theme
+  ├── Groups              /admin/groups              (already exists, fold in)
+  ├── Locations           /admin/locations           (already exists, fold in)
+  ├── Schedule Types      /admin/schedule-item-types (already exists, fold in)
+  ├── Schedule Templates  /admin/schedule-templates  (new)
+  ├── Activities          /admin/activities          (already exists, fold in)
+  └── Capabilities        /admin/capabilities        (new)
 ```
 
-Existing standalone admin pages fold into this subnav rather than being replaced — the URLs stay the same, the navigation wrapper changes. A completion checklist at the top of the Event Designer landing page shows Vicki what's still missing for the active event.
+*This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "Vicki configures events in the UI."
 
-*Schedule templates:*
-- **`ScheduleTemplate`** entity — name, description, optional `EventTypeId` scope (e.g. "3-Day Camp," "Weekend Retreat," "Men's Retreat")
-- **`ScheduleTemplateItem`** entity — FK to template, `DayOffset (int)` (0 = first day of event), `StartTime (TimeOnly)`, `EndTime (TimeOnly?)`, `ScheduleItemTypeId`, `Title`, `Notes?` — no absolute dates, all relative
-- **Apply template** action on `/admin/events`: select a template → system generates `ScheduleItem` rows by adding `Event.EffDate + DayOffset` to each item's times → admin gets a fully populated schedule as a starting point to customize
-- **Template CRUD** under Event Designer subnav (`/admin/schedule-templates`) — Admin can build, edit, and share templates across events
-- **Save current schedule as template**: on any event, "Save schedule as template" action strips the absolute dates back to relative offsets and creates a new template — natural workflow after the first time you run a given event type
-- Templates slot into Event Designer as an optional step between event creation and schedule editing: "Start from template?" → pick one → schedule pre-populated
+---
 
-*This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "Vicki configures events in the UI." Once this ships, the platform is genuinely self-service for any HBDA event.
+**v2.1.0 — Member Access (Yapp Replacement)**
+
+*Goal: Families and chapter members can access event info on their phones with zero friction — same experience as Yapp, but ours.*
+
+*Tiered identity model:*
+
+| Tier | Identity | How they join | What they can do |
+|---|---|---|---|
+| Anonymous guest | Device/session only | Event code → instant access | Read-only Hub: schedule, announcements, info, directory |
+| Named guest | Name + optional email, event-scoped | Prompted on first identity-requiring action | Above + session signups + personal schedule + check-in |
+| Full member | Persistent across events | Optional upgrade from named guest | Above + push notifications + multi-event history |
+| Staff/Admin | Full account | Admin-created (existing) | Everything |
+
+*What ships:*
+- `EventCode` entity + `/join/{code}` route — validates code, issues a `Member` role cookie carrying `EventId` claim scoped to that event; expires at `EventExpDate + 1 day`; Vicki generates one code per event (`HARVEST26`), posts it on a flyer
+- `GuestAttendee` entity — `Name`, `Email?`, `EventId`, `SessionToken` (ties back to cookie); created on first identity-requiring action with a single low-friction "What's your name?" prompt
+- Member-facing Hub: read-only schedule, announcements, info pages, staff directory with its own layout/nav tier (no admin controls, no transaction log)
+- Push notifications (Web Push + VAPID, `PushSubscription` table, background ASP.NET service) — now that member identity exists; "new announcement" and "schedule change" pushes to both named guests and full members
+- Optional "save for future HBDA events" upgrade flow → creates a persistent member account
+
+*Note: CCN campers are not allowed phones — CCN was intentionally the perfect staff-only beta. Camp Harvest and Annual Meeting are the first real member-access events.*
+
+---
+
+**v2.2.0 — Event Operations**
+
+*Goal: Operational depth for larger events — session signups, attendance, awards ceremony, post-event reporting.*
+
+- **Session signups**: limited-capacity breakout sessions; `SessionSignup` entity FK to either `UserId` (staff) or `GuestAttendeeId` (named guest); capacity counts; roster view for facilitators
+- **Attendance tracking**: `EventAttendance` table; check-in flow; admin roster; works across all identity tiers
+- **End-of-event reporting/export**: final score summary, transaction log PDF, incident report bundle, attendance sheets — the "give Vicki the paperwork" feature
+- Awards UI already shipped in v1.1.0; this release adds ceremony projector display
+
+---
+
+**v3.0.0 Horizon**
+
+*v3.0.0 is not planned — it will announce itself when the platform outgrows its current architecture. Likely triggers:*
+- Multi-tenant SaaS: other HBDA chapters (or other organizations) running their own events on the platform — requires tenant isolation in the data model, billing, org-level admin
+- True native mobile app: moving off PWA to a dedicated iOS/Android app — requires a separate API layer and new client
+- Separate frontend client: if a camper-facing React or WASM app is needed, the Blazor Server backend would be extracted to a proper API at that point
+
+None of these are on the near-term horizon. The entire v2.x roadmap is extending and opening up the same platform.
 
 ---
 
