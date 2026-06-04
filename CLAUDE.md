@@ -260,6 +260,14 @@ Admin → Event Designer
 
 Existing standalone admin pages fold into this subnav rather than being replaced — the URLs stay the same, the navigation wrapper changes. A completion checklist at the top of the Event Designer landing page shows Vicki what's still missing for the active event.
 
+*Schedule templates:*
+- **`ScheduleTemplate`** entity — name, description, optional `EventTypeId` scope (e.g. "3-Day Camp," "Weekend Retreat," "Men's Retreat")
+- **`ScheduleTemplateItem`** entity — FK to template, `DayOffset (int)` (0 = first day of event), `StartTime (TimeOnly)`, `EndTime (TimeOnly?)`, `ScheduleItemTypeId`, `Title`, `Notes?` — no absolute dates, all relative
+- **Apply template** action on `/admin/events`: select a template → system generates `ScheduleItem` rows by adding `Event.EffDate + DayOffset` to each item's times → admin gets a fully populated schedule as a starting point to customize
+- **Template CRUD** under Event Designer subnav (`/admin/schedule-templates`) — Admin can build, edit, and share templates across events
+- **Save current schedule as template**: on any event, "Save schedule as template" action strips the absolute dates back to relative offsets and creates a new template — natural workflow after the first time you run a given event type
+- Templates slot into Event Designer as an optional step between event creation and schedule editing: "Start from template?" → pick one → schedule pre-populated
+
 *This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "Vicki configures events in the UI." Once this ships, the platform is genuinely self-service for any HBDA event.
 
 ---
