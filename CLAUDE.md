@@ -224,6 +224,46 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
+**v2.0.0 Vision — Self-Service Event Designer**
+
+*Goal: Vicki can configure and launch a "Men's Retreat" (or any HBDA event) entirely within the admin UI without any developer involvement. No seed changes, no code deploys, no Tyler.*
+
+*What's already there (building blocks exist):*
+- `/admin/groups` — group CRUD, event-scoped ✓
+- `/admin/locations` — location CRUD ✓
+- `/admin/schedule-item-types` — type CRUD + per-event enable/disable ✓
+- `/admin/activities` — activity CRUD ✓
+- `/admin/schedule` — schedule item CRUD ✓
+- `Event` entity has `EffDate`, `ExpDate`, `IsActive`, `EventTypeId`, `ThemeId` ✓
+- `EventCapability` join table exists (feature flags per event) ✓
+
+*What needs to be built:*
+- **`/admin/events` — Event CRUD**: create, edit, duplicate, set active event; replaces hardcoded `SeedService.Id.EventCcn2026` references with a runtime-selected active event
+- **Event duplication**: "Copy this event as a starting point" — clones groups, locations, schedule item types, and activities into a new event shell so Vicki isn't building from scratch
+- **`/admin/theme` — Theme config UI**: edit event name/tagline, primary color palette, logo upload; backed by DB `Theme` entity instead of `ThemeService` hardcoded values
+- **`/admin/capabilities` — Feature flags UI**: toggle which platform features (`EventCapability`) are active for a given event (e.g. a Men's Retreat might not use the board game)
+- **Decouple from hardcoded seed GUIDs**: `SeedService.Id.*` constants and hardcoded `SeedService.Id.EventCcn2026` references throughout pages/services need to become runtime lookups (e.g. `IEventContext.ActiveEventId`) so any event can be "the active one"
+- **Admin completion checklist**: dashboard widget on `/admin` showing setup progress — "0 locations added," "no schedule items yet," etc.
+
+*UX — Event Designer subnav under Admin:*
+
+```
+Admin → Event Designer
+  ├── Events          /admin/events
+  ├── Theme           /admin/theme
+  ├── Groups          /admin/groups        (already exists, fold in)
+  ├── Locations       /admin/locations     (already exists, fold in)
+  ├── Schedule Types  /admin/schedule-item-types  (already exists, fold in)
+  ├── Activities      /admin/activities    (already exists, fold in)
+  └── Capabilities    /admin/capabilities
+```
+
+Existing standalone admin pages fold into this subnav rather than being replaced — the URLs stay the same, the navigation wrapper changes. A completion checklist at the top of the Event Designer landing page shows Vicki what's still missing for the active event.
+
+*This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "Vicki configures events in the UI." Once this ships, the platform is genuinely self-service for any HBDA event.
+
+---
+
 ## Pitfalls to Avoid (Lessons from v0.4.0)
 
 **1. Never use PowerShell for source file text replacement.**  
