@@ -85,7 +85,7 @@
     @@media (min-width: 700px) {
         .sched-header {
             display: grid;
-            grid-template-columns: 80px minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 36px minmax(0,1.2fr) auto;
+            grid-template-columns: 80px minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 60px minmax(0,1.2fr) auto;
             gap: 0 10px;
             padding: 7px 14px;
             border-bottom: 3px solid var(--black);
@@ -97,7 +97,7 @@
             text-transform: uppercase;
         }
         .sched-row {
-            grid-template-columns: 80px minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 36px minmax(0,1.2fr) auto;
+            grid-template-columns: 80px minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 60px minmax(0,1.2fr) auto;
         }
         .sched-col-type, .sched-col-loc, .sched-col-img,
         .sched-col-other { display: flex; align-items: flex-start; padding-top: 2px; }
@@ -119,7 +119,7 @@
         .sched-sub-body { padding: 0 14px 8px; }
         .sched-sub-header, .sched-sub-row {
             display: grid;
-            grid-template-columns: 56px minmax(0,2fr) minmax(0,1.5fr) 36px minmax(0,1.2fr);
+            grid-template-columns: 56px minmax(0,2fr) minmax(0,1.5fr) 60px minmax(0,1.2fr);
             gap: 0 10px;
             align-items: center;
             padding: 5px 0;
@@ -232,7 +232,7 @@
                                             @if (displayLocation.ImageData is not null)
                                             {
                                                 <img src="/location-image/@displayLocation.LocationId"
-                                                     style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle"
+                                                     style="width:56px;height:40px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle"
                                                      alt="@displayLocation.Name"
                                                      @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
                                             }
@@ -315,7 +315,7 @@
                                     @if (displayLocation?.ImageData is not null)
                                     {
                                         <img src="/location-image/@displayLocation.LocationId"
-                                             style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;vertical-align:middle"
+                                             style="width:56px;height:40px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;vertical-align:middle"
                                              alt="@displayLocation.Name"
                                              @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
                                     }
@@ -377,7 +377,7 @@
                                                     @if (eg.Location?.ImageData is not null)
                                                     {
                                                         <img src="/location-image/@eg.Location.LocationId"
-                                                             style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in"
+                                                             style="width:56px;height:40px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in"
                                                              alt="@eg.Location.Name"
                                                              @onclick='() => _lightboxSrc = $"/location-image/{eg.Location.LocationId}"' />
                                                     }
