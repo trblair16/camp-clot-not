@@ -70,7 +70,7 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
             @foreach (var m in _members)
             {
-                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center">
+                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center;display:flex;flex-direction:column">
                     @if (m.PhotoData is not null)
                     {
                         <img src="/staff-photo/@m.StaffMemberId"
@@ -97,7 +97,7 @@
                     }
                     @if (_isAdmin)
                     {
-                        <div style="display:flex;gap:4px;margin-top:10px;justify-content:center">
+                        <div style="display:flex;gap:4px;margin-top:auto;padding-top:10px;justify-content:center">
                             <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEdit(m)">Edit</button>
                             <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => Delete(m.StaffMemberId)">Del</button>
                         </div>
