@@ -284,10 +284,6 @@
                                     </td>
                                     <td>
                                         <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">
-                                            @if (dispLoc?.ImageData is not null)
-                                            {
-                                                <img src="/location-image/@dispLoc.LocationId" style="width:48px;height:34px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
-                                            }
                                             @if (dispLoc is not null)
                                             {
                                                 <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540">📍 @dispLoc.Name</span>
@@ -295,6 +291,10 @@
                                             else
                                             {
                                                 <span style="color:var(--text-light);font-size:13px">—</span>
+                                            }
+                                            @if (dispLoc?.ImageData is not null)
+                                            {
+                                                <img src="/location-image/@dispLoc.LocationId" style="width:48px;height:34px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
                                             }
                                         </div>
                                     </td>
@@ -329,15 +329,15 @@
                                                             <div>@(eg.Activity?.Name ?? "—")</div>
                                                             <div>
                                                                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                                                                    @if (eg.Location?.ImageData is not null)
-                                                                    {
-                                                                        <img src="/location-image/@eg.Location.LocationId" style="width:36px;height:26px;object-fit:cover;border-radius:3px;border:1px solid var(--black);cursor:zoom-in;flex-shrink:0" alt="@eg.Location.Name" @onclick='() => _lightboxSrc = $"/location-image/{eg.Location.LocationId}"' />
-                                                                    }
                                                                     @if (eg.Location is not null)
                                                                     {
                                                                         <span style="font-size:11px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540">📍 @eg.Location.Name</span>
                                                                     }
                                                                     else { <span style="color:var(--text-light)">—</span> }
+                                                                    @if (eg.Location?.ImageData is not null)
+                                                                    {
+                                                                        <img src="/location-image/@eg.Location.LocationId" style="width:36px;height:26px;object-fit:cover;border-radius:3px;border:1px solid var(--black);cursor:zoom-in;flex-shrink:0" alt="@eg.Location.Name" @onclick='() => _lightboxSrc = $"/location-image/{eg.Location.LocationId}"' />
+                                                                    }
                                                                 </div>
                                                             </div>
                                                             <div style="color:var(--text-mid)">@(string.IsNullOrEmpty(eg.Note) ? "—" : eg.Note)</div>
