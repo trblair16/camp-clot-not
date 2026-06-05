@@ -46,27 +46,6 @@
     <script src="js/board.js?v=3"></script>
     <script src="js/install-prompt.js"></script>
     <script>
-        // Capture env(safe-area-inset-bottom) as a CSS custom property via JS so
-        // that nav bar CSS reads a static pixel value (var(--sai-b)) rather than
-        // calling env() inline — iOS PWA lazily re-evaluates env() on Blazor
-        // re-renders, causing the nav bar to jump. A JS-measured value is stable.
-        (function () {
-            var probe = document.createElement('div');
-            probe.style.cssText = 'position:fixed;bottom:0;left:0;width:0;height:0;padding-bottom:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden';
-            function snapSAI() {
-                document.body.appendChild(probe);
-                var v = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-                document.body.removeChild(probe);
-                document.documentElement.style.setProperty('--sai-b', v + 'px');
-            }
-            snapSAI();
-            requestAnimationFrame(function () { requestAnimationFrame(snapSAI); });
-            window.addEventListener('resize', snapSAI);
-            document.addEventListener('visibilitychange', function () {
-                if (document.visibilityState === 'visible') requestAnimationFrame(snapSAI);
-            });
-        }());
-
         Blazor.start({
             reconnectionOptions: {
                 maxRetries: 12,
