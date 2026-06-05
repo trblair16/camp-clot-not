@@ -139,6 +139,7 @@
         z-index: 40;
         padding-bottom: env(safe-area-inset-bottom);
         align-items: flex-start;
+        transition: padding-bottom 0.15s ease;
     }
     /* iOS PWA bug: env(safe-area-inset-bottom) reports 0 on first render then
        jumps to ~34px on first navigation, causing the nav bar to visibly shift.
@@ -333,6 +334,10 @@
 @* ── BOTTOM BAR (mobile) ─────────────────────────────────────────── *@
 <AuthorizeView>
     <Authorized>
+        @* Probe: position:fixed with bottom:env() forces iOS PWA to evaluate
+           env(safe-area-inset-bottom) accurately at all times, preventing the
+           nav bar padding-bottom from using a stale/lazy value. *@
+        <span aria-hidden="true" style="position:fixed;bottom:env(safe-area-inset-bottom);left:0;width:0;height:0;pointer-events:none;visibility:hidden;z-index:-1"></span>
         <div class="nav-bottom-bar">
             <a href="/dashboard" class="nav-tab @(IsDashboardActive() ? "active" : "")">
                 <span class="tab-icon">🏠</span>
