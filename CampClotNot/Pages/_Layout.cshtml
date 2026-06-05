@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <link href="app.css" rel="stylesheet" />
+    <link href="app.css?v=2" rel="stylesheet" />
     @RenderSection("HeadOutlet", required: false)
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#3d0066" />
@@ -22,20 +22,25 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 </head>
 <body>
+    <%-- Reconnect banner — must be first child so position:fixed top:0 is never blocked --%>
+    <div id="components-reconnect-modal" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999">
+        <div id="ccn-banner-show"     style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#F5C800;color:#1A1A1A;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
+            📶 Reconnecting…
+        </div>
+        <div id="ccn-banner-failed"   style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#D12B2B;color:white;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
+            <span>Connection lost.</span>
+            <button onclick="location.reload()" style="font-family:'Fredoka One',cursive;font-size:12px;padding:3px 12px;background:rgba(255,255,255,.9);color:#D12B2B;border:2px solid white;border-radius:4px;cursor:pointer">Reload</button>
+            <span id="ccn-reload-countdown" style="font-size:12px;opacity:.8"></span>
+        </div>
+        <div id="ccn-banner-rejected" style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#D12B2B;color:white;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
+            Session expired — reloading…
+        </div>
+    </div>
     @RenderBody()
     <div id="blazor-error-ui">
         An unhandled error has occurred.
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
-    </div>
-    <div id="components-reconnect-modal">
-        <div class="ccn-reconnect-banner ccn-reconnect-show">📶 Reconnecting…</div>
-        <div class="ccn-reconnect-banner ccn-reconnect-failed">
-            <span>Connection lost.</span>
-            <button class="ccn-reconnect-reload-btn" onclick="location.reload()">Reload</button>
-            <span id="ccn-reload-countdown"></span>
-        </div>
-        <div class="ccn-reconnect-banner ccn-reconnect-rejected">Session expired — reloading…</div>
     </div>
     <script src="_framework/blazor.server.js" autostart="false"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
@@ -52,10 +57,30 @@
         });
 
         (function () {
-            var modal = document.getElementById('components-reconnect-modal');
-            var countdown = document.getElementById('ccn-reload-countdown');
-            var timer = null;
+            var modal    = document.getElementById('components-reconnect-modal');
+            var bShow    = document.getElementById('ccn-banner-show');
+            var bFailed  = document.getElementById('ccn-banner-failed');
+            var bReject  = document.getElementById('ccn-banner-rejected');
+            var countdown= document.getElementById('ccn-reload-countdown');
+            var timer    = null;
             if (!modal) return;
+
+            var FLEX = 'flex', NONE = 'none';
+
+            function hideAll() {
+                modal.style.display   = NONE;
+                bShow.style.display   = NONE;
+                bFailed.style.display = NONE;
+                bReject.style.display = NONE;
+            }
+
+            function showOnly(banner) {
+                modal.style.display   = 'block';
+                bShow.style.display   = NONE;
+                bFailed.style.display = NONE;
+                bReject.style.display = NONE;
+                banner.style.display  = FLEX;
+            }
 
             function clearTimer() {
                 if (timer) { clearInterval(timer); timer = null; }
@@ -64,15 +89,22 @@
 
             new MutationObserver(function () {
                 clearTimer();
-                if (modal.classList.contains('components-reconnect-rejected')) {
+                var cl = modal.classList;
+                if (cl.contains('components-reconnect-rejected')) {
+                    showOnly(bReject);
                     setTimeout(function () { location.reload(); }, 1500);
-                } else if (modal.classList.contains('components-reconnect-failed')) {
+                } else if (cl.contains('components-reconnect-failed')) {
+                    showOnly(bFailed);
                     var secs = 8;
-                    if (countdown) countdown.textContent = '(' + secs + 's)';
+                    countdown.textContent = '(' + secs + 's)';
                     timer = setInterval(function () {
                         if (--secs <= 0) { clearInterval(timer); location.reload(); }
-                        if (countdown) countdown.textContent = '(' + secs + 's)';
+                        countdown.textContent = '(' + secs + 's)';
                     }, 1000);
+                } else if (cl.contains('components-reconnect-show')) {
+                    showOnly(bShow);
+                } else {
+                    hideAll();
                 }
             }).observe(modal, { attributes: true, attributeFilter: ['class'] });
 
