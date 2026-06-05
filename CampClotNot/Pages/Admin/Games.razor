@@ -6,6 +6,19 @@
 
 <PageTitle>Game Admin — Camp Clot Not</PageTitle>
 
+<style>
+    @@media (max-width: 699px) {
+        .admin-gm-table   { display: none; }
+        .admin-gm-cards   { display: flex; flex-direction: column; gap: 10px; }
+        .admin-mg-table   { display: none; }
+        .admin-mg-cards   { display: flex; flex-direction: column; gap: 10px; }
+    }
+    @@media (min-width: 700px) {
+        .admin-gm-cards { display: none; }
+        .admin-mg-cards { display: none; }
+    }
+</style>
+
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🎮 Game Admin</h2>
 
@@ -23,7 +36,25 @@
             }
             else
             {
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div class="admin-gm-cards">
+                    @foreach (var space in _spaces)
+                    {
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:10px 14px;display:flex;align-items:center;gap:10px">
+                            <div style="font-family:'Fredoka One',cursive;font-size:20px;color:var(--text-light);min-width:28px;text-align:center">@space.SpaceIndex</div>
+                            <div style="flex:1;min-width:0">
+                                <span style="@($"background:{SpaceColor(space.CategorySystemName)};color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px")">
+                                    @SpaceIcon(space.CategorySystemName) @space.CategorySystemName
+                                </span>
+                                @if (!string.IsNullOrEmpty(space.ActivityName))
+                                {
+                                    <div style="font-size:13px;font-weight:700;margin-top:4px">@space.ActivityName</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="admin-gm-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">
@@ -140,7 +171,48 @@
             }
             else
             {
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden;max-width:640px">
+                <div class="admin-mg-cards">
+                    @for (var day = 1; day <= 5; day++)
+                    {
+                        var d = day;
+                        var script = _miniGameScripts.FirstOrDefault(s => s.CampDay == d);
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+                                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">Day @d</div>
+                                @if (script?.IsTriggered == true)
+                                {
+                                    <span style="background:#27AE60;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">✓ Triggered</span>
+                                }
+                                else if (script is not null)
+                                {
+                                    <span style="background:#E67E22;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">Scripted</span>
+                                }
+                                else
+                                {
+                                    <span style="background:#95A5A6;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">Not set</span>
+                                }
+                            </div>
+                            @if (script?.IsTriggered == true)
+                            {
+                                <div style="font-size:13px;color:var(--text-mid)">@script.ActivityName</div>
+                            }
+                            else
+                            {
+                                <select value="@(script?.ActivityId.ToString() ?? "")"
+                                        @onchange="async e => { if (Guid.TryParse(e.Value?.ToString(), out var g)) await OnMiniGameActivityChanged(d, g); }"
+                                        style="width:100%;padding:7px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer;box-sizing:border-box">
+                                    <option value="">— pick activity —</option>
+                                    @foreach (var activity in _miniGameActivities)
+                                    {
+                                        <option value="@activity.ActivityId">@activity.Name</option>
+                                    }
+                                </select>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="admin-mg-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden;max-width:640px">
                     <table style="border-collapse:collapse;width:100%">
                         <thead>
                             <tr style="background:var(--black)">

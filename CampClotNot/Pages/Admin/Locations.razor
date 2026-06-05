@@ -5,13 +5,24 @@
 
 <PageTitle>Locations — Camp Clot Not</PageTitle>
 
+<style>
+    @@media (max-width: 699px) {
+        .admin-loc-form  { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
+        .admin-loc-table { display: none; }
+        .admin-loc-cards { display: flex; flex-direction: column; gap: 10px; }
+    }
+    @@media (min-width: 700px) {
+        .admin-loc-cards { display: none; }
+    }
+</style>
+
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">📍 Locations</h2>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Form panel ── *@
-        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 300px;min-width:240px">
+        <div class="admin-loc-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 300px;min-width:240px">
             <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Location" : "Edit Location")</h3>
 
             <div style="margin-bottom:14px">
@@ -72,7 +83,35 @@
             }
             else
             {
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div class="admin-loc-cards">
+                    @foreach (var loc in _locations)
+                    {
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                                @if (loc.ImageData is not null)
+                                {
+                                    <img src="/location-image/@loc.LocationId"
+                                         style="width:40px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--black);flex-shrink:0;cursor:zoom-in"
+                                         @onclick='() => _lightboxSrc = $"/location-image/{loc.LocationId}"' />
+                                }
+                                <div style="min-width:0">
+                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">@loc.Name</div>
+                                    @if (!string.IsNullOrEmpty(loc.Description))
+                                    {
+                                        <div style="font-size:12px;color:var(--text-mid)">@loc.Description</div>
+                                    }
+                                    <div style="font-size:11px;color:var(--text-light)">Order: @loc.SortOrder</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(loc)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(loc)">Del</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="admin-loc-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">

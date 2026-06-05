@@ -6,6 +6,17 @@
 
 <PageTitle>Activities — Camp Clot Not</PageTitle>
 
+<style>
+    @@media (max-width: 699px) {
+        .admin-act-form  { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
+        .admin-act-table { display: none; }
+        .admin-act-cards { display: flex; flex-direction: column; gap: 10px; }
+    }
+    @@media (min-width: 700px) {
+        .admin-act-cards { display: none; }
+    }
+</style>
+
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 4px">🎲 Activities</h2>
     <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">
@@ -15,7 +26,7 @@
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Form panel ── *@
-        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 300px;min-width:240px">
+        <div class="admin-act-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 300px;min-width:240px">
             <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Activity" : "Edit Activity")</h3>
 
             <div style="margin-bottom:14px">
@@ -64,7 +75,31 @@
             }
             else
             {
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div class="admin-act-cards">
+                    @foreach (var a in _activities)
+                    {
+                        var locName = a.LocationId.HasValue ? _locations.FirstOrDefault(l => l.LocationId == a.LocationId.Value)?.Name : null;
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                            <div style="flex:1;min-width:0">
+                                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black);margin-bottom:4px">@a.Name</div>
+                                @if (!string.IsNullOrEmpty(a.Description))
+                                {
+                                    <div style="font-size:12px;color:var(--text-mid);margin-bottom:3px">@a.Description</div>
+                                }
+                                @if (locName is not null)
+                                {
+                                    <div style="font-size:11px;color:var(--text-light)">📍 @locName</div>
+                                }
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(a)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(a)">Del</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="admin-act-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">
@@ -100,6 +135,7 @@
 </div>
 
 @code {
+
     private List<Activity> _activities = new();
     private List<Location> _locations = new();
     private bool _loading = true;
