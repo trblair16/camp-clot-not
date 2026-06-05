@@ -137,16 +137,15 @@
         background: var(--bg-base);
         border-top: 4px solid var(--black);
         z-index: 40;
-        padding-bottom: env(safe-area-inset-bottom);
+        /* Use JS-captured CSS var so iOS never re-evaluates env() during
+           Blazor re-renders (which caused the visible nav bar jump). */
+        padding-bottom: var(--sai-b, env(safe-area-inset-bottom, 0px));
         align-items: flex-start;
         transition: padding-bottom 0.15s ease;
     }
-    /* iOS PWA bug: env(safe-area-inset-bottom) reports 0 on first render then
-       jumps to ~34px on first navigation, causing the nav bar to visibly shift.
-       Force a 34px minimum in standalone mode so padding is consistent. */
     @@media (display-mode: standalone) {
         .nav-bottom-bar {
-            padding-bottom: max(env(safe-area-inset-bottom), 34px);
+            padding-bottom: max(var(--sai-b, 34px), 34px);
         }
     }
     .nav-tab {
@@ -334,10 +333,6 @@
 @* ── BOTTOM BAR (mobile) ─────────────────────────────────────────── *@
 <AuthorizeView>
     <Authorized>
-        @* Probe: position:fixed with bottom:env() forces iOS PWA to evaluate
-           env(safe-area-inset-bottom) accurately at all times, preventing the
-           nav bar padding-bottom from using a stale/lazy value. *@
-        <span aria-hidden="true" style="position:fixed;bottom:env(safe-area-inset-bottom);left:0;width:0;height:0;pointer-events:none;visibility:hidden;z-index:-1"></span>
         <div class="nav-bottom-bar">
             <a href="/dashboard" class="nav-tab @(IsDashboardActive() ? "active" : "")">
                 <span class="tab-icon">🏠</span>
