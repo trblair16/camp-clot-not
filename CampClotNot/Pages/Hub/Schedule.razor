@@ -81,7 +81,7 @@
     .sched-tbl { display: none; }
     @@media (min-width: 700px) {
         .sched-item-wrap { display: none; }
-        .sched-tbl { display: table; width: 100%; border-collapse: collapse; }
+        .sched-tbl { display: table; width: 100%; border-collapse: collapse; table-layout: fixed; }
         .sched-tbl thead th {
             background: var(--black);
             color: white;
@@ -242,12 +242,12 @@
                     <table class="sched-tbl">
                         <thead>
                             <tr>
-                                <th style="width:80px">Time</th>
-                                <th>Activity</th>
-                                <th style="width:110px">Type</th>
-                                <th style="width:160px">Location</th>
+                                <th style="width:90px">Time</th>
+                                <th style="width:28%">Activity</th>
+                                <th style="width:14%">Type</th>
+                                <th style="width:21%">Location</th>
                                 <th style="width:80px"></th>
-                                <th style="width:160px">Add'l Location</th>
+                                <th style="width:17%">Add'l Location</th>
                                 @if (_canEdit) { <th style="width:96px"></th> }
                             </tr>
                         </thead>
