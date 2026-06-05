@@ -6,13 +6,24 @@
 
 <PageTitle>Manage Groups — Camp Clot Not</PageTitle>
 
+<style>
+    @@media (max-width: 699px) {
+        .admin-grp-form  { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
+        .admin-grp-table { display: none; }
+        .admin-grp-cards { display: flex; flex-direction: column; gap: 10px; }
+    }
+    @@media (min-width: 700px) {
+        .admin-grp-cards { display: none; }
+    }
+</style>
+
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">👥 Groups</h2>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Form panel ── *@
-        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
+        <div class="admin-grp-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
             <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editing is null ? "Add Group" : "Edit Group")</h3>
 
             <div style="margin-bottom:14px">
@@ -81,7 +92,29 @@
             }
             else
             {
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div class="admin-grp-cards">
+                    @foreach (var g in _groups)
+                    {
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                                <div style="@($"width:28px;height:28px;border-radius:6px;border:2px solid var(--black);background:{g.Color};flex-shrink:0")"></div>
+                                <div style="min-width:0">
+                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">@g.Name <span style="font-size:12px;color:var(--text-light)">(@g.ShortName)</span></div>
+                                    @if (g.TokenAssetPath is not null)
+                                    {
+                                        <img src="@g.TokenAssetPath" style="width:22px;height:22px;object-fit:contain;margin-top:2px" />
+                                    }
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(g)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(g)">Del</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="admin-grp-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">

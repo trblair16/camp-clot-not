@@ -140,6 +140,14 @@
         padding-bottom: env(safe-area-inset-bottom);
         align-items: flex-start;
     }
+    /* iOS PWA bug: env(safe-area-inset-bottom) reports 0 on first render then
+       jumps to ~34px on first navigation, causing the nav bar to visibly shift.
+       Force a 34px minimum in standalone mode so padding is consistent. */
+    @@media (display-mode: standalone) {
+        .nav-bottom-bar {
+            padding-bottom: max(env(safe-area-inset-bottom), 34px);
+        }
+    }
     .nav-tab {
         flex: 1;
         height: 56px;
