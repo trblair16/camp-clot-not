@@ -19,20 +19,22 @@
     }
     else
     {
-        <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <div class="sponsors-grid">
             @foreach (var s in _sponsors)
             {
                 <div class="sponsor-tile">
-                    @if (!string.IsNullOrWhiteSpace(s.Website))
-                    {
-                        <a href="@s.Website" target="_blank" rel="noopener noreferrer" class="sponsor-logo-link">
-                            <img src="@LogoSrc(s)" alt="@s.Name" style="height:80px;width:auto;max-width:160px;object-fit:contain" />
-                        </a>
-                    }
-                    else
-                    {
-                        <img src="@LogoSrc(s)" alt="@s.Name" style="height:80px;width:auto;max-width:160px;object-fit:contain" />
-                    }
+                    <div class="sponsor-logo-box">
+                        @if (!string.IsNullOrWhiteSpace(s.Website))
+                        {
+                            <a href="@s.Website" target="_blank" rel="noopener noreferrer" class="sponsor-logo-link">
+                                <img src="@LogoSrc(s)" alt="@s.Name" style="width:100%;height:80px;object-fit:contain" />
+                            </a>
+                        }
+                        else
+                        {
+                            <img src="@LogoSrc(s)" alt="@s.Name" style="width:100%;height:80px;object-fit:contain" />
+                        }
+                    </div>
                     <div style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--black);margin-top:8px;text-align:center">@s.Name</div>
                     @if (!string.IsNullOrEmpty(s.ContactName))
                     {
@@ -49,6 +51,17 @@
 </div>
 
 <style>
+    .sponsors-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    @@media (min-width: 480px) {
+        .sponsors-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (min-width: 700px) {
+        .sponsors-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    }
     .sponsor-tile {
         background: var(--panel-bg);
         border: 3px solid var(--black);
@@ -58,12 +71,17 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        min-width: 140px;
-        transition: transform .1s;
+    }
+    .sponsor-logo-box {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .sponsor-logo-link {
         display: block;
         text-decoration: none;
+        width: 100%;
     }
     .sponsor-logo-link:hover img {
         opacity: .85;

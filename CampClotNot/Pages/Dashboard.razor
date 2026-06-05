@@ -70,24 +70,24 @@ else
                 <span>🏆 Our Sponsors</span>
                 <a href="/hub/sponsors" style="font-size:11px;color:var(--color-primary);text-decoration:none">View all →</a>
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-start">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px">
                 @foreach (var s in _sponsors)
                 {
+                    var cellStyle = "background:white;border:2px solid #D8D0BC;border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center;height:52px";
                     @if (!string.IsNullOrWhiteSpace(s.Website))
                     {
-                        <a href="@s.Website" target="_blank" rel="noopener noreferrer" style="text-decoration:none">
+                        <a href="@s.Website" target="_blank" rel="noopener noreferrer" style="text-decoration:none;@cellStyle;transition:opacity .15s"
+                           onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
                             <img src="@SponsorLogoSrc(s)" alt="@s.Name"
-                                 style="height:52px;width:auto;max-width:130px;object-fit:contain;
-                                        background:white;border:2px solid #D8D0BC;border-radius:8px;padding:5px 8px;
-                                        transition:opacity .15s"
-                                 onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'" />
+                                 style="width:100%;height:40px;object-fit:contain" />
                         </a>
                     }
                     else
                     {
-                        <img src="@SponsorLogoSrc(s)" alt="@s.Name"
-                             style="height:52px;width:auto;max-width:130px;object-fit:contain;
-                                    background:white;border:2px solid #D8D0BC;border-radius:8px;padding:5px 8px" />
+                        <div style="@cellStyle">
+                            <img src="@SponsorLogoSrc(s)" alt="@s.Name"
+                                 style="width:100%;height:40px;object-fit:contain" />
+                        </div>
                     }
                 }
             </div>

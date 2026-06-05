@@ -28,12 +28,63 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
-    <script src="_framework/blazor.server.js"></script>
+    <div id="components-reconnect-modal">
+        <div class="ccn-reconnect-banner ccn-reconnect-show">📶 Reconnecting…</div>
+        <div class="ccn-reconnect-banner ccn-reconnect-failed">
+            <span>Connection lost.</span>
+            <button class="ccn-reconnect-reload-btn" onclick="location.reload()">Reload</button>
+            <span id="ccn-reload-countdown"></span>
+        </div>
+        <div class="ccn-reconnect-banner ccn-reconnect-rejected">Session expired — reloading…</div>
+    </div>
+    <script src="_framework/blazor.server.js" autostart="false"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/board.js?v=3"></script>
-    <script src="js/connection-indicator.js"></script>
     <script src="js/install-prompt.js"></script>
     <script>
+        Blazor.start({
+            reconnectionOptions: {
+                maxRetries: 12,
+                retryIntervalMilliseconds: function (n) {
+                    return Math.min(n * 2000 + 1000, 20000);
+                }
+            }
+        });
+
+        (function () {
+            var modal = document.getElementById('components-reconnect-modal');
+            var countdown = document.getElementById('ccn-reload-countdown');
+            var timer = null;
+            if (!modal) return;
+
+            function clearTimer() {
+                if (timer) { clearInterval(timer); timer = null; }
+                if (countdown) countdown.textContent = '';
+            }
+
+            new MutationObserver(function () {
+                clearTimer();
+                if (modal.classList.contains('components-reconnect-rejected')) {
+                    setTimeout(function () { location.reload(); }, 1500);
+                } else if (modal.classList.contains('components-reconnect-failed')) {
+                    var secs = 8;
+                    if (countdown) countdown.textContent = '(' + secs + 's)';
+                    timer = setInterval(function () {
+                        if (--secs <= 0) { clearInterval(timer); location.reload(); }
+                        if (countdown) countdown.textContent = '(' + secs + 's)';
+                    }, 1000);
+                }
+            }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible' &&
+                    (modal.classList.contains('components-reconnect-failed') ||
+                     modal.classList.contains('components-reconnect-rejected'))) {
+                    location.reload();
+                }
+            });
+        }());
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')
                 .catch(function(err) { console.warn('SW registration failed:', err); });
