@@ -25,11 +25,7 @@
 </style>
 
 <div style="padding: 0 16px 100px">
-    @if (_loading)
-    {
-        <MudProgressCircular Indeterminate="true" />
-    }
-    else
+    @if (!_loading)
     {
         <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
             <div class="info-sidebar">

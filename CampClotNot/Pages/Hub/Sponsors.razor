@@ -9,11 +9,7 @@
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🏆 Sponsors</h2>
 
-    @if (_loading)
-    {
-        <MudProgressCircular Indeterminate="true" />
-    }
-    else if (!_sponsors.Any())
+    @if (!_loading && !_sponsors.Any())
     {
         <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No sponsors yet.</p>
     }

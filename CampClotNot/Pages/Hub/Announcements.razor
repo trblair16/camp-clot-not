@@ -10,11 +10,7 @@
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 16px">📣 Announcements</h2>
 
-    @if (_loading)
-    {
-        <MudProgressCircular Indeterminate="true" />
-    }
-    else
+    @if (!_loading)
     {
         @if (_canPost)
         {
