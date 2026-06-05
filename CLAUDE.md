@@ -8,12 +8,18 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-06-04)
+## Current State (as of 2026-06-05)
 
-**Active branch:** `feature/124-v057-info-overhaul-ux-polish` — v0.5.7 in progress (final v0.5.x)
-**On dev (pending main PR):** v0.5.6 — table-driven schedule item types + UX polish
-**Released to main:** v0.5.5 — photos, sponsor enhancements, schedule improvements, dashboard
-**Next:** v0.5.7 (current branch) → then v1.0.0-rc.1 (see versioning below)
+**Active branch:** `dev` — v0.5.7 merged; RC phase begins next
+**On dev (pending main PR):** v0.5.7 — info overhaul, UX polish, PDF uploads, schedule table, bug fixes
+**Released to main:** v0.5.6 — table-driven schedule item types + UX polish *(pending PR #127)*
+**Next:** v1.0.0-rc.1 — first release candidate (see RC versioning below)
+
+**RC Versioning Convention (2026-06-05 onward):**
+- Format: `v1.0.0-rc.N` — increment N for every fix/tweak before camp goes live
+- Branch naming: `feature/N-v100rc1-description`, `feature/N-v100rc2-description`, etc. (open issue first)
+- **True v1.0.0 go-live date: June 19, 2026** (one day before camp June 20)
+- After go-live, any camp-week hotfixes are `v1.0.1`, `v1.0.2`, etc.
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
