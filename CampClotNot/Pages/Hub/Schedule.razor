@@ -67,22 +67,74 @@
         .sched-form-grid { grid-template-columns: 1fr; }
         .sched-form-grid .full { grid-column: 1; }
     }
+    .sched-item-wrap { border-bottom: 3px solid #3a3a3a; }
+    .sched-item-wrap:last-child { border-bottom: none; }
     .sched-row {
         display: grid;
-        grid-template-columns: 85px 1fr;
+        grid-template-columns: 80px 1fr;
         padding: 10px 14px;
-        border-bottom: 3px solid #3a3a3a;
         align-items: start;
         gap: 0 10px;
     }
-    .sched-col-type, .sched-col-loc, .sched-item-actions { display: none; }
+    .sched-header { display: none; }
+    .sched-col-type, .sched-col-loc, .sched-col-img,
+    .sched-col-other, .sched-item-actions { display: none; }
     .sched-inline-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
+    .sched-mobile-groups { display: block; }
+    .sched-sub-table { display: none; }
     @@media (min-width: 700px) {
-        .sched-row { grid-template-columns: 85px 1fr 90px minmax(0, 180px) auto; align-items: start; }
-        .sched-col-type { display: flex; align-items: flex-start; padding-top: 2px; }
-        .sched-col-loc  { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; padding-top: 2px; }
-        .sched-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .sched-header {
+            display: grid;
+            grid-template-columns: 80px minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 36px minmax(0,1.2fr) auto;
+            gap: 0 10px;
+            padding: 7px 14px;
+            border-bottom: 3px solid var(--black);
+            background: var(--black);
+            color: white;
+            font-family: 'Fredoka One', cursive;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .sched-row {
+            grid-template-columns: 80px minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 36px minmax(0,1.2fr) auto;
+        }
+        .sched-col-type, .sched-col-loc, .sched-col-img,
+        .sched-col-other { display: flex; align-items: flex-start; padding-top: 2px; }
+        .sched-item-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: flex-start; padding-top: 2px; }
         .sched-inline-meta { display: none; }
+        .sched-mobile-groups { display: none; }
+        .sched-sub-table { display: block; background: #F5F0E4; border-top: 2px solid #C8BBAA; }
+        .sched-sub-table > summary {
+            font-family: 'Fredoka One', cursive;
+            font-size: 12px;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 7px 14px;
+            user-select: none;
+            list-style: none;
+        }
+        .sched-sub-table > summary::-webkit-details-marker,
+        .sched-sub-table > summary::marker { display: none; }
+        .sched-sub-body { padding: 0 14px 8px; }
+        .sched-sub-header, .sched-sub-row {
+            display: grid;
+            grid-template-columns: 56px minmax(0,2fr) minmax(0,1.5fr) 36px minmax(0,1.2fr);
+            gap: 0 10px;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #D8CEBF;
+            font-size: 12px;
+        }
+        .sched-sub-header {
+            font-family: 'Fredoka One', cursive;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-light);
+            border-bottom: 2px solid #C8BBAA;
+        }
+        .sched-sub-row:last-child { border-bottom: none; }
     }
 </style>
 
@@ -133,6 +185,16 @@
             else
             {
                 <div style="border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);overflow:hidden;background:var(--panel-bg)">
+                    @* ── Column headers (desktop only) ── *@
+                    <div class="sched-header">
+                        <div>Time</div>
+                        <div>Activity</div>
+                        <div>Type</div>
+                        <div>Location</div>
+                        <div></div>
+                        <div>Add'l Location</div>
+                        <div></div>
+                    </div>
                     @foreach (var ev in dayEvents)
                     {
                         var myAssignment = _userGroupId.HasValue
@@ -144,128 +206,187 @@
                         var timeStr = ev.EndTime.HasValue
                             ? $"{ev.StartTime:h:mm tt} – {ev.EndTime.Value:h:mm tt}"
                             : ev.StartTime.ToString("h:mm tt");
-                        <div class="sched-row">
-                            @* Col 1: Time *@
-                            <div style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);padding-top:2px">
-                                @timeStr
-                            </div>
 
-                            @* Col 2: Title + mobile inline meta + sub-details *@
-                            <div style="min-width:0">
-                                <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">
-                                    @(displayActivity?.Name ?? ev.Title)
-                                </span>
-                                @if (displayActivity is not null)
-                                {
-                                    <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@ev.Title</div>
-                                }
-                                <div class="sched-inline-meta">
-                                    <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">
+                        <div class="sched-item-wrap">
+                            <div class="sched-row">
+                                @* Col 1: Time *@
+                                <div style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);padding-top:2px">
+                                    @timeStr
+                                </div>
+
+                                @* Col 2: Title + mobile inline meta + mobile group assignments *@
+                                <div style="min-width:0">
+                                    <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">
+                                        @(displayActivity?.Name ?? ev.Title)
+                                    </span>
+                                    @if (displayActivity is not null)
+                                    {
+                                        <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@ev.Title</div>
+                                    }
+                                    <div class="sched-inline-meta">
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">
+                                            @DisplayItemType(ev.ScheduleItemType)
+                                        </span>
+                                        @if (displayLocation is not null)
+                                        {
+                                            @if (displayLocation.ImageData is not null)
+                                            {
+                                                <img src="/location-image/@displayLocation.LocationId"
+                                                     style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle"
+                                                     alt="@displayLocation.Name"
+                                                     @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
+                                            }
+                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;flex-shrink:0">
+                                                📍 @displayLocation.Name
+                                            </span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(ev.LocationOther))
+                                        {
+                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;flex-shrink:0">
+                                                📍 @ev.LocationOther
+                                            </span>
+                                        }
+                                        @if (displayLocation is null && string.IsNullOrEmpty(ev.LocationOther) && !string.IsNullOrEmpty(myAssignment?.Note))
+                                        {
+                                            <span style="font-size:12px;color:var(--text-mid);font-style:italic">@myAssignment.Note</span>
+                                        }
+                                    </div>
+                                    @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
+                                    {
+                                        <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
+                                        @if (ev.PresenterBio is not null)
+                                        {
+                                            <details style="margin-top:4px">
+                                                <summary style="font-size:12px;color:var(--text-light);cursor:pointer;font-family:'Fredoka One',cursive">About the speaker</summary>
+                                                <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">@ev.PresenterBio</div>
+                                            </details>
+                                        }
+                                    }
+                                    @if (_isAdminOrStaff && ev.ItemGroups.Any())
+                                    {
+                                        <details class="sched-mobile-groups" style="margin-top:6px">
+                                            <summary style="font-size:12px;color:var(--text-light);cursor:pointer;font-family:'Fredoka One',cursive">
+                                                Group assignments (@ev.ItemGroups.Count)
+                                            </summary>
+                                            <div style="margin-top:6px;border:2px solid #9E8C70;border-radius:6px;overflow:hidden">
+                                                @foreach (var eg in ev.ItemGroups.OrderBy(x => x.Group.Name))
+                                                {
+                                                    <div style="display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid #C0A882;font-size:13px">
+                                                        <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px">@eg.Group.ShortName</span>
+                                                        <span style="flex:1">@(eg.Activity?.Name ?? "—")</span>
+                                                        @if (eg.Location is not null)
+                                                        {
+                                                            <span style="font-weight:600;color:var(--black)">📍 @eg.Location.Name</span>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(eg.Note))
+                                                        {
+                                                            <span style="color:var(--text-mid);font-style:italic">@eg.Note</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        </details>
+                                    }
+                                </div>
+
+                                @* Col 3: Type badge (desktop only) *@
+                                <div class="sched-col-type">
+                                    <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
                                         @DisplayItemType(ev.ScheduleItemType)
                                     </span>
+                                </div>
+
+                                @* Col 4: Location tag (desktop only) *@
+                                <div class="sched-col-loc">
                                     @if (displayLocation is not null)
                                     {
-                                        @if (displayLocation.ImageData is not null)
-                                        {
-                                            <img src="/location-image/@displayLocation.LocationId"
-                                                 style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle"
-                                                 alt="@displayLocation.Name"
-                                                 @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
-                                        }
-                                        <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;flex-shrink:0">
+                                        <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540">
                                             📍 @displayLocation.Name
                                         </span>
                                     }
-                                    @if (!string.IsNullOrEmpty(ev.LocationOther))
+                                    else
                                     {
-                                        <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;flex-shrink:0">
-                                            📍 @ev.LocationOther
-                                        </span>
-                                    }
-                                    @if (displayLocation is null && string.IsNullOrEmpty(ev.LocationOther) && !string.IsNullOrEmpty(myAssignment?.Note))
-                                    {
-                                        <span style="font-size:12px;color:var(--text-mid);font-style:italic">@myAssignment.Note</span>
+                                        <span style="color:var(--text-light);font-size:13px">—</span>
                                     }
                                 </div>
-                                @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
-                                {
-                                    <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
-                                    @if (ev.PresenterBio is not null)
-                                    {
-                                        <details style="margin-top:4px">
-                                            <summary style="font-size:12px;color:var(--text-light);cursor:pointer;font-family:'Fredoka One',cursive">About the speaker</summary>
-                                            <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">@ev.PresenterBio</div>
-                                        </details>
-                                    }
-                                }
-                                @if (_isAdminOrStaff && ev.ItemGroups.Any())
-                                {
-                                    <details style="margin-top:6px">
-                                        <summary style="font-size:12px;color:var(--text-light);cursor:pointer;font-family:'Fredoka One',cursive">
-                                            Group assignments (@ev.ItemGroups.Count)
-                                        </summary>
-                                        <div style="margin-top:6px;border:2px solid #9E8C70;border-radius:6px;overflow:hidden">
-                                            @foreach (var eg in ev.ItemGroups.OrderBy(x => x.Group.Name))
-                                            {
-                                                <div style="display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid #C0A882;font-size:13px">
-                                                    <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px">@eg.Group.ShortName</span>
-                                                    <span style="flex:1">@(eg.Activity?.Name ?? "—")</span>
-                                                    @if (eg.Location is not null)
-                                                    {
-                                                        <span style="font-weight:600;color:var(--black)">📍 @eg.Location.Name</span>
-                                                    }
-                                                    @if (!string.IsNullOrEmpty(eg.Note))
-                                                    {
-                                                        <span style="color:var(--text-mid);font-style:italic">@eg.Note</span>
-                                                    }
-                                                </div>
-                                            }
-                                        </div>
-                                    </details>
-                                }
-                            </div>
 
-                            @* Col 3: Type badge (desktop only) *@
-                            <div class="sched-col-type">
-                                <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
-                                    @DisplayItemType(ev.ScheduleItemType)
-                                </span>
-                            </div>
-
-                            @* Col 4: Location (desktop only) *@
-                            <div class="sched-col-loc">
-                                @if (displayLocation is not null)
-                                {
-                                    @if (displayLocation.ImageData is not null)
+                                @* Col 5: Location image (desktop only) *@
+                                <div class="sched-col-img">
+                                    @if (displayLocation?.ImageData is not null)
                                     {
                                         <img src="/location-image/@displayLocation.LocationId"
-                                             style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle"
+                                             style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;vertical-align:middle"
                                              alt="@displayLocation.Name"
                                              @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
                                     }
-                                    <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540">
-                                        📍 @displayLocation.Name
-                                    </span>
-                                }
-                                @if (!string.IsNullOrEmpty(ev.LocationOther))
+                                </div>
+
+                                @* Col 6: Add'l location (desktop only) *@
+                                <div class="sched-col-other">
+                                    @if (!string.IsNullOrEmpty(ev.LocationOther))
+                                    {
+                                        <span style="font-size:12px;color:var(--text-mid)">@ev.LocationOther</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--text-light);font-size:13px">—</span>
+                                    }
+                                </div>
+
+                                @* Col 7: Actions (desktop only) *@
+                                @if (_canEdit)
                                 {
-                                    <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540">
-                                        📍 @ev.LocationOther
-                                    </span>
-                                }
-                                @if (displayLocation is null && string.IsNullOrEmpty(ev.LocationOther) && !string.IsNullOrEmpty(myAssignment?.Note))
-                                {
-                                    <span style="font-size:12px;color:var(--text-mid);font-style:italic">@myAssignment.Note</span>
+                                    <div class="sched-item-actions">
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEditForm(ev)">Edit</button>
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => DeleteEvent(ev.ScheduleItemId)">Del</button>
+                                    </div>
                                 }
                             </div>
 
-                            @* Col 5: Actions (desktop only) *@
-                            @if (_canEdit)
+                            @* Desktop group assignments sub-table *@
+                            @if (_isAdminOrStaff && ev.ItemGroups.Any())
                             {
-                                <div class="sched-item-actions">
-                                    <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEditForm(ev)">Edit</button>
-                                    <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => DeleteEvent(ev.ScheduleItemId)">Del</button>
-                                </div>
+                                <details class="sched-sub-table">
+                                    <summary>👥 Group assignments (@ev.ItemGroups.Count)</summary>
+                                    <div class="sched-sub-body">
+                                        <div class="sched-sub-header">
+                                            <div>Group</div>
+                                            <div>Activity</div>
+                                            <div>Location</div>
+                                            <div></div>
+                                            <div>Note</div>
+                                        </div>
+                                        @foreach (var eg in ev.ItemGroups.OrderBy(x => x.Group.Name))
+                                        {
+                                            <div class="sched-sub-row">
+                                                <div style="font-family:'Fredoka One',cursive;color:@eg.Group.Color">@eg.Group.ShortName</div>
+                                                <div>@(eg.Activity?.Name ?? "—")</div>
+                                                <div>
+                                                    @if (eg.Location is not null)
+                                                    {
+                                                        <span style="font-size:11px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540">
+                                                            📍 @eg.Location.Name
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span style="color:var(--text-light)">—</span>
+                                                    }
+                                                </div>
+                                                <div>
+                                                    @if (eg.Location?.ImageData is not null)
+                                                    {
+                                                        <img src="/location-image/@eg.Location.LocationId"
+                                                             style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in"
+                                                             alt="@eg.Location.Name"
+                                                             @onclick='() => _lightboxSrc = $"/location-image/{eg.Location.LocationId}"' />
+                                                    }
+                                                </div>
+                                                <div style="color:var(--text-mid)">@(string.IsNullOrEmpty(eg.Note) ? "—" : eg.Note)</div>
+                                            </div>
+                                        }
+                                    </div>
+                                </details>
                             }
                         </div>
                     }
