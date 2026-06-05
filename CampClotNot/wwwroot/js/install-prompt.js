@@ -4,6 +4,9 @@ window.installPrompt = {
         var dismissed = localStorage.getItem('ccn_install_dismissed') === '1';
         if (dismissed) return;
 
+        var isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent) || window.innerWidth < 1024;
+        if (!isMobile) return;
+
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             window.installPrompt._deferred = e;
