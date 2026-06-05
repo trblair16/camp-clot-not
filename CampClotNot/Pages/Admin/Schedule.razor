@@ -12,6 +12,13 @@
 
 <PageTitle>Schedule Admin — Camp Clot Not</PageTitle>
 
+<style>
+    @@media (max-width: 699px) {
+        .admin-sched-desc  { display: none; }
+        .admin-sched-loc-img { display: none; }
+    }
+</style>
+
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">📅 Schedule Events</h2>
 
@@ -203,7 +210,8 @@
             else
             {
                 <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
-                    <table style="width:100%;border-collapse:collapse">
+                    <div style="overflow-x:auto">
+                    <table style="width:100%;border-collapse:collapse;min-width:520px">
                         <colgroup>
                             <col style="width:9%" />
                             <col style="width:13%" />
@@ -238,11 +246,11 @@
                                         @ev.Title
                                         @if (!string.IsNullOrEmpty(ev.Description))
                                         {
-                                            <div style="font-size:11px;color:var(--text-light)">@ev.Description</div>
+                                            <div class="admin-sched-desc" style="font-size:11px;color:var(--text-light)">@ev.Description</div>
                                         }
                                         @if (ev.ItemGroups.Any())
                                         {
-                                            <div style="font-size:11px;color:var(--text-light)">@ev.ItemGroups.Count group assign.</div>
+                                            <div class="admin-sched-desc" style="font-size:11px;color:var(--text-light)">@ev.ItemGroups.Count group assign.</div>
                                         }
                                     </td>
                                     <td style="padding:8px 14px">
@@ -257,6 +265,7 @@
                                                 @if (ev.Location.ImageData is not null)
                                                 {
                                                     <img src="/location-image/@ev.Location.LocationId"
+                                                         class="admin-sched-loc-img"
                                                          style="width:42px;height:30px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0"
                                                          alt="@ev.Location.Name"
                                                          @onclick='() => _lightboxSrc = $"/location-image/{ev.Location.LocationId}"' />
@@ -283,6 +292,7 @@
                             }
                         </tbody>
                     </table>
+                    </div>
                 </div>
             }
         </div>
