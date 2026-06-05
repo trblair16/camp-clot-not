@@ -14,8 +14,14 @@
 
 <style>
     @@media (max-width: 699px) {
-        .admin-sched-desc  { display: none; }
+        .admin-sched-desc    { display: none; }
         .admin-sched-loc-img { display: none; }
+        .admin-sched-table   { display: none; }
+        .admin-sched-cards   { display: flex; flex-direction: column; gap: 10px; }
+        .admin-sched-form    { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
+    }
+    @@media (min-width: 700px) {
+        .admin-sched-cards { display: none; }
     }
 </style>
 
@@ -25,7 +31,7 @@
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Form panel ── *@
-        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 340px;min-width:280px">
+        <div class="admin-sched-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 340px;min-width:280px">
             <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Event" : "Edit Event")</h3>
 
             <div style="margin-bottom:14px">
@@ -209,7 +215,44 @@
             }
             else
             {
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                @* ── Mobile card list ── *@
+                <div class="admin-sched-cards">
+                    @foreach (var ev in _events)
+                    {
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-size:11px;color:var(--text-light);font-weight:700;margin-bottom:3px">
+                                        @ev.CampDay.ToString("ddd M/d") &nbsp;·&nbsp; @ev.StartTime.ToString("h:mm tt")@(ev.EndTime.HasValue ? $" – {ev.EndTime.Value.ToString("h:mm tt")}" : "")
+                                    </div>
+                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black);line-height:1.2;margin-bottom:6px">
+                                        @ev.Title
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
+                                            @DisplayItemType(ev.ScheduleItemType)
+                                        </span>
+                                        @if (ev.Location is not null)
+                                        {
+                                            <span style="font-size:11px;color:var(--text-mid)">@ev.Location.Name@(!string.IsNullOrEmpty(ev.LocationOther) ? $" + {ev.LocationOther}" : "")</span>
+                                        }
+                                        else if (!string.IsNullOrEmpty(ev.LocationOther))
+                                        {
+                                            <span style="font-size:11px;color:var(--text-mid)">@ev.LocationOther</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                                    <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(ev)">Edit</button>
+                                    <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(ev)">Del</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* ── Desktop table ── *@
+                <div class="admin-sched-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <div style="overflow-x:auto">
                     <table style="width:100%;border-collapse:collapse;min-width:520px">
                         <colgroup>
@@ -293,6 +336,7 @@
                         </tbody>
                     </table>
                     </div>
+                </div>
                 </div>
             }
         </div>
