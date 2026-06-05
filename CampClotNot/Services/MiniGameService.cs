@@ -3,6 +3,7 @@ using CampClotNot.Data.Entities;
 using CampClotNot.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
@@ -16,20 +17,26 @@ public record MiniGameScriptView(
 
 public class MiniGameService(
     IDbContextFactory<AppDbContext> factory,
-    IHubContext<LiveHub> hub)
+    IHubContext<LiveHub> hub,
+    IMemoryCache cache)
 {
     private const string MiniGameCategory = "MinuteToWinIt";
+    private static string ActivitiesKey(Guid eventId) => $"mga.{eventId}";
 
     public async Task<List<Activity>> GetActivitiesAsync(Guid eventId)
     {
-        using var db = factory.CreateDbContext();
-        return await db.Activities
-            .Where(a => a.EventId == eventId &&
-                        a.ActivityType.Category.SystemName == MiniGameCategory)
-            .Include(a => a.ActivityType)
-                .ThenInclude(at => at.Category)
-            .OrderBy(a => a.Name)
-            .ToListAsync();
+        return await cache.GetOrCreateAsync(ActivitiesKey(eventId), async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            using var db = factory.CreateDbContext();
+            return await db.Activities
+                .Where(a => a.EventId == eventId &&
+                            a.ActivityType.Category.SystemName == MiniGameCategory)
+                .Include(a => a.ActivityType)
+                    .ThenInclude(at => at.Category)
+                .OrderBy(a => a.Name)
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<List<MiniGameScriptView>> GetScriptsAsync(Guid eventId)
@@ -130,6 +137,7 @@ public class MiniGameService(
             existing.LocationId  = locationId;
         }
         await db.SaveChangesAsync();
+        cache.Remove(ActivitiesKey(eventId));
     }
 
     // Returns false if the activity is referenced by a triggered script (cannot delete).
@@ -138,10 +146,14 @@ public class MiniGameService(
         using var db = factory.CreateDbContext();
         var inUse = await db.ScriptedMiniGames.AnyAsync(s => s.ActivityId == activityId);
         if (inUse) return false;
-        var activity = await db.Activities.FindAsync(activityId);
+        var activity = await db.Activities
+            .Include(a => a.ActivityType)
+            .FirstOrDefaultAsync(a => a.ActivityId == activityId);
         if (activity is null) return true;
+        var eventId = activity.EventId;
         db.Activities.Remove(activity);
         await db.SaveChangesAsync();
+        cache.Remove(ActivitiesKey(eventId));
         return true;
     }
 }

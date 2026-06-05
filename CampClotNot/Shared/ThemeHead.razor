@@ -79,7 +79,7 @@
 
     /* FAB clears the bottom nav bar on mobile */
     @@media (max-width: 1023px) {
-        .ccn-fab-mobile { bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+        .ccn-fab-mobile { bottom: calc(72px + var(--sai-b, 0px)) !important; }
     }
 
     /* ── MudTabs neo-brutalist override ── */
