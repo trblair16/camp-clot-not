@@ -30,11 +30,7 @@
                 20-space layout seeded from mockup. Adjust XPos/YPos in SeedService and restart to reposition.
             </p>
 
-            @if (_spaces is null)
-            {
-                <MudProgressCircular Indeterminate="true" />
-            }
-            else
+            @if (_spaces is not null)
             {
                 <div class="admin-gm-cards">
                     @foreach (var space in _spaces)
@@ -92,11 +88,7 @@
                 Set the destination space for each group per camp day. Cannot edit after triggered.
             </p>
 
-            @if (_groups is null || _blockHitScripts is null)
-            {
-                <MudProgressCircular Indeterminate="true" />
-            }
-            else
+            @if (_groups is not null && _blockHitScripts is not null)
             {
                 <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <div style="overflow-x:auto">
@@ -159,11 +151,9 @@
                 Set the activity revealed for each camp day's evening mini-game. Cannot edit after triggered.
             </p>
 
-            @if (_miniGameActivities is null || _miniGameScripts is null)
+            @if (_miniGameActivities is not null && _miniGameScripts is not null)
             {
-                <MudProgressCircular Indeterminate="true" />
-            }
-            else if (_miniGameActivities.Count == 0)
+            @if (_miniGameActivities.Count == 0)
             {
                 <div style="padding:14px 16px;border:2px solid var(--black);border-radius:8px;background:#E3F2FD;font-size:13px">
                     ℹ️ No MinuteToWinIt activities seeded yet. Add activities with category "MinuteToWinIt" in SeedService and restart.
@@ -270,6 +260,7 @@
                 {
                     <div style="margin-top:12px;padding:10px 16px;border:2px solid var(--black);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_miniGameSaveMsg</div>
                 }
+            }
             }
         </MudTabPanel>
 

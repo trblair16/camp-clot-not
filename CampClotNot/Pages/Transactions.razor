@@ -12,11 +12,7 @@
         <button class="ccn-btn" style="font-size:12px;padding:6px 14px" @onclick="LoadAsync">↺ Refresh</button>
     </div>
 
-    @if (_loading)
-    {
-        <MudProgressCircular Indeterminate="true" />
-    }
-    else if (!_transactions.Any())
+    @if (!_loading && !_transactions.Any())
     {
         <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No transactions yet.</p>
     }

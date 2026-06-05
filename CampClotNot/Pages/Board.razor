@@ -27,13 +27,7 @@
         </div>
     </div>
 
-    @if (_loading)
-    {
-        <div style="display:flex;justify-content:center;padding:60px 0">
-            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
-        </div>
-    }
-    else
+    @if (!_loading)
     {
         <div class="ccn-panel" style="padding:12px;margin-bottom:18px">
             <BoardComponent Spaces="_spaces" Positions="_positions" Groups="_groups" />

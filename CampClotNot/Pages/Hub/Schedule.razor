@@ -134,11 +134,7 @@
         }
     </div>
 
-    @if (_loading)
-    {
-        <MudProgressCircular Indeterminate="true" />
-    }
-    else if (_campEvent is null)
+    @if (!_loading && _campEvent is null)
     {
         <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No active event found.</p>
     }
