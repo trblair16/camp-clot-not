@@ -137,16 +137,13 @@
         background: var(--bg-base);
         border-top: 4px solid var(--black);
         z-index: 40;
-        /* Use JS-captured CSS var so iOS never re-evaluates env() during
-           Blazor re-renders (which caused the visible nav bar jump). */
-        padding-bottom: var(--sai-b, env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom);
         align-items: flex-start;
-        transition: padding-bottom 0.15s ease;
     }
+    /* In PWA standalone mode use a literal pixel value so iOS never
+       re-evaluates env() mid-render and causes the bar to jump. */
     @@media (display-mode: standalone) {
-        .nav-bottom-bar {
-            padding-bottom: max(var(--sai-b, 34px), 34px);
-        }
+        .nav-bottom-bar { padding-bottom: 34px; }
     }
     .nav-tab {
         flex: 1;

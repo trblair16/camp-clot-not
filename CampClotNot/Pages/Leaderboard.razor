@@ -9,13 +9,7 @@
 
 <PageTitle>Leaderboard — Camp Clot Not</PageTitle>
 
-@if (_loading)
-{
-    <div style="display:flex;justify-content:center;padding:80px 0">
-        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
-    </div>
-}
-else
+@if (!_loading)
 {
     @* ── STANDINGS rank rows ── *@
     <div class="ccn-section-label">🏆 Standings</div>
