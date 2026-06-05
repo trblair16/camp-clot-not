@@ -274,7 +274,10 @@
     {
         if (string.IsNullOrWhiteSpace(phone)) return "tel:";
         var digits = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
-        return $"tel:+1{digits}";
+        // 11 digits starting with 1 means the country code is already included
+        return digits.Length == 11 && digits[0] == '1'
+            ? $"tel:+{digits}"
+            : $"tel:+1{digits}";
     }
 
     private void ParsePosition(string? pos)
