@@ -22,6 +22,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 </head>
 <body>
+    <div id="sai-probe" aria-hidden="true" style="position:fixed;bottom:0;left:-9999px;width:0;padding-bottom:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden"></div>
     <div id="components-reconnect-modal" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;padding-top:env(safe-area-inset-top)">
         <div id="ccn-banner-show"     style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#F5C800;color:#1A1A1A;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
             📶 Reconnecting…
@@ -46,6 +47,24 @@
     <script src="js/board.js?v=3"></script>
     <script src="js/install-prompt.js"></script>
     <script>
+        // Snapshot env(safe-area-inset-bottom) from a static probe element into
+        // --sai-b so nav bar CSS uses a fixed px value that iOS never re-evaluates
+        // during Blazor re-renders. The probe lives in static HTML — never touched
+        // by Blazor — so reading it doesn't mutate the DOM at all.
+        (function () {
+            var probe = document.getElementById('sai-probe');
+            function snapSAI() {
+                if (!probe) return;
+                var v = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+                document.documentElement.style.setProperty('--sai-b', v + 'px');
+            }
+            snapSAI();
+            window.addEventListener('resize', snapSAI);
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') snapSAI();
+            });
+        }());
+
         Blazor.start({
             reconnectionOptions: {
                 maxRetries: 12,
