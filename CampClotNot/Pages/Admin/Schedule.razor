@@ -204,6 +204,14 @@
             {
                 <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
+                        <colgroup>
+                            <col style="width:9%" />
+                            <col style="width:13%" />
+                            <col />
+                            <col style="width:11%" />
+                            <col style="width:16%" />
+                            <col style="width:1%" />
+                        </colgroup>
                         <thead>
                             <tr style="background:var(--black)">
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Day</th>
@@ -242,18 +250,29 @@
                                             @DisplayItemType(ev.ScheduleItemType)
                                         </span>
                                     </td>
-                                    <td style="padding:8px 14px;font-size:12px;color:var(--text-mid)">
-                        @if (ev.Location is not null || !string.IsNullOrEmpty(ev.LocationOther))
-                        {
-                            @(ev.Location?.Name ?? "")
-                            @if (ev.Location is not null && !string.IsNullOrEmpty(ev.LocationOther)) { <span> + </span> }
-                            @(ev.LocationOther ?? "")
-                        }
-                        else
-                        {
-                            <span>—</span>
-                        }
-                    </td>
+                                    <td style="padding:6px 14px;font-size:12px;color:var(--text-mid)">
+                                        @if (ev.Location is not null)
+                                        {
+                                            <div style="display:flex;align-items:center;gap:6px">
+                                                @if (ev.Location.ImageData is not null)
+                                                {
+                                                    <img src="/location-image/@ev.Location.LocationId"
+                                                         style="width:42px;height:30px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0"
+                                                         alt="@ev.Location.Name"
+                                                         @onclick='() => _lightboxSrc = $"/location-image/{ev.Location.LocationId}"' />
+                                                }
+                                                <span>@ev.Location.Name@(!string.IsNullOrEmpty(ev.LocationOther) ? $" + {ev.LocationOther}" : "")</span>
+                                            </div>
+                                        }
+                                        else if (!string.IsNullOrEmpty(ev.LocationOther))
+                                        {
+                                            @ev.LocationOther
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </td>
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(ev)">Edit</button>
@@ -270,6 +289,18 @@
 
     </div>
 </div>
+
+@if (_lightboxSrc is not null)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.85);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease;cursor:zoom-out"
+         @onclick="() => _lightboxSrc = null">
+        <img src="@_lightboxSrc"
+             style="max-width:92vw;max-height:88vh;object-fit:contain;border:3px solid var(--black);border-radius:10px;box-shadow:6px 6px 0 var(--black);animation:popIn .2s ease"
+             alt="Location image" @onclick:stopPropagation />
+        <button style="position:fixed;top:16px;right:20px;background:none;border:none;color:white;font-size:28px;cursor:pointer;line-height:1"
+                @onclick="() => _lightboxSrc = null">✕</button>
+    </div>
+}
 
 @code {
     private List<ScheduleItem> _events = new();
@@ -295,6 +326,7 @@
     private List<AssignmentFormRow> _fAssignments = new();
     private bool _assignmentsExpanded;
     private string _error = "";
+    private string? _lightboxSrc;
 
     private string _minDate = "";
     private string _maxDate = "";

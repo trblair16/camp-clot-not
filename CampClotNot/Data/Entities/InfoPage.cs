@@ -11,4 +11,8 @@ public class InfoPage
     public DateTime UpdatedAt { get; set; }
     public Guid UpdatedByUserId { get; set; }
     public User UpdatedBy { get; set; } = null!;
+
+    public byte[]? PdfData { get; set; }
+    public string? PdfContentType { get; set; }
+    public string? PdfVisibleRoles { get; set; }
 }

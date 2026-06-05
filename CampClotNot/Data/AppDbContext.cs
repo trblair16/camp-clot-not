@@ -50,6 +50,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<EventScheduleItemType> EventScheduleItemTypes => Set<EventScheduleItemType>();
     public DbSet<IncidentReport> IncidentReports => Set<IncidentReport>();
     public DbSet<Sponsor> Sponsors => Set<Sponsor>();
+    public DbSet<CampDocument> CampDocuments => Set<CampDocument>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -131,5 +132,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(r => r.IncidentLocationId)
             .IsRequired(false);
+
+        // CampDocument: PK + explicit FK configs to avoid shadow property bugs
+        modelBuilder.Entity<CampDocument>().HasKey(d => d.DocumentId);
+        modelBuilder.Entity<CampDocument>()
+            .HasOne(d => d.Event)
+            .WithMany()
+            .HasForeignKey(d => d.EventId);
+        modelBuilder.Entity<CampDocument>()
+            .HasOne(d => d.UploadedBy)
+            .WithMany()
+            .HasForeignKey(d => d.UploadedByUserId);
     }
 }

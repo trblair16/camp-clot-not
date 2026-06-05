@@ -2,6 +2,8 @@
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
 @inject StaffDirectoryService StaffSvc
 @inject AuthenticationStateProvider Auth
+@using SixLabors.ImageSharp
+@using SixLabors.ImageSharp.Processing
 
 <PageTitle>Staff — Camp Clot Not</PageTitle>
 
@@ -87,7 +89,7 @@
                     }
                     @if (!string.IsNullOrEmpty(m.Email))
                     {
-                        <a href="mailto:@m.Email" style="display:block;font-size:13px;color:#1a5fa8;text-decoration:none">@m.Email</a>
+                        <a href="mailto:@m.Email" style="display:block;font-size:13px;color:#1a5fa8;text-decoration:none;overflow-wrap:break-word;word-break:break-all">@m.Email</a>
                     }
                     @if (m.LinkedUserId.HasValue)
                     {
@@ -150,7 +152,7 @@
             </div>
             <MudTextField @bind-Value="_form.Phone"       Label="Phone (optional)" Class="mb-2" />
             <MudTextField @bind-Value="_form.Email"       Label="Email (optional)" Class="mb-2" />
-            <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="Color.Primary" Class="mb-2" />
+            <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="MudBlazor.Color.Primary" Class="mb-2" />
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
                 <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="Close">Cancel</button>
                 <button class="ccn-btn" @onclick="Save">Save</button>
@@ -251,8 +253,20 @@
         using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms);
-        _fPhotoData        = ms.ToArray();
-        _fPhotoContentType = file.ContentType;
+
+        // Resize to max 400×400 so photos are sharp on any DPI without bloating the DB
+        using var image = SixLabors.ImageSharp.Image.Load(ms.ToArray());
+        if (image.Width > 400 || image.Height > 400)
+            image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
+            {
+                Mode = SixLabors.ImageSharp.Processing.ResizeMode.Max,
+                Size = new SixLabors.ImageSharp.Size(400, 400)
+            }));
+        using var outMs = new MemoryStream();
+        await image.SaveAsJpegAsync(outMs, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder { Quality = 85 });
+
+        _fPhotoData        = outMs.ToArray();
+        _fPhotoContentType = "image/jpeg";
         _fPhotoX = 50; _fPhotoY = 50;
     }
 
@@ -260,7 +274,10 @@
     {
         if (string.IsNullOrWhiteSpace(phone)) return "tel:";
         var digits = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
-        return $"tel:+1{digits}";
+        // 11 digits starting with 1 means the country code is already included
+        return digits.Length == 11 && digits[0] == '1'
+            ? $"tel:+{digits}"
+            : $"tel:+1{digits}";
     }
 
     private void ParsePosition(string? pos)

@@ -28,4 +28,17 @@ public class InfoPageService(IDbContextFactory<AppDbContext> factory)
         page.UpdatedByUserId = updatedByUserId;
         await db.SaveChangesAsync();
     }
+
+    public async Task UpdatePdfAsync(Guid pageId, byte[]? pdfData, string? pdfContentType, string? pdfVisibleRoles, Guid updatedByUserId)
+    {
+        using var db = factory.CreateDbContext();
+        var page = await db.InfoPages.FindAsync(pageId);
+        if (page is null) return;
+        page.PdfData         = pdfData;
+        page.PdfContentType  = pdfContentType;
+        page.PdfVisibleRoles = pdfVisibleRoles;
+        page.UpdatedAt       = DateTime.UtcNow;
+        page.UpdatedByUserId = updatedByUserId;
+        await db.SaveChangesAsync();
+    }
 }

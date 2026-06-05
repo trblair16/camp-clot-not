@@ -111,9 +111,10 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid Space19 = new("0000000d-000d-000d-000d-000000000014");
 
         // InfoPages — CCN 2026 handbook pages (schedule-overview and packing removed in v0.5.1)
-        public static readonly Guid InfoPageRules   = new("0000000e-000e-000e-000e-000000000001");
-        public static readonly Guid InfoPageFaq     = new("0000000e-000e-000e-000e-000000000002");
-        public static readonly Guid InfoPageMedical = new("0000000e-000e-000e-000e-000000000003");
+        public static readonly Guid InfoPageRules     = new("0000000e-000e-000e-000e-000000000001");
+        public static readonly Guid InfoPageFaq       = new("0000000e-000e-000e-000e-000000000002");
+        public static readonly Guid InfoPageMedical   = new("0000000e-000e-000e-000e-000000000003");
+        public static readonly Guid InfoPageDocuments = new("0000000e-000e-000e-000e-000000000004");
 
         // ScheduleItemTypes — stable IDs used for data migration (int enum → Guid FK)
         // Order matches original ScheduleEventType enum: Activity=0, Meal=1, Travel=2, Free=3, Mandatory=4, Presentation=5
@@ -564,11 +565,27 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Email == config["Seed:AdminEmail"]);
         var adminId = adminUser?.UserId ?? Guid.Empty;
 
+        // Remove legacy pages that are no longer part of the handbook
+        var slugsToRemove = new[] { "faq", "schedule-overview", "packing", "emergency-pdf" };
+        foreach (var slug in slugsToRemove)
+        {
+            var page = await db.InfoPages.FirstOrDefaultAsync(p => p.Slug == slug);
+            if (page is not null)
+            {
+                db.InfoPages.Remove(page);
+                await db.SaveChangesAsync();
+                logger.LogInformation("Removed legacy info page '{Slug}'.", slug);
+            }
+        }
+
         var pages = new[]
         {
-            new { Id = Id.InfoPageRules,   Slug = "rules",   Title = "Camp Rules",   Icon = "📋", Order = 1 },
-            new { Id = Id.InfoPageFaq,     Slug = "faq",     Title = "FAQ",          Icon = "❓", Order = 2 },
-            new { Id = Id.InfoPageMedical, Slug = "medical", Title = "Medical Info", Icon = "🏥", Order = 3 },
+            new { Id = Id.InfoPageRules,        Slug = "rules",         Title = "Camp Rules",         Icon = "📋", Order = 1,
+                  Body = "# Camp Rules\n\nContent coming soon — an Admin will update this before camp." },
+            new { Id = Id.InfoPageMedical,      Slug = "medical",       Title = "Medical Info",       Icon = "🏥", Order = 2,
+                  Body = "# Medical Info & Emergency Contacts\n\n## Emergency Numbers\n- **Camp Emergency:** TBD\n- **Children's Harbor:** (205) 939-9583\n- **Nearest Hospital:** TBD\n\n## On-Site Medical Staff\nSee the Staff Directory for on-site medical contacts.\n\n## Incident Reporting\nUse the 🚨 Report Incident button to document any medical incident." },
+            new { Id = Id.InfoPageDocuments,    Slug = "documents",     Title = "Documents",          Icon = "📁", Order = 3,
+                  Body = "" },
         };
 
         foreach (var def in pages)
@@ -582,7 +599,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
                     Title           = def.Title,
                     IconEmoji       = def.Icon,
                     SortOrder       = def.Order,
-                    Body            = $"# {def.Title}\n\nContent coming soon — an Admin will update this before camp.",
+                    Body            = def.Body,
                     UpdatedAt       = DateTime.UtcNow,
                     UpdatedByUserId = adminId,
                 });

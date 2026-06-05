@@ -6,67 +6,92 @@
 
 <PageTitle>Transactions — Camp Clot Not</PageTitle>
 
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <MudText Typo="Typo.h4">Transaction Log</MudText>
-    <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync" Title="Refresh" />
-</div>
+<div style="padding: 0 16px 100px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0">📋 Transaction Log</h2>
+        <button class="ccn-btn" style="font-size:12px;padding:6px 14px" @onclick="LoadAsync">↺ Refresh</button>
+    </div>
 
-@if (_loading)
-{
-    <MudProgressCircular Indeterminate="true" />
-}
-else
-{
-    <MudTable Items="_transactions" Dense="true" Striped="true" Hover="true"
-              RowStyleFunc="@RowStyle">
-        <HeaderContent>
-            <MudTh>Time</MudTh>
-            <MudTh>Group</MudTh>
-            <MudTh>Type</MudTh>
-            <MudTh>Amount</MudTh>
-            <MudTh>Logged By</MudTh>
-            <MudTh>Note</MudTh>
-            <MudTh>Status</MudTh>
-            <AuthorizeView Roles="Admin">
-                <MudTh>Actions</MudTh>
-            </AuthorizeView>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd>@context.CreatedAt.ToLocalTime().ToString("MM/dd HH:mm")</MudTd>
-            <MudTd>@context.Group?.Name</MudTd>
-            <MudTd>@(context.CurrencyType?.SystemName == nameof(Currency.Primary) ? "🪙 Coins" : "⭐ Stars")</MudTd>
-            <MudTd Style="@AmountStyle(context)">@(context.Amount > 0 ? "+" : "")@context.Amount</MudTd>
-            <MudTd>@context.LoggedBy</MudTd>
-            <MudTd>@context.Note</MudTd>
-            <MudTd>
-                @if (context.VoidedAt.HasValue)
-                {
-                    <MudChip Color="Color.Error" Size="Size.Small">VOIDED</MudChip>
-                }
-                else
-                {
-                    <MudChip Color="Color.Success" Size="Size.Small">Active</MudChip>
-                }
-            </MudTd>
-            <AuthorizeView Roles="Admin" Context="authCtx">
-                <MudTd>
-                    @if (!context.VoidedAt.HasValue)
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_transactions.Any())
+    {
+        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No transactions yet.</p>
+    }
+    else
+    {
+        <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+            <table style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="background:var(--black)">
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;white-space:nowrap">Time</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Group</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Type</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:right">Amount</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Logged By</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Note</th>
+                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Status</th>
+                        <AuthorizeView Roles="Admin">
+                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                        </AuthorizeView>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tx in _transactions)
                     {
-                        <MudIconButton Icon="@Icons.Material.Filled.Block" Size="Size.Small"
-                                       Color="Color.Error" OnClick="() => VoidAsync(context)"
-                                       Title="Void transaction" />
+                        var voided   = tx.VoidedAt.HasValue;
+                        var isCoins  = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
+                        var amtColor = voided ? "var(--text-light)" : tx.Amount < 0 ? "#D12B2B" : "#1A7A3E";
+                        <tr style="border-bottom:2px solid #E8E0CC;@(voided ? "opacity:.5" : "")">
+                            <td style="padding:10px 14px;font-size:12px;color:var(--text-mid);white-space:nowrap">
+                                @tx.CreatedAt.ToLocalTime().ToString("MM/dd h:mm tt")
+                            </td>
+                            <td style="padding:10px 14px;font-size:13px;font-weight:700">@tx.Group?.Name</td>
+                            <td style="padding:10px 14px;font-size:13px">@(isCoins ? "🪙 Coins" : "⭐ Stars")</td>
+                            <td style="padding:10px 14px;font-size:13px;font-weight:800;text-align:right;color:@amtColor;@(voided ? "text-decoration:line-through" : "")">
+                                @(tx.Amount > 0 ? "+" : "")@tx.Amount
+                            </td>
+                            <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@tx.LoggedBy</td>
+                            <td style="padding:10px 14px;font-size:12px;color:var(--text-mid);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                @(string.IsNullOrEmpty(tx.Note) ? "—" : tx.Note)
+                            </td>
+                            <td style="padding:8px 14px">
+                                @if (voided)
+                                {
+                                    <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;
+                                                 color:white;background:#D12B2B;padding:2px 8px;border-radius:4px;
+                                                 border:2px solid var(--black);display:inline-block">VOIDED</span>
+                                }
+                                else
+                                {
+                                    <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;
+                                                 color:white;background:#27AE60;padding:2px 8px;border-radius:4px;
+                                                 border:2px solid var(--black);display:inline-block">Active</span>
+                                }
+                            </td>
+                            <AuthorizeView Roles="Admin">
+                                <td style="padding:8px 10px">
+                                    @if (!voided)
+                                    {
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white"
+                                                @onclick="() => VoidAsync(tx)">Void</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#E67E22;color:white"
+                                                @onclick="() => ReinstateAsync(tx)">Reinstate</button>
+                                    }
+                                </td>
+                            </AuthorizeView>
+                        </tr>
                     }
-                    else
-                    {
-                        <MudIconButton Icon="@Icons.Material.Filled.Undo" Size="Size.Small"
-                                       Color="Color.Warning" OnClick="() => ReinstateAsync(context)"
-                                       Title="Reinstate transaction" />
-                    }
-                </MudTd>
-            </AuthorizeView>
-        </RowTemplate>
-    </MudTable>
-}
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
@@ -109,16 +134,5 @@ else
 
         await TxSvc.ReinstateAsync(tx.TxId);
         _transactions = await TxSvc.GetAllAsync();
-    }
-
-    private static string RowStyle(Transaction tx, int _) =>
-        tx.VoidedAt.HasValue ? "opacity:0.5" : "";
-
-    private static string AmountStyle(Transaction tx)
-    {
-        var parts = new List<string>();
-        if (tx.Amount < 0) parts.Add("color:red");
-        if (tx.VoidedAt.HasValue) parts.Add("text-decoration:line-through");
-        return string.Join(";", parts);
     }
 }
