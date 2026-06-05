@@ -1,28 +1,40 @@
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
-public class ScheduleItemTypeService(IDbContextFactory<AppDbContext> factory)
+public class ScheduleItemTypeService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
 {
+    private const string AllKey = "sit.all";
+    private static string EventKey(Guid eventId) => $"sit.ev.{eventId}";
+
     public async Task<List<ScheduleItemType>> GetAllAsync()
     {
-        using var db = factory.CreateDbContext();
-        return await db.ScheduleItemTypes
-            .OrderBy(t => t.SortOrder).ThenBy(t => t.Name)
-            .ToListAsync();
+        return await cache.GetOrCreateAsync(AllKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            using var db = factory.CreateDbContext();
+            return await db.ScheduleItemTypes
+                .OrderBy(t => t.SortOrder).ThenBy(t => t.Name)
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<List<ScheduleItemType>> GetForEventAsync(Guid eventId)
     {
-        using var db = factory.CreateDbContext();
-        return await db.EventScheduleItemTypes
-            .Where(e => e.EventId == eventId)
-            .Include(e => e.ScheduleItemType)
-            .OrderBy(e => e.ScheduleItemType.SortOrder)
-            .Select(e => e.ScheduleItemType)
-            .ToListAsync();
+        return await cache.GetOrCreateAsync(EventKey(eventId), async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            using var db = factory.CreateDbContext();
+            return await db.EventScheduleItemTypes
+                .Where(e => e.EventId == eventId)
+                .Include(e => e.ScheduleItemType)
+                .OrderBy(e => e.ScheduleItemType.SortOrder)
+                .Select(e => e.ScheduleItemType)
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<List<Guid>> GetEnabledIdsForEventAsync(Guid eventId)
@@ -50,6 +62,7 @@ public class ScheduleItemTypeService(IDbContextFactory<AppDbContext> factory)
             existing.SortOrder   = type.SortOrder;
         }
         await db.SaveChangesAsync();
+        cache.Remove(AllKey);
     }
 
     public async Task<bool> DeleteAsync(Guid typeId)
@@ -61,6 +74,7 @@ public class ScheduleItemTypeService(IDbContextFactory<AppDbContext> factory)
         if (type is null) return true;
         db.ScheduleItemTypes.Remove(type);
         await db.SaveChangesAsync();
+        cache.Remove(AllKey);
         return true;
     }
 
@@ -82,5 +96,6 @@ public class ScheduleItemTypeService(IDbContextFactory<AppDbContext> factory)
             db.EventScheduleItemTypes.Remove(existing);
         }
         await db.SaveChangesAsync();
+        cache.Remove(EventKey(eventId));
     }
 }
