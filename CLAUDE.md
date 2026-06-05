@@ -10,10 +10,10 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ## Current State (as of 2026-06-04)
 
-**Active branch:** none — start `feature/N-v057-...` (open GitHub issue first)
+**Active branch:** `feature/124-v057-info-overhaul-ux-polish` — v0.5.7 in progress (final v0.5.x)
 **On dev (pending main PR):** v0.5.6 — table-driven schedule item types + UX polish
 **Released to main:** v0.5.5 — photos, sponsor enhancements, schedule improvements, dashboard
-**Next:** v0.5.7 — info section overhaul, UX polish round 2 (see below)
+**Next:** v0.5.7 (current branch) → then v1.0.0-rc.1 (see versioning below)
 
 **v0.1.0 — Done:**
 - Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
@@ -200,7 +200,129 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 *Schedule item cells:*
 - Make schedule item cell backgrounds opaque
 
-**Next after v0.5.7:** v1.0.0-rc — Dry Run
+**v0.5.7 is the last v0.5.x release.** All subsequent versions use the `v1.0.0-rc.N` → `v1.0.0` convention (see Branching & Versioning).
+
+---
+
+**v1.0.0-rc.1 — Planned (next branch after v0.5.7 merges):**
+
+*Reconnect UX overhaul (no migrations required — HTML/CSS/JS only):*
+- Remove `ConnectionIndicator.razor` and `connection-indicator.js` — the dot never turns red because `invokeMethodAsync` can't call back into .NET when the SignalR circuit is down; a banner makes it redundant anyway
+- Add custom `<div id="components-reconnect-modal">` to `_Layout.cshtml` with three styled states:
+  - `.components-reconnect-show` — slim non-blocking banner at top ("📶 Reconnecting…"), page content stays visible
+  - `.components-reconnect-failed` — red banner with Reload button + auto-reload countdown (~8s)
+  - `.components-reconnect-rejected` — auto-reload after ~1.5s with brief "Session expired — reloading…" (most common Railway cause)
+- Switch `blazor.server.js` to `autostart="false"` and configure `Blazor.start({ reconnectionOptions: { maxRetries: 12, retryIntervalMilliseconds: (n) => Math.min(n * 2000 + 1000, 20000) } })` for exponential backoff
+- Add `visibilitychange` listener: if app was backgrounded (PWA) and circuit already failed, silently `location.reload()` when user returns — app just "opens fresh" with no error shown
+- Remove `<ConnectionIndicator />` from `AppNav.razor`
+- Style the banner to match CCN neo-brutalist design (`#F5C800` yellow background, black border, Fredoka One font)
+
+*Dry Run prep:*
+- End-to-end smoke test of all Hub features, game triggers, board display
+- Validate MedicalStaff role access on incidents + info PDF
+- Confirm all migrations applied to prod
+
+---
+
+**v1.1.0 — Post-Camp Quick Wins + Architecture Prep**
+
+*Standalone improvements (no v2.0 architecture required):*
+- Forgot password via email (SendGrid free tier — infra now in place post-v1.0)
+- Response caching for Hub read endpoints — in-memory cache on server, zero schema changes (schedule 60s, announcements 15s, info 5min, staff 2min); reduces DB load when 150+ Annual Meeting attendees hit the Hub simultaneously. *Note: unrelated to reconnect UX — this is server↔DB performance, not browser↔server connection handling.*
+- Awards UI — `AwardType` and `CamperAward` entities already in schema from day one; just needs admin CRUD + a display view + projector page for award ceremony
+- `IActiveEventService` — one-file wrapper replacing direct `SeedService.Id.EventCcn2026` references across pages/services with a runtime interface call. No migrations, no UI, no user-facing change — but makes v2.0.0 decoupling a search-and-replace rather than a surgery
+
+**v1.2.0 — Polish + Deeper v2.0 Prep**
+
+- Audit log — `AuditEntry` table + interceptor on SaveChanges; Vicki can see "Tyler deleted a schedule item at 3pm." Single migration, high ops value before chapter-scale events
+- `ScheduleTemplate` + `ScheduleTemplateItem` entity + migration (data layer only, no admin UI yet) — v2.0.0 branch starts with the schema already done and just builds the interface on top
+- Test suite foundation — service-layer unit tests for scoring, auth, and seed. Manual testing only for v1.x; want these in place before v2.0 architectural changes touch everything
+
+---
+
+**v2.0.0 — Self-Service Event Management**
+
+*Goal: Vicki can configure and launch a "Men's Retreat" (or any HBDA event) entirely within the admin UI without any developer involvement. No seed changes, no code deploys, no Tyler.*
+
+*What's already there (building blocks exist):*
+- `/admin/groups` — group CRUD, event-scoped ✓
+- `/admin/locations` — location CRUD ✓
+- `/admin/schedule-item-types` — type CRUD + per-event enable/disable ✓
+- `/admin/activities` — activity CRUD ✓
+- `/admin/schedule` — schedule item CRUD ✓
+- `Event` entity has `EffDate`, `ExpDate`, `IsActive`, `EventTypeId`, `ThemeId` ✓
+- `EventCapability` join table exists (feature flags per event) ✓
+- `ScheduleTemplate` + `ScheduleTemplateItem` entities (added in v1.2.0) ✓
+
+*What needs to be built:*
+- **`/admin/events` — Event CRUD**: create, edit, duplicate, set active event; replaces `IActiveEventService` stub (from v1.1.0) with full runtime-selected active event
+- **Event duplication**: "Copy this event as a starting point" — clones groups, locations, schedule item types, and activities into a new event shell
+- **`/admin/theme` — Theme config UI**: edit event name/tagline, primary color palette, logo upload; backed by DB `Theme` entity instead of `ThemeService` hardcoded values
+- **`/admin/capabilities` — Feature flags UI**: toggle which platform features are active per event (e.g. Men's Retreat might not use the board game)
+- **Schedule template admin UI**: template CRUD + apply-template action on `/admin/events`; "Save current schedule as template" reverse flow
+- **Admin completion checklist**: dashboard widget showing setup progress — "0 locations added," "no schedule items yet," etc.
+
+*UX — Event Designer subnav under Admin:*
+
+```
+Admin → Event Designer
+  ├── Events              /admin/events
+  ├── Theme               /admin/theme
+  ├── Groups              /admin/groups              (already exists, fold in)
+  ├── Locations           /admin/locations           (already exists, fold in)
+  ├── Schedule Types      /admin/schedule-item-types (already exists, fold in)
+  ├── Schedule Templates  /admin/schedule-templates  (new)
+  ├── Activities          /admin/activities          (already exists, fold in)
+  └── Capabilities        /admin/capabilities        (new)
+```
+
+*This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "Vicki configures events in the UI."
+
+---
+
+**v2.1.0 — Member Access (Yapp Replacement)**
+
+*Goal: Families and chapter members can access event info on their phones with zero friction — same experience as Yapp, but ours.*
+
+*Tiered identity model:*
+
+| Tier | Identity | How they join | What they can do |
+|---|---|---|---|
+| Anonymous guest | Device/session only | Event code → instant access | Read-only Hub: schedule, announcements, info, directory |
+| Named guest | Name + optional email, event-scoped | Prompted on first identity-requiring action | Above + session signups + personal schedule + check-in |
+| Full member | Persistent across events | Optional upgrade from named guest | Above + push notifications + multi-event history |
+| Staff/Admin | Full account | Admin-created (existing) | Everything |
+
+*What ships:*
+- `EventCode` entity + `/join/{code}` route — validates code, issues a `Member` role cookie carrying `EventId` claim scoped to that event; expires at `EventExpDate + 1 day`; Vicki generates one code per event (`HARVEST26`), posts it on a flyer
+- `GuestAttendee` entity — `Name`, `Email?`, `EventId`, `SessionToken` (ties back to cookie); created on first identity-requiring action with a single low-friction "What's your name?" prompt
+- Member-facing Hub: read-only schedule, announcements, info pages, staff directory with its own layout/nav tier (no admin controls, no transaction log)
+- Push notifications (Web Push + VAPID, `PushSubscription` table, background ASP.NET service) — now that member identity exists; "new announcement" and "schedule change" pushes to both named guests and full members
+- Optional "save for future HBDA events" upgrade flow → creates a persistent member account
+
+*Note: CCN campers are not allowed phones — CCN was intentionally the perfect staff-only beta. Camp Harvest and Annual Meeting are the first real member-access events.*
+
+---
+
+**v2.2.0 — Event Operations**
+
+*Goal: Operational depth for larger events — session signups, attendance, awards ceremony, post-event reporting.*
+
+- **Session signups**: limited-capacity breakout sessions; `SessionSignup` entity FK to either `UserId` (staff) or `GuestAttendeeId` (named guest); capacity counts; roster view for facilitators
+- **Attendance tracking**: `EventAttendance` table; check-in flow; admin roster; works across all identity tiers
+- **End-of-event reporting/export**: final score summary, transaction log PDF, incident report bundle, attendance sheets — the "give Vicki the paperwork" feature
+- Awards UI already shipped in v1.1.0; this release adds ceremony projector display
+
+---
+
+**v3.0.0 Horizon**
+
+*v3.0.0 is not planned — it will announce itself when the platform outgrows its current architecture. Likely triggers:*
+- Multi-tenant SaaS: other HBDA chapters (or other organizations) running their own events on the platform — requires tenant isolation in the data model, billing, org-level admin
+- True native mobile app: moving off PWA to a dedicated iOS/Android app — requires a separate API layer and new client
+- Separate frontend client: if a camper-facing React or WASM app is needed, the Blazor Server backend would be extracted to a proper API at that point
+
+None of these are on the near-term horizon. The entire v2.x roadmap is extending and opening up the same platform.
 
 ---
 
@@ -327,6 +449,20 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 **Release flow:** `feature/*` → PR to `dev` → PR to `main` → tag  
 **Issue-first rule:** Open a GitHub issue before creating a branch. Branch name must use the issue number GitHub assigns.  
 **`gh` CLI:** Installed at `$env:LOCALAPPDATA\Programs\gh\gh.exe`. Use PowerShell (not Bash) to invoke it.
+
+### Version Convention (updated 2026-06-04)
+
+v0.5.7 is the **last v0.5.x release**. With production live and real data being entered, the project moves to a release-candidate convention:
+
+| Version | Meaning |
+|---|---|
+| `v1.0.0-rc.1` | First RC — reconnect UX + dry run prep |
+| `v1.0.0-rc.2`, `rc.3` … | Dry run fixes (June ~14-19) |
+| `v1.0.0` | Go-live build — deployed before June 20 camp start |
+| `v1.0.1`, `v1.0.2` … | Hotfixes during/after camp |
+| `v1.1.0` | Next feature cycle (post-camp chapter Yapp replacement work) |
+
+Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-...`, etc.
 
 ---
 

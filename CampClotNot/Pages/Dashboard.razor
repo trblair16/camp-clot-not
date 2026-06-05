@@ -70,8 +70,8 @@ else
                 <span>🏆 Our Sponsors</span>
                 <a href="/hub/sponsors" style="font-size:11px;color:var(--color-primary);text-decoration:none">View all →</a>
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center">
-                @foreach (var s in _sponsors.Take(8))
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-start">
+                @foreach (var s in _sponsors)
                 {
                     @if (!string.IsNullOrWhiteSpace(s.Website))
                     {

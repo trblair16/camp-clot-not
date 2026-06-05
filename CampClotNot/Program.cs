@@ -68,6 +68,7 @@ try
     builder.Services.AddScoped<ScheduleItemTypeService>();
     builder.Services.AddScoped<IncidentReportService>();
     builder.Services.AddScoped<SponsorService>();
+    builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<SeedService>();
 
@@ -115,14 +116,56 @@ try
     });
 
     // Login/logout endpoints — cookie auth requires a real HTTP response, not a Blazor SignalR circuit
-    app.MapPost("/account/login", async (HttpContext ctx, AuthService auth) =>
+    app.MapPost("/account/login", async (HttpContext ctx, AuthService auth, IDbContextFactory<AppDbContext> factory) =>
     {
-        var form = await ctx.Request.ReadFormAsync();
-        var email    = form["email"].ToString();
-        var password = form["password"].ToString();
-        var ok = await auth.LoginAsync(ctx, email, password);
-        return ok ? Results.Redirect("/dashboard") : Results.Redirect("/login?error=true");
+        var form       = await ctx.Request.ReadFormAsync();
+        var email      = form["email"].ToString();
+        var password   = form["password"].ToString();
+        var rememberMe = form["rememberMe"].ToString() is "on" or "true";
+
+        DateTimeOffset? expiresUtc = null;
+        if (rememberMe)
+        {
+            using var db    = factory.CreateDbContext();
+            var activeEvent = await db.Events.FirstOrDefaultAsync(e => e.IsActive);
+            var today       = DateOnly.FromDateTime(DateTime.UtcNow);
+            if (activeEvent is not null && today >= activeEvent.EffDate && today <= activeEvent.ExpDate)
+                expiresUtc = new DateTimeOffset(activeEvent.ExpDate.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            else
+                expiresUtc = DateTimeOffset.UtcNow.AddDays(7);
+        }
+
+        var result = await auth.LoginAsync(ctx, email, password, rememberMe, expiresUtc);
+        return result switch
+        {
+            LoginResult.MustChangePassword => Results.Redirect("/change-password"),
+            LoginResult.Success            => Results.Redirect("/dashboard"),
+            _                              => Results.Redirect("/login?error=true")
+        };
     });
+
+    app.MapPost("/account/change-password", async (HttpContext ctx, AuthService auth) =>
+    {
+        if (ctx.User.Identity?.IsAuthenticated != true)
+            return Results.Redirect("/login");
+
+        var form    = await ctx.Request.ReadFormAsync();
+        var newPw   = form["newPassword"].ToString();
+        var confirm = form["confirmPassword"].ToString();
+
+        if (string.IsNullOrWhiteSpace(newPw) || newPw.Length < 8)
+            return Results.Redirect("/change-password?error=tooshort");
+
+        if (newPw != confirm)
+            return Results.Redirect("/change-password?error=mismatch");
+
+        var userIdStr = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return Results.Redirect("/login");
+
+        await auth.ChangePasswordAsync(userId, newPw, ctx);
+        return Results.Redirect("/dashboard");
+    }).RequireAuthorization();
 
     app.MapGet("/logout", async (HttpContext ctx) =>
     {
@@ -153,6 +196,39 @@ try
         if (loc?.ImageData is null) return Results.NotFound();
         return Results.File(loc.ImageData, loc.ImageContentType ?? "image/jpeg");
     }).AllowAnonymous();
+
+    app.MapGet("/hub/info/{slug}/pdf", async (string slug, HttpContext ctx, IDbContextFactory<AppDbContext> factory) =>
+    {
+        using var db = factory.CreateDbContext();
+        var page = await db.InfoPages.FirstOrDefaultAsync(p => p.Slug == slug);
+        if (page?.PdfData is null) return Results.NotFound();
+        if (!string.IsNullOrEmpty(page.PdfVisibleRoles))
+        {
+            var allowed = page.PdfVisibleRoles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var userRoles = ctx.User.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value);
+            if (!ctx.User.IsInRole("Admin") && !userRoles.Any(r => allowed.Contains(r, StringComparer.OrdinalIgnoreCase)))
+                return Results.Forbid();
+        }
+        return Results.File(page.PdfData, page.PdfContentType ?? "application/pdf");
+    }).RequireAuthorization();
+
+    app.MapGet("/hub/documents/{id:guid}/pdf", async (Guid id, HttpContext ctx, DocumentService svc) =>
+    {
+        var doc = await svc.GetByIdAsync(id);
+        if (doc is null) return Results.NotFound();
+        if (!string.IsNullOrEmpty(doc.VisibleRoles))
+        {
+            var allowed = doc.VisibleRoles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var userRoles = ctx.User.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value);
+            if (!ctx.User.IsInRole("Admin") && !userRoles.Any(r => allowed.Contains(r, StringComparer.OrdinalIgnoreCase)))
+                return Results.Forbid();
+        }
+        return Results.File(doc.Data, doc.ContentType, doc.OriginalFileName ?? $"{doc.Title}.pdf");
+    }).RequireAuthorization();
 
     app.MapHub<LiveHub>("/livehub");
     app.MapBlazorHub();

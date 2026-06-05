@@ -3,6 +3,7 @@ using System;
 using CampClotNot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CampClotNot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260604173449_AddV057Features")]
+    partial class AddV057Features
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -223,51 +226,6 @@ namespace CampClotNot.Migrations
                     b.HasIndex("EventId");
 
                     b.ToTable("BoardSpaces");
-                });
-
-            modelBuilder.Entity("CampClotNot.Data.Entities.CampDocument", b =>
-                {
-                    b.Property<Guid>("DocumentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<byte[]>("Data")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("OriginalFileName")
-                        .HasColumnType("text");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UploadedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UploadedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("VisibleRoles")
-                        .HasColumnType("text");
-
-                    b.HasKey("DocumentId");
-
-                    b.HasIndex("EventId");
-
-                    b.HasIndex("UploadedByUserId");
-
-                    b.ToTable("CampDocuments");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.CamperAward", b =>
@@ -1155,25 +1113,6 @@ namespace CampClotNot.Migrations
                     b.Navigation("Activity");
 
                     b.Navigation("Event");
-                });
-
-            modelBuilder.Entity("CampClotNot.Data.Entities.CampDocument", b =>
-                {
-                    b.HasOne("CampClotNot.Data.Entities.Event", "Event")
-                        .WithMany()
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CampClotNot.Data.Entities.User", "UploadedBy")
-                        .WithMany()
-                        .HasForeignKey("UploadedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Event");
-
-                    b.Navigation("UploadedBy");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.CamperAward", b =>

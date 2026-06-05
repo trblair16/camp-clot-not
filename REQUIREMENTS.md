@@ -469,11 +469,24 @@ Format: `[MAJOR].[MINOR].[PATCH]`
 
 | Segment | When It Changes |
 |---|---|
-| MAJOR | Breaking architectural change — e.g. 2.0.0 when Flask API extracted |
-| MINOR | New feature shipped — e.g. 1.1.0 when push notifications added post-camp |
-| PATCH | Bug fix or small non-breaking change — e.g. 1.0.1 for SignalR reconnect fix |
+| MAJOR | Platform capability threshold — new client type, multi-tenant SaaS, or native mobile shell. Not just "Flask extracted." |
+| MINOR | New feature cycle or event season — e.g. 1.1.0 post-camp improvements, 2.1.0 member access |
+| PATCH | Bug fix or small non-breaking change — e.g. 1.0.1 for a hotfix during camp |
 
-Camp 2026 ships as v1.0.0. Release candidates tagged `v1.0.0-rc.1` etc. during dry run period.
+**v0.5.7 is the last v0.5.x release.** Production is live with real data; versioning moves to release-candidate convention:
+
+| Version | Meaning |
+|---|---|
+| `v1.0.0-rc.1` | First RC — reconnect UX overhaul + dry run prep |
+| `v1.0.0-rc.2`, `rc.3` … | Dry run fixes (June ~14–19) |
+| `v1.0.0` | Go-live build — deployed before June 20 camp start |
+| `v1.0.1`, `v1.0.2` … | Hotfixes during/after camp |
+| `v1.1.0` | Post-camp quick wins + architecture prep |
+| `v1.2.0` | Post-camp polish + deeper v2 prep |
+| `v2.0.0` | Self-service Event Designer — Vicki configures events without Tyler |
+| `v2.1.0` | Member access / Yapp replacement — event-code guests, tiered identity |
+| `v2.2.0` | Event operations — attendance, signups, score lock, awards UI |
+| `v3.0.0` | Multi-tenant SaaS / native mobile / separate frontend client |
 
 ✅ **DECIDED:** SemVer — not calendar-based versioning.
 
@@ -554,11 +567,18 @@ Camp is June 20-25, 2026.
 | ~June 2 | v0.5.4 — Schedule Save Fix ✅ | Bug fix: EF shadow FK on `ScheduleEvent.CreatedByUser` caused circuit crash on save; explicit `HasForeignKey` + migration |
 | ~June 7 | v0.5.5 — UX Improvements ✅ | Dashboard landing page, incident enhancements, staff photos, Medical Staff role, sponsor improvements, schedule improvements (see §8.14) |
 | ~June 7 | v0.5.6 — Schedule Types + UX Polish ✅ | Table-driven ScheduleItemType, ScheduleEvent→ScheduleItem rename, LocationOther field, tel: E.164 fix, staff photo position, locations lightbox, password visibility, users sort/filter/search, admin nav section headers |
-| ~June 7-8 | v0.5.7 — Info Overhaul + UX Polish | PDF uploads for info pages, dashboard sponsor widget, staff/schedule UI fixes, transactions table style |
-| ~June 13-14 | v1.0.0-rc — Dry Run | Full dress rehearsal. Staff test on real devices. Projector verified. Issues logged. |
-| ~June 17 | v1.0.0 — Camp Ready | Dry run issues resolved. Production seeded. Staff briefed. Three-day buffer. |
-| June 20 | 🏕️ CAMP | Super Clot Not Party '26 is live |
-| Post-camp | v1.1.0 | Push notifications, member identity system, Azure SignalR backplane |
+| ~June 7-8 | **v0.5.7 — Info Overhaul + UX Polish** *(last v0.5.x)* | PDF uploads for info pages, dashboard sponsor widget, staff/schedule UI fixes, transactions table style, remember-me login, force-password-change flow |
+| ~June 13-14 | **v1.0.0-rc.1 — Dry Run Prep** | Reconnect UX overhaul (CSS-only modal, remove broken ConnectionIndicator, Blazor.start backoff config, visibilitychange PWA reload). End-to-end smoke test. |
+| ~June 14-19 | v1.0.0-rc.2 … rc.N — Dry Run Fixes | Defects found during dress rehearsal. Staff test on real devices. Projector verified. |
+| ~June 17 | **v1.0.0 — Camp Ready** | All rc issues resolved. Production seeded. Staff briefed. Three-day buffer before camp. |
+| June 20–25 | 🏕️ CAMP | Super Clot Not Party '26 is live |
+| Post-camp | **v1.0.1, v1.0.2 …** | Hotfixes / tweaks surfaced during camp week |
+| Post-camp | **v1.1.0 — Quick Wins + Arch Prep** | Forgot-password flow, response caching (EF second-level), neo-brutalist transactions table, awards UI, `IActiveEventService` wrapper (decouple `SeedService.Id.EventCcn2026` hardcoding) |
+| Post-camp | **v1.2.0 — Polish + v2 Foundations** | Audit log (who changed what), `ScheduleTemplate` entity + relative-offset items, automated smoke-test suite |
+| Post-camp | **v2.0.0 — Self-Service Event Designer** | Event CRUD in admin UI, event duplication, theme config UI, feature-flag capabilities UI, admin completion checklist; replaces all hardcoded seed-GUID references with runtime active-event lookups |
+| Post-camp | **v2.1.0 — Member Access (Yapp Replacement)** | Event-code guest access (`HARVEST26` style), `GuestAttendee` tiered identity (anonymous → named guest → full member), member-facing Hub read-only views for chapter events (Camp Harvest, Annual Meeting) |
+| Post-camp | **v2.2.0 — Event Operations** | Attendance tracking, schedule-item signup with capacity enforcement, score lock, transaction CSV export, winning-group celebration screen |
+| Future | **v3.0.0 horizon** | Multi-tenant SaaS (multiple chapters), native mobile shell (push notifications, offline-first), or separate React/WASM frontend — only when platform outgrows current Blazor Server architecture |
 
 ---
 
@@ -594,7 +614,9 @@ The 2021 `hbda_tracking` schema tracked individual attendee points across events
 
 > ✅ DECIDED: Admin pre-creates all staff accounts before camp. Fields: email, password (hashed), first name, last name, role (Admin/Staff/Display). Individual accounts provide per-volunteer audit trail on transactions.
 
-> ✅ DECIDED: 24-hour sliding sessions during camp. Graceful SignalR reconnect on connection drop (visible "Reconnecting..." indicator). On hard session expiry: prompt user to refresh or auto-refresh — never a blank/broken screen.
+> ✅ DECIDED: 24-hour sliding sessions during camp. Remember Me checkbox extends session (event duration if during event, 7 days otherwise). Force-password-change enforced on first login (`MustChangePassword` flag + `/change-password` page).
+
+> ✅ DECIDED: Graceful reconnect handled via CSS-only `components-reconnect-modal` (v1.0.0-rc.1). Three states: `.components-reconnect-show` (slim yellow banner, page stays visible), `.components-reconnect-failed` (red banner + Reload button + auto-reload countdown), `.components-reconnect-rejected` (auto-reload after ~1.5s — most common Railway cause). `Blazor.start()` configured with exponential backoff (maxRetries: 12). PWA: `visibilitychange` listener silently reloads if circuit already failed when user returns to app. The old `ConnectionIndicator` dot was removed — `invokeMethodAsync` cannot call back into .NET when the SignalR circuit is down, so it never turned red. Banner makes it redundant.
 
 > ✅ DECIDED: `/display` is a dedicated full-screen route opened as a separate browser window by Tyler — no PIN needed. See §1.13.
 

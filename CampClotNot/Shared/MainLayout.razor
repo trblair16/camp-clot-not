@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Nav
 @inject ThemeService ThemeSvc
+@inject AuthenticationStateProvider AuthState
 
 <ThemeHead />
 <MudThemeProvider IsDarkMode="false" Theme="@_mudTheme" />
@@ -19,6 +20,14 @@
 
 @code {
     private bool _showProjector;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var state = await AuthState.GetAuthenticationStateAsync();
+        if (state.User.HasClaim("mustChangePassword", "true"))
+            Nav.NavigateTo("/change-password", forceLoad: false);
+    }
 
     private static readonly MudTheme _mudTheme = new()
     {
