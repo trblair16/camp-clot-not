@@ -67,8 +67,23 @@
         .sched-form-grid { grid-template-columns: 1fr; }
         .sched-form-grid .full { grid-column: 1; }
     }
-    .sched-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
-    @@media (max-width: 700px) { .sched-item-actions { display: none; } }
+    .sched-row {
+        display: grid;
+        grid-template-columns: 85px 1fr;
+        padding: 10px 14px;
+        border-bottom: 3px solid #3a3a3a;
+        align-items: start;
+        gap: 0 10px;
+    }
+    .sched-col-type, .sched-col-loc, .sched-item-actions { display: none; }
+    .sched-inline-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
+    @@media (min-width: 700px) {
+        .sched-row { grid-template-columns: 85px 1fr 90px minmax(0, 180px) auto; align-items: start; }
+        .sched-col-type { display: flex; align-items: flex-start; padding-top: 2px; }
+        .sched-col-loc  { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; padding-top: 2px; }
+        .sched-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .sched-inline-meta { display: none; }
+    }
 </style>
 
 <div style="padding: 0 16px 100px">
@@ -129,15 +144,22 @@
                         var timeStr = ev.EndTime.HasValue
                             ? $"{ev.StartTime:h:mm tt} – {ev.EndTime.Value:h:mm tt}"
                             : ev.StartTime.ToString("h:mm tt");
-                        <div style="padding:10px 14px;border-bottom:3px solid #3a3a3a;display:flex;gap:10px;align-items:flex-start">
-                            <div style="min-width:80px;flex-shrink:0;font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);padding-top:2px">
+                        <div class="sched-row">
+                            @* Col 1: Time *@
+                            <div style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);padding-top:2px">
                                 @timeStr
                             </div>
-                            <div style="flex:1;min-width:0">
-                                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-                                    <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">
-                                        @(displayActivity?.Name ?? ev.Title)
-                                    </span>
+
+                            @* Col 2: Title + mobile inline meta + sub-details *@
+                            <div style="min-width:0">
+                                <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">
+                                    @(displayActivity?.Name ?? ev.Title)
+                                </span>
+                                @if (displayActivity is not null)
+                                {
+                                    <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@ev.Title</div>
+                                }
+                                <div class="sched-inline-meta">
                                     <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">
                                         @DisplayItemType(ev.ScheduleItemType)
                                     </span>
@@ -165,10 +187,6 @@
                                         <span style="font-size:12px;color:var(--text-mid);font-style:italic">@myAssignment.Note</span>
                                     }
                                 </div>
-                                @if (displayActivity is not null)
-                                {
-                                    <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@ev.Title</div>
-                                }
                                 @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                 {
                                     <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
@@ -206,6 +224,42 @@
                                     </details>
                                 }
                             </div>
+
+                            @* Col 3: Type badge (desktop only) *@
+                            <div class="sched-col-type">
+                                <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
+                                    @DisplayItemType(ev.ScheduleItemType)
+                                </span>
+                            </div>
+
+                            @* Col 4: Location (desktop only) *@
+                            <div class="sched-col-loc">
+                                @if (displayLocation is not null)
+                                {
+                                    @if (displayLocation.ImageData is not null)
+                                    {
+                                        <img src="/location-image/@displayLocation.LocationId"
+                                             style="width:32px;height:22px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle"
+                                             alt="@displayLocation.Name"
+                                             @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
+                                    }
+                                    <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540">
+                                        📍 @displayLocation.Name
+                                    </span>
+                                }
+                                @if (!string.IsNullOrEmpty(ev.LocationOther))
+                                {
+                                    <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540">
+                                        📍 @ev.LocationOther
+                                    </span>
+                                }
+                                @if (displayLocation is null && string.IsNullOrEmpty(ev.LocationOther) && !string.IsNullOrEmpty(myAssignment?.Note))
+                                {
+                                    <span style="font-size:12px;color:var(--text-mid);font-style:italic">@myAssignment.Note</span>
+                                }
+                            </div>
+
+                            @* Col 5: Actions (desktop only) *@
                             @if (_canEdit)
                             {
                                 <div class="sched-item-actions">

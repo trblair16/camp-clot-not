@@ -54,56 +54,61 @@
 
                     @if (_editing && _isAdmin)
                     {
-                        <textarea @bind="_editBody" rows="16"
-                                  style="width:100%;font-family:monospace;font-size:13px;padding:12px;border:3px solid var(--black);border-radius:8px;background:var(--bg-base);resize:vertical;box-sizing:border-box"></textarea>
+                        @if (IsPdfPage)
+                        {
+                            @* ── Emergency PDF page: PDF management only ── *@
+                            <div style="border:3px solid var(--black);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
+                                <div style="font-family:'Fredoka One',cursive;font-size:15px;margin-bottom:12px">📄 Emergency Contacts PDF</div>
 
-                        @* ── PDF section ── *@
-                        <div style="border:3px solid var(--black);border-radius:10px;padding:16px;margin-top:12px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
-                            <div style="font-family:'Fredoka One',cursive;font-size:15px;margin-bottom:12px">📄 PDF Attachment</div>
-
-                            @if (_activePage.PdfData is not null && !_fRemovePdf)
-                            {
-                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#F8F4EC;border:2px solid #E8E0CC;border-radius:6px">
-                                    <span style="font-size:13px;font-weight:700">PDF attached</span>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#D12B2B;cursor:pointer;margin-left:auto">
-                                        <input type="checkbox" @bind="_fRemovePdf" /> Remove PDF
-                                    </label>
-                                </div>
-                            }
-
-                            <div style="margin-bottom:12px">
-                                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">
-                                    @(_activePage.PdfData is not null && !_fRemovePdf ? "Replace PDF (optional)" : "Upload PDF (optional)")
-                                </div>
-                                <InputFile OnChange="HandlePdfUpload" accept=".pdf,application/pdf"
-                                           style="font-size:13px;font-family:'Nunito',sans-serif" />
-                                @if (!string.IsNullOrWhiteSpace(_pdfUploadError))
+                                @if (_activePage.PdfData is not null && !_fRemovePdf)
                                 {
-                                    <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_pdfUploadError</div>
+                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#F8F4EC;border:2px solid #E8E0CC;border-radius:6px">
+                                        <span style="font-size:13px;font-weight:700">PDF attached</span>
+                                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#D12B2B;cursor:pointer;margin-left:auto">
+                                            <input type="checkbox" @bind="_fRemovePdf" /> Remove PDF
+                                        </label>
+                                    </div>
                                 }
-                            </div>
 
-                            <div>
-                                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px">Visible to roles</div>
-                                <div style="display:flex;flex-wrap:wrap;gap:10px">
-                                    <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
-                                        <input type="checkbox" @bind="_fVisAdmin" /> Admin
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
-                                        <input type="checkbox" @bind="_fVisMedical" /> Medical Staff
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
-                                        <input type="checkbox" @bind="_fVisStaff" /> Staff
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
-                                        <input type="checkbox" @bind="_fVisVolunteer" /> Volunteer
-                                    </label>
+                                <div style="margin-bottom:12px">
+                                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">
+                                        @(_activePage.PdfData is not null && !_fRemovePdf ? "Replace PDF (optional)" : "Upload PDF")
+                                    </div>
+                                    <InputFile OnChange="HandlePdfUpload" accept=".pdf,application/pdf"
+                                               style="font-size:13px;font-family:'Nunito',sans-serif" />
+                                    @if (!string.IsNullOrWhiteSpace(_pdfUploadError))
+                                    {
+                                        <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_pdfUploadError</div>
+                                    }
                                 </div>
-                                <div style="font-size:11px;color:var(--text-light);margin-top:6px">
-                                    Leave all unchecked to hide the PDF from all roles (Admin always sees it).
+
+                                <div>
+                                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px">Visible to roles</div>
+                                    <div style="display:flex;flex-wrap:wrap;gap:10px">
+                                        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+                                            <input type="checkbox" @bind="_fVisAdmin" /> Admin
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+                                            <input type="checkbox" @bind="_fVisMedical" /> Medical Staff
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+                                            <input type="checkbox" @bind="_fVisStaff" /> Staff
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+                                            <input type="checkbox" @bind="_fVisVolunteer" /> Volunteer
+                                        </label>
+                                    </div>
+                                    <div style="font-size:11px;color:var(--text-light);margin-top:6px">
+                                        Leave all unchecked to hide from all roles (Admin always sees it).
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        }
+                        else
+                        {
+                            <textarea @bind="_editBody" rows="16"
+                                      style="width:100%;font-family:monospace;font-size:13px;padding:12px;border:3px solid var(--black);border-radius:8px;background:var(--bg-base);resize:vertical;box-sizing:border-box"></textarea>
+                        }
 
                         <div style="display:flex;gap:8px;margin-top:10px">
                             <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CancelEdit">Cancel</button>
@@ -112,11 +117,31 @@
                     }
                     else
                     {
-                        <div style="border:3px solid var(--black);border-radius:10px;padding:20px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
-                            @((MarkupString)Markdig.Markdown.ToHtml(_activePage.Body ?? ""))
-                        </div>
+                        @if (IsPdfPage)
+                        {
+                            @* ── Emergency PDF page view mode ── *@
+                            @if (_isAdmin)
+                            {
+                                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black);margin-bottom:12px">
+                                    <p style="font-size:13px;color:var(--text-mid);margin:0">
+                                        Upload the emergency contacts PDF here. Only the roles you select will be able to view it.
+                                        Admins can always see and manage the PDF.
+                                    </p>
+                                </div>
+                            }
+                            @if (_activePage.PdfData is null)
+                            {
+                                <p style="color:var(--text-light);font-family:'Fredoka One',cursive;padding:16px 0">No PDF uploaded yet.</p>
+                            }
+                        }
+                        else
+                        {
+                            <div style="border:3px solid var(--black);border-radius:10px;padding:20px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
+                                @((MarkupString)Markdig.Markdown.ToHtml(_activePage.Body ?? ""))
+                            </div>
+                        }
 
-                        @* ── PDF viewer ── *@
+                        @* ── PDF viewer (all pages that have a visible PDF) ── *@
                         @if (CanSeePdf)
                         {
                             <div style="margin-top:16px">
@@ -141,6 +166,9 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "slug")]
+    public string? SlugParam { get; set; }
+
     private bool _loading = true;
     private bool _isAdmin;
     private bool _editing;
@@ -161,6 +189,8 @@
     private bool _fVisVolunteer;
     private string _pdfUploadError = "";
 
+    private bool IsPdfPage => _activePage?.Slug == "emergency-pdf";
+
     private bool CanSeePdf =>
         _activePage?.PdfData is not null && (
             _isAdmin ||
@@ -177,10 +207,21 @@
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
 
         _pages = await InfoSvc.GetAllAsync();
-        var qs = System.Web.HttpUtility.ParseQueryString(new Uri(Nav.Uri).Query);
-        _activeSlug = qs["slug"] ?? _pages.FirstOrDefault()?.Slug ?? "";
-        _activePage = _pages.FirstOrDefault(p => p.Slug == _activeSlug);
+        UpdateActivePage();
         _loading = false;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_pages.Any())
+            UpdateActivePage();
+    }
+
+    private void UpdateActivePage()
+    {
+        _activeSlug = SlugParam ?? _pages.FirstOrDefault()?.Slug ?? "";
+        _activePage = _pages.FirstOrDefault(p => p.Slug == _activeSlug);
+        _editing = false;
     }
 
     private void StartEdit()
