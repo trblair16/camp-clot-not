@@ -5,13 +5,24 @@
 
 <PageTitle>Sponsors — Camp Clot Not</PageTitle>
 
+<style>
+    @@media (max-width: 699px) {
+        .admin-spo-form  { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
+        .admin-spo-table { display: none; }
+        .admin-spo-cards { display: flex; flex-direction: column; gap: 10px; }
+    }
+    @@media (min-width: 700px) {
+        .admin-spo-cards { display: none; }
+    }
+</style>
+
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🏆 Sponsors</h2>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Form panel ── *@
-        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
+        <div class="admin-spo-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
             <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Sponsor" : "Edit Sponsor")</h3>
 
             <div style="margin-bottom:14px">
@@ -94,6 +105,30 @@
             }
             else
             {
+                <div class="admin-spo-cards">
+                    @foreach (var s in _sponsors)
+                    {
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                                <img src="@LogoSrc(s)" alt="@s.Name"
+                                     style="height:36px;width:48px;object-fit:contain;border:1px solid #E8E0CC;border-radius:4px;background:white;padding:2px;flex-shrink:0" />
+                                <div style="min-width:0">
+                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">@s.Name</div>
+                                    @if (!string.IsNullOrWhiteSpace(s.Website))
+                                    {
+                                        <div style="font-size:11px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@s.Website</div>
+                                    }
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(s)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(s)">Del</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="admin-spo-table">
                 <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">Drag rows to reorder. Changes save immediately.</div>
                 <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
@@ -141,6 +176,7 @@
                             }
                         </tbody>
                     </table>
+                </div>
                 </div>
             }
         </div>
