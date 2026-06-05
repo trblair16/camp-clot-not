@@ -48,6 +48,7 @@ try
             opt.SlidingExpiration = true;
         });
     builder.Services.AddAuthorization();
+    builder.Services.AddMemoryCache();
 
     // Repositories
     builder.Services.AddScoped<IGroupRepository, GroupRepository>();

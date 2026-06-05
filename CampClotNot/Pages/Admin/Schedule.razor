@@ -205,7 +205,11 @@
 
         @* ── Table ── *@
         <div style="flex:1;min-width:300px">
-            @if (!_loading && !_events.Any())
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_events.Any())
             {
                 <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No events yet. Add the first one →</p>
             }

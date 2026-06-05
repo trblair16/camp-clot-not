@@ -76,7 +76,13 @@
 
 @if (_report is null)
 {
-    @if (!_loading)
+    @if (_loading)
+    {
+        <div style="padding:40px;text-align:center">
+            <MudProgressCircular Indeterminate="true" />
+        </div>
+    }
+    else
     {
         <div style="padding:40px;text-align:center;font-family:'Fredoka One',cursive">Report not found.</div>
     }

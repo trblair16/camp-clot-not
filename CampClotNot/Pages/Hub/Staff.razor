@@ -57,7 +57,11 @@
     }
 
     @* ── Directory cards ── *@
-    @if (!_loading && !_members.Any())
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_members.Any())
     {
         <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No staff listed yet.</p>
     }

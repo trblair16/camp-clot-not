@@ -1,6 +1,7 @@
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
@@ -25,42 +26,50 @@ public record ScheduleItemDto(
     string? LocationOther = null
 );
 
-public class ScheduleService(IDbContextFactory<AppDbContext> factory)
+public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
 {
     public async Task<List<ScheduleItem>> GetByEventAsync(Guid campEventId)
     {
-        using var db = factory.CreateDbContext();
-        return await db.ScheduleItems
-            .Where(e => e.CampEventId == campEventId)
-            .Include(e => e.ScheduleItemType)
-            .Include(e => e.Location)
-            .Include(e => e.Activity)
-            .Include(e => e.ItemGroups)
-                .ThenInclude(eg => eg.Group)
-            .Include(e => e.ItemGroups)
-                .ThenInclude(eg => eg.Activity)
-            .Include(e => e.ItemGroups)
-                .ThenInclude(eg => eg.Location)
-            .OrderBy(e => e.CampDay).ThenBy(e => e.StartTime)
-            .ToListAsync();
+        return await cache.GetOrCreateAsync($"sched.ev.{campEventId}", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
+            using var db = factory.CreateDbContext();
+            return await db.ScheduleItems
+                .Where(e => e.CampEventId == campEventId)
+                .Include(e => e.ScheduleItemType)
+                .Include(e => e.Location)
+                .Include(e => e.Activity)
+                .Include(e => e.ItemGroups)
+                    .ThenInclude(eg => eg.Group)
+                .Include(e => e.ItemGroups)
+                    .ThenInclude(eg => eg.Activity)
+                .Include(e => e.ItemGroups)
+                    .ThenInclude(eg => eg.Location)
+                .OrderBy(e => e.CampDay).ThenBy(e => e.StartTime)
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<List<ScheduleItem>> GetForDayAsync(Guid campEventId, DateOnly day)
     {
-        using var db = factory.CreateDbContext();
-        return await db.ScheduleItems
-            .Where(e => e.CampEventId == campEventId && e.CampDay == day)
-            .Include(e => e.ScheduleItemType)
-            .Include(e => e.Location)
-            .Include(e => e.Activity)
-            .Include(e => e.ItemGroups)
-                .ThenInclude(eg => eg.Group)
-            .Include(e => e.ItemGroups)
-                .ThenInclude(eg => eg.Activity)
-            .Include(e => e.ItemGroups)
-                .ThenInclude(eg => eg.Location)
-            .OrderBy(e => e.StartTime)
-            .ToListAsync();
+        return await cache.GetOrCreateAsync($"sched.day.{campEventId}.{day:yyyyMMdd}", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
+            using var db = factory.CreateDbContext();
+            return await db.ScheduleItems
+                .Where(e => e.CampEventId == campEventId && e.CampDay == day)
+                .Include(e => e.ScheduleItemType)
+                .Include(e => e.Location)
+                .Include(e => e.Activity)
+                .Include(e => e.ItemGroups)
+                    .ThenInclude(eg => eg.Group)
+                .Include(e => e.ItemGroups)
+                    .ThenInclude(eg => eg.Activity)
+                .Include(e => e.ItemGroups)
+                    .ThenInclude(eg => eg.Location)
+                .OrderBy(e => e.StartTime)
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<ScheduleItem> UpsertAsync(ScheduleItemDto dto, Guid userId)
@@ -70,6 +79,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
             .Include(e => e.ItemGroups)
             .FirstOrDefaultAsync(e => e.ScheduleItemId == dto.ScheduleItemId);
 
+        ScheduleItem result;
         if (existing is null)
         {
             var ev = new ScheduleItem
@@ -94,7 +104,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
                 ItemGroups         = dto.Assignments
                     .Select(a => new ScheduleItemGroup
                     {
-                        ScheduleItemId = Guid.Empty, // set by EF after insert
+                        ScheduleItemId = Guid.Empty,
                         GroupId        = a.GroupId,
                         ActivityId     = a.ActivityId,
                         LocationId     = a.LocationId,
@@ -103,7 +113,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
             };
             db.ScheduleItems.Add(ev);
             await db.SaveChangesAsync();
-            return ev;
+            result = ev;
         }
         else
         {
@@ -134,8 +144,12 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
                 }).ToList();
 
             await db.SaveChangesAsync();
-            return existing;
+            result = existing;
         }
+
+        cache.Remove($"sched.ev.{dto.CampEventId}");
+        cache.Remove($"sched.day.{dto.CampEventId}.{dto.CampDay:yyyyMMdd}");
+        return result;
     }
 
     public async Task DeleteAsync(Guid scheduleItemId)
@@ -145,8 +159,12 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory)
             .Include(e => e.ItemGroups)
             .FirstOrDefaultAsync(e => e.ScheduleItemId == scheduleItemId);
         if (ev is null) return;
+        var eventId = ev.CampEventId;
+        var day     = ev.CampDay;
         db.ScheduleItemGroups.RemoveRange(ev.ItemGroups);
         db.ScheduleItems.Remove(ev);
         await db.SaveChangesAsync();
+        cache.Remove($"sched.ev.{eventId}");
+        cache.Remove($"sched.day.{eventId}.{day:yyyyMMdd}");
     }
 }
