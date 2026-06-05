@@ -73,7 +73,11 @@
 
         @* ── Table ── *@
         <div style="flex:1;min-width:300px">
-            @if (!_loading && !_types.Any())
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_types.Any())
             {
                 <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No types yet. Add the first one →</p>
             }

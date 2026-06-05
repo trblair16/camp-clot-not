@@ -95,7 +95,11 @@
 
         @* ── Table ── *@
         <div style="flex:1;min-width:240px">
-            @if (!_loading && !_sponsors.Any())
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_sponsors.Any())
             {
                 <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No sponsors yet. Add the first one →</p>
             }

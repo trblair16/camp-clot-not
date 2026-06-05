@@ -92,7 +92,11 @@
 
         @* ── Users table ── *@
         <div style="flex:1;min-width:260px">
-            @if (!_loading && !_users.Any())
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_users.Any())
             {
                 <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No users yet.</p>
             }

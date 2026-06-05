@@ -11,7 +11,11 @@
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🚨 Incident Reports</h2>
 
-    @if (!_loading && !_reports.Any())
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_reports.Any())
     {
         <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No incident reports submitted yet.</p>
     }

@@ -114,7 +114,11 @@
             🏆 Standings
         </div>
 
-        @if (!_loading)
+        @if (_loading)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Warning" />
+        }
+        else
         {
             @foreach (var entry in _ranked)
             {
