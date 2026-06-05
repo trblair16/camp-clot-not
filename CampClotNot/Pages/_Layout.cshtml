@@ -58,8 +58,10 @@
                 var v = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
                 document.documentElement.style.setProperty('--sai-b', v + 'px');
             }
-            snapSAI();
+            snapSAI();                                   // sync: before first paint
+            requestAnimationFrame(snapSAI);              // 1 frame later: catches iOS late eval
             window.addEventListener('resize', snapSAI);
+            window.addEventListener('orientationchange', function () { setTimeout(snapSAI, 100); });
             document.addEventListener('visibilitychange', function () {
                 if (document.visibilityState === 'visible') snapSAI();
             });

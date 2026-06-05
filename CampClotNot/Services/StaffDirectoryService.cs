@@ -1,30 +1,41 @@
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
-public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory)
+public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
 {
+    private static string AllKey(Guid eventId)     => $"staff.all.{eventId}";
+    private static string VisibleKey(Guid eventId) => $"staff.vis.{eventId}";
+
     public async Task<List<StaffMember>> GetVisibleAsync(Guid campEventId)
     {
-        using var db = factory.CreateDbContext();
-        return await db.StaffMembers
-            .Where(s => s.CampEventId == campEventId && s.IsVisible)
-            .OrderBy(s => s.SortOrder)
-            .ToListAsync();
+        return await cache.GetOrCreateAsync(VisibleKey(campEventId), async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            using var db = factory.CreateDbContext();
+            return await db.StaffMembers
+                .Where(s => s.CampEventId == campEventId && s.IsVisible)
+                .OrderBy(s => s.SortOrder)
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<List<StaffMember>> GetAllAsync(Guid campEventId)
     {
-        using var db = factory.CreateDbContext();
-        return await db.StaffMembers
-            .Where(s => s.CampEventId == campEventId)
-            .OrderBy(s => s.SortOrder)
-            .ToListAsync();
+        return await cache.GetOrCreateAsync(AllKey(campEventId), async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            using var db = factory.CreateDbContext();
+            return await db.StaffMembers
+                .Where(s => s.CampEventId == campEventId)
+                .OrderBy(s => s.SortOrder)
+                .ToListAsync();
+        }) ?? [];
     }
 
-    // Users eligible to be imported: active Admin/Staff/Volunteer not already in this event's directory
     public async Task<List<User>> GetEligibleUsersAsync(Guid campEventId)
     {
         using var db = factory.CreateDbContext();
@@ -65,6 +76,7 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory)
             LinkedUserId  = userId
         });
         await db.SaveChangesAsync();
+        InvalidateEvent(campEventId);
     }
 
     public async Task UpsertAsync(StaffMember member)
@@ -95,6 +107,7 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory)
             existing.PhotoObjectPosition = member.PhotoObjectPosition;
         }
         await db.SaveChangesAsync();
+        InvalidateEvent(member.CampEventId);
     }
 
     public async Task DeleteAsync(Guid staffMemberId)
@@ -102,8 +115,10 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory)
         using var db = factory.CreateDbContext();
         var member = await db.StaffMembers.FindAsync(staffMemberId);
         if (member is null) return;
+        var eventId = member.CampEventId;
         db.StaffMembers.Remove(member);
         await db.SaveChangesAsync();
+        InvalidateEvent(eventId);
     }
 
     public async Task ReorderAsync(List<Guid> orderedIds)
@@ -118,5 +133,13 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory)
             if (m is not null) m.SortOrder = i;
         }
         await db.SaveChangesAsync();
+        if (members.Count > 0)
+            InvalidateEvent(members[0].CampEventId);
+    }
+
+    private void InvalidateEvent(Guid campEventId)
+    {
+        cache.Remove(AllKey(campEventId));
+        cache.Remove(VisibleKey(campEventId));
     }
 }

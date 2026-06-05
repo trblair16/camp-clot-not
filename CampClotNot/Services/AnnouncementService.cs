@@ -1,31 +1,37 @@
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
-public class AnnouncementService(IDbContextFactory<AppDbContext> factory)
+public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
 {
+    private const string FeedKey = "ann.feed";
+
     public async Task<List<Announcement>> GetFeedAsync()
     {
-        using var db = factory.CreateDbContext();
-        var now = DateTime.UtcNow;
+        return await cache.GetOrCreateAsync(FeedKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20);
+            using var db = factory.CreateDbContext();
+            var now = DateTime.UtcNow;
 
-        var expired = await db.Announcements
-            .Where(a => !a.IsArchived && a.ExpiresAt != null && a.ExpiresAt <= now)
-            .ToListAsync();
-        foreach (var a in expired) a.IsArchived = true;
-        if (expired.Count > 0) await db.SaveChangesAsync();
+            var expired = await db.Announcements
+                .Where(a => !a.IsArchived && a.ExpiresAt != null && a.ExpiresAt <= now)
+                .ToListAsync();
+            foreach (var a in expired) a.IsArchived = true;
+            if (expired.Count > 0) await db.SaveChangesAsync();
 
-        return await db.Announcements
-            .Where(a => !a.IsArchived)
-            .Include(a => a.Author)
-            .OrderByDescending(a => a.IsPinned)
-            .ThenByDescending(a => a.CreatedAt)
-            .ToListAsync();
+            return await db.Announcements
+                .Where(a => !a.IsArchived)
+                .Include(a => a.Author)
+                .OrderByDescending(a => a.IsPinned)
+                .ThenByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }) ?? [];
     }
 
-    // Stub for future Dashboard banner — not called from Dashboard in v0.5.0
     public async Task<Announcement?> GetLatestPinnedAsync()
     {
         using var db = factory.CreateDbContext();
@@ -51,6 +57,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory)
         };
         db.Announcements.Add(announcement);
         await db.SaveChangesAsync();
+        cache.Remove(FeedKey);
         return announcement;
     }
 
@@ -61,6 +68,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory)
         if (a is null) return;
         a.IsPinned = isPinned;
         await db.SaveChangesAsync();
+        cache.Remove(FeedKey);
     }
 
     public async Task ArchiveAsync(Guid id)
@@ -70,5 +78,6 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory)
         if (a is null) return;
         a.IsArchived = true;
         await db.SaveChangesAsync();
+        cache.Remove(FeedKey);
     }
 }

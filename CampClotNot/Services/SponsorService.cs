@@ -1,11 +1,14 @@
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
-public class SponsorService(IDbContextFactory<AppDbContext> factory)
+public class SponsorService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
 {
+    private static string ListKey(Guid eventId) => $"spon.{eventId}";
+
     public async Task<Sponsor?> GetByIdAsync(Guid sponsorId)
     {
         using var db = factory.CreateDbContext();
@@ -14,12 +17,16 @@ public class SponsorService(IDbContextFactory<AppDbContext> factory)
 
     public async Task<List<Sponsor>> GetAllForEventAsync(Guid eventId)
     {
-        using var db = factory.CreateDbContext();
-        return await db.Sponsors
-            .Where(s => s.EventId == eventId)
-            .OrderBy(s => s.SortOrder)
-            .ThenBy(s => s.Name)
-            .ToListAsync();
+        return await cache.GetOrCreateAsync(ListKey(eventId), async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            using var db = factory.CreateDbContext();
+            return await db.Sponsors
+                .Where(s => s.EventId == eventId)
+                .OrderBy(s => s.SortOrder)
+                .ThenBy(s => s.Name)
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<Sponsor> UpsertAsync(Sponsor s)
@@ -46,6 +53,7 @@ public class SponsorService(IDbContextFactory<AppDbContext> factory)
             }
         }
         await db.SaveChangesAsync();
+        cache.Remove(ListKey(s.EventId));
         return s;
     }
 
@@ -60,6 +68,8 @@ public class SponsorService(IDbContextFactory<AppDbContext> factory)
             if (match is not null) match.SortOrder = i;
         }
         await db.SaveChangesAsync();
+        if (ordered.Count > 0)
+            cache.Remove(ListKey(ordered[0].EventId));
     }
 
     public async Task DeleteAsync(Guid sponsorId)
@@ -67,7 +77,9 @@ public class SponsorService(IDbContextFactory<AppDbContext> factory)
         using var db = factory.CreateDbContext();
         var s = await db.Sponsors.FindAsync(sponsorId);
         if (s is null) return;
+        var eventId = s.EventId;
         db.Sponsors.Remove(s);
         await db.SaveChangesAsync();
+        cache.Remove(ListKey(eventId));
     }
 }
