@@ -137,13 +137,8 @@
         background: var(--bg-base);
         border-top: 4px solid var(--black);
         z-index: 40;
-        padding-bottom: env(safe-area-inset-bottom);
+        padding-bottom: var(--sai-b, 0px);
         align-items: flex-start;
-    }
-    /* In PWA standalone mode use a literal pixel value so iOS never
-       re-evaluates env() mid-render and causes the bar to jump. */
-    @@media (display-mode: standalone) {
-        .nav-bottom-bar { padding-bottom: 34px; }
     }
     .nav-tab {
         flex: 1;
@@ -175,7 +170,7 @@
     .nav-admin-sheet,
     .nav-game-sheet {
         position: fixed;
-        bottom: calc(60px + env(safe-area-inset-bottom));
+        bottom: calc(60px + var(--sai-b, 0px));
         left: 0;
         right: 0;
         background: var(--panel-bg);

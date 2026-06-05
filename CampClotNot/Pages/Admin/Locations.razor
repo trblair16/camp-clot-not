@@ -73,7 +73,11 @@
 
         @* ── Table ── *@
         <div style="flex:1;min-width:240px">
-            @if (!_loading && !_locations.Any())
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_locations.Any())
             {
                 <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No locations yet. Add the first one →</p>
             }
