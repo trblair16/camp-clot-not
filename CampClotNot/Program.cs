@@ -68,6 +68,7 @@ try
     builder.Services.AddScoped<ScheduleItemTypeService>();
     builder.Services.AddScoped<IncidentReportService>();
     builder.Services.AddScoped<SponsorService>();
+    builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<SeedService>();
 
@@ -211,6 +212,22 @@ try
                 return Results.Forbid();
         }
         return Results.File(page.PdfData, page.PdfContentType ?? "application/pdf");
+    }).RequireAuthorization();
+
+    app.MapGet("/hub/documents/{id:guid}/pdf", async (Guid id, HttpContext ctx, DocumentService svc) =>
+    {
+        var doc = await svc.GetByIdAsync(id);
+        if (doc is null) return Results.NotFound();
+        if (!string.IsNullOrEmpty(doc.VisibleRoles))
+        {
+            var allowed = doc.VisibleRoles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var userRoles = ctx.User.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value);
+            if (!ctx.User.IsInRole("Admin") && !userRoles.Any(r => allowed.Contains(r, StringComparer.OrdinalIgnoreCase)))
+                return Results.Forbid();
+        }
+        return Results.File(doc.Data, doc.ContentType, doc.OriginalFileName ?? $"{doc.Title}.pdf");
     }).RequireAuthorization();
 
     app.MapHub<LiveHub>("/livehub");

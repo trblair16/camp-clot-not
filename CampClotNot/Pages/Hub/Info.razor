@@ -1,6 +1,7 @@
 @page "/hub/info"
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject InfoPageService InfoSvc
+@inject DocumentService DocSvc
 @inject AuthenticationStateProvider Auth
 @inject NavigationManager Nav
 
@@ -48,37 +49,33 @@
                         <h2 style="font-family:'Fredoka One',cursive;font-size:20px;margin:0">@_activePage.IconEmoji @_activePage.Title</h2>
                         @if (_isAdmin && !_editing)
                         {
-                            <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="StartEdit">Edit</button>
+                            <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="StartEdit">
+                                @(IsDocumentsPage ? "Upload Document" : "Edit")
+                            </button>
                         }
                     </div>
 
-                    @if (_editing && _isAdmin)
+                    @* ══ DOCUMENTS tab ══ *@
+                    @if (IsDocumentsPage)
                     {
-                        @if (IsPdfPage)
+                        @if (_editing && _isAdmin)
                         {
-                            @* ── Emergency PDF page: PDF management only ── *@
-                            <div style="border:3px solid var(--black);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
-                                <div style="font-family:'Fredoka One',cursive;font-size:15px;margin-bottom:12px">📄 Emergency Contacts PDF</div>
-
-                                @if (_activePage.PdfData is not null && !_fRemovePdf)
-                                {
-                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#F8F4EC;border:2px solid #E8E0CC;border-radius:6px">
-                                        <span style="font-size:13px;font-weight:700">PDF attached</span>
-                                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#D12B2B;cursor:pointer;margin-left:auto">
-                                            <input type="checkbox" @bind="_fRemovePdf" /> Remove PDF
-                                        </label>
-                                    </div>
-                                }
+                            <div style="border:3px solid var(--black);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black);margin-bottom:16px">
+                                <div style="font-family:'Fredoka One',cursive;font-size:15px;margin-bottom:12px">📤 Upload New Document</div>
 
                                 <div style="margin-bottom:12px">
-                                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">
-                                        @(_activePage.PdfData is not null && !_fRemovePdf ? "Replace PDF (optional)" : "Upload PDF")
-                                    </div>
-                                    <InputFile OnChange="HandlePdfUpload" accept=".pdf,application/pdf"
+                                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Title</div>
+                                    <input type="text" @bind="_fDocTitle" placeholder="e.g. Emergency Contacts"
+                                           style="width:100%;font-size:14px;font-family:'Nunito',sans-serif;padding:8px 12px;border:3px solid var(--black);border-radius:6px;background:var(--bg-base);box-sizing:border-box" />
+                                </div>
+
+                                <div style="margin-bottom:12px">
+                                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">PDF File</div>
+                                    <InputFile OnChange="HandleDocUpload" accept=".pdf,application/pdf"
                                                style="font-size:13px;font-family:'Nunito',sans-serif" />
-                                    @if (!string.IsNullOrWhiteSpace(_pdfUploadError))
+                                    @if (!string.IsNullOrWhiteSpace(_docUploadError))
                                     {
-                                        <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_pdfUploadError</div>
+                                        <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_docUploadError</div>
                                     }
                                 </div>
 
@@ -86,78 +83,154 @@
                                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px">Visible to roles</div>
                                     <div style="display:flex;flex-wrap:wrap;gap:10px">
                                         <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
-                                            <input type="checkbox" @bind="_fVisAdmin" /> Admin
+                                            <input type="checkbox" @bind="_fDocVisAdmin" /> Admin
                                         </label>
                                         <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
-                                            <input type="checkbox" @bind="_fVisMedical" /> Medical Staff
+                                            <input type="checkbox" @bind="_fDocVisMedical" /> Medical Staff
                                         </label>
                                         <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
-                                            <input type="checkbox" @bind="_fVisStaff" /> Staff
+                                            <input type="checkbox" @bind="_fDocVisStaff" /> Staff
                                         </label>
                                         <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
-                                            <input type="checkbox" @bind="_fVisVolunteer" /> Volunteer
+                                            <input type="checkbox" @bind="_fDocVisVolunteer" /> Volunteer
                                         </label>
                                     </div>
                                     <div style="font-size:11px;color:var(--text-light);margin-top:6px">
-                                        Leave all unchecked to hide from all roles (Admin always sees it).
+                                        Leave all unchecked to restrict to Admin only.
                                     </div>
                                 </div>
                             </div>
+
+                            <div style="display:flex;gap:8px;margin-bottom:20px">
+                                <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CancelEdit">Cancel</button>
+                                <button class="ccn-btn" @onclick="SaveEdit"
+                                        disabled="@(string.IsNullOrWhiteSpace(_fDocTitle) || _fDocData is null)">
+                                    Upload
+                                </button>
+                            </div>
+                        }
+
+                        @* Document list — always visible on documents tab *@
+                        @if (!_documents.Any(CanSeeDocument))
+                        {
+                            <p style="color:var(--text-light);font-family:'Fredoka One',cursive;padding:16px 0">
+                                @(_isAdmin ? "No documents uploaded yet." : "No documents available.")
+                            </p>
                         }
                         else
                         {
-                            <textarea @bind="_editBody" rows="16"
-                                      style="width:100%;font-family:monospace;font-size:13px;padding:12px;border:3px solid var(--black);border-radius:8px;background:var(--bg-base);resize:vertical;box-sizing:border-box"></textarea>
+                            <div style="border:3px solid var(--black);border-radius:10px;overflow:hidden;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg)">
+                                @foreach (var doc in _documents.Where(CanSeeDocument))
+                                {
+                                    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid #E8E0CC;flex-wrap:wrap">
+                                        <span style="font-family:'Fredoka One',cursive;font-size:14px;flex:1;min-width:120px">📄 @doc.Title</span>
+                                        <span style="font-size:11px;color:var(--text-light);flex-shrink:0">
+                                            @doc.UploadedAt.ToLocalTime().ToString("MMM d, yyyy")
+                                        </span>
+                                        <a href="/hub/documents/@doc.DocumentId/pdf" target="_blank"
+                                           class="ccn-btn" style="font-size:12px;padding:4px 10px;text-decoration:none;flex-shrink:0">
+                                            Open
+                                        </a>
+                                        @if (_isAdmin)
+                                        {
+                                            <button class="ccn-btn" style="font-size:12px;padding:4px 10px;background:#D12B2B;flex-shrink:0"
+                                                    @onclick="() => DeleteDocument(doc.DocumentId)">
+                                                Delete
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
                         }
-
-                        <div style="display:flex;gap:8px;margin-top:10px">
-                            <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CancelEdit">Cancel</button>
-                            <button class="ccn-btn" @onclick="SaveEdit">Save</button>
-                        </div>
                     }
+
+                    @* ══ REGULAR + MEDICAL tabs ══ *@
                     else
                     {
-                        @if (IsPdfPage)
+                        @if (_editing && _isAdmin)
                         {
-                            @* ── Emergency PDF page view mode ── *@
-                            @if (_isAdmin)
+                            <textarea @bind="_editBody" rows="16"
+                                      style="width:100%;font-family:monospace;font-size:13px;padding:12px;border:3px solid var(--black);border-radius:8px;background:var(--bg-base);resize:vertical;box-sizing:border-box"></textarea>
+
+                            @if (IsMedicalPage)
                             {
-                                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black);margin-bottom:12px">
-                                    <p style="font-size:13px;color:var(--text-mid);margin:0">
-                                        Upload the emergency contacts PDF here. Only the roles you select will be able to view it.
-                                        Admins can always see and manage the PDF.
-                                    </p>
+                                @* ── Emergency contacts PDF section below the textarea ── *@
+                                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;margin-top:12px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
+                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;margin-bottom:12px">📄 Emergency Contacts PDF</div>
+
+                                    @if (_activePage.PdfData is not null && !_fRemovePdf)
+                                    {
+                                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#F8F4EC;border:2px solid #E8E0CC;border-radius:6px">
+                                            <span style="font-size:13px;font-weight:700">PDF attached</span>
+                                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#D12B2B;cursor:pointer;margin-left:auto">
+                                                <input type="checkbox" @bind="_fRemovePdf" /> Remove PDF
+                                            </label>
+                                        </div>
+                                    }
+
+                                    <div style="margin-bottom:12px">
+                                        <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">
+                                            @(_activePage.PdfData is not null && !_fRemovePdf ? "Replace PDF (optional)" : "Upload PDF (optional)")
+                                        </div>
+                                        <InputFile OnChange="HandlePdfUpload" accept=".pdf,application/pdf"
+                                                   style="font-size:13px;font-family:'Nunito',sans-serif" />
+                                        @if (!string.IsNullOrWhiteSpace(_pdfUploadError))
+                                        {
+                                            <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_pdfUploadError</div>
+                                        }
+                                    </div>
+
+                                    <div>
+                                        <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px">Visible to roles</div>
+                                        <div style="display:flex;flex-wrap:wrap;gap:10px">
+                                            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" @bind="_fVisAdmin" /> Admin
+                                            </label>
+                                            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" @bind="_fVisMedical" /> Medical Staff
+                                            </label>
+                                            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" @bind="_fVisStaff" /> Staff
+                                            </label>
+                                            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" @bind="_fVisVolunteer" /> Volunteer
+                                            </label>
+                                        </div>
+                                        <div style="font-size:11px;color:var(--text-light);margin-top:6px">
+                                            Leave all unchecked to restrict to Admin only.
+                                        </div>
+                                    </div>
                                 </div>
                             }
-                            @if (_activePage.PdfData is null)
-                            {
-                                <p style="color:var(--text-light);font-family:'Fredoka One',cursive;padding:16px 0">No PDF uploaded yet.</p>
-                            }
+
+                            <div style="display:flex;gap:8px;margin-top:10px">
+                                <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CancelEdit">Cancel</button>
+                                <button class="ccn-btn" @onclick="SaveEdit">Save</button>
+                            </div>
                         }
                         else
                         {
                             <div style="border:3px solid var(--black);border-radius:10px;padding:20px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
                                 @((MarkupString)Markdig.Markdown.ToHtml(_activePage.Body ?? ""))
                             </div>
-                        }
 
-                        @* ── PDF viewer (all pages that have a visible PDF) ── *@
-                        @if (CanSeePdf)
-                        {
-                            <div style="margin-top:16px">
-                                <a href="/hub/info/@_activePage.Slug/pdf" target="_blank"
-                                   class="ccn-btn" style="font-size:13px;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
-                                    📄 Open PDF
-                                </a>
-                                <iframe src="/hub/info/@_activePage.Slug/pdf"
-                                        style="display:block;width:100%;height:520px;border:3px solid var(--black);border-radius:8px;box-shadow:3px 3px 0 var(--black);margin-top:10px"
-                                        title="@_activePage.Title PDF"></iframe>
-                            </div>
-                        }
+                            @if (IsMedicalPage && CanSeePdf)
+                            {
+                                <div style="margin-top:16px">
+                                    <a href="/hub/info/@_activePage.Slug/pdf" target="_blank"
+                                       class="ccn-btn" style="font-size:13px;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+                                        📄 Open Emergency Contacts PDF
+                                    </a>
+                                    <iframe src="/hub/info/@_activePage.Slug/pdf"
+                                            style="display:block;width:100%;height:520px;border:3px solid var(--black);border-radius:8px;box-shadow:3px 3px 0 var(--black);margin-top:10px"
+                                            title="Emergency Contacts PDF"></iframe>
+                                </div>
+                            }
 
-                        <p style="font-size:12px;color:var(--text-light);margin-top:8px">
-                            Last updated @_activePage.UpdatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
-                        </p>
+                            <p style="font-size:12px;color:var(--text-light);margin-top:8px">
+                                Last updated @_activePage.UpdatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                            </p>
+                        }
                     }
                 }
             </div>
@@ -179,7 +252,7 @@
     private string _activeSlug = "";
     private string _editBody = "";
 
-    // PDF edit state
+    // Medical-page PDF edit state
     private byte[]? _fPdfData;
     private string? _fPdfContentType;
     private bool _fRemovePdf;
@@ -189,7 +262,19 @@
     private bool _fVisVolunteer;
     private string _pdfUploadError = "";
 
-    private bool IsPdfPage => _activePage?.Slug == "emergency-pdf";
+    // Documents-tab state
+    private List<CampDocument> _documents = new();
+    private string _fDocTitle = "";
+    private byte[]? _fDocData;
+    private string? _fDocFileName;
+    private bool _fDocVisAdmin;
+    private bool _fDocVisMedical;
+    private bool _fDocVisStaff;
+    private bool _fDocVisVolunteer;
+    private string _docUploadError = "";
+
+    private bool IsMedicalPage   => _activePage?.Slug == "medical";
+    private bool IsDocumentsPage => _activePage?.Slug == "documents";
 
     private bool CanSeePdf =>
         _activePage?.PdfData is not null && (
@@ -198,6 +283,12 @@
              _activePage.PdfVisibleRoles.Split(',', StringSplitOptions.TrimEntries)
                  .Any(r => r.Equals(_userRole, StringComparison.OrdinalIgnoreCase)))
         );
+
+    private bool CanSeeDocument(CampDocument doc) =>
+        _isAdmin ||
+        (!string.IsNullOrEmpty(doc.VisibleRoles) &&
+         doc.VisibleRoles.Split(',', StringSplitOptions.TrimEntries)
+             .Any(r => r.Equals(_userRole, StringComparison.OrdinalIgnoreCase)));
 
     protected override async Task OnInitializedAsync()
     {
@@ -208,13 +299,17 @@
 
         _pages = await InfoSvc.GetAllAsync();
         UpdateActivePage();
+        if (IsDocumentsPage)
+            _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
         _loading = false;
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        if (_pages.Any())
-            UpdateActivePage();
+        if (!_pages.Any()) return;
+        UpdateActivePage();
+        if (IsDocumentsPage)
+            _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
     }
 
     private void UpdateActivePage()
@@ -229,6 +324,9 @@
         _editBody = _activePage?.Body ?? "";
         LoadPdfVisibility(_activePage?.PdfVisibleRoles);
         _fPdfData = null; _fPdfContentType = null; _fRemovePdf = false; _pdfUploadError = "";
+        _fDocTitle = ""; _fDocData = null; _fDocFileName = null;
+        _fDocVisAdmin = _fDocVisMedical = _fDocVisStaff = _fDocVisVolunteer = false;
+        _docUploadError = "";
         _editing = true;
     }
 
@@ -236,24 +334,44 @@
     {
         _editing = false;
         _fPdfData = null; _fPdfContentType = null; _fRemovePdf = false; _pdfUploadError = "";
+        _fDocTitle = ""; _fDocData = null; _fDocFileName = null; _docUploadError = "";
     }
 
     private async Task SaveEdit()
     {
         if (_activePage is null) return;
 
+        if (IsDocumentsPage)
+        {
+            if (string.IsNullOrWhiteSpace(_fDocTitle) || _fDocData is null) return;
+            var docRoles = ComputeDocVisibleRoles();
+            await DocSvc.AddAsync(SeedService.Id.EventCcn2026, _fDocTitle, _fDocFileName, _fDocData, "application/pdf", docRoles, _userId);
+            _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+            CancelEdit();
+            return;
+        }
+
         await InfoSvc.UpdateBodyAsync(_activePage.PageId, _editBody, _userId);
         _activePage.Body = _editBody;
 
-        var newPdfData        = _fRemovePdf ? null : (_fPdfData ?? _activePage.PdfData);
-        var newPdfContentType = _fRemovePdf ? null : (_fPdfData is not null ? _fPdfContentType : _activePage.PdfContentType);
-        var newRoles          = ComputePdfVisibleRoles();
-        await InfoSvc.UpdatePdfAsync(_activePage.PageId, newPdfData, newPdfContentType, newRoles, _userId);
-        _activePage.PdfData         = newPdfData;
-        _activePage.PdfContentType  = newPdfContentType;
-        _activePage.PdfVisibleRoles = newRoles;
+        if (IsMedicalPage)
+        {
+            var newPdfData        = _fRemovePdf ? null : (_fPdfData ?? _activePage.PdfData);
+            var newPdfContentType = _fRemovePdf ? null : (_fPdfData is not null ? _fPdfContentType : _activePage.PdfContentType);
+            var newRoles          = ComputePdfVisibleRoles();
+            await InfoSvc.UpdatePdfAsync(_activePage.PageId, newPdfData, newPdfContentType, newRoles, _userId);
+            _activePage.PdfData         = newPdfData;
+            _activePage.PdfContentType  = newPdfContentType;
+            _activePage.PdfVisibleRoles = newRoles;
+        }
 
         CancelEdit();
+    }
+
+    private async Task DeleteDocument(Guid documentId)
+    {
+        await DocSvc.DeleteAsync(documentId);
+        _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
     }
 
     private async Task HandlePdfUpload(InputFileChangeEventArgs e)
@@ -277,13 +395,44 @@
         _fPdfContentType = "application/pdf";
     }
 
+    private async Task HandleDocUpload(InputFileChangeEventArgs e)
+    {
+        _docUploadError = "";
+        var file = e.File;
+        if (file.ContentType is not "application/pdf" && !file.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            _docUploadError = "Only PDF files are accepted.";
+            return;
+        }
+        if (file.Size > 10 * 1024 * 1024)
+        {
+            _docUploadError = "File too large — maximum 10 MB.";
+            return;
+        }
+        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        _fDocData     = ms.ToArray();
+        _fDocFileName = file.Name;
+    }
+
     private string? ComputePdfVisibleRoles()
     {
         var roles = new List<string>();
-        if (_fVisAdmin)    roles.Add("Admin");
-        if (_fVisMedical)  roles.Add("MedicalStaff");
-        if (_fVisStaff)    roles.Add("Staff");
+        if (_fVisAdmin)     roles.Add("Admin");
+        if (_fVisMedical)   roles.Add("MedicalStaff");
+        if (_fVisStaff)     roles.Add("Staff");
         if (_fVisVolunteer) roles.Add("Volunteer");
+        return roles.Count > 0 ? string.Join(",", roles) : null;
+    }
+
+    private string? ComputeDocVisibleRoles()
+    {
+        var roles = new List<string>();
+        if (_fDocVisAdmin)     roles.Add("Admin");
+        if (_fDocVisMedical)   roles.Add("MedicalStaff");
+        if (_fDocVisStaff)     roles.Add("Staff");
+        if (_fDocVisVolunteer) roles.Add("Volunteer");
         return roles.Count > 0 ? string.Join(",", roles) : null;
     }
 
@@ -295,10 +444,10 @@
         {
             switch (r)
             {
-                case "Admin":       _fVisAdmin    = true; break;
-                case "MedicalStaff": _fVisMedical = true; break;
-                case "Staff":       _fVisStaff    = true; break;
-                case "Volunteer":   _fVisVolunteer = true; break;
+                case "Admin":        _fVisAdmin    = true; break;
+                case "MedicalStaff": _fVisMedical  = true; break;
+                case "Staff":        _fVisStaff    = true; break;
+                case "Volunteer":    _fVisVolunteer = true; break;
             }
         }
     }
