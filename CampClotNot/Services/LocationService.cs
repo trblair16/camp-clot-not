@@ -1,15 +1,22 @@
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
-public class LocationService(IDbContextFactory<AppDbContext> factory)
+public class LocationService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
 {
+    private const string AllKey = "loc.all";
+
     public async Task<List<Location>> GetAllAsync()
     {
-        using var db = factory.CreateDbContext();
-        return await db.Locations.OrderBy(l => l.SortOrder).ThenBy(l => l.Name).ToListAsync();
+        return await cache.GetOrCreateAsync(AllKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            using var db = factory.CreateDbContext();
+            return await db.Locations.OrderBy(l => l.SortOrder).ThenBy(l => l.Name).ToListAsync();
+        }) ?? [];
     }
 
     public async Task<Location> UpsertAsync(Location loc)
@@ -34,6 +41,7 @@ public class LocationService(IDbContextFactory<AppDbContext> factory)
             }
         }
         await db.SaveChangesAsync();
+        cache.Remove(AllKey);
         return loc;
     }
 
@@ -44,5 +52,6 @@ public class LocationService(IDbContextFactory<AppDbContext> factory)
         if (loc is null) return;
         db.Locations.Remove(loc);
         await db.SaveChangesAsync();
+        cache.Remove(AllKey);
     }
 }

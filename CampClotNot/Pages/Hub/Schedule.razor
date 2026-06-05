@@ -537,6 +537,27 @@
         _isAdminOrStaff = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
 
+        // Run all independent reference-data queries in parallel
+        using var dbEvent  = DbFactory.CreateDbContext();
+        using var dbGroups = DbFactory.CreateDbContext();
+        var campEventTask  = dbEvent.Events.FindAsync(SeedService.Id.EventCcn2026).AsTask();
+        var sitTask        = ScheduleItemTypeSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+        var locsTask       = LocationSvc.GetAllAsync();
+        var actsTask       = MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
+        var groupsTask     = dbGroups.Groups
+            .Where(g => g.EventId == SeedService.Id.EventCcn2026)
+            .OrderBy(g => g.Name)
+            .ToListAsync();
+
+        await Task.WhenAll(campEventTask, sitTask, locsTask, actsTask, groupsTask);
+
+        _campEvent         = campEventTask.Result;
+        _scheduleItemTypes = sitTask.Result;
+        _fTypeId           = _scheduleItemTypes.FirstOrDefault()?.ScheduleItemTypeId ?? Guid.Empty;
+        _locations         = locsTask.Result;
+        _activities        = actsTask.Result;
+        _groups            = groupsTask.Result;
+
         if (!_isAdminOrStaff && _userId != Guid.Empty)
         {
             using var db = DbFactory.CreateDbContext();
@@ -545,9 +566,6 @@
                 .Select(u => u.GroupId)
                 .FirstOrDefaultAsync();
         }
-
-        using var dbEvent = DbFactory.CreateDbContext();
-        _campEvent = await dbEvent.Events.FindAsync(SeedService.Id.EventCcn2026);
 
         var today = DateOnly.FromDateTime(DateTime.Today);
         if (_campEvent is not null)
@@ -559,18 +577,6 @@
             else
                 _selectedDay = today;
         }
-
-        _scheduleItemTypes = await ScheduleItemTypeSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
-        _fTypeId = _scheduleItemTypes.FirstOrDefault()?.ScheduleItemTypeId ?? Guid.Empty;
-
-        _locations = await LocationSvc.GetAllAsync();
-        _activities = await MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
-
-        using var dbGroups = DbFactory.CreateDbContext();
-        _groups = await dbGroups.Groups
-            .Where(g => g.EventId == SeedService.Id.EventCcn2026)
-            .OrderBy(g => g.Name)
-            .ToListAsync();
 
         await LoadEvents();
     }
