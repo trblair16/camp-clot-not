@@ -10,6 +10,7 @@ public class TransactionRepository(IDbContextFactory<AppDbContext> factory) : IT
     {
         using var db = factory.CreateDbContext();
         return await db.Transactions
+            .AsNoTracking()
             .Include(t => t.Group)
             .Include(t => t.CurrencyType)
             .OrderByDescending(t => t.CreatedAt)
@@ -20,6 +21,7 @@ public class TransactionRepository(IDbContextFactory<AppDbContext> factory) : IT
     {
         using var db = factory.CreateDbContext();
         return await db.Transactions
+            .AsNoTracking()
             .Include(t => t.CurrencyType)
             .Where(t => t.GroupId == groupId)
             .OrderByDescending(t => t.CreatedAt)

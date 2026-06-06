@@ -53,4 +53,27 @@ public class GroupService(IGroupRepository groups, IDbContextFactory<AppDbContex
                 && t.VoidedAt == null)
             .SumAsync(t => t.Amount);
     }
+
+    // Single DB round-trip for all group scores — use instead of looping GetTotalAsync
+    public async Task<Dictionary<Guid, (int Coins, int Stars)>> GetAllScoresAsync(IEnumerable<Guid> groupIds)
+    {
+        using var db = factory.CreateDbContext();
+        var ids      = groupIds.ToList();
+        var coinName = nameof(Currency.Primary);
+        var starName = nameof(Currency.Prestige);
+
+        var totals = await db.Transactions
+            .Where(t => ids.Contains(t.GroupId) && t.VoidedAt == null)
+            .GroupBy(t => new { t.GroupId, SystemName = t.CurrencyType.SystemName })
+            .Select(g => new { g.Key.GroupId, g.Key.SystemName, Total = g.Sum(t => t.Amount) })
+            .ToListAsync();
+
+        return ids.ToDictionary(
+            gid => gid,
+            gid => (
+                totals.FirstOrDefault(t => t.GroupId == gid && t.SystemName == coinName)?.Total ?? 0,
+                totals.FirstOrDefault(t => t.GroupId == gid && t.SystemName == starName)?.Total ?? 0
+            )
+        );
+    }
 }

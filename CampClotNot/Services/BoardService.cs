@@ -18,7 +18,8 @@ public record BoardSpaceView(
 
 public class BoardService(
     IDbContextFactory<AppDbContext> factory,
-    IHubContext<LiveHub> hub)
+    IHubContext<LiveHub> hub,
+    ILogger<BoardService> logger)
 {
     private const int TotalSpaces = 20;
 
@@ -135,7 +136,11 @@ public class BoardService(
     // Fire-and-forget: steps the token and updates the DB when done
     public void Phase3StartStepping(Guid groupId, int campDay, Guid eventId)
     {
-        _ = Task.Run(() => RunStepsAsync(groupId, campDay, eventId));
+        _ = Task.Run(async () =>
+        {
+            try { await RunStepsAsync(groupId, campDay, eventId); }
+            catch (Exception ex) { logger.LogError(ex, "Block hit animation failed for group {GroupId} day {Day}", groupId, campDay); }
+        });
     }
 
     private async Task RunStepsAsync(Guid groupId, int campDay, Guid eventId)
