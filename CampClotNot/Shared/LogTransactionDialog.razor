@@ -63,11 +63,17 @@
                     </div>
                     <input type="number" step="@(IsCoinsSelected ? "5" : "1")"
                            placeholder="@(IsCoinsSelected ? "e.g. 25 or -10 (×5 only)" : "e.g. 1 or -1")"
-                           @bind="_form.Amount"
-                           style="background:var(--bg-base);border:3px solid var(--black);border-radius:7px;
+                           @bind="_form.Amount" @bind:event="oninput"
+                           style="background:var(--bg-base);border:3px solid @(CoinAmountInvalid ? "#D12B2B" : "var(--black)");border-radius:7px;
                                   color:var(--text-dark);padding:9px 12px;font-size:14px;
                                   font-family:'Nunito',sans-serif;font-weight:700;width:100%;
-                                  box-shadow:2px 2px 0 var(--black);outline:none" />
+                                  box-shadow:2px 2px 0 @(CoinAmountInvalid ? "#D12B2B" : "var(--black)");outline:none" />
+                    @if (CoinAmountInvalid)
+                    {
+                        <div style="font-size:12px;font-weight:800;color:#D12B2B;margin-top:5px">
+                            ⚠️ Coins must be a multiple of 5 (e.g. 5, 10, 25, -10)
+                        </div>
+                    }
                 </div>
 
                 @* Note *@
@@ -84,7 +90,7 @@
                 <div style="display:flex;gap:10px;margin-top:4px">
                     <button class="ccn-btn" style="flex:1" @onclick="Close">Cancel</button>
                     <button class="ccn-btn" style="flex:2;background:var(--color-accent);color:white"
-                            disabled="@_submitting" @onclick="SubmitAsync">
+                            disabled="@(_submitting || CoinAmountInvalid)" @onclick="SubmitAsync">
                         @(_submitting ? "Posting..." : "Log It")
                     </button>
                 </div>
@@ -135,14 +141,12 @@
         .FirstOrDefault(ct => ct.CurrencyTypeId == _form.CurrencyTypeId)
         ?.SystemName == nameof(Currency.Primary);
 
+    private bool CoinAmountInvalid => IsCoinsSelected && _form.Amount != 0 && _form.Amount % 5 != 0;
+
     private async Task SubmitAsync()
     {
         if (_form.GroupId == Guid.Empty || _form.CurrencyTypeId == Guid.Empty || _form.Amount == 0) return;
-        if (IsCoinsSelected && _form.Amount % 5 != 0)
-        {
-            Snackbar.Add("Coin amounts must be a multiple of 5.", Severity.Warning);
-            return;
-        }
+        if (CoinAmountInvalid) return;
         _submitting = true;
         var state = await AuthState;
         var name = state.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "unknown";
