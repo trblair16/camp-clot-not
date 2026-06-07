@@ -22,6 +22,16 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 </head>
 <body>
+    <div id="ccn-splash" style="position:fixed;inset:0;z-index:9998;background:#F2ECD8;background-image:radial-gradient(circle,#D9D0B8 1.5px,transparent 1.5px);background-size:22px 22px;display:flex;align-items:center;justify-content:center;transition:opacity .3s ease">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;animation:ccnSplashIn .4s ease">
+            <img src="/img/ccn-logo-2026.png" alt="Camp Clot Not" style="width:200px;height:auto;animation:ccnSplashPulse 2.5s ease-in-out infinite" />
+            <span style="font-family:'Fredoka One',cursive;font-size:13px;color:#F5C800;letter-spacing:3px;text-transform:uppercase;text-shadow:1px 1px 0 #1A1A1A">SUPER PARTY '26</span>
+        </div>
+    </div>
+    <style>
+        @@keyframes ccnSplashIn    { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+        @@keyframes ccnSplashPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+    </style>
     <div id="sai-probe" aria-hidden="true" style="position:fixed;bottom:0;left:-9999px;width:0;padding-bottom:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden"></div>
     <div id="components-reconnect-modal" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;padding-top:env(safe-area-inset-top)">
         <div id="ccn-banner-show"     style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#F5C800;color:#1A1A1A;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
@@ -136,6 +146,15 @@
                 }
             });
         }());
+
+        window.ccnHideSplash = function () {
+            var s = document.getElementById('ccn-splash');
+            if (!s) return;
+            s.style.opacity = '0';
+            setTimeout(function () { if (s.parentNode) s.remove(); }, 300);
+        };
+        // Safety net: hide after 6s even if Blazor never calls back
+        setTimeout(window.ccnHideSplash, 6000);
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')

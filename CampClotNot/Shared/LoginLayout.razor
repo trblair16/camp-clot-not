@@ -1,5 +1,13 @@
 @inherits LayoutComponentBase
+@inject IJSRuntime JS
 
 <ThemeHead />
 
 @Body
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("ccnHideSplash");
+    }
+}
