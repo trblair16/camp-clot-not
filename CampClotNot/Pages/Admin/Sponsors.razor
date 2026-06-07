@@ -106,8 +106,10 @@
             else
             {
                 <div class="admin-spo-cards">
-                    @foreach (var s in _sponsors)
+                    @for (int i = 0; i < _sponsors.Count; i++)
                     {
+                        var s   = _sponsors[i];
+                        var idx = i;
                         <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
                             <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
                                 <img src="@LogoSrc(s)" alt="@s.Name"
@@ -120,9 +122,11 @@
                                     }
                                 </div>
                             </div>
-                            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(s)">Edit</button>
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(s)">Del</button>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
+                                <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == _sponsors.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(s)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(s)">Del</button>
                             </div>
                         </div>
                     }
@@ -288,6 +292,17 @@
     {
         await SponsorSvc.DeleteAsync(s.SponsorId);
         Snackbar.Add($"{s.Name} deleted.", Severity.Info);
+        await Reload();
+    }
+
+    private async Task MoveAsync(int index, int direction)
+    {
+        var newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= _sponsors.Count) return;
+        var item = _sponsors[index];
+        _sponsors.RemoveAt(index);
+        _sponsors.Insert(newIndex, item);
+        await SponsorSvc.UpdateSortOrderAsync(_sponsors);
         await Reload();
     }
 
