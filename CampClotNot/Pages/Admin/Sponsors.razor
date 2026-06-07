@@ -151,12 +151,10 @@
                                 var s = _sponsors[i];
                                 var idx = i;
                                 <tr draggable="true"
-                                    style="border-bottom:2px solid #E8E0CC;background:@(_dragOverIndex == idx ? "#EDE7D0" : "transparent")"
+                                    style="border-bottom:2px solid #E8E0CC"
                                     @ondragstart="() => _dragIndex = idx"
                                     @ondragover:preventDefault="true"
-                                    @ondragover="() => _dragOverIndex = idx"
-                                    @ondrop="() => DropAsync(idx)"
-                                    @ondragleave="() => { if (_dragOverIndex == idx) _dragOverIndex = -1; }">
+                                    @ondrop="() => DropAsync(idx)">
                                     <td style="padding:10px 8px;color:var(--text-light);cursor:grab;font-size:16px;text-align:center">⠿</td>
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@s.Name</td>
                                     <td style="padding:8px 14px">
@@ -193,7 +191,6 @@
     private bool _loading = true;
     private Guid _editingId;
     private int _dragIndex = -1;
-    private int _dragOverIndex = -1;
     private string _fName = "";
     private string? _fLogoUrl;
     private string? _fWebsite;
@@ -308,7 +305,6 @@
 
     private async Task DropAsync(int dropIndex)
     {
-        _dragOverIndex = -1;
         if (_dragIndex < 0 || _dragIndex == dropIndex) { _dragIndex = -1; return; }
         var item = _sponsors[_dragIndex];
         _sponsors.RemoveAt(_dragIndex);
