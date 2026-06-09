@@ -26,7 +26,6 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        await JS.InvokeVoidAsync("ccnHideSplash");
         Nav.LocationChanged += ScrollToTop;
         var state = await AuthState.GetAuthenticationStateAsync();
         if (state.User.HasClaim("mustChangePassword", "true"))
