@@ -23,7 +23,7 @@
 </head>
 <body>
     <div id="ccn-splash" style="position:fixed;inset:0;z-index:9998;background:#F2ECD8;background-image:radial-gradient(circle,#D9D0B8 1.5px,transparent 1.5px);background-size:22px 22px;display:flex;align-items:center;justify-content:center">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;animation:ccnSplashIn .4s ease">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;animation:ccnSplashIn .4s ease;pointer-events:none">
             <img src="/img/ccn-logo-2026.png" alt="Camp Clot Not" style="width:200px;height:auto;animation:ccnSplashPulse 2.5s ease-in-out infinite" />
             <span style="font-family:'Fredoka One',cursive;font-size:13px;color:#F5C800;letter-spacing:3px;text-transform:uppercase;text-shadow:1px 1px 0 #1A1A1A">SUPER PARTY '26</span>
         </div>
@@ -150,15 +150,17 @@
         window.ccnHideSplash = function () {
             var s = document.getElementById('ccn-splash');
             if (!s) return;
-            s.style.pointerEvents = 'none';
             s.style.opacity = '0';
-            setTimeout(function () { if (s.parentNode) s.remove(); }, 350);
+            setTimeout(function () { if (s && s.parentNode) s.parentNode.removeChild(s); }, 350);
         };
-        // Safety net: guarantee pointer events are released after 4s no matter what
+        // If Blazor never signals ready (circuit failed to connect), reload after 12s.
+        // Do NOT silently remove the splash before the circuit is up — that leaves
+        // blazor.server.js intercepting <a> clicks with no circuit to handle them,
+        // making navigation appear broken. Only ccnHideSplash (called from
+        // OnAfterRenderAsync) guarantees the circuit is connected.
         setTimeout(function () {
-            var s = document.getElementById('ccn-splash');
-            if (s) { s.style.pointerEvents = 'none'; s.remove(); }
-        }, 4000);
+            if (document.getElementById('ccn-splash')) location.reload();
+        }, 12000);
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')
