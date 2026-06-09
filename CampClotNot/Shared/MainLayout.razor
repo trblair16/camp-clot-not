@@ -2,8 +2,6 @@
 @inject NavigationManager Nav
 @inject ThemeService ThemeSvc
 @inject AuthenticationStateProvider AuthState
-@inject IJSRuntime JS
-@implements IDisposable
 
 <ThemeHead />
 <MudThemeProvider IsDarkMode="false" Theme="@_mudTheme" />
@@ -26,20 +24,9 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        Nav.LocationChanged += ScrollToTop;
         var state = await AuthState.GetAuthenticationStateAsync();
         if (state.User.HasClaim("mustChangePassword", "true"))
             Nav.NavigateTo("/change-password", forceLoad: false);
-    }
-
-    private void ScrollToTop(object? sender, LocationChangedEventArgs e)
-    {
-        _ = InvokeAsync(async () => await JS.InvokeVoidAsync("window.scrollTo", 0, 0));
-    }
-
-    public void Dispose()
-    {
-        Nav.LocationChanged -= ScrollToTop;
     }
 
     private static readonly MudTheme _mudTheme = new()
