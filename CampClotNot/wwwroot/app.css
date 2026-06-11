@@ -234,6 +234,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
 /* ── File-based SVG icons via img tag ── */
 .nav-tab .tab-icon img { width: 22px; height: 22px; display: block; opacity: 0.5; transition: opacity .15s; }
 .nav-tab.active .tab-icon img { opacity: 1; }
+.hub-tab .tab-icon img { width: 20px; height: 20px; display: block; }
 .nav-admin-sheet a img, .nav-admin-sheet button img,
 .nav-game-sheet a img, .nav-game-sheet button img { width: 20px; height: 20px; flex-shrink: 0; }
 .nav-admin-sheet,
