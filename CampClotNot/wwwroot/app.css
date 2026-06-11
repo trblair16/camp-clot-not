@@ -133,6 +133,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     display: inline-block;
     line-height: 1.4;
 }
+.nav-link img { width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px; filter: invert(1); opacity: 0.8; }
 .nav-hub-dropdown,
 .nav-game-dropdown,
 .nav-admin-dropdown { position: relative; }
@@ -150,7 +151,9 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
 }
 .nav-admin-panel a,
 .nav-admin-panel button {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
     padding: 12px 16px;
     font-family: 'Fredoka One', cursive;
@@ -167,6 +170,8 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
 .nav-admin-panel button:last-child { border-bottom: none; }
 .nav-admin-panel a:hover,
 .nav-admin-panel button:hover { background: #F5EED8; }
+.nav-admin-panel a img,
+.nav-admin-panel button img { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.7; }
 .nav-admin-section {
     padding: 5px 16px 4px;
     font-size: 9px;
