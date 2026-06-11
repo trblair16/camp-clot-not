@@ -124,26 +124,26 @@
     <Authorized>
         <div class="nav-bottom-bar">
             <a href="/dashboard" class="nav-tab @(IsDashboardActive() ? "active" : "")">
-                <span class="tab-icon"><span class="nav-icon nav-icon-home"></span></span>
+                <span class="tab-icon"><img src="/img/icons/home.svg" alt="" /></span>
                 <span>Home</span>
             </a>
             <a href="/hub/schedule" class="nav-tab @(IsScheduleActive() ? "active" : "")">
-                <span class="tab-icon"><span class="nav-icon nav-icon-schedule"></span></span>
+                <span class="tab-icon"><img src="/img/icons/schedule.svg" alt="" /></span>
                 <span>Schedule</span>
             </a>
             <a href="/hub/announcements" class="nav-tab @(IsHubActive() ? "active" : "")">
-                <span class="tab-icon"><span class="nav-icon nav-icon-hub"></span></span>
+                <span class="tab-icon"><img src="/img/icons/hub.svg" alt="" /></span>
                 <span>Hub</span>
             </a>
             <button class="nav-tab @(IsGameActive() ? "active" : "")"
                     @onclick="() => { _gameSheetOpen = !_gameSheetOpen; _adminSheetOpen = false; }">
-                <span class="tab-icon"><span class="nav-icon nav-icon-game"></span></span>
+                <span class="tab-icon"><img src="/img/icons/game.svg" alt="" /></span>
                 <span>Game</span>
             </button>
             <AuthorizeView Roles="Admin" Context="mobileAdminCtx">
                 <button class="nav-tab @(_adminSheetOpen ? "active" : "")"
                         @onclick="() => { _adminSheetOpen = !_adminSheetOpen; _gameSheetOpen = false; }">
-                    <span class="tab-icon"><span class="nav-icon nav-icon-gear"></span></span>
+                    <span class="tab-icon"><img src="/img/icons/gear.svg" alt="" /></span>
                     <span>Admin</span>
                 </button>
             </AuthorizeView>
@@ -157,12 +157,12 @@
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _gameSheetOpen = false"></div>
     <div class="nav-game-sheet">
-        <a href="/leaderboard" @onclick="() => _gameSheetOpen = false"><span class="nav-icon nav-icon-leaderboard"></span> Leaderboard</a>
+        <a href="/leaderboard" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/leaderboard.svg" alt="" /> Leaderboard</a>
         <AuthorizeView Roles="Admin,Staff">
-            <a href="/board" @onclick="() => _gameSheetOpen = false"><span class="nav-icon nav-icon-board"></span> Board Game</a>
+            <a href="/board" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/board.svg" alt="" /> Board Game</a>
         </AuthorizeView>
         <AuthorizeView Roles="Admin">
-            <a href="/minigames" @onclick="() => _gameSheetOpen = false"><span class="nav-icon nav-icon-dice"></span> Mini-Game</a>
+            <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg" alt="" /> Mini-Game</a>
         </AuthorizeView>
     </div>
 }
@@ -173,20 +173,20 @@
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _adminSheetOpen = false"></div>
     <div class="nav-admin-sheet">
-        <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><span class="nav-icon nav-icon-transactions"></span> Transactions</a>
+        <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/transactions.svg" alt="" /> Transactions</a>
         <div class="nav-admin-sheet-section">Game</div>
-        <a href="/admin/games"               @onclick="() => _adminSheetOpen = false"><span class="nav-icon nav-icon-game"></span> Game Admin</a>
-        <a href="/admin/activities"          @onclick="() => _adminSheetOpen = false"><span class="nav-icon nav-icon-dice"></span> Activities</a>
+        <a href="/admin/games"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/game.svg" alt="" /> Game Admin</a>
+        <a href="/admin/activities"          @onclick="() => _adminSheetOpen = false"><img src="/img/icons/dice.svg" alt="" /> Activities</a>
         <div class="nav-admin-sheet-section">Schedule</div>
-        <a href="/admin/schedule"            @onclick="() => _adminSheetOpen = false"><span class="nav-icon nav-icon-schedule"></span> Schedule</a>
+        <a href="/admin/schedule"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/schedule.svg" alt="" /> Schedule</a>
         <a href="/admin/schedule-item-types" @onclick="() => _adminSheetOpen = false">🗂️ Types</a>
         <div class="nav-admin-sheet-section">People</div>
-        <a href="/admin/users"               @onclick="() => _adminSheetOpen = false"><span class="nav-icon nav-icon-key"></span> Users</a>
-        <a href="/admin/groups"              @onclick="() => _adminSheetOpen = false"><span class="nav-icon nav-icon-people"></span> Groups</a>
+        <a href="/admin/users"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/key.svg" alt="" /> Users</a>
+        <a href="/admin/groups"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg" alt="" /> Groups</a>
         <div class="nav-admin-sheet-section">Venue & Content</div>
-        <a href="/admin/locations"           @onclick="() => _adminSheetOpen = false"><span class="nav-icon nav-icon-pin"></span> Locations</a>
-        <a href="/admin/sponsors"            @onclick="() => _adminSheetOpen = false"><span class="nav-icon nav-icon-trophy"></span> Sponsors</a>
-        <button onclick="window.location='/logout'"><span class="nav-icon nav-icon-signout"></span> Sign Out</button>
+        <a href="/admin/locations"           @onclick="() => _adminSheetOpen = false"><img src="/img/icons/pin.svg" alt="" /> Locations</a>
+        <a href="/admin/sponsors"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/trophy.svg" alt="" /> Sponsors</a>
+        <button onclick="window.location='/logout'"><img src="/img/icons/signout.svg" alt="" /> Sign Out</button>
     </div>
 }
 

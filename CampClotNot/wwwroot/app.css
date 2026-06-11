@@ -226,36 +226,11 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
 }
 .nav-tab .tab-icon { font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; }
 .nav-tab .tab-icon svg { width: 22px; height: 22px; display: block; }
-/* ── File-based SVG icons via mask-image (supports currentColor) ── */
-.nav-icon {
-    display: block;
-    width: 22px;
-    height: 22px;
-    background-color: currentColor;
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    flex-shrink: 0;
-}
-.nav-admin-sheet .nav-icon,
-.nav-game-sheet .nav-icon { width: 20px; height: 20px; }
-.nav-icon-home         { -webkit-mask-image: url('/img/icons/home.svg');         mask-image: url('/img/icons/home.svg');         }
-.nav-icon-schedule     { -webkit-mask-image: url('/img/icons/schedule.svg');     mask-image: url('/img/icons/schedule.svg');     }
-.nav-icon-hub          { -webkit-mask-image: url('/img/icons/hub.svg');          mask-image: url('/img/icons/hub.svg');          }
-.nav-icon-game         { -webkit-mask-image: url('/img/icons/game.svg');         mask-image: url('/img/icons/game.svg');         }
-.nav-icon-gear         { -webkit-mask-image: url('/img/icons/gear.svg');         mask-image: url('/img/icons/gear.svg');         }
-.nav-icon-leaderboard  { -webkit-mask-image: url('/img/icons/leaderboard.svg');  mask-image: url('/img/icons/leaderboard.svg');  }
-.nav-icon-board        { -webkit-mask-image: url('/img/icons/board.svg');        mask-image: url('/img/icons/board.svg');        }
-.nav-icon-dice         { -webkit-mask-image: url('/img/icons/dice.svg');         mask-image: url('/img/icons/dice.svg');         }
-.nav-icon-transactions { -webkit-mask-image: url('/img/icons/transactions.svg'); mask-image: url('/img/icons/transactions.svg'); }
-.nav-icon-key          { -webkit-mask-image: url('/img/icons/key.svg');          mask-image: url('/img/icons/key.svg');          }
-.nav-icon-people       { -webkit-mask-image: url('/img/icons/people.svg');       mask-image: url('/img/icons/people.svg');       }
-.nav-icon-pin          { -webkit-mask-image: url('/img/icons/pin.svg');          mask-image: url('/img/icons/pin.svg');          }
-.nav-icon-trophy       { -webkit-mask-image: url('/img/icons/trophy.svg');       mask-image: url('/img/icons/trophy.svg');       }
-.nav-icon-signout      { -webkit-mask-image: url('/img/icons/signout.svg');      mask-image: url('/img/icons/signout.svg');      }
+/* ── File-based SVG icons via img tag ── */
+.nav-tab .tab-icon img { width: 22px; height: 22px; display: block; opacity: 0.5; transition: opacity .15s; }
+.nav-tab.active .tab-icon img { opacity: 1; }
+.nav-admin-sheet a img, .nav-admin-sheet button img,
+.nav-game-sheet a img, .nav-game-sheet button img { width: 20px; height: 20px; flex-shrink: 0; }
 .nav-admin-sheet,
 .nav-game-sheet {
     position: fixed;
