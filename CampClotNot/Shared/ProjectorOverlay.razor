@@ -128,15 +128,10 @@
 
     private async Task RefreshAsync()
     {
-        var groups  = await GroupSvc.GetAllAsync();
-        var entries = new List<GroupEntry>();
-        foreach (var g in groups)
-        {
-            var coins = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Primary);
-            var stars = await GroupSvc.GetTotalAsync(g.GroupId, Currency.Prestige);
-            entries.Add(new GroupEntry(g, coins, stars));
-        }
-        _ranked = entries
+        var groups = await GroupSvc.GetAllAsync();
+        var scores = await GroupSvc.GetAllScoresAsync(groups.Select(g => g.GroupId));
+        _ranked = groups
+            .Select(g => { var (c, s) = scores.GetValueOrDefault(g.GroupId); return new GroupEntry(g, c, s); })
             .OrderByDescending(e => e.Stars)
             .ThenByDescending(e => e.Coins)
             .Select((e, i) => e with { Rank = i + 1 })

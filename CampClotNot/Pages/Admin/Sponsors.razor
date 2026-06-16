@@ -17,7 +17,7 @@
 </style>
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px">🏆 Sponsors</h2>
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/trophy.svg" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Sponsors</h2>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
@@ -106,8 +106,10 @@
             else
             {
                 <div class="admin-spo-cards">
-                    @foreach (var s in _sponsors)
+                    @for (int i = 0; i < _sponsors.Count; i++)
                     {
+                        var s   = _sponsors[i];
+                        var idx = i;
                         <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
                             <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
                                 <img src="@LogoSrc(s)" alt="@s.Name"
@@ -120,9 +122,11 @@
                                     }
                                 </div>
                             </div>
-                            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(s)">Edit</button>
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(s)">Del</button>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
+                                <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == _sponsors.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(s)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(s)">Del</button>
                             </div>
                         </div>
                     }
@@ -147,12 +151,10 @@
                                 var s = _sponsors[i];
                                 var idx = i;
                                 <tr draggable="true"
-                                    style="border-bottom:2px solid #E8E0CC;background:@(_dragOverIndex == idx ? "#EDE7D0" : "transparent")"
+                                    style="border-bottom:2px solid #E8E0CC"
                                     @ondragstart="() => _dragIndex = idx"
                                     @ondragover:preventDefault="true"
-                                    @ondragover="() => _dragOverIndex = idx"
-                                    @ondrop="() => DropAsync(idx)"
-                                    @ondragleave="() => { if (_dragOverIndex == idx) _dragOverIndex = -1; }">
+                                    @ondrop="() => DropAsync(idx)">
                                     <td style="padding:10px 8px;color:var(--text-light);cursor:grab;font-size:16px;text-align:center">⠿</td>
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@s.Name</td>
                                     <td style="padding:8px 14px">
@@ -189,7 +191,6 @@
     private bool _loading = true;
     private Guid _editingId;
     private int _dragIndex = -1;
-    private int _dragOverIndex = -1;
     private string _fName = "";
     private string? _fLogoUrl;
     private string? _fWebsite;
@@ -291,9 +292,19 @@
         await Reload();
     }
 
+    private async Task MoveAsync(int index, int direction)
+    {
+        var newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= _sponsors.Count) return;
+        var item = _sponsors[index];
+        _sponsors.RemoveAt(index);
+        _sponsors.Insert(newIndex, item);
+        await SponsorSvc.UpdateSortOrderAsync(_sponsors);
+        await Reload();
+    }
+
     private async Task DropAsync(int dropIndex)
     {
-        _dragOverIndex = -1;
         if (_dragIndex < 0 || _dragIndex == dropIndex) { _dragIndex = -1; return; }
         var item = _sponsors[_dragIndex];
         _sponsors.RemoveAt(_dragIndex);
