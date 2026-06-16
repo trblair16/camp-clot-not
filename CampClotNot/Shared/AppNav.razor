@@ -123,18 +123,18 @@
 <AuthorizeView>
     <Authorized>
         <div class="nav-bottom-bar">
-            <a href="/dashboard" class="nav-tab @(IsDashboardActive() ? "active" : "")">
+            <button class="nav-tab @(IsDashboardActive() ? "active" : "")" @onclick='() => Nav.NavigateTo("/dashboard")'>
                 <span class="tab-icon"><img src="/img/icons/home.svg" alt="" /></span>
                 <span>Home</span>
-            </a>
-            <a href="/hub/schedule" class="nav-tab @(IsScheduleActive() ? "active" : "")">
+            </button>
+            <button class="nav-tab @(IsScheduleActive() ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/schedule")'>
                 <span class="tab-icon"><img src="/img/icons/schedule.svg" alt="" /></span>
                 <span>Schedule</span>
-            </a>
-            <a href="/hub/announcements" class="nav-tab @(IsHubActive() ? "active" : "")">
+            </button>
+            <button class="nav-tab @(IsHubActive() ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/announcements")'>
                 <span class="tab-icon"><img src="/img/icons/hub.svg" alt="" /></span>
                 <span>Hub</span>
-            </a>
+            </button>
             <button class="nav-tab @(IsGameActive() ? "active" : "")"
                     @onclick="() => { _gameSheetOpen = !_gameSheetOpen; _adminSheetOpen = false; }">
                 <span class="tab-icon"><img src="/img/icons/game.svg" alt="" /></span>
