@@ -16,7 +16,23 @@ public class InfoPageService(IDbContextFactory<AppDbContext> factory, IMemoryCac
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
             using var db = factory.CreateDbContext();
-            return await db.InfoPages.OrderBy(p => p.SortOrder).ToListAsync();
+            return await db.InfoPages
+                .OrderBy(p => p.SortOrder)
+                .Select(p => new InfoPage
+                {
+                    PageId          = p.PageId,
+                    Slug            = p.Slug,
+                    Title           = p.Title,
+                    Body            = p.Body,
+                    IconEmoji       = p.IconEmoji,
+                    SortOrder       = p.SortOrder,
+                    UpdatedAt       = p.UpdatedAt,
+                    UpdatedByUserId = p.UpdatedByUserId,
+                    PdfContentType  = p.PdfContentType,
+                    PdfVisibleRoles = p.PdfVisibleRoles
+                    // PdfData excluded — served on demand via /hub/info/{slug}/pdf
+                })
+                .ToListAsync();
         }) ?? [];
     }
 
@@ -26,7 +42,23 @@ public class InfoPageService(IDbContextFactory<AppDbContext> factory, IMemoryCac
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
             using var db = factory.CreateDbContext();
-            return await db.InfoPages.FirstOrDefaultAsync(p => p.Slug == slug);
+            return await db.InfoPages
+                .Where(p => p.Slug == slug)
+                .Select(p => new InfoPage
+                {
+                    PageId          = p.PageId,
+                    Slug            = p.Slug,
+                    Title           = p.Title,
+                    Body            = p.Body,
+                    IconEmoji       = p.IconEmoji,
+                    SortOrder       = p.SortOrder,
+                    UpdatedAt       = p.UpdatedAt,
+                    UpdatedByUserId = p.UpdatedByUserId,
+                    PdfContentType  = p.PdfContentType,
+                    PdfVisibleRoles = p.PdfVisibleRoles
+                    // PdfData excluded — served on demand via /hub/info/{slug}/pdf
+                })
+                .FirstOrDefaultAsync();
         });
     }
 
@@ -43,14 +75,23 @@ public class InfoPageService(IDbContextFactory<AppDbContext> factory, IMemoryCac
         cache.Remove(SlugKey(page.Slug));
     }
 
-    public async Task UpdatePdfAsync(Guid pageId, byte[]? pdfData, string? pdfContentType, string? pdfVisibleRoles, Guid updatedByUserId)
+    // removePdf=true explicitly clears the blob; pdfData!=null uploads a new one; otherwise keeps existing.
+    public async Task UpdatePdfAsync(Guid pageId, byte[]? pdfData, string? pdfContentType, string? pdfVisibleRoles, Guid updatedByUserId, bool removePdf = false)
     {
         using var db = factory.CreateDbContext();
         var page = await db.InfoPages.FindAsync(pageId);
         if (page is null) return;
-        page.PdfData         = pdfData;
-        page.PdfContentType  = pdfContentType;
         page.PdfVisibleRoles = pdfVisibleRoles;
+        if (removePdf)
+        {
+            page.PdfData        = null;
+            page.PdfContentType = null;
+        }
+        else if (pdfData is not null)
+        {
+            page.PdfData        = pdfData;
+            page.PdfContentType = pdfContentType;
+        }
         page.UpdatedAt       = DateTime.UtcNow;
         page.UpdatedByUserId = updatedByUserId;
         await db.SaveChangesAsync();

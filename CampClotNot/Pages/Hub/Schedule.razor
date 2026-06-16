@@ -197,7 +197,7 @@
                                         <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">@DisplayItemType(ev.ScheduleItemType)</span>
                                         @if (displayLocation is not null)
                                         {
-                                            @if (displayLocation.ImageData is not null)
+                                            @if (displayLocation.ImageContentType is not null)
                                             {
                                                 <img src="/location-image/@displayLocation.LocationId" class="sched-loc-img" style="width:56px;height:40px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle" alt="@displayLocation.Name" @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
                                             }
@@ -295,7 +295,7 @@
                                             {
                                                 <span style="color:var(--text-light);font-size:13px">—</span>
                                             }
-                                            @if (dispLoc?.ImageData is not null)
+                                            @if (dispLoc?.ImageContentType is not null)
                                             {
                                                 <img src="/location-image/@dispLoc.LocationId" style="width:48px;height:34px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
                                             }
@@ -337,7 +337,7 @@
                                                                         <span style="font-size:11px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
                                                                     }
                                                                     else { <span style="color:var(--text-light)">—</span> }
-                                                                    @if (eg.Location?.ImageData is not null)
+                                                                    @if (eg.Location?.ImageContentType is not null)
                                                                     {
                                                                         <img src="/location-image/@eg.Location.LocationId" style="width:36px;height:26px;object-fit:cover;border-radius:3px;border:1px solid var(--black);cursor:zoom-in;flex-shrink:0" alt="@eg.Location.Name" @onclick='() => _lightboxSrc = $"/location-image/{eg.Location.LocationId}"' />
                                                                     }

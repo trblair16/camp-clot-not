@@ -158,7 +158,7 @@
                                 <div style="border:3px solid var(--black);border-radius:10px;padding:16px;margin-top:12px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
                                     <div style="font-family:'Fredoka One',cursive;font-size:15px;margin-bottom:12px">📄 Emergency Contacts PDF</div>
 
-                                    @if (_activePage.PdfData is not null && !_fRemovePdf)
+                                    @if (_activePage.PdfContentType is not null && !_fRemovePdf)
                                     {
                                         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#F8F4EC;border:2px solid #E8E0CC;border-radius:6px">
                                             <span style="font-size:13px;font-weight:700">PDF attached</span>
@@ -170,7 +170,7 @@
 
                                     <div style="margin-bottom:12px">
                                         <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">
-                                            @(_activePage.PdfData is not null && !_fRemovePdf ? "Replace PDF (optional)" : "Upload PDF (optional)")
+                                            @(_activePage.PdfContentType is not null && !_fRemovePdf ? "Replace PDF (optional)" : "Upload PDF (optional)")
                                         </div>
                                         <InputFile OnChange="HandlePdfUpload" accept=".pdf,application/pdf"
                                                    style="font-size:13px;font-family:'Nunito',sans-serif" />
@@ -277,7 +277,7 @@
     private bool IsDocumentsPage => _activePage?.Slug == "documents";
 
     private bool CanSeePdf =>
-        _activePage?.PdfData is not null && (
+        _activePage?.PdfContentType is not null && (
             _isAdmin ||
             (!string.IsNullOrEmpty(_activePage.PdfVisibleRoles) &&
              _activePage.PdfVisibleRoles.Split(',', StringSplitOptions.TrimEntries)
@@ -356,12 +356,10 @@
 
         if (IsMedicalPage)
         {
-            var newPdfData        = _fRemovePdf ? null : (_fPdfData ?? _activePage.PdfData);
-            var newPdfContentType = _fRemovePdf ? null : (_fPdfData is not null ? _fPdfContentType : _activePage.PdfContentType);
-            var newRoles          = ComputePdfVisibleRoles();
-            await InfoSvc.UpdatePdfAsync(_activePage.PageId, newPdfData, newPdfContentType, newRoles, _userId);
-            _activePage.PdfData         = newPdfData;
-            _activePage.PdfContentType  = newPdfContentType;
+            var newRoles = ComputePdfVisibleRoles();
+            await InfoSvc.UpdatePdfAsync(_activePage.PageId, _fPdfData, _fPdfContentType, newRoles, _userId, removePdf: _fRemovePdf);
+            if (_fRemovePdf) { _activePage.PdfData = null; _activePage.PdfContentType = null; }
+            else if (_fPdfData is not null) { _activePage.PdfData = _fPdfData; _activePage.PdfContentType = _fPdfContentType; }
             _activePage.PdfVisibleRoles = newRoles;
         }
 
