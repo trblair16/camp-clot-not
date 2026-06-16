@@ -32,7 +32,13 @@
 
         @* ── Form panel ── *@
         <div class="admin-sched-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 340px;min-width:280px">
-            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Event" : "Edit Event")</h3>
+            @if (!string.IsNullOrEmpty(_copyingFromTitle))
+            {
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;font-family:'Nunito',sans-serif">Copying: @_copyingFromTitle</div>
+            }
+            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">
+                @(!string.IsNullOrEmpty(_copyingFromTitle) ? "Copy to New Day" : _editingId == Guid.Empty ? "Add Event" : "Edit Event")
+            </h3>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Title</div>
@@ -244,6 +250,7 @@
                                 </div>
                                 <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
                                     <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(ev)">Edit</button>
+                                    <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#117A65;color:white" @onclick="() => StartCopy(ev)">Copy</button>
                                     <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(ev)">Del</button>
                                 </div>
                             </div>
@@ -328,6 +335,7 @@
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(ev)">Edit</button>
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#117A65;color:white" @onclick="() => StartCopy(ev)">Copy</button>
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(ev)">Del</button>
                                         </div>
                                     </td>
@@ -380,6 +388,7 @@
     private bool _assignmentsExpanded;
     private string _error = "";
     private string? _lightboxSrc;
+    private string? _copyingFromTitle;
 
     private string _minDate = "";
     private string _maxDate = "";
@@ -456,8 +465,31 @@
         _error = "";
     }
 
+    private void StartCopy(ScheduleItem ev)
+    {
+        _copyingFromTitle = ev.Title;
+        _editingId        = Guid.Empty;
+        _fTitle           = ev.Title;
+        _fDesc            = ev.Description;
+        var nextDay       = ev.CampDay.AddDays(1);
+        var max           = DateOnly.TryParseExact(_maxDate, "yyyy-MM-dd", out var m) ? m : ev.CampDay;
+        _fDateStr         = (nextDay <= max ? nextDay : ev.CampDay).ToString("yyyy-MM-dd");
+        _fStartStr        = ev.StartTime.ToString("h:mm tt");
+        _fEndStr          = ev.EndTime?.ToString("h:mm tt") ?? "";
+        _fTypeId          = ev.ScheduleItemTypeId;
+        _fLocationId      = ev.LocationId;
+        _fLocationOther   = ev.LocationOther;
+        _fActivityId      = ev.ActivityId;
+        _fPresenterName   = ev.PresenterName;
+        _fPresenterBio    = ev.PresenterBio;
+        _fAssignments     = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
+        _assignmentsExpanded = false;
+        _error = "";
+    }
+
     private void CancelEdit()
     {
+        _copyingFromTitle    = null;
         _editingId           = Guid.Empty;
         _fTitle              = "";
         _fDesc               = null;
@@ -506,8 +538,9 @@
             isPresentation ? _fPresenterBio  : null,
             string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim()
         );
+        var isCopy = !string.IsNullOrEmpty(_copyingFromTitle);
         await ScheduleSvc.UpsertAsync(dto, _userId);
-        Snackbar.Add(_editingId == Guid.Empty ? $"{_fTitle} added." : $"{_fTitle} updated.", Severity.Success);
+        Snackbar.Add(isCopy ? $"Copied as {_fTitle.Trim()}." : _editingId == Guid.Empty ? $"{_fTitle} added." : $"{_fTitle} updated.", Severity.Success);
         CancelEdit();
         await Reload();
     }
@@ -523,12 +556,15 @@
 
     private static string ItemTypeBadgeColor(string? systemName) => systemName switch
     {
+        "Activity"     => "#8E44AD",
         "Meal"         => "#E67E22",
         "Travel"       => "#2980B9",
         "Free"         => "#27AE60",
         "Mandatory"    => "#D12B2B",
-        "Presentation" => "#9B59B6",
-        _              => "#8E44AD"
+        "Presentation" => "#16A085",
+        "Meeting"      => "#566573",
+        "Task"         => "#D35400",
+        _              => "#607D8B"
     };
 
     private class AssignmentFormRow
