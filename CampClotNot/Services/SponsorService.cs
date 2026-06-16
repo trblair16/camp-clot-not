@@ -25,6 +25,19 @@ public class SponsorService(IDbContextFactory<AppDbContext> factory, IMemoryCach
                 .Where(s => s.EventId == eventId)
                 .OrderBy(s => s.SortOrder)
                 .ThenBy(s => s.Name)
+                .Select(s => new Sponsor
+                {
+                    SponsorId       = s.SponsorId,
+                    EventId         = s.EventId,
+                    Name            = s.Name,
+                    LogoUrl         = s.LogoUrl,
+                    LogoContentType = s.LogoContentType,
+                    Website         = s.Website,
+                    ContactName     = s.ContactName,
+                    Phone           = s.Phone,
+                    SortOrder       = s.SortOrder
+                    // LogoData excluded — served on demand via /sponsor-logo/{id}
+                })
                 .ToListAsync();
         }) ?? [];
     }

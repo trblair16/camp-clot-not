@@ -99,7 +99,7 @@
     }
 
     private static string LogoSrc(Sponsor s) =>
-        s.LogoData is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
+        s.LogoContentType is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
 
     private static string TelHref(string? phone)
     {

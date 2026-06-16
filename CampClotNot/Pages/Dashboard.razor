@@ -263,5 +263,5 @@ else
     }
 
     private static string SponsorLogoSrc(Sponsor s) =>
-        s.LogoData is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
+        s.LogoContentType is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
 }

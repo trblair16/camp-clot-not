@@ -241,7 +241,7 @@
         _fSortOrder     = s.SortOrder;
         _fLogoData      = null;
         _fLogoContentType = null;
-        _currentHasFile = s.LogoData is not null;
+        _currentHasFile = s.LogoContentType is not null;
         _uploadError    = "";
         _saveError      = "";
     }
@@ -315,5 +315,5 @@
     }
 
     private static string LogoSrc(Sponsor s) =>
-        s.LogoData is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
+        s.LogoContentType is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
 }
