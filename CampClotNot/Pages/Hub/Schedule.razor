@@ -188,10 +188,10 @@
                             <div class="sched-row">
                                 <div style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);padding-top:2px">@timeStr</div>
                                 <div style="min-width:0">
-                                    <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@(displayActivity?.Name ?? ev.Title)</span>
+                                    <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@ev.Title</span>
                                     @if (displayActivity is not null)
                                     {
-                                        <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@ev.Title</div>
+                                        <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@displayActivity.Name</div>
                                     }
                                     <div class="sched-inline-meta">
                                         <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">@DisplayItemType(ev.ScheduleItemType)</span>
@@ -201,11 +201,11 @@
                                             {
                                                 <img src="/location-image/@displayLocation.LocationId" class="sched-loc-img" style="width:56px;height:40px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle" alt="@displayLocation.Name" @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
                                             }
-                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;flex-shrink:0"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@displayLocation.Name</span>
+                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@displayLocation.Name</span>
                                         }
                                         @if (!string.IsNullOrEmpty(ev.LocationOther))
                                         {
-                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;flex-shrink:0"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@ev.LocationOther</span>
+                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@ev.LocationOther</span>
                                         }
                                     </div>
                                     @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
@@ -246,7 +246,7 @@
                         <thead>
                             <tr>
                                 <th style="width:90px">Time</th>
-                                <th style="width:30%">Activity</th>
+                                <th style="width:30%">Event</th>
                                 <th style="width:13%">Type</th>
                                 <th style="width:27%">Location</th>
                                 <th style="width:20%">Add'l Location</th>
@@ -268,8 +268,8 @@
                                 <tr>
                                     <td style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);white-space:nowrap">@tStr</td>
                                     <td>
-                                        <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@(dispAct?.Name ?? ev.Title)</span>
-                                        @if (dispAct is not null) { <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@ev.Title</div> }
+                                        <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@ev.Title</span>
+                                        @if (dispAct is not null) { <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@dispAct.Name</div> }
                                         @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                         {
                                             <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
@@ -693,12 +693,15 @@
 
     private static string ItemTypeBadgeColor(string? systemName) => systemName switch
     {
+        "Activity"     => "#8E44AD",
         "Meal"         => "#E67E22",
         "Travel"       => "#2980B9",
         "Free"         => "#27AE60",
         "Mandatory"    => "#D12B2B",
-        "Presentation" => "#9B59B6",
-        _              => "#8E44AD"
+        "Presentation" => "#16A085",
+        "Meeting"      => "#566573",
+        "Task"         => "#D35400",
+        _              => "#607D8B"
     };
 
     private class AssignmentFormRow
