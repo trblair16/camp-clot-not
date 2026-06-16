@@ -9,13 +9,13 @@ public class GroupRepository(IDbContextFactory<AppDbContext> factory) : IGroupRe
     public async Task<List<Group>> GetAllAsync()
     {
         using var db = factory.CreateDbContext();
-        return await db.Groups.Include(g => g.BoardPos).ToListAsync();
+        return await db.Groups.AsNoTracking().Include(g => g.BoardPos).ToListAsync();
     }
 
     public async Task<Group?> GetByIdAsync(Guid groupId)
     {
         using var db = factory.CreateDbContext();
-        return await db.Groups.Include(g => g.BoardPos).FirstOrDefaultAsync(g => g.GroupId == groupId);
+        return await db.Groups.AsNoTracking().Include(g => g.BoardPos).FirstOrDefaultAsync(g => g.GroupId == groupId);
     }
 
     public async Task<Group> CreateAsync(Group group)

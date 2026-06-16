@@ -1,0 +1,66 @@
+@page "/icon-preview"
+@layout LoginLayout
+
+<style>
+    body { background: #F2ECD8; font-family: 'Nunito', sans-serif; }
+    .preview-grid { display: flex; flex-wrap: wrap; gap: 24px; padding: 32px; }
+    .preview-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 80px; }
+    .icon-box { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: #1A1A1A; border: 3px solid #1A1A1A; border-radius: 10px; box-shadow: 3px 3px 0 #1A1A1A; }
+    .icon-box-light { background: #FFFEF7; }
+    .icon-box img { width: 28px; height: 28px; }
+    .icon-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #4A4035; text-align: center; }
+    h2 { font-family: 'Fredoka One', cursive; padding: 32px 32px 0; margin: 0; }
+    .swatch { display: flex; gap: 12px; padding: 0 32px 8px; }
+    .swatch-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
+    .dot { width: 16px; height: 16px; border-radius: 4px; border: 2px solid #1A1A1A; }
+</style>
+
+<h2>CCN Icon Preview</h2>
+<p style="padding: 0 32px; color: #4A4035; font-size: 13px">All icons use <code>currentColor</code> — below shown white-on-black (nav bar) and black-on-cream (mobile tab bar).</p>
+
+<div class="swatch">
+    <div class="swatch-item"><div class="dot" style="background:#1A1A1A"></div> On dark (nav header)</div>
+    <div class="swatch-item"><div class="dot" style="background:#F2ECD8"></div> On cream (bottom bar)</div>
+    <div class="swatch-item"><div class="dot" style="background:#F5C800"></div> Active (yellow)</div>
+</div>
+
+@{
+    var icons = new[]
+    {
+        ("home", "Home"),
+        ("schedule", "Schedule"),
+        ("hub", "Hub"),
+        ("game", "Game"),
+        ("leaderboard", "Leaderboard"),
+        ("board", "Board"),
+        ("dice", "Mini-Game"),
+        ("projector", "Projector"),
+        ("trophy", "Sponsors"),
+        ("people", "People"),
+        ("alert", "Incidents"),
+        ("gear", "Admin"),
+        ("key", "Users"),
+        ("pin", "Locations"),
+        ("transactions", "Transactions"),
+        ("announcements", "Announce"),
+        ("signout", "Sign Out"),
+    };
+}
+
+<div class="preview-grid">
+    @foreach (var (file, label) in icons)
+    {
+        <div class="preview-item">
+            <div class="icon-box">
+                <img src="/img/icons/@(file).svg" alt="@label" style="filter: invert(1)" />
+            </div>
+            <div class="icon-box icon-box-light">
+                <img src="/img/icons/@(file).svg" alt="@label" />
+            </div>
+            <div class="icon-box" style="background:#F5C800">
+                <img src="/img/icons/@(file).svg" alt="@label" />
+            </div>
+            <div class="icon-label">@label</div>
+        </div>
+    }
+</div>
