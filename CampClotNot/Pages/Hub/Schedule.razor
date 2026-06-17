@@ -307,6 +307,7 @@
                                         <td>
                                             <div style="display:flex;gap:4px;justify-content:center">
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEditForm(ev)">Edit</button>
+                                                <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#117A65;color:white" @onclick="() => OpenCopyForm(ev)">Copy</button>
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => DeleteEvent(ev.ScheduleItemId)">Del</button>
                                             </div>
                                         </td>
@@ -376,7 +377,13 @@
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease" @onclick="CloseForm">
         <div class="ccn-panel" style="padding:24px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease" @onclick:stopPropagation>
-            <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Event" : "Edit Event")</h3>
+            @if (!string.IsNullOrEmpty(_copyingFromTitle))
+            {
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;font-family:'Nunito',sans-serif">Copying: @_copyingFromTitle</div>
+            }
+            <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">
+                @(!string.IsNullOrEmpty(_copyingFromTitle) ? "Copy to New Day" : _editingId == Guid.Empty ? "Add Event" : "Edit Event")
+            </h3>
 
             <div class="sched-form-grid">
                 <div class="full">
@@ -511,6 +518,7 @@
     private List<Group> _groups = new();
     private Guid _editingId;
     private Guid _userId;
+    private string? _copyingFromTitle;
 
     // Form fields
     private string _fTitle = "";
@@ -648,7 +656,29 @@
         _showForm = true;
     }
 
-    private void CloseForm() => _showForm = false;
+    private void OpenCopyForm(ScheduleItem ev)
+    {
+        _copyingFromTitle = ev.Title;
+        _editingId        = Guid.Empty;
+        _fTitle           = ev.Title;
+        _fDesc            = ev.Description;
+        var nextDay       = ev.CampDay.AddDays(1);
+        var max           = _campEvent?.ExpDate ?? ev.CampDay;
+        _fDate       = (nextDay <= max ? nextDay : ev.CampDay).ToDateTime(TimeOnly.MinValue);
+        _fStartStr   = ev.StartTime.ToString("h:mm tt");
+        _fEndStr     = ev.EndTime?.ToString("h:mm tt") ?? "";
+        _fTypeId          = ev.ScheduleItemTypeId;
+        _fLocationId      = ev.LocationId;
+        _fLocationOther   = ev.LocationOther;
+        _fActivityId      = ev.ActivityId;
+        _fPresenterName   = ev.PresenterName;
+        _fPresenterBio    = ev.PresenterBio;
+        _fAssignments     = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
+        _assignmentsExpanded = false;
+        _showForm = true;
+    }
+
+    private void CloseForm() { _showForm = false; _copyingFromTitle = null; }
 
     private async Task SaveEvent()
     {
@@ -680,6 +710,7 @@
 
         _selectedDay = DateOnly.FromDateTime(_fDate.Value);
         _showForm = false;
+        _copyingFromTitle = null;
         await LoadEvents();
     }
 
