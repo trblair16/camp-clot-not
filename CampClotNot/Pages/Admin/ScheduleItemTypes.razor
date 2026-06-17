@@ -9,12 +9,14 @@
 
 <style>
     @@media (max-width: 699px) {
-        .admin-sit-form  { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
-        .admin-sit-table { display: none; }
-        .admin-sit-cards { display: flex; flex-direction: column; gap: 10px; }
+        .admin-sit-form        { display: none; }
+        .admin-sit-table       { display: none; }
+        .admin-sit-cards       { display: flex; flex-direction: column; gap: 10px; }
+        .admin-sit-add-mobile  { display: block; margin-bottom: 12px; }
     }
     @@media (min-width: 700px) {
-        .admin-sit-cards { display: none; }
+        .admin-sit-cards      { display: none; }
+        .admin-sit-add-mobile { display: none; }
     }
 </style>
 
@@ -35,9 +37,18 @@
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
-        @* ── Form panel ── *@
-        <div class="admin-sit-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
-            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Type" : "Edit Type")</h3>
+        @* ── Form panel (desktop) / mobile overlay ── *@
+        <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
+             @onclick="CloseFormOverlay">
+        <div class="admin-sit-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+             @onclick:stopPropagation>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Type" : "Edit Type")</h3>
+                @if (_mobileFormOpen)
+                {
+                    <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
+                }
+            </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name</div>
@@ -49,6 +60,18 @@
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Description (optional)</div>
                 <input type="text" @bind="_fDescription" placeholder="Brief description"
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Badge Color</div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <input type="color" @bind="_fColor"
+                           style="width:44px;height:44px;padding:2px;border:3px solid var(--black);border-radius:7px;box-shadow:2px 2px 0 var(--black);cursor:pointer;background:var(--bg-base)" />
+                    <span style="font-size:13px;padding:3px 12px;border-radius:6px;background:@_fColor;color:white;font-family:'Fredoka One',cursive;box-shadow:2px 2px 0 rgba(0,0,0,.25)">
+                        @(!string.IsNullOrEmpty(_fName) ? _fName : "Preview")
+                    </span>
+                    <span style="font-size:11px;color:var(--text-light);font-family:monospace">@_fColor</span>
+                </div>
             </div>
 
             <div style="margin-bottom:14px">
@@ -70,9 +93,12 @@
                 }
             </div>
         </div>
+        </div>
 
         @* ── Table ── *@
         <div style="flex:1;min-width:300px">
+            <button class="ccn-btn admin-sit-add-mobile" @onclick="() => _mobileFormOpen = true">+ Add Type</button>
+
             @if (_loading)
             {
                 <MudProgressCircular Indeterminate="true" />
@@ -89,8 +115,10 @@
                         var enabled = _enabledIds.Contains(t.ScheduleItemTypeId);
                         <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
                             <div style="flex:1;min-width:0">
-                                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">
-                                    <span style="color:var(--text-light);font-size:12px;margin-right:6px">@t.SortOrder ·</span>@t.Name
+                                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                                    <span style="color:var(--text-light);font-size:12px">@t.SortOrder ·</span>
+                                    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:@(t.BadgeColor ?? "#607D8B");flex-shrink:0"></span>
+                                    @t.Name
                                 </div>
                                 @if (!string.IsNullOrEmpty(t.Description))
                                 {
@@ -102,7 +130,7 @@
                                         @onclick="() => ToggleEventTypeAsync(t.ScheduleItemTypeId, !enabled)">
                                     @(enabled ? "✓ On" : "Off")
                                 </button>
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(t)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => { StartEdit(t); _mobileFormOpen = true; }">Edit</button>
                                 @if (string.IsNullOrEmpty(t.SystemName) || !IsBuiltIn(t.SystemName))
                                 {
                                     <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(t)">Del</button>
@@ -131,7 +159,10 @@
                                 <tr style="border-bottom:2px solid #E8E0CC">
                                     <td style="padding:8px 14px;font-size:13px;color:var(--text-light)">@t.SortOrder</td>
                                     <td style="padding:8px 14px;font-size:13px;font-weight:700">
-                                        @t.Name
+                                        <div style="display:flex;align-items:center;gap:8px">
+                                            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:@(t.BadgeColor ?? "#607D8B");flex-shrink:0"></span>
+                                            @t.Name
+                                        </div>
                                         @if (!string.IsNullOrEmpty(t.Description))
                                         {
                                             <div style="font-size:11px;color:var(--text-light);font-weight:400">@t.Description</div>
@@ -181,7 +212,9 @@
     private string _fName = "";
     private string? _fDescription;
     private int _fSortOrder = 10;
+    private string _fColor = "#607D8B";
     private string _error = "";
+    private bool _mobileFormOpen;
 
     protected override async Task OnInitializedAsync()
     {
@@ -213,6 +246,7 @@
         _fName        = t.Name;
         _fDescription = t.Description;
         _fSortOrder   = t.SortOrder;
+        _fColor       = t.BadgeColor ?? DefaultBadgeColor(t.SystemName);
         _error        = "";
     }
 
@@ -222,8 +256,25 @@
         _fName        = "";
         _fDescription = null;
         _fSortOrder   = 10;
+        _fColor       = "#607D8B";
         _error        = "";
+        _mobileFormOpen = false;
     }
+
+    private void CloseFormOverlay() => CancelEdit();
+
+    private static string DefaultBadgeColor(string? systemName) => systemName switch
+    {
+        "Activity"     => "#8E44AD",
+        "Meal"         => "#E67E22",
+        "Travel"       => "#2980B9",
+        "Free"         => "#27AE60",
+        "Mandatory"    => "#D12B2B",
+        "Presentation" => "#16A085",
+        "Meeting"      => "#566573",
+        "Task"         => "#D35400",
+        _              => "#607D8B"
+    };
 
     private async Task SaveAsync()
     {
@@ -241,6 +292,7 @@
             SystemName         = existing?.SystemName ?? _fName.Trim().Replace(" ", ""),
             Description        = _fDescription,
             SortOrder          = _fSortOrder,
+            BadgeColor         = _fColor,
         };
 
         await ScheduleItemTypeSvc.UpsertAsync(type);

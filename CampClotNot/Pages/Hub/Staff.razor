@@ -71,7 +71,7 @@
             @foreach (var m in _members)
             {
                 <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center;display:flex;flex-direction:column">
-                    @if (m.PhotoData is not null)
+                    @if (m.PhotoContentType is not null)
                     {
                         <img src="/staff-photo/@m.StaffMemberId"
                              style="width:100%;aspect-ratio:1/1;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:8px;border:2px solid var(--black);margin-bottom:8px;display:block"
@@ -218,7 +218,7 @@
             AvatarEmoji = m.AvatarEmoji, Phone = m.Phone, Email = m.Email,
             IsVisible = m.IsVisible, SortOrder = m.SortOrder, LinkedUserId = m.LinkedUserId
         };
-        _fPhotoData = null; _fPhotoContentType = null; _currentHasPhoto = m.PhotoData is not null; _photoUploadError = "";
+        _fPhotoData = null; _fPhotoContentType = null; _currentHasPhoto = m.PhotoContentType is not null; _photoUploadError = "";
         ParsePosition(m.PhotoObjectPosition);
         _showForm   = true;
         _showImport = false;

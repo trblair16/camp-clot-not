@@ -19,6 +19,22 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory, IMem
             return await db.StaffMembers
                 .Where(s => s.CampEventId == campEventId && s.IsVisible)
                 .OrderBy(s => s.SortOrder)
+                .Select(s => new StaffMember
+                {
+                    StaffMemberId       = s.StaffMemberId,
+                    CampEventId         = s.CampEventId,
+                    DisplayName         = s.DisplayName,
+                    RoleTitle           = s.RoleTitle,
+                    Phone               = s.Phone,
+                    Email               = s.Email,
+                    PhotoContentType    = s.PhotoContentType,
+                    PhotoObjectPosition = s.PhotoObjectPosition,
+                    AvatarEmoji         = s.AvatarEmoji,
+                    IsVisible           = s.IsVisible,
+                    SortOrder           = s.SortOrder,
+                    LinkedUserId        = s.LinkedUserId
+                    // PhotoData excluded — served on demand via /staff-photo/{id}
+                })
                 .ToListAsync();
         }) ?? [];
     }
@@ -32,6 +48,22 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory, IMem
             return await db.StaffMembers
                 .Where(s => s.CampEventId == campEventId)
                 .OrderBy(s => s.SortOrder)
+                .Select(s => new StaffMember
+                {
+                    StaffMemberId       = s.StaffMemberId,
+                    CampEventId         = s.CampEventId,
+                    DisplayName         = s.DisplayName,
+                    RoleTitle           = s.RoleTitle,
+                    Phone               = s.Phone,
+                    Email               = s.Email,
+                    PhotoContentType    = s.PhotoContentType,
+                    PhotoObjectPosition = s.PhotoObjectPosition,
+                    AvatarEmoji         = s.AvatarEmoji,
+                    IsVisible           = s.IsVisible,
+                    SortOrder           = s.SortOrder,
+                    LinkedUserId        = s.LinkedUserId
+                    // PhotoData excluded — served on demand via /staff-photo/{id}
+                })
                 .ToListAsync();
         }) ?? [];
     }

@@ -613,17 +613,18 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     {
         var defs = new[]
         {
-            new { Id = Id.SitActivity,     Name = "Activity",     SystemName = "Activity",     Description = (string?)"Scheduled camp activity",        SortOrder = 1 },
-            new { Id = Id.SitMeal,         Name = "Meal",         SystemName = "Meal",         Description = (string?)"Breakfast, lunch, or dinner",    SortOrder = 2 },
-            new { Id = Id.SitTravel,       Name = "Travel",       SystemName = "Travel",       Description = (string?)"Arrival or departure",           SortOrder = 3 },
-            new { Id = Id.SitPresentation, Name = "Presentation", SystemName = "Presentation", Description = (string?)"Speaker or educational session", SortOrder = 4 },
-            new { Id = Id.SitMeeting,      Name = "Meeting",      SystemName = "Meeting",      Description = (string?)"Staff or group meeting",         SortOrder = 5 },
-            new { Id = Id.SitTask,         Name = "Task",         SystemName = "Task",         Description = (string?)"Action item or to-do",           SortOrder = 6 },
+            new { Id = Id.SitActivity,     Name = "Activity",     SystemName = "Activity",     Description = (string?)"Scheduled camp activity",        SortOrder = 1, BadgeColor = "#8E44AD" },
+            new { Id = Id.SitMeal,         Name = "Meal",         SystemName = "Meal",         Description = (string?)"Breakfast, lunch, or dinner",    SortOrder = 2, BadgeColor = "#E67E22" },
+            new { Id = Id.SitTravel,       Name = "Travel",       SystemName = "Travel",       Description = (string?)"Arrival or departure",           SortOrder = 3, BadgeColor = "#2980B9" },
+            new { Id = Id.SitPresentation, Name = "Presentation", SystemName = "Presentation", Description = (string?)"Speaker or educational session", SortOrder = 4, BadgeColor = "#16A085" },
+            new { Id = Id.SitMeeting,      Name = "Meeting",      SystemName = "Meeting",      Description = (string?)"Staff or group meeting",         SortOrder = 5, BadgeColor = "#566573" },
+            new { Id = Id.SitTask,         Name = "Task",         SystemName = "Task",         Description = (string?)"Action item or to-do",           SortOrder = 6, BadgeColor = "#D35400" },
         };
 
         foreach (var def in defs)
         {
-            if (!await db.ScheduleItemTypes.AnyAsync(t => t.ScheduleItemTypeId == def.Id))
+            var existing = await db.ScheduleItemTypes.FindAsync(def.Id);
+            if (existing is null)
             {
                 db.ScheduleItemTypes.Add(new Data.Entities.ScheduleItemType
                 {
@@ -632,7 +633,12 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
                     SystemName         = def.SystemName,
                     Description        = def.Description,
                     SortOrder          = def.SortOrder,
+                    BadgeColor         = def.BadgeColor,
                 });
+            }
+            else if (existing.BadgeColor is null)
+            {
+                existing.BadgeColor = def.BadgeColor;
             }
         }
         await db.SaveChangesAsync();

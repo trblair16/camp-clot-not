@@ -60,6 +60,7 @@ public class ScheduleItemTypeService(IDbContextFactory<AppDbContext> factory, IM
             existing.Name        = type.Name;
             existing.Description = type.Description;
             existing.SortOrder   = type.SortOrder;
+            existing.BadgeColor  = type.BadgeColor;
         }
         await db.SaveChangesAsync();
         cache.Remove(AllKey);
