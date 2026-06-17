@@ -8,12 +8,14 @@
 
 <style>
     @@media (max-width: 699px) {
-        .admin-act-form  { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
-        .admin-act-table { display: none; }
-        .admin-act-cards { display: flex; flex-direction: column; gap: 10px; }
+        .admin-act-form        { display: none; }
+        .admin-act-table       { display: none; }
+        .admin-act-cards       { display: flex; flex-direction: column; gap: 10px; }
+        .admin-act-add-mobile  { display: block; margin-bottom: 12px; }
     }
     @@media (min-width: 700px) {
-        .admin-act-cards { display: none; }
+        .admin-act-cards      { display: none; }
+        .admin-act-add-mobile { display: none; }
     }
 </style>
 
@@ -25,9 +27,18 @@
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
-        @* ── Form panel ── *@
-        <div class="admin-act-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 300px;min-width:240px">
-            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Activity" : "Edit Activity")</h3>
+        @* ── Form panel (desktop) / mobile overlay ── *@
+        <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
+             @onclick="CloseFormOverlay">
+        <div class="admin-act-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 300px;min-width:240px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+             @onclick:stopPropagation>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Activity" : "Edit Activity")</h3>
+                @if (_mobileFormOpen)
+                {
+                    <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
+                }
+            </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name</div>
@@ -62,9 +73,12 @@
                 }
             </div>
         </div>
+        </div>
 
         @* ── Table ── *@
         <div style="flex:1;min-width:240px">
+            <button class="ccn-btn admin-act-add-mobile" @onclick="() => _mobileFormOpen = true">+ Add Activity</button>
+
             @if (_loading)
             {
                 <MudProgressCircular Indeterminate="true" />
@@ -92,7 +106,7 @@
                                 }
                             </div>
                             <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => StartEdit(a)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => { StartEdit(a); _mobileFormOpen = true; }">Edit</button>
                                 <button class="ccn-btn" style="font-size:11px;padding:4px 12px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(a)">Del</button>
                             </div>
                         </div>
@@ -143,6 +157,7 @@
     private string _fName = "";
     private string _fDescription = "";
     private Guid? _fLocationId;
+    private bool _mobileFormOpen;
 
     protected override async Task OnInitializedAsync()
     {
@@ -168,7 +183,10 @@
     {
         _editingId = Guid.Empty;
         _fName = ""; _fDescription = ""; _fLocationId = null;
+        _mobileFormOpen = false;
     }
+
+    private void CloseFormOverlay() => CancelEdit();
 
     private async Task SaveAsync()
     {

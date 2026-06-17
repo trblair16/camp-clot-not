@@ -34,7 +34,8 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCac
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
             using var db = factory.CreateDbContext();
-            return await db.ScheduleItems
+            var items = await db.ScheduleItems
+                .AsNoTracking()
                 .Where(e => e.CampEventId == campEventId)
                 .Include(e => e.ScheduleItemType)
                 .Include(e => e.Location)
@@ -47,6 +48,13 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCac
                     .ThenInclude(eg => eg.Location)
                 .OrderBy(e => e.CampDay).ThenBy(e => e.StartTime)
                 .ToListAsync();
+            foreach (var item in items)
+            {
+                if (item.Location is not null) item.Location.ImageData = null;
+                foreach (var ig in item.ItemGroups)
+                    if (ig.Location is not null) ig.Location.ImageData = null;
+            }
+            return items;
         }) ?? [];
     }
 
@@ -56,7 +64,8 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCac
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
             using var db = factory.CreateDbContext();
-            return await db.ScheduleItems
+            var items = await db.ScheduleItems
+                .AsNoTracking()
                 .Where(e => e.CampEventId == campEventId && e.CampDay == day)
                 .Include(e => e.ScheduleItemType)
                 .Include(e => e.Location)
@@ -69,6 +78,13 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCac
                     .ThenInclude(eg => eg.Location)
                 .OrderBy(e => e.StartTime)
                 .ToListAsync();
+            foreach (var item in items)
+            {
+                if (item.Location is not null) item.Location.ImageData = null;
+                foreach (var ig in item.ItemGroups)
+                    if (ig.Location is not null) ig.Location.ImageData = null;
+            }
+            return items;
         }) ?? [];
     }
 

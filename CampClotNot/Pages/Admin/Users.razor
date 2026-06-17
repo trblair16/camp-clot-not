@@ -10,12 +10,14 @@
 
 <style>
     @@media (max-width: 699px) {
-        .admin-usr-form  { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
-        .admin-usr-table { display: none; }
-        .admin-usr-cards { display: flex; flex-direction: column; gap: 10px; }
+        .admin-usr-form        { display: none; }
+        .admin-usr-table       { display: none; }
+        .admin-usr-cards       { display: flex; flex-direction: column; gap: 10px; }
+        .admin-usr-add-mobile  { display: block; margin-bottom: 12px; }
     }
     @@media (min-width: 700px) {
-        .admin-usr-cards { display: none; }
+        .admin-usr-cards      { display: none; }
+        .admin-usr-add-mobile { display: none; }
     }
 </style>
 
@@ -24,9 +26,18 @@
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
-        @* ── Create Account form ── *@
-        <div class="admin-usr-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
-            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">Create Account</h3>
+        @* ── Create Account form (desktop) / mobile overlay ── *@
+        <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
+             @onclick="CloseCreateOverlay">
+        <div class="admin-usr-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+             @onclick:stopPropagation>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">Create Account</h3>
+                @if (_mobileFormOpen)
+                {
+                    <button @onclick="CloseCreateOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
+                }
+            </div>
 
             <div style="display:flex;gap:10px;margin-bottom:14px">
                 <div style="flex:1">
@@ -89,9 +100,12 @@
 
             <button class="ccn-btn" style="width:100%;margin-top:4px" @onclick="CreateAsync">Create Account</button>
         </div>
+        </div>
 
         @* ── Users table ── *@
         <div style="flex:1;min-width:260px">
+            <button class="ccn-btn admin-usr-add-mobile" @onclick="() => _mobileFormOpen = true">+ Create Account</button>
+
             @if (_loading)
             {
                 <MudProgressCircular Indeterminate="true" />
@@ -335,6 +349,7 @@
     private List<User> _users = new();
     private List<Group> _groups = new();
     private bool _loading = true;
+    private bool _mobileFormOpen;
     private UserForm _form = new();
 
     private bool _editOpen;
@@ -405,12 +420,15 @@
         _loading = false;
     }
 
+    private void CloseCreateOverlay() { _mobileFormOpen = false; _form = new(); }
+
     private async Task CreateAsync()
     {
         if (string.IsNullOrWhiteSpace(_form.Email) || string.IsNullOrWhiteSpace(_form.Password)) return;
         var groupId = _form.Role == Role.Volunteer ? _form.GroupId : null;
         await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role, groupId);
         Snackbar.Add($"Account created for {_form.FirstName} {_form.LastName}.", Severity.Success);
+        _mobileFormOpen = false;
         _form = new();
         _users = await AuthSvc.GetAllUsersAsync();
     }

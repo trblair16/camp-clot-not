@@ -7,12 +7,14 @@
 
 <style>
     @@media (max-width: 699px) {
-        .admin-spo-form  { flex: 0 0 100% !important; max-width: 100% !important; min-width: 0 !important; }
-        .admin-spo-table { display: none; }
-        .admin-spo-cards { display: flex; flex-direction: column; gap: 10px; }
+        .admin-spo-form        { display: none; }
+        .admin-spo-table       { display: none; }
+        .admin-spo-cards       { display: flex; flex-direction: column; gap: 10px; }
+        .admin-spo-add-mobile  { display: block; margin-bottom: 12px; }
     }
     @@media (min-width: 700px) {
-        .admin-spo-cards { display: none; }
+        .admin-spo-cards      { display: none; }
+        .admin-spo-add-mobile { display: none; }
     }
 </style>
 
@@ -21,9 +23,18 @@
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
-        @* ── Form panel ── *@
-        <div class="admin-spo-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px;flex:0 0 320px;min-width:260px">
-            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Add Sponsor" : "Edit Sponsor")</h3>
+        @* ── Form panel (desktop) / mobile overlay ── *@
+        <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
+             @onclick="CloseFormOverlay">
+        <div class="admin-spo-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+             @onclick:stopPropagation>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Sponsor" : "Edit Sponsor")</h3>
+                @if (_mobileFormOpen)
+                {
+                    <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
+                }
+            </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name *</div>
@@ -92,9 +103,12 @@
                 }
             </div>
         </div>
+        </div>
 
         @* ── Table ── *@
         <div style="flex:1;min-width:240px">
+            <button class="ccn-btn admin-spo-add-mobile" @onclick="() => _mobileFormOpen = true">+ Add Sponsor</button>
+
             @if (_loading)
             {
                 <MudProgressCircular Indeterminate="true" />
@@ -125,7 +139,7 @@
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-shrink:0">
                                 <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
                                 <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == _sponsors.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(s)">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => { StartEdit(s); _mobileFormOpen = true; }">Edit</button>
                                 <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(s)">Del</button>
                             </div>
                         </div>
@@ -189,6 +203,7 @@
 @code {
     private List<Sponsor> _sponsors = [];
     private bool _loading = true;
+    private bool _mobileFormOpen;
     private Guid _editingId;
     private int _dragIndex = -1;
     private string _fName = "";
@@ -241,7 +256,7 @@
         _fSortOrder     = s.SortOrder;
         _fLogoData      = null;
         _fLogoContentType = null;
-        _currentHasFile = s.LogoData is not null;
+        _currentHasFile = s.LogoContentType is not null;
         _uploadError    = "";
         _saveError      = "";
     }
@@ -252,7 +267,10 @@
         _fName = ""; _fLogoUrl = null; _fWebsite = null; _fContactName = null; _fPhone = null; _fSortOrder = 0;
         _fLogoData = null; _fLogoContentType = null; _currentHasFile = false;
         _uploadError = ""; _saveError = "";
+        _mobileFormOpen = false;
     }
+
+    private void CloseFormOverlay() => CancelEdit();
 
     private async Task SaveAsync()
     {
@@ -315,5 +333,5 @@
     }
 
     private static string LogoSrc(Sponsor s) =>
-        s.LogoData is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
+        s.LogoContentType is not null ? $"/sponsors/logo/{s.SponsorId}" : (s.LogoUrl ?? "");
 }

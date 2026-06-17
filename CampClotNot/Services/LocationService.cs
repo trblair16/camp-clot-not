@@ -15,7 +15,19 @@ public class LocationService(IDbContextFactory<AppDbContext> factory, IMemoryCac
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
             using var db = factory.CreateDbContext();
-            return await db.Locations.OrderBy(l => l.SortOrder).ThenBy(l => l.Name).ToListAsync();
+            return await db.Locations
+                .OrderBy(l => l.SortOrder).ThenBy(l => l.Name)
+                .Select(l => new Location
+                {
+                    LocationId       = l.LocationId,
+                    Name             = l.Name,
+                    Description      = l.Description,
+                    Capacity         = l.Capacity,
+                    ImageContentType = l.ImageContentType,
+                    SortOrder        = l.SortOrder
+                    // ImageData excluded — served on demand via /location-image/{id}
+                })
+                .ToListAsync();
         }) ?? [];
     }
 
