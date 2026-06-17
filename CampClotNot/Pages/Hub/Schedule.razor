@@ -305,7 +305,7 @@
                                     @if (_canEdit)
                                     {
                                         <td>
-                                            <div style="display:flex;gap:4px;justify-content:center">
+                                            <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEditForm(ev)">Edit</button>
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#117A65;color:white" @onclick="() => OpenCopyForm(ev)">Copy</button>
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => DeleteEvent(ev.ScheduleItemId)">Del</button>
