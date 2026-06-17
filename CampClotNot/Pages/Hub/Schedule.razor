@@ -194,7 +194,7 @@
                                         <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@displayActivity.Name</div>
                                     }
                                     <div class="sched-inline-meta">
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">@DisplayItemType(ev.ScheduleItemType)</span>
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">@DisplayItemType(ev.ScheduleItemType)</span>
                                         @if (displayLocation is not null)
                                         {
                                             @if (displayLocation.ImageContentType is not null)
@@ -283,7 +283,7 @@
                                         }
                                     </td>
                                     <td>
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">@DisplayItemType(ev.ScheduleItemType)</span>
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">@DisplayItemType(ev.ScheduleItemType)</span>
                                     </td>
                                     <td>
                                         <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">
@@ -722,18 +722,19 @@
 
     private static string DisplayItemType(ScheduleItemType? t) => t?.Name ?? "—";
 
-    private static string ItemTypeBadgeColor(string? systemName) => systemName switch
-    {
-        "Activity"     => "#8E44AD",
-        "Meal"         => "#E67E22",
-        "Travel"       => "#2980B9",
-        "Free"         => "#27AE60",
-        "Mandatory"    => "#D12B2B",
-        "Presentation" => "#16A085",
-        "Meeting"      => "#566573",
-        "Task"         => "#D35400",
-        _              => "#607D8B"
-    };
+    private static string ItemTypeBadgeColor(string? badgeColor, string? systemName) =>
+        !string.IsNullOrEmpty(badgeColor) ? badgeColor : systemName switch
+        {
+            "Activity"     => "#8E44AD",
+            "Meal"         => "#E67E22",
+            "Travel"       => "#2980B9",
+            "Free"         => "#27AE60",
+            "Mandatory"    => "#D12B2B",
+            "Presentation" => "#16A085",
+            "Meeting"      => "#566573",
+            "Task"         => "#D35400",
+            _              => "#607D8B"
+        };
 
     private class AssignmentFormRow
     {

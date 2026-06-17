@@ -7,4 +7,5 @@ public class ScheduleItemType
     public string SystemName { get; set; } = "";
     public string? Description { get; set; }
     public int SortOrder { get; set; }
+    public string? BadgeColor { get; set; }
 }

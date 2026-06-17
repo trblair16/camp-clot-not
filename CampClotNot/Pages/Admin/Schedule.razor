@@ -235,7 +235,7 @@
                                         @ev.Title
                                     </div>
                                     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
                                             @DisplayItemType(ev.ScheduleItemType)
                                         </span>
                                         @if (ev.Location is not null)
@@ -304,7 +304,7 @@
                                         }
                                     </td>
                                     <td style="padding:8px 14px">
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
                                             @DisplayItemType(ev.ScheduleItemType)
                                         </span>
                                     </td>
@@ -554,18 +554,19 @@
 
     private static string DisplayItemType(ScheduleItemType? t) => t?.Name ?? "—";
 
-    private static string ItemTypeBadgeColor(string? systemName) => systemName switch
-    {
-        "Activity"     => "#8E44AD",
-        "Meal"         => "#E67E22",
-        "Travel"       => "#2980B9",
-        "Free"         => "#27AE60",
-        "Mandatory"    => "#D12B2B",
-        "Presentation" => "#16A085",
-        "Meeting"      => "#566573",
-        "Task"         => "#D35400",
-        _              => "#607D8B"
-    };
+    private static string ItemTypeBadgeColor(string? badgeColor, string? systemName) =>
+        !string.IsNullOrEmpty(badgeColor) ? badgeColor : systemName switch
+        {
+            "Activity"     => "#8E44AD",
+            "Meal"         => "#E67E22",
+            "Travel"       => "#2980B9",
+            "Free"         => "#27AE60",
+            "Mandatory"    => "#D12B2B",
+            "Presentation" => "#16A085",
+            "Meeting"      => "#566573",
+            "Task"         => "#D35400",
+            _              => "#607D8B"
+        };
 
     private class AssignmentFormRow
     {
