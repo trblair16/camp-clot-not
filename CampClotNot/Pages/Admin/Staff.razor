@@ -1,119 +1,297 @@
 @page "/admin/staff"
 @attribute [Authorize(Roles = "Admin")]
 @inject StaffDirectoryService StaffSvc
+@using SixLabors.ImageSharp
+@using SixLabors.ImageSharp.Processing
 
 <PageTitle>Staff Admin — Camp Clot Not</PageTitle>
 
 <style>
     @@media (max-width: 699px) {
+        .admin-staff-form  { display: none; }
         .admin-staff-table { display: none; }
         .admin-staff-cards { display: flex; flex-direction: column; gap: 10px; }
+        .admin-staff-add-mobile { display: block; margin-bottom: 12px; }
     }
     @@media (min-width: 700px) {
         .admin-staff-cards { display: none; }
+        .admin-staff-add-mobile { display: none; }
     }
 </style>
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/people.svg" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Staff Order</h2>
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/people.svg" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Staff</h2>
 
-    @if (_loading)
-    {
-        <MudProgressCircular Indeterminate="true" />
-    }
-    else if (!_members.Any())
-    {
-        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No staff members yet. Add them at <a href="/hub/staff">Hub → Staff</a>.</p>
-    }
-    else
-    {
-        @* ── Mobile cards with up/down ── *@
-        <div class="admin-staff-cards">
-            @for (int i = 0; i < _members.Count; i++)
-            {
-                var idx = i;
-                var m = _members[idx];
-                <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
-                    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-                        @if (m.PhotoContentType is not null)
-                        {
-                            <img src="/staff-photo/@m.StaffMemberId" style="width:40px;height:40px;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:6px;border:2px solid var(--black);flex-shrink:0" alt="" />
-                        }
-                        else
-                        {
-                            <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:6px;border:2px solid var(--black);background:#F5F0E4;flex-shrink:0">@m.AvatarEmoji</div>
-                        }
-                        <div style="min-width:0">
-                            <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@m.DisplayName</div>
-                            <div style="font-size:11px;color:var(--text-light)">@m.RoleTitle</div>
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+        @* ── Form panel (desktop) / mobile overlay ── *@
+        <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
+             @onmousedown="CloseFormOverlay">
+        <div class="admin-staff-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+             @onmousedown:stopPropagation>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Staff" : "Edit Staff")</h3>
+                @if (_mobileFormOpen)
+                {
+                    <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
+                }
+            </div>
+
+            <MudTextField @bind-Value="_fName" Label="Name" Required="true" Class="mb-2" />
+            <MudTextField @bind-Value="_fRoleTitle" Label="Role/Title" Class="mb-2" />
+            <MudTextField @bind-Value="_fAvatarEmoji" Label="Avatar Emoji (fallback)" Class="mb-2" />
+
+            <div style="margin-bottom:12px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Photo (JPEG/PNG, max 10 MB)</div>
+                <InputFile OnChange="HandlePhotoUpload" accept="image/*" style="font-size:13px;font-family:'Nunito',sans-serif" />
+                @if (!string.IsNullOrWhiteSpace(_photoUploadError))
+                {
+                    <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_photoUploadError</div>
+                }
+                @if (PhotoPreviewSrc is not null)
+                {
+                    <div style="margin-top:10px">
+                        <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Position Preview</div>
+                        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+                            <img src="@PhotoPreviewSrc"
+                                 style="width:80px;height:80px;object-fit:cover;object-position:@_fPhotoX% @_fPhotoY%;border-radius:8px;border:3px solid var(--black);flex-shrink:0"
+                                 alt="Preview" />
+                            <div style="flex:1;min-width:120px">
+                                <div style="margin-bottom:8px">
+                                    <div style="font-size:11px;font-weight:700;color:var(--text-mid);margin-bottom:3px">H — @_fPhotoX%</div>
+                                    <input type="range" min="0" max="100" value="@_fPhotoX"
+                                           @oninput="e => _fPhotoX = int.TryParse(e.Value?.ToString(), out var v) ? v : 50"
+                                           style="width:100%;accent-color:var(--black)" />
+                                </div>
+                                <div>
+                                    <div style="font-size:11px;font-weight:700;color:var(--text-mid);margin-bottom:3px">V — @_fPhotoY%</div>
+                                    <input type="range" min="0" max="100" value="@_fPhotoY"
+                                           @oninput="e => _fPhotoY = int.TryParse(e.Value?.ToString(), out var v) ? v : 50"
+                                           style="width:100%;accent-color:var(--black)" />
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-shrink:0">
-                        <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
-                        <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == _members.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
-                    </div>
+                }
+            </div>
+
+            <MudTextField @bind-Value="_fPhone" Label="Phone (optional)" Class="mb-2" />
+            <MudTextField @bind-Value="_fEmail" Label="Email (optional)" Class="mb-2" />
+            <MudSwitch T="bool" @bind-Value="_fIsVisible" Label="Visible in directory" Color="MudBlazor.Color.Primary" Class="mb-2" />
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                @if (_editingId != Guid.Empty)
+                {
+                    <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="ResetForm">Cancel</button>
+                }
+                <button class="ccn-btn" @onclick="SaveAsync">@(_editingId == Guid.Empty ? "Add Staff" : "Save Changes")</button>
+            </div>
+        </div>
+        </div>
+
+        @* ── List ── *@
+        <div style="flex:1;min-width:240px">
+            <button class="ccn-btn admin-staff-add-mobile" @onclick="() => _mobileFormOpen = true">+ Add Staff</button>
+
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_members.Any())
+            {
+                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No staff yet. Add the first one →</p>
+            }
+            else
+            {
+                @* ── Mobile cards ── *@
+                <div class="admin-staff-cards">
+                    @for (int i = 0; i < _members.Count; i++)
+                    {
+                        var idx = i;
+                        var m = _members[idx];
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                                @if (m.PhotoContentType is not null)
+                                {
+                                    <img src="/staff-photo/@m.StaffMemberId" style="width:40px;height:40px;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:6px;border:2px solid var(--black);flex-shrink:0" alt="" />
+                                }
+                                else
+                                {
+                                    <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:6px;border:2px solid var(--black);background:#F5F0E4;flex-shrink:0">@m.AvatarEmoji</div>
+                                }
+                                <div style="min-width:0">
+                                    <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@m.DisplayName</div>
+                                    <div style="font-size:11px;color:var(--text-light)">@m.RoleTitle</div>
+                                </div>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
+                                <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == _members.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => { StartEdit(m); _mobileFormOpen = true; }">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(m)">Del</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* ── Desktop table with drag ── *@
+                <div class="admin-staff-table">
+                <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">Drag rows to reorder. Changes save immediately.</div>
+                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:var(--black)">
+                                <th style="padding:10px 8px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;width:28px"></th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;width:48px"></th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Role</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Phone</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Visible</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody @ondragover:preventDefault="true">
+                            @for (int i = 0; i < _members.Count; i++)
+                            {
+                                var m = _members[i];
+                                var idx = i;
+                                <tr draggable="true"
+                                    style="border-bottom:2px solid #E8E0CC"
+                                    @ondragstart="() => _dragIndex = idx"
+                                    @ondragover:preventDefault="true"
+                                    @ondrop="() => DropAsync(idx)">
+                                    <td style="padding:10px 8px;color:var(--text-light);cursor:grab;font-size:16px;text-align:center">⠿</td>
+                                    <td style="padding:8px 14px">
+                                        @if (m.PhotoContentType is not null)
+                                        {
+                                            <img src="/staff-photo/@m.StaffMemberId" style="width:36px;height:36px;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:6px;border:1px solid var(--black)" alt="" />
+                                        }
+                                        else
+                                        {
+                                            <span style="font-size:22px">@m.AvatarEmoji</span>
+                                        }
+                                    </td>
+                                    <td style="padding:10px 14px;font-size:13px;font-weight:700">@m.DisplayName</td>
+                                    <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@m.RoleTitle</td>
+                                    <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@(m.Phone ?? "—")</td>
+                                    <td style="padding:10px 14px;font-size:12px">@(m.IsVisible ? "✓" : "—")</td>
+                                    <td style="padding:8px 10px">
+                                        <div style="display:flex;gap:4px">
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(m)">Edit</button>
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(m)">Del</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
                 </div>
             }
         </div>
 
-        @* ── Desktop table with drag ── *@
-        <div class="admin-staff-table">
-            <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">Drag rows to reorder. Changes save immediately.</div>
-            <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
-                <table style="width:100%;border-collapse:collapse">
-                    <thead>
-                        <tr style="background:var(--black)">
-                            <th style="padding:10px 8px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;width:28px"></th>
-                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;width:48px">Photo</th>
-                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
-                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Role</th>
-                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Phone</th>
-                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Visible</th>
-                        </tr>
-                    </thead>
-                    <tbody @ondragover:preventDefault="true">
-                        @for (int i = 0; i < _members.Count; i++)
-                        {
-                            var m = _members[i];
-                            var idx = i;
-                            <tr draggable="true"
-                                style="border-bottom:2px solid #E8E0CC"
-                                @ondragstart="() => _dragIndex = idx"
-                                @ondragover:preventDefault="true"
-                                @ondrop="() => DropAsync(idx)">
-                                <td style="padding:10px 8px;color:var(--text-light);cursor:grab;font-size:16px;text-align:center">⠿</td>
-                                <td style="padding:8px 14px">
-                                    @if (m.PhotoContentType is not null)
-                                    {
-                                        <img src="/staff-photo/@m.StaffMemberId" style="width:36px;height:36px;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:6px;border:1px solid var(--black)" alt="" />
-                                    }
-                                    else
-                                    {
-                                        <span style="font-size:22px">@m.AvatarEmoji</span>
-                                    }
-                                </td>
-                                <td style="padding:10px 14px;font-size:13px;font-weight:700">@m.DisplayName</td>
-                                <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@m.RoleTitle</td>
-                                <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@(m.Phone ?? "—")</td>
-                                <td style="padding:10px 14px;font-size:12px">@(m.IsVisible ? "✓" : "—")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
+    </div>
 </div>
 
 @code {
     private bool _loading = true;
+    private bool _mobileFormOpen;
     private int _dragIndex = -1;
     private List<StaffMember> _members = new();
 
+    private Guid _editingId;
+    private string _fName = "";
+    private string _fRoleTitle = "";
+    private string _fAvatarEmoji = "👤";
+    private string? _fPhone;
+    private string? _fEmail;
+    private bool _fIsVisible = true;
+    private Guid? _fLinkedUserId;
+    private byte[]? _fPhotoData;
+    private string? _fPhotoContentType;
+    private bool _currentHasPhoto;
+    private string _photoUploadError = "";
+    private int _fPhotoX = 50;
+    private int _fPhotoY = 50;
+
+    private string? PhotoPreviewSrc => _fPhotoData is not null
+        ? $"data:{_fPhotoContentType};base64,{Convert.ToBase64String(_fPhotoData)}"
+        : _currentHasPhoto && _editingId != Guid.Empty
+            ? $"/staff-photo/{_editingId}"
+            : null;
+
     protected override async Task OnInitializedAsync()
     {
-        _members = await StaffSvc.GetAllAsync(SeedService.Id.EventCcn2026);
+        await Reload();
         _loading = false;
+    }
+
+    private async Task Reload()
+    {
+        _members = await StaffSvc.GetAllAsync(SeedService.Id.EventCcn2026);
+    }
+
+    private void StartEdit(StaffMember m)
+    {
+        _editingId       = m.StaffMemberId;
+        _fName           = m.DisplayName;
+        _fRoleTitle      = m.RoleTitle;
+        _fAvatarEmoji    = m.AvatarEmoji;
+        _fPhone          = m.Phone;
+        _fEmail          = m.Email;
+        _fIsVisible      = m.IsVisible;
+        _fLinkedUserId   = m.LinkedUserId;
+        _fPhotoData      = null;
+        _fPhotoContentType = null;
+        _currentHasPhoto = m.PhotoContentType is not null;
+        _photoUploadError = "";
+        ParsePosition(m.PhotoObjectPosition);
+    }
+
+    private void ResetForm()
+    {
+        _editingId = Guid.Empty;
+        _fName = ""; _fRoleTitle = ""; _fAvatarEmoji = "👤";
+        _fPhone = null; _fEmail = null; _fIsVisible = true; _fLinkedUserId = null;
+        _fPhotoData = null; _fPhotoContentType = null; _currentHasPhoto = false;
+        _photoUploadError = "";
+        _fPhotoX = 50; _fPhotoY = 50;
+    }
+
+    private void CloseFormOverlay()
+    {
+        _mobileFormOpen = false;
+        if (_editingId != Guid.Empty) ResetForm();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_fName)) return;
+        var member = new StaffMember
+        {
+            StaffMemberId      = _editingId == Guid.Empty ? Guid.Empty : _editingId,
+            CampEventId        = SeedService.Id.EventCcn2026,
+            DisplayName        = _fName,
+            RoleTitle          = _fRoleTitle,
+            AvatarEmoji        = _fAvatarEmoji,
+            Phone              = _fPhone,
+            Email              = _fEmail,
+            IsVisible          = _fIsVisible,
+            LinkedUserId       = _fLinkedUserId,
+            PhotoData          = _fPhotoData,
+            PhotoContentType   = _fPhotoContentType,
+            PhotoObjectPosition = PhotoPreviewSrc is not null ? $"{_fPhotoX}% {_fPhotoY}%" : null
+        };
+        await StaffSvc.UpsertAsync(member);
+        ResetForm();
+        _mobileFormOpen = false;
+        await Reload();
+    }
+
+    private async Task DeleteAsync(StaffMember m)
+    {
+        await StaffSvc.DeleteAsync(m.StaffMemberId);
+        await Reload();
     }
 
     private async Task MoveAsync(int fromIndex, int direction)
@@ -134,5 +312,49 @@
         _members.Insert(dropIndex, item);
         _dragIndex = -1;
         await StaffSvc.ReorderAsync(_members.Select(m => m.StaffMemberId).ToList());
+    }
+
+    private async Task HandlePhotoUpload(InputFileChangeEventArgs e)
+    {
+        _photoUploadError = "";
+        var file = e.File;
+        if (file.Size > 10 * 1024 * 1024)
+        {
+            _photoUploadError = "File too large — maximum 10 MB.";
+            return;
+        }
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+
+            using var image = SixLabors.ImageSharp.Image.Load(ms.ToArray());
+            if (image.Width > 400 || image.Height > 400)
+                image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
+                {
+                    Mode = SixLabors.ImageSharp.Processing.ResizeMode.Max,
+                    Size = new SixLabors.ImageSharp.Size(400, 400)
+                }));
+            using var outMs = new MemoryStream();
+            await image.SaveAsJpegAsync(outMs, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder { Quality = 85 });
+
+            _fPhotoData        = outMs.ToArray();
+            _fPhotoContentType = "image/jpeg";
+        }
+        catch
+        {
+            _photoUploadError = "Could not process image — try a JPEG or PNG file instead.";
+            return;
+        }
+        _fPhotoX = 50; _fPhotoY = 50;
+    }
+
+    private void ParsePosition(string? pos)
+    {
+        if (string.IsNullOrWhiteSpace(pos)) { _fPhotoX = 50; _fPhotoY = 50; return; }
+        var parts = pos.Split(' ');
+        _fPhotoX = parts.Length > 0 && int.TryParse(parts[0].TrimEnd('%'), out var x) ? x : 50;
+        _fPhotoY = parts.Length > 1 && int.TryParse(parts[1].TrimEnd('%'), out var y) ? y : 50;
     }
 }
