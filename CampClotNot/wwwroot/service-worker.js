@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ccn-shell-v3';
+const CACHE_NAME = 'ccn-shell-v4';
 const SHELL_ASSETS = [
     '/offline.html',
     '/app.css',
@@ -49,6 +49,34 @@ self.addEventListener('fetch', function(event) {
             return cached || fetch(event.request).catch(function() {
                 return caches.match('/offline.html');
             });
+        })
+    );
+});
+
+self.addEventListener('push', function(event) {
+    var data = { title: 'Camp Clot Not', body: 'New announcement', url: '/hub/announcements' };
+    try { data = event.data.json(); } catch(e) {}
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            data: { url: data.url || '/hub/announcements' },
+            vibrate: [200, 100, 200]
+        })
+    );
+});
+
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    var url = event.notification.data && event.notification.data.url ? event.notification.data.url : '/hub/announcements';
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+            for (var i = 0; i < clientList.length; i++) {
+                if (clientList[i].url.indexOf(url) !== -1 && 'focus' in clientList[i])
+                    return clientList[i].focus();
+            }
+            if (clients.openWindow) return clients.openWindow(url);
         })
     );
 });

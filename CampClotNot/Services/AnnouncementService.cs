@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
-public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
+public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache, PushNotificationService pushService)
 {
     private const string FeedKey = "ann.feed";
 
@@ -58,6 +58,10 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         db.Announcements.Add(announcement);
         await db.SaveChangesAsync();
         cache.Remove(FeedKey);
+        _ = Task.Run(() => pushService.SendToAllAsync(
+            priority == AnnouncementPriority.Urgent ? $"🚨 {title}" : $"📢 {title}",
+            body.Length > 120 ? body[..117] + "..." : body,
+            "/hub/announcements"));
         return announcement;
     }
 
