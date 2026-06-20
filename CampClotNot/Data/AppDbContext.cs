@@ -51,6 +51,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<IncidentReport> IncidentReports => Set<IncidentReport>();
     public DbSet<Sponsor> Sponsors => Set<Sponsor>();
     public DbSet<CampDocument> CampDocuments => Set<CampDocument>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -71,6 +71,7 @@ try
     builder.Services.AddScoped<SponsorService>();
     builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<AuthService>();
+    builder.Services.AddSingleton<PushNotificationService>();
     builder.Services.AddScoped<SeedService>();
 
     builder.Services.AddHttpContextAccessor();
@@ -232,6 +233,28 @@ try
         return Results.File(doc.Data, doc.ContentType, doc.OriginalFileName ?? $"{doc.Title}.pdf");
     }).RequireAuthorization();
 
+    app.MapGet("/api/vapid-public-key", (IConfiguration config) =>
+        Results.Ok(new { key = config["Vapid:PublicKey"] }));
+
+    app.MapPost("/api/push/subscribe", async (HttpContext ctx, PushNotificationService pushSvc) =>
+    {
+        var form = await ctx.Request.ReadFromJsonAsync<PushSubscribeRequest>();
+        if (form is null) return Results.BadRequest();
+        Guid? userId = null;
+        if (Guid.TryParse(ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid))
+            userId = uid;
+        await pushSvc.SubscribeAsync(form.Endpoint, form.P256dh, form.Auth, userId);
+        return Results.Ok();
+    });
+
+    app.MapPost("/api/push/unsubscribe", async (HttpContext ctx, PushNotificationService pushSvc) =>
+    {
+        var form = await ctx.Request.ReadFromJsonAsync<PushUnsubscribeRequest>();
+        if (form is null) return Results.BadRequest();
+        await pushSvc.UnsubscribeAsync(form.Endpoint);
+        return Results.Ok();
+    });
+
     app.MapHub<LiveHub>("/livehub");
     app.MapBlazorHub();
     app.MapFallbackToPage("/_Host");
@@ -254,3 +277,6 @@ static string ConvertPostgresUri(string uri)
     var userInfo = u.UserInfo.Split(':');
     return $"Host={u.Host};Port={u.Port};Database={u.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 }
+
+record PushSubscribeRequest(string Endpoint, string P256dh, string Auth);
+record PushUnsubscribeRequest(string Endpoint);
