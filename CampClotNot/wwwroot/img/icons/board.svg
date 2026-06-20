@@ -1,12 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="2" y="2" width="20" height="20" rx="3"/>
-  <rect x="5" y="5" width="4" height="4" rx="1"/>
-  <rect x="10" y="5" width="4" height="4" rx="1"/>
-  <rect x="15" y="5" width="4" height="4" rx="1"/>
-  <rect x="15" y="10" width="4" height="4" rx="1"/>
-  <rect x="15" y="15" width="4" height="4" rx="1" fill="currentColor"/>
-  <line x1="9" y1="7" x2="10" y2="7"/>
-  <line x1="14" y1="7" x2="15" y2="7"/>
-  <line x1="17" y1="9" x2="17" y2="10"/>
-  <line x1="17" y1="14" x2="17" y2="15"/>
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Coin base -->
+  <circle cx="12" cy="12" r="9"
+          fill="#F5C800"
+          stroke="#1A1A1A"
+          stroke-width="1.75"/>
+
+  <!-- Star -->
+  <path d="M12 7.2 L13.6 10.6 L17.4 11 L14.6 13.3 L15.4 17 L12 15.2 L8.6 17 L9.4 13.3 L6.6 11 L10.4 10.6 Z"
+        fill="#E6AC00"
+        stroke="#1A1A1A"
+        stroke-width="1.5"
+        stroke-linejoin="round"/>
+
 </svg>

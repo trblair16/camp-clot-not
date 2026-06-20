@@ -1,0 +1,19 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Body (half circle, unchanged shape but positioned correctly) -->
+  <path d="M5 18
+           A7 7 0 0 1 19 18
+           Z"
+        fill="#2980B9"
+        stroke="#1A1A1A"
+        stroke-width="1.75"
+        stroke-linejoin="round"/>
+
+  <!-- Head (slightly larger + floating above body) -->
+  <circle cx="12" cy="7"
+          r="3.3"
+          fill="#2980B9"
+          stroke="#1A1A1A"
+          stroke-width="1.75"/>
+
+</svg>
