@@ -67,10 +67,20 @@
     }
     else
     {
+        @if (_isAdmin)
+        {
+            <div style="font-size:11px;color:var(--text-light);margin-bottom:8px">Drag cards to reorder. Changes save immediately.</div>
+        }
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
-            @foreach (var m in _members)
+            @for (int i = 0; i < _members.Count; i++)
             {
-                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center;display:flex;flex-direction:column">
+                var idx = i;
+                var m = _members[idx];
+                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center;display:flex;flex-direction:column;@(_isAdmin ? "cursor:grab" : "")"
+                     draggable="@(_isAdmin ? "true" : "false")"
+                     @ondragstart="() => _dragIndex = idx"
+                     @ondragover:preventDefault="true"
+                     @ondrop="() => DropAsync(idx)">
                     @if (m.PhotoContentType is not null)
                     {
                         <img src="/staff-photo/@m.StaffMemberId"
@@ -166,6 +176,7 @@
     private bool _isAdmin;
     private bool _showForm;
     private bool _showImport;
+    private int _dragIndex = -1;
     private List<StaffMember> _members = new();
     private List<User> _eligibleUsers = new();
     private StaffMember _form = new() { AvatarEmoji = "👤", IsVisible = true };
@@ -293,6 +304,16 @@
         var parts = pos.Split(' ');
         _fPhotoX = parts.Length > 0 && int.TryParse(parts[0].TrimEnd('%'), out var x) ? x : 50;
         _fPhotoY = parts.Length > 1 && int.TryParse(parts[1].TrimEnd('%'), out var y) ? y : 50;
+    }
+
+    private async Task DropAsync(int dropIndex)
+    {
+        if (_dragIndex < 0 || _dragIndex == dropIndex) { _dragIndex = -1; return; }
+        var item = _members[_dragIndex];
+        _members.RemoveAt(_dragIndex);
+        _members.Insert(dropIndex, item);
+        _dragIndex = -1;
+        await StaffSvc.ReorderAsync(_members.Select(m => m.StaffMemberId).ToList());
     }
 
     private async Task Delete(Guid id)
