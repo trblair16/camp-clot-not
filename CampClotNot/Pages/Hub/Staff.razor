@@ -99,9 +99,7 @@
                     }
                     @if (_isAdmin)
                     {
-                        <div style="display:flex;gap:4px;margin-top:auto;padding-top:10px;justify-content:center;flex-wrap:wrap">
-                            <button class="ccn-btn" style="font-size:13px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
-                            <button class="ccn-btn" style="font-size:13px;padding:4px 10px" disabled="@(idx == _members.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
+                        <div style="display:flex;gap:4px;margin-top:auto;padding-top:10px;justify-content:center">
                             <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEdit(m)">Edit</button>
                             <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => Delete(m.StaffMemberId)">Del</button>
                         </div>
@@ -297,16 +295,6 @@
         var parts = pos.Split(' ');
         _fPhotoX = parts.Length > 0 && int.TryParse(parts[0].TrimEnd('%'), out var x) ? x : 50;
         _fPhotoY = parts.Length > 1 && int.TryParse(parts[1].TrimEnd('%'), out var y) ? y : 50;
-    }
-
-    private async Task MoveAsync(int fromIndex, int direction)
-    {
-        var toIndex = fromIndex + direction;
-        if (toIndex < 0 || toIndex >= _members.Count) return;
-        var item = _members[fromIndex];
-        _members.RemoveAt(fromIndex);
-        _members.Insert(toIndex, item);
-        await StaffSvc.ReorderAsync(_members.Select(m => m.StaffMemberId).ToList());
     }
 
     private async Task Delete(Guid id)
