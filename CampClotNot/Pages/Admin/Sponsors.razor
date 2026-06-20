@@ -175,7 +175,7 @@
                                         <img src="@LogoSrc(s)" alt="@s.Name"
                                              style="height:36px;width:auto;object-fit:contain;border:1px solid #E8E0CC;border-radius:4px;background:white;padding:2px" />
                                     </td>
-                                    <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">
+                                    <td style="padding:10px 14px;font-size:12px;color:var(--text-mid);overflow-wrap:break-word;word-break:break-all;max-width:200px">
                                         @if (!string.IsNullOrWhiteSpace(s.Website))
                                         {
                                             <a href="@s.Website" target="_blank" style="color:inherit">@s.Website</a>
