@@ -116,7 +116,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCac
                 PresenterName      = dto.PresenterName,
                 PresenterBio       = dto.PresenterBio,
                 CreatedBy          = userId,
-                UpdatedAt          = DateTime.UtcNow,
+                UpdatedAt          = CampTime.Now,
                 ItemGroups         = dto.Assignments
                     .Select(a => new ScheduleItemGroup
                     {
@@ -146,7 +146,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCac
             existing.MaxCapacity        = dto.MaxCapacity;
             existing.PresenterName      = dto.PresenterName;
             existing.PresenterBio       = dto.PresenterBio;
-            existing.UpdatedAt          = DateTime.UtcNow;
+            existing.UpdatedAt          = CampTime.Now;
 
             db.ScheduleItemGroups.RemoveRange(existing.ItemGroups);
             existing.ItemGroups = dto.Assignments

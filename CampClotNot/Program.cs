@@ -135,7 +135,7 @@ try
         {
             using var db    = factory.CreateDbContext();
             var activeEvent = await db.Events.FirstOrDefaultAsync(e => e.IsActive);
-            var today       = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today       = CampTime.Today;
             if (activeEvent is not null && today >= activeEvent.EffDate && today <= activeEvent.ExpDate)
                 expiresUtc = new DateTimeOffset(activeEvent.ExpDate.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
             else

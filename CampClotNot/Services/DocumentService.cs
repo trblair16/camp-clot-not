@@ -40,7 +40,7 @@ public class DocumentService(IDbContextFactory<AppDbContext> factory)
             ContentType      = contentType,
             VisibleRoles     = visibleRoles,
             SortOrder        = maxOrder + 1,
-            UploadedAt       = DateTime.UtcNow,
+            UploadedAt       = CampTime.Now,
             UploadedByUserId = uploadedByUserId,
         });
         await db.SaveChangesAsync();
