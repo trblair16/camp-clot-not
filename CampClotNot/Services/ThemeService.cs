@@ -5,7 +5,7 @@ public static class CampTime
     private static readonly TimeZoneInfo Central =
         TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
 
-    public static DateTime Now => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Central);
+    public static DateTime Now => DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Central), DateTimeKind.Utc);
     public static DateOnly Today => DateOnly.FromDateTime(Now);
 }
 
