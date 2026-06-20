@@ -27,11 +27,14 @@ public class PushNotificationService
         var vapidPrivate = config["Vapid:PrivateKey"]!;
         var vapidSubject = config["Vapid:Subject"] ?? "mailto:trblair16@gmail.com";
 
-        _pushClient = new PushServiceClient();
+        _pushClient = new PushServiceClient(new HttpClient());
         _pushClient.DefaultAuthentication = new VapidAuthentication(vapidPublic, vapidPrivate)
         {
             Subject = vapidSubject
         };
+
+        _logger.LogInformation("PushNotificationService initialized. Subject={Subject}, PublicKey={Key}",
+            vapidSubject, vapidPublic[..20] + "...");
     }
 
     public async Task SubscribeAsync(string endpoint, string p256dh, string auth, Guid? userId)
@@ -98,9 +101,13 @@ public class PushNotificationService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Push delivery failed for {Endpoint}", sub.Endpoint);
-                if (ex is PushServiceClientException psce && (int)psce.StatusCode is 404 or 410)
-                    stale.Add(sub);
+                _logger.LogWarning("Push delivery failed for {Endpoint}: {Error}", sub.Endpoint, ex.Message);
+                if (ex is PushServiceClientException psce)
+                {
+                    _logger.LogWarning("Push status code: {StatusCode}", (int)psce.StatusCode);
+                    if ((int)psce.StatusCode is 404 or 410)
+                        stale.Add(sub);
+                }
             }
         }
 
