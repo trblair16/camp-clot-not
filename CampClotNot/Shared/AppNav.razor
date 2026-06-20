@@ -23,8 +23,8 @@
     <AuthorizeView>
         <Authorized>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                <a href="/dashboard" class="nav-link" style="@ActiveStyle("/dashboard", "#27AE60")"><img src="/img/icons/home.svg?v=2" class="nav-link-icon" alt="" /> Home</a>
-                <a href="/hub/schedule" class="nav-link" style="@ActiveStyle("/hub/schedule", "#2980B9")"><img src="/img/icons/schedule.svg?v=2" class="nav-link-icon" alt="" /> Schedule</a>
+                <a href="/dashboard" class="nav-link" style="@ActiveStyle("/dashboard", "#27AE60")"><img src="/img/icons/home.svg?v=3" class="nav-link-icon" alt="" /> Home</a>
+                <a href="/hub/schedule" class="nav-link" style="@ActiveStyle("/hub/schedule", "#2980B9")"><img src="/img/icons/schedule.svg?v=3" class="nav-link-icon" alt="" /> Schedule</a>
 
                 @* ── Hub dropdown ── *@
                 <div class="nav-hub-dropdown">
@@ -35,17 +35,17 @@
                     }
                     <button class="nav-link" style="@HubDropdownStyle()"
                             @onclick="() => { _hubDropdownOpen = !_hubDropdownOpen; _gameDropdownOpen = false; _adminDropdownOpen = false; }">
-                        <img src="/img/icons/hub.svg?v=2" class="nav-link-icon" alt="" /> Hub @(_hubDropdownOpen ? "▲" : "▼")
+                        <img src="/img/icons/hub.svg?v=3" class="nav-link-icon" alt="" /> Hub @(_hubDropdownOpen ? "▲" : "▼")
                     </button>
                     @if (_hubDropdownOpen)
                     {
                         <div class="nav-admin-panel">
-                            <a href="/hub/announcements" @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/announcements.svg?v=2" alt="" /> Announcements</a>
-                            <a href="/hub/staff"         @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/person.svg?v=2" alt="" /> Staff</a>
-                            <a href="/hub/sponsors"      @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/trophy.svg?v=2" alt="" /> Sponsors</a>
-                            <a href="/hub/info"          @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/hub.svg?v=2" alt="" /> Info</a>
+                            <a href="/hub/announcements" @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/announcements.svg?v=3" alt="" /> Announcements</a>
+                            <a href="/hub/staff"         @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/person.svg?v=3" alt="" /> Staff</a>
+                            <a href="/hub/sponsors"      @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Sponsors</a>
+                            <a href="/hub/info"          @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/hub.svg?v=3" alt="" /> Info</a>
                             <AuthorizeView Roles="Admin" Context="hubAdminCtx">
-                                <a href="/hub/incidents" @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/alert.svg?v=2" alt="" /> Incidents</a>
+                                <a href="/hub/incidents" @onclick="() => _hubDropdownOpen = false"><img src="/img/icons/alert.svg?v=3" alt="" /> Incidents</a>
                             </AuthorizeView>
                         </div>
                     }
@@ -60,25 +60,25 @@
                     }
                     <button class="nav-link" style="@GameDropdownStyle()"
                             @onclick="() => { _gameDropdownOpen = !_gameDropdownOpen; _hubDropdownOpen = false; _adminDropdownOpen = false; }">
-                        <img src="/img/icons/game.svg?v=2" class="nav-link-icon" alt="" /> Game @(_gameDropdownOpen ? "▲" : "▼")
+                        <img src="/img/icons/game.svg?v=3" class="nav-link-icon" alt="" /> Game @(_gameDropdownOpen ? "▲" : "▼")
                     </button>
                     @if (_gameDropdownOpen)
                     {
                         <div class="nav-admin-panel">
-                            <a href="/leaderboard" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/leaderboard.svg?v=2" alt="" /> Leaderboard</a>
+                            <a href="/leaderboard" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/leaderboard.svg?v=3" alt="" /> Leaderboard</a>
                             <AuthorizeView Roles="Admin,Staff" Context="boardCtx">
-                                <a href="/board" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/board.svg?v=2" alt="" /> Board Game</a>
+                                <a href="/board" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/board.svg?v=3" alt="" /> Board Game</a>
                             </AuthorizeView>
                             <AuthorizeView Roles="Admin" Context="gameAdminCtx">
-                                <a href="/minigames" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/dice.svg?v=2" alt="" /> Mini-Game</a>
-                                <button @onclick="() => { _gameDropdownOpen = false; OnLeaderboardClick.InvokeAsync(); }"><img src="/img/icons/projector.svg?v=2" alt="" /> Projector</button>
+                                <a href="/minigames" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
+                                <button @onclick="() => { _gameDropdownOpen = false; OnLeaderboardClick.InvokeAsync(); }"><img src="/img/icons/projector.svg?v=3" alt="" /> Projector</button>
                             </AuthorizeView>
                         </div>
                     }
                 </div>
 
                 <AuthorizeView Roles="Admin" Context="adminDesktopCtx">
-                    <a href="/transactions" class="nav-link" style="@ActiveStyle("/transactions", "#2563C4")"><img src="/img/icons/transactions.svg?v=2" class="nav-link-icon" alt="" /> Transactions</a>
+                    <a href="/transactions" class="nav-link" style="@ActiveStyle("/transactions", "#2563C4")"><img src="/img/icons/transactions.svg?v=3" class="nav-link-icon" alt="" /> Transactions</a>
 
                     <div class="nav-admin-dropdown">
                         @if (_adminDropdownOpen)
@@ -88,24 +88,24 @@
                         }
                         <button class="nav-link" style="@AdminDropdownStyle()"
                                 @onclick="() => { _adminDropdownOpen = !_adminDropdownOpen; _hubDropdownOpen = false; _gameDropdownOpen = false; }">
-                            <img src="/img/icons/gear.svg?v=2" class="nav-link-icon" alt="" /> Admin @(_adminDropdownOpen ? "▲" : "▼")
+                            <img src="/img/icons/gear.svg?v=3" class="nav-link-icon" alt="" /> Admin @(_adminDropdownOpen ? "▲" : "▼")
                         </button>
                         @if (_adminDropdownOpen)
                         {
                             <div class="nav-admin-panel">
                                 <div class="nav-admin-section">Game</div>
-                                <a href="/admin/games"               @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/game.svg?v=2" alt="" /> Game Admin</a>
-                                <a href="/admin/activities"          @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/dice.svg?v=2" alt="" /> Activities</a>
+                                <a href="/admin/games"               @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/game.svg?v=3" alt="" /> Game Admin</a>
+                                <a href="/admin/activities"          @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Activities</a>
                                 <div class="nav-admin-section">Schedule</div>
-                                <a href="/admin/schedule"            @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/schedule.svg?v=2" alt="" /> Schedule</a>
+                                <a href="/admin/schedule"            @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/schedule.svg?v=3" alt="" /> Schedule</a>
                                 <a href="/admin/schedule-item-types" @onclick="() => _adminDropdownOpen = false">🗂️ Types</a>
                                 <div class="nav-admin-section">People</div>
-                                <a href="/admin/users"               @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/person.svg?v=2" alt="" /> Users</a>
-                                <a href="/admin/groups"              @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/people.svg?v=2" alt="" /> Groups</a>
-                                <a href="/admin/staff"               @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/person.svg?v=2" alt="" /> Staff</a>
+                                <a href="/admin/users"               @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/person.svg?v=3" alt="" /> Users</a>
+                                <a href="/admin/groups"              @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/people.svg?v=3" alt="" /> Groups</a>
+                                <a href="/admin/staff"               @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/person.svg?v=3" alt="" /> Staff</a>
                                 <div class="nav-admin-section">Venue & Content</div>
-                                <a href="/admin/locations"           @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/pin.svg?v=2" alt="" /> Locations</a>
-                                <a href="/admin/sponsors"            @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/trophy.svg?v=2" alt="" /> Sponsors</a>
+                                <a href="/admin/locations"           @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/pin.svg?v=3" alt="" /> Locations</a>
+                                <a href="/admin/sponsors"            @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Sponsors</a>
                             </div>
                         }
                     </div>
@@ -125,26 +125,26 @@
     <Authorized>
         <div class="nav-bottom-bar">
             <button class="nav-tab @(IsDashboardActive() ? "active" : "")" @onclick='() => Nav.NavigateTo("/dashboard")'>
-                <span class="tab-icon"><img src="/img/icons/home.svg?v=2" alt="" /></span>
+                <span class="tab-icon"><img src="/img/icons/home.svg?v=3" alt="" /></span>
                 <span>Home</span>
             </button>
             <button class="nav-tab @(IsScheduleActive() ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/schedule")'>
-                <span class="tab-icon"><img src="/img/icons/schedule.svg?v=2" alt="" /></span>
+                <span class="tab-icon"><img src="/img/icons/schedule.svg?v=3" alt="" /></span>
                 <span>Schedule</span>
             </button>
             <button class="nav-tab @(IsHubActive() ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/announcements")'>
-                <span class="tab-icon"><img src="/img/icons/hub.svg?v=2" alt="" /></span>
+                <span class="tab-icon"><img src="/img/icons/hub.svg?v=3" alt="" /></span>
                 <span>Hub</span>
             </button>
             <button class="nav-tab @(IsGameActive() ? "active" : "")"
                     @onclick="() => { _gameSheetOpen = !_gameSheetOpen; _adminSheetOpen = false; }">
-                <span class="tab-icon"><img src="/img/icons/game.svg?v=2" alt="" /></span>
+                <span class="tab-icon"><img src="/img/icons/game.svg?v=3" alt="" /></span>
                 <span>Game</span>
             </button>
             <AuthorizeView Roles="Admin" Context="mobileAdminCtx">
                 <button class="nav-tab @(_adminSheetOpen ? "active" : "")"
                         @onclick="() => { _adminSheetOpen = !_adminSheetOpen; _gameSheetOpen = false; }">
-                    <span class="tab-icon"><img src="/img/icons/gear.svg?v=2" alt="" /></span>
+                    <span class="tab-icon"><img src="/img/icons/gear.svg?v=3" alt="" /></span>
                     <span>Admin</span>
                 </button>
             </AuthorizeView>
@@ -158,12 +158,12 @@
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _gameSheetOpen = false"></div>
     <div class="nav-game-sheet">
-        <a href="/leaderboard" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/leaderboard.svg?v=2" alt="" /> Leaderboard</a>
+        <a href="/leaderboard" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/leaderboard.svg?v=3" alt="" /> Leaderboard</a>
         <AuthorizeView Roles="Admin,Staff">
-            <a href="/board" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/board.svg?v=2" alt="" /> Board Game</a>
+            <a href="/board" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/board.svg?v=3" alt="" /> Board Game</a>
         </AuthorizeView>
         <AuthorizeView Roles="Admin">
-            <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=2" alt="" /> Mini-Game</a>
+            <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
         </AuthorizeView>
     </div>
 }
@@ -174,21 +174,21 @@
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _adminSheetOpen = false"></div>
     <div class="nav-admin-sheet">
-        <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/transactions.svg?v=2" alt="" /> Transactions</a>
+        <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/transactions.svg?v=3" alt="" /> Transactions</a>
         <div class="nav-admin-sheet-section">Game</div>
-        <a href="/admin/games"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/game.svg?v=2" alt="" /> Game Admin</a>
-        <a href="/admin/activities"          @onclick="() => _adminSheetOpen = false"><img src="/img/icons/dice.svg?v=2" alt="" /> Activities</a>
+        <a href="/admin/games"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/game.svg?v=3" alt="" /> Game Admin</a>
+        <a href="/admin/activities"          @onclick="() => _adminSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Activities</a>
         <div class="nav-admin-sheet-section">Schedule</div>
-        <a href="/admin/schedule"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/schedule.svg?v=2" alt="" /> Schedule</a>
+        <a href="/admin/schedule"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/schedule.svg?v=3" alt="" /> Schedule</a>
         <a href="/admin/schedule-item-types" @onclick="() => _adminSheetOpen = false">🗂️ Types</a>
         <div class="nav-admin-sheet-section">People</div>
-        <a href="/admin/users"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/person.svg?v=2" alt="" /> Users</a>
-        <a href="/admin/groups"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg?v=2" alt="" /> Groups</a>
-        <a href="/admin/staff"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/person.svg?v=2" alt="" /> Staff</a>
+        <a href="/admin/users"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/person.svg?v=3" alt="" /> Users</a>
+        <a href="/admin/groups"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg?v=3" alt="" /> Groups</a>
+        <a href="/admin/staff"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/person.svg?v=3" alt="" /> Staff</a>
         <div class="nav-admin-sheet-section">Venue & Content</div>
-        <a href="/admin/locations"           @onclick="() => _adminSheetOpen = false"><img src="/img/icons/pin.svg?v=2" alt="" /> Locations</a>
-        <a href="/admin/sponsors"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/trophy.svg?v=2" alt="" /> Sponsors</a>
-        <button onclick="window.location='/logout'"><img src="/img/icons/signout.svg?v=2" alt="" /> Sign Out</button>
+        <a href="/admin/locations"           @onclick="() => _adminSheetOpen = false"><img src="/img/icons/pin.svg?v=3" alt="" /> Locations</a>
+        <a href="/admin/sponsors"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Sponsors</a>
+        <button onclick="window.location='/logout'"><img src="/img/icons/signout.svg?v=3" alt="" /> Sign Out</button>
     </div>
 }
 
