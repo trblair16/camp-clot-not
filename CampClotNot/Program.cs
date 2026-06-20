@@ -102,7 +102,14 @@ try
         app.UseHttpsRedirection();
     }
 
-    app.UseStaticFiles();
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        OnPrepareResponse = ctx =>
+        {
+            if (ctx.File.Name.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+                ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
+        }
+    });
     app.UseRouting();
     app.UseAuthentication();
     app.UseAuthorization();

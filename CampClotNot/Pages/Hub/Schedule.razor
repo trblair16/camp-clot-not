@@ -128,7 +128,7 @@
 
 <div style="padding: 0 16px 100px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0"><img src="/img/icons/schedule.svg" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Schedule</h2>
+        <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0"><img src="/img/icons/schedule.svg?v=2" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Schedule</h2>
     </div>
 
     @if (_loading)
@@ -198,11 +198,11 @@
                                             {
                                                 <img src="/location-image/@displayLocation.LocationId" class="sched-loc-img" style="width:56px;height:40px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0;vertical-align:middle" alt="@displayLocation.Name" @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
                                             }
-                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@displayLocation.Name</span>
+                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg?v=2" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@displayLocation.Name</span>
                                         }
                                         @if (!string.IsNullOrEmpty(ev.LocationOther))
                                         {
-                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@ev.LocationOther</span>
+                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg?v=2" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@ev.LocationOther</span>
                                         }
                                     </div>
                                     @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
@@ -226,7 +226,7 @@
                                                     <div style="display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid #C0A882;font-size:13px">
                                                         <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px">@eg.Group.ShortName</span>
                                                         <span style="flex:1">@(eg.Activity?.Name ?? "—")</span>
-                                                        @if (eg.Location is not null) { <span style="font-weight:600;color:var(--black)"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span> }
+                                                        @if (eg.Location is not null) { <span style="font-weight:600;color:var(--black)"><img src="/img/icons/pin.svg?v=2" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span> }
                                                         @if (!string.IsNullOrEmpty(eg.Note)) { <span style="color:var(--text-mid);font-style:italic">@eg.Note</span> }
                                                     </div>
                                                 }
@@ -286,7 +286,7 @@
                                     <td>
                                         @if (dispLoc is not null)
                                         {
-                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@dispLoc.Name</span>
+                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg?v=2" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@dispLoc.Name</span>
                                         }
                                         else
                                         {
@@ -333,7 +333,7 @@
                                                                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                                                                     @if (eg.Location is not null)
                                                                     {
-                                                                        <span style="font-size:11px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
+                                                                        <span style="font-size:11px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg?v=2" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
                                                                     }
                                                                     else { <span style="color:var(--text-light)">—</span> }
                                                                     @if (eg.Location?.ImageContentType is not null)
@@ -412,7 +412,7 @@
             @if (mdLocation is not null)
             {
                 <div style="margin-bottom:14px">
-                    <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:3px 10px;border-radius:4px;border:2px solid #6B5540"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:3px;opacity:.7" alt="" />@mdLocation.Name</span>
+                    <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:3px 10px;border-radius:4px;border:2px solid #6B5540"><img src="/img/icons/pin.svg?v=2" style="width:10px;height:10px;vertical-align:middle;margin-right:3px;opacity:.7" alt="" />@mdLocation.Name</span>
                     @if (mdLocation.ImageContentType is not null)
                     {
                         <div style="margin-top:10px">
@@ -460,7 +460,7 @@
                         <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #E8E0CC;font-size:13px">
                             <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px">@eg.Group.ShortName</span>
                             <span style="flex:1">@(eg.Activity?.Name ?? "—")</span>
-                            @if (eg.Location is not null) { <span style="font-weight:600;color:var(--black)"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span> }
+                            @if (eg.Location is not null) { <span style="font-weight:600;color:var(--black)"><img src="/img/icons/pin.svg?v=2" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span> }
                         </div>
                     }
                 </div>
