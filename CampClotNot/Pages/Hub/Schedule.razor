@@ -820,7 +820,7 @@
 
     private static string DisplayItemTypeBadge(ScheduleItemType? t, Activity? activity) =>
         t?.SystemName == "Activity" && activity is not null
-            ? $"Activity – {activity.Name}"
+            ? $"{t.Name} – {activity.Name}"
             : t?.Name ?? "—";
 
     private static string ItemTypeBadgeColor(string? badgeColor, string? systemName) =>
