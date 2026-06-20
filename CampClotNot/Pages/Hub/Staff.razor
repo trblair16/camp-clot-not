@@ -71,7 +71,7 @@
         {
             <div style="font-size:11px;color:var(--text-light);margin-bottom:8px">Drag cards to reorder. Changes save immediately.</div>
         }
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px" @ondragover:preventDefault="true">
             @for (int i = 0; i < _members.Count; i++)
             {
                 var idx = i;
