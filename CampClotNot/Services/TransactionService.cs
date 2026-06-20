@@ -24,7 +24,7 @@ public class TransactionService(
             Amount = amount,
             LoggedBy = loggedBy,
             Note = note,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = CampTime.Now
         });
         await hub.Clients.All.SendAsync("ScoresUpdated");
         return tx;

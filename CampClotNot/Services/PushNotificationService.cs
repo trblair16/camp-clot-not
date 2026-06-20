@@ -58,7 +58,7 @@ public class PushNotificationService
                 P256dh = p256dh,
                 Auth = auth,
                 UserId = userId,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = CampTime.Now
             });
         }
         await db.SaveChangesAsync();

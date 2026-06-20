@@ -68,7 +68,7 @@ public class InfoPageService(IDbContextFactory<AppDbContext> factory, IMemoryCac
         var page = await db.InfoPages.FindAsync(pageId);
         if (page is null) return;
         page.Body = body;
-        page.UpdatedAt = DateTime.UtcNow;
+        page.UpdatedAt = CampTime.Now;
         page.UpdatedByUserId = updatedByUserId;
         await db.SaveChangesAsync();
         cache.Remove(AllKey);
@@ -92,7 +92,7 @@ public class InfoPageService(IDbContextFactory<AppDbContext> factory, IMemoryCac
             page.PdfData        = pdfData;
             page.PdfContentType = pdfContentType;
         }
-        page.UpdatedAt       = DateTime.UtcNow;
+        page.UpdatedAt       = CampTime.Now;
         page.UpdatedByUserId = updatedByUserId;
         await db.SaveChangesAsync();
         cache.Remove(AllKey);
