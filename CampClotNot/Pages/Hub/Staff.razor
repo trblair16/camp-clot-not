@@ -250,23 +250,30 @@
             _photoUploadError = "File too large — maximum 10 MB.";
             return;
         }
-        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-        using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
 
-        // Resize to max 400×400 so photos are sharp on any DPI without bloating the DB
-        using var image = SixLabors.ImageSharp.Image.Load(ms.ToArray());
-        if (image.Width > 400 || image.Height > 400)
-            image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
-            {
-                Mode = SixLabors.ImageSharp.Processing.ResizeMode.Max,
-                Size = new SixLabors.ImageSharp.Size(400, 400)
-            }));
-        using var outMs = new MemoryStream();
-        await image.SaveAsJpegAsync(outMs, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder { Quality = 85 });
+            using var image = SixLabors.ImageSharp.Image.Load(ms.ToArray());
+            if (image.Width > 400 || image.Height > 400)
+                image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
+                {
+                    Mode = SixLabors.ImageSharp.Processing.ResizeMode.Max,
+                    Size = new SixLabors.ImageSharp.Size(400, 400)
+                }));
+            using var outMs = new MemoryStream();
+            await image.SaveAsJpegAsync(outMs, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder { Quality = 85 });
 
-        _fPhotoData        = outMs.ToArray();
-        _fPhotoContentType = "image/jpeg";
+            _fPhotoData        = outMs.ToArray();
+            _fPhotoContentType = "image/jpeg";
+        }
+        catch
+        {
+            _photoUploadError = "Could not process image — try a JPEG or PNG file instead.";
+            return;
+        }
         _fPhotoX = 50; _fPhotoY = 50;
     }
 

@@ -93,6 +93,36 @@ else
         </div>
     </div>
 
+    @* ── LATEST ANNOUNCEMENT ── *@
+    @if (_latestAnnouncement is not null)
+    {
+        var urgentBorderTop = _latestAnnouncement.Priority == AnnouncementPriority.Urgent
+            ? "border-top:5px solid #D12B2B"
+            : "border-top:5px solid #E67E22";
+        <div class="ccn-panel" style="padding:18px;margin-bottom:18px;animation:slideUp .25s ease;@urgentBorderTop">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--black)">
+                    <img src="@(_latestAnnouncement.Priority == AnnouncementPriority.Urgent ? "/img/icons/alert.svg" : "/img/icons/announcements.svg")" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;opacity:.8" alt="" />Latest News
+                </div>
+                <a href="/hub/announcements" style="font-size:11px;font-family:'Fredoka One',cursive;
+                                                    color:#E67E22;text-decoration:none">All →</a>
+            </div>
+            @if (_latestAnnouncement.Priority == AnnouncementPriority.Urgent)
+            {
+                <span style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+                             color:white;background:#D12B2B;padding:2px 8px;border-radius:4px;border:2px solid var(--black);
+                             display:inline-block;margin-bottom:8px">URGENT</span>
+            }
+            <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black);margin-bottom:6px">
+                @_latestAnnouncement.Title
+            </div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.5;
+                         overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">
+                @_latestAnnouncement.Body
+            </div>
+        </div>
+    }
+
     @* ── SPONSORS ── *@
     @if (_sponsors.Any())
     {
@@ -126,10 +156,8 @@ else
         </div>
     }
 
-    @* ── TODAY + ANNOUNCEMENT ── *@
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:6px">
-
-        @* Today's Schedule *@
+    @* ── TODAY'S SCHEDULE ── *@
+    <div style="margin-bottom:6px">
         <div class="ccn-panel" style="padding:18px;animation:slideUp .3s ease;border-top:5px solid #2980B9">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                 <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--black)">
@@ -161,46 +189,6 @@ else
                 }
             }
         </div>
-
-        @* Latest Announcement *@
-        @if (_latestAnnouncement is not null)
-        {
-            var urgentBorder = _latestAnnouncement.Priority == AnnouncementPriority.Urgent
-                ? "border-top:5px solid #D12B2B"
-                : "border-top:5px solid #E67E22";
-            <div class="ccn-panel" style="padding:18px;animation:slideUp .35s ease;@urgentBorder">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                    <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--black)">
-                        <img src="@(_latestAnnouncement.Priority == AnnouncementPriority.Urgent ? "/img/icons/alert.svg" : "/img/icons/announcements.svg")" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;opacity:.8" alt="" />Latest News
-                    </div>
-                    <a href="/hub/announcements" style="font-size:11px;font-family:'Fredoka One',cursive;
-                                                        color:#E67E22;text-decoration:none">All →</a>
-                </div>
-                @if (_latestAnnouncement.Priority == AnnouncementPriority.Urgent)
-                {
-                    <span style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
-                                 color:white;background:#D12B2B;padding:2px 8px;border-radius:4px;border:2px solid var(--black);
-                                 display:inline-block;margin-bottom:8px">URGENT</span>
-                }
-                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black);margin-bottom:6px">
-                    @_latestAnnouncement.Title
-                </div>
-                <div style="font-size:12px;color:var(--text-mid);line-height:1.5;
-                             overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">
-                    @_latestAnnouncement.Body
-                </div>
-            </div>
-        }
-        else
-        {
-            <div class="ccn-panel" style="padding:18px;animation:slideUp .35s ease;border-top:5px solid #E67E22;
-                                          display:flex;flex-direction:column;align-items:center;justify-content:center;
-                                          text-align:center;gap:10px">
-                <img src="/img/icons/announcements.svg" style="width:40px;height:40px;opacity:.5" alt="" />
-                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">No announcements yet</div>
-                <a href="/hub/announcements" class="ccn-btn" style="font-size:12px;padding:7px 18px">View Board</a>
-            </div>
-        }
 
     </div>
 }

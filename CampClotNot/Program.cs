@@ -75,7 +75,8 @@ try
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddRazorPages();
-    builder.Services.AddServerSideBlazor();
+    builder.Services.AddServerSideBlazor()
+        .AddHubOptions(o => o.MaximumReceiveMessageSize = 11 * 1024 * 1024);
     builder.Services.AddSignalR();
     builder.Services.AddMudServices();
 
