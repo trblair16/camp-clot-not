@@ -67,39 +67,31 @@
     }
     else
     {
-        @if (_isAdmin)
-        {
-            <div style="font-size:11px;color:var(--text-light);margin-bottom:8px">Drag cards to reorder. Changes save immediately.</div>
-        }
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px" @ondragover:preventDefault="true">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
             @for (int i = 0; i < _members.Count; i++)
             {
                 var idx = i;
                 var m = _members[idx];
-                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center;display:flex;flex-direction:column;@(_isAdmin ? "cursor:grab;user-select:none" : "")"
-                     draggable="@(_isAdmin ? "true" : "false")"
-                     @ondragstart="() => _dragIndex = idx"
-                     @ondragover:preventDefault="true"
-                     @ondrop="() => DropAsync(idx)">
+                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center;display:flex;flex-direction:column">
                     @if (m.PhotoContentType is not null)
                     {
-                        <img src="/staff-photo/@m.StaffMemberId" draggable="false"
-                             style="width:100%;aspect-ratio:1/1;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:8px;border:2px solid var(--black);margin-bottom:8px;display:block;pointer-events:none"
+                        <img src="/staff-photo/@m.StaffMemberId"
+                             style="width:100%;aspect-ratio:1/1;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:8px;border:2px solid var(--black);margin-bottom:8px;display:block"
                              alt="@m.DisplayName" />
                     }
                     else
                     {
-                        <div style="width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:48px;border-radius:8px;border:2px solid var(--black);margin-bottom:8px;background:#F5F0E4;pointer-events:none">@m.AvatarEmoji</div>
+                        <div style="width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:48px;border-radius:8px;border:2px solid var(--black);margin-bottom:8px;background:#F5F0E4">@m.AvatarEmoji</div>
                     }
-                    <div style="font-family:'Fredoka One',cursive;font-size:15px;pointer-events:none">@m.DisplayName</div>
-                    <div style="font-size:12px;color:var(--text-light);margin-bottom:8px;pointer-events:none">@m.RoleTitle</div>
+                    <div style="font-family:'Fredoka One',cursive;font-size:15px">@m.DisplayName</div>
+                    <div style="font-size:12px;color:var(--text-light);margin-bottom:8px">@m.RoleTitle</div>
                     @if (!string.IsNullOrEmpty(m.Phone))
                     {
-                        <a href="@TelHref(m.Phone)" draggable="false" style="display:block;font-size:13px;color:#1a5fa8;text-decoration:none;margin-bottom:4px;@(_isAdmin ? "pointer-events:none" : "")">@m.Phone</a>
+                        <a href="@TelHref(m.Phone)" style="display:block;font-size:13px;color:#1a5fa8;text-decoration:none;margin-bottom:4px">@m.Phone</a>
                     }
                     @if (!string.IsNullOrEmpty(m.Email))
                     {
-                        <a href="mailto:@m.Email" draggable="false" style="display:block;font-size:13px;color:#1a5fa8;text-decoration:none;overflow-wrap:break-word;word-break:break-all;@(_isAdmin ? "pointer-events:none" : "")">@m.Email</a>
+                        <a href="mailto:@m.Email" style="display:block;font-size:13px;color:#1a5fa8;text-decoration:none;overflow-wrap:break-word;word-break:break-all">@m.Email</a>
                     }
                     @if (m.LinkedUserId.HasValue)
                     {
@@ -107,7 +99,9 @@
                     }
                     @if (_isAdmin)
                     {
-                        <div style="display:flex;gap:4px;margin-top:auto;padding-top:10px;justify-content:center">
+                        <div style="display:flex;gap:4px;margin-top:auto;padding-top:10px;justify-content:center;flex-wrap:wrap">
+                            <button class="ccn-btn" style="font-size:13px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
+                            <button class="ccn-btn" style="font-size:13px;padding:4px 10px" disabled="@(idx == _members.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
                             <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEdit(m)">Edit</button>
                             <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => Delete(m.StaffMemberId)">Del</button>
                         </div>
@@ -176,7 +170,6 @@
     private bool _isAdmin;
     private bool _showForm;
     private bool _showImport;
-    private int _dragIndex = -1;
     private List<StaffMember> _members = new();
     private List<User> _eligibleUsers = new();
     private StaffMember _form = new() { AvatarEmoji = "👤", IsVisible = true };
@@ -306,13 +299,13 @@
         _fPhotoY = parts.Length > 1 && int.TryParse(parts[1].TrimEnd('%'), out var y) ? y : 50;
     }
 
-    private async Task DropAsync(int dropIndex)
+    private async Task MoveAsync(int fromIndex, int direction)
     {
-        if (_dragIndex < 0 || _dragIndex == dropIndex) { _dragIndex = -1; return; }
-        var item = _members[_dragIndex];
-        _members.RemoveAt(_dragIndex);
-        _members.Insert(dropIndex, item);
-        _dragIndex = -1;
+        var toIndex = fromIndex + direction;
+        if (toIndex < 0 || toIndex >= _members.Count) return;
+        var item = _members[fromIndex];
+        _members.RemoveAt(fromIndex);
+        _members.Insert(toIndex, item);
         await StaffSvc.ReorderAsync(_members.Select(m => m.StaffMemberId).ToList());
     }
 
