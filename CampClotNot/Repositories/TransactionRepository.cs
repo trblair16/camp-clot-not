@@ -1,5 +1,6 @@
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
+using CampClotNot.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampClotNot.Repositories;
@@ -42,7 +43,7 @@ public class TransactionRepository(IDbContextFactory<AppDbContext> factory) : IT
         var tx = await db.Transactions.FindAsync(txId);
         if (tx is not null && tx.VoidedAt is null)
         {
-            tx.VoidedAt = DateTime.UtcNow;
+            tx.VoidedAt = CampTime.Now;
             tx.VoidedBy = voidedBy;
             await db.SaveChangesAsync();
         }

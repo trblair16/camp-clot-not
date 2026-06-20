@@ -15,7 +15,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20);
             using var db = factory.CreateDbContext();
-            var now = DateTime.UtcNow;
+            var now = CampTime.Now;
 
             var expired = await db.Announcements
                 .Where(a => !a.IsArchived && a.ExpiresAt != null && a.ExpiresAt <= now)
@@ -52,7 +52,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
             Priority       = priority,
             IsPinned       = false,
             AuthorId       = authorId,
-            CreatedAt      = DateTime.UtcNow,
+            CreatedAt      = CampTime.Now,
             IsArchived     = false
         };
         db.Announcements.Add(announcement);

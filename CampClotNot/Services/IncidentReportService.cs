@@ -28,7 +28,7 @@ public class IncidentReportService(IDbContextFactory<AppDbContext> factory)
     {
         using var db = factory.CreateDbContext();
         if (report.IncidentReportId == Guid.Empty) report.IncidentReportId = Guid.NewGuid();
-        report.SubmittedAt = DateTime.UtcNow;
+        report.SubmittedAt = CampTime.Now;
         db.IncidentReports.Add(report);
         await db.SaveChangesAsync();
         return report;
@@ -42,7 +42,7 @@ public class IncidentReportService(IDbContextFactory<AppDbContext> factory)
         report.IsAcknowledged = true;
         report.AcknowledgedByUserId = adminUserId;
         report.AcknowledgedByName = adminName;
-        report.AcknowledgedAt = DateTime.UtcNow;
+        report.AcknowledgedAt = CampTime.Now;
         await db.SaveChangesAsync();
     }
 }

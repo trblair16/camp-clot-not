@@ -168,7 +168,7 @@ public class BoardService(
         if (pos is not null)
         {
             pos.SpaceIndex = destination;
-            pos.UpdatedAt  = DateTime.UtcNow;
+            pos.UpdatedAt  = CampTime.Now;
         }
         else
         {
@@ -176,7 +176,7 @@ public class BoardService(
             {
                 GroupId    = groupId,
                 SpaceIndex = destination,
-                UpdatedAt  = DateTime.UtcNow
+                UpdatedAt  = CampTime.Now
             });
         }
 
@@ -204,7 +204,7 @@ public class BoardService(
         foreach (var p in positions)
         {
             p.SpaceIndex = 0;
-            p.UpdatedAt  = DateTime.UtcNow;
+            p.UpdatedAt  = CampTime.Now;
         }
 
         // Un-trigger block hit scripts for the specified day
