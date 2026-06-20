@@ -88,11 +88,9 @@ public class PushNotificationService
         {
             try
             {
-                var pushSub = new Lib.Net.Http.WebPush.PushSubscription
-                {
-                    Endpoint = sub.Endpoint,
-                    Keys = { ["p256dh"] = sub.P256dh, ["auth"] = sub.Auth }
-                };
+                var pushSub = new Lib.Net.Http.WebPush.PushSubscription { Endpoint = sub.Endpoint };
+                pushSub.SetKey(PushEncryptionKeyName.P256DH, sub.P256dh);
+                pushSub.SetKey(PushEncryptionKeyName.Auth, sub.Auth);
                 var message = new PushMessage(payload)
                 {
                     Urgency = PushMessageUrgency.High
