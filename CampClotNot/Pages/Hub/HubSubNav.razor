@@ -79,20 +79,20 @@
 
 <nav class="hub-subnav">
     <a href="/hub/announcements" class="hub-tab @(IsActive("/hub/announcements") ? "active" : "")">
-        <span class="tab-icon"><img src="/img/icons/announcements.svg?v=2" alt="" /></span><span>Announcements</span>
+        <span class="tab-icon"><img src="/img/icons/announcements.svg?v=3" alt="" /></span><span>Announcements</span>
     </a>
     <a href="/hub/staff"         class="hub-tab @(IsActive("/hub/staff")         ? "active" : "")">
-        <span class="tab-icon"><img src="/img/icons/people.svg?v=2" alt="" /></span><span>Staff</span>
+        <span class="tab-icon"><img src="/img/icons/people.svg?v=3" alt="" /></span><span>Staff</span>
     </a>
     <a href="/hub/sponsors"      class="hub-tab @(IsActive("/hub/sponsors")      ? "active" : "")">
-        <span class="tab-icon"><img src="/img/icons/trophy.svg?v=2" alt="" /></span><span>Sponsors</span>
+        <span class="tab-icon"><img src="/img/icons/trophy.svg?v=3" alt="" /></span><span>Sponsors</span>
     </a>
     <a href="/hub/info"          class="hub-tab @(IsActive("/hub/info")          ? "active" : "")">
-        <span class="tab-icon"><img src="/img/icons/hub.svg?v=2" alt="" /></span><span>Info</span>
+        <span class="tab-icon"><img src="/img/icons/hub.svg?v=3" alt="" /></span><span>Info</span>
     </a>
     <AuthorizeView Roles="Admin">
         <a href="/hub/incidents"  class="hub-tab @(IsActive("/hub/incidents")    ? "active" : "")">
-            <span class="tab-icon"><img src="/img/icons/alert.svg?v=2" alt="" /></span><span>Incidents</span>
+            <span class="tab-icon"><img src="/img/icons/alert.svg?v=3" alt="" /></span><span>Incidents</span>
         </a>
     </AuthorizeView>
 </nav>
@@ -102,7 +102,7 @@
         style="position:fixed;bottom:24px;right:24px;background:#D12B2B;color:white;
                font-size:13px;padding:13px 20px;border-radius:50px;border-color:var(--black);
                box-shadow:4px 4px 0 var(--black);z-index:50;white-space:nowrap"
-        @onclick="OpenModal"><img src="/img/icons/alert.svg?v=2" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Report Incident</button>
+        @onclick="OpenModal"><img src="/img/icons/alert.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Report Incident</button>
 
 @* ── Report Incident modal ── *@
 @if (_modalOpen)
@@ -115,7 +115,7 @@
                                       box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease"
              @onmousedown:stopPropagation="true">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-                <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0"><img src="/img/icons/alert.svg?v=2" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;opacity:.8" alt="" />Report Incident</h3>
+                <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0"><img src="/img/icons/alert.svg?v=3" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;opacity:.8" alt="" />Report Incident</h3>
                 <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-mid)" @onclick="CloseModal">✕</button>
             </div>
 
