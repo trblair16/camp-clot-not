@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject ThemeService ThemeSvc
 @inject AuthenticationStateProvider AuthState
+@inject IJSRuntime JS
 
 <ThemeHead />
 <MudThemeProvider IsDarkMode="false" Theme="@_mudTheme" />
@@ -12,6 +13,17 @@
 
 <AppNav OnLeaderboardClick="@(() => _showProjector = true)" />
 
+@if (_showPushBanner)
+{
+    <div style="position:fixed;top:0;left:0;right:0;z-index:100;background:#F5C800;border-bottom:3px solid var(--black);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;animation:fadeIn .2s ease">
+        <span style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--black)">Enable notifications to get camp announcements</span>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="ccn-btn" style="font-size:11px;padding:5px 12px" @onclick="EnablePush">Enable</button>
+            <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--black);line-height:1" @onclick="() => _showPushBanner = false">✕</button>
+        </div>
+    </div>
+}
+
 <div style="padding:20px 18px calc(80px + env(safe-area-inset-bottom))">
     @Body
 </div>
@@ -20,6 +32,7 @@
 
 @code {
     private bool _showProjector;
+    private bool _showPushBanner;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -27,6 +40,34 @@
         var state = await AuthState.GetAuthenticationStateAsync();
         if (state.User.HasClaim("mustChangePassword", "true"))
             Nav.NavigateTo("/change-password", forceLoad: false);
+
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            try
+            {
+                var supported = await JS.InvokeAsync<bool>("ccnPush.isSupported");
+                if (supported)
+                {
+                    var subscribed = await JS.InvokeAsync<bool>("ccnPush.isSubscribed");
+                    if (!subscribed)
+                    {
+                        _showPushBanner = true;
+                        StateHasChanged();
+                    }
+                }
+            }
+            catch { }
+        }
+    }
+
+    private async Task EnablePush()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<bool>("ccnPush.subscribe");
+            _showPushBanner = false;
+        }
+        catch { _showPushBanner = false; }
     }
 
     private static readonly MudTheme _mudTheme = new()
