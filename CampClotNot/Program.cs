@@ -4,6 +4,7 @@ using CampClotNot.Repositories;
 using CampClotNot.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using Serilog;
@@ -73,6 +74,9 @@ try
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddSingleton<PushNotificationService>();
     builder.Services.AddScoped<SeedService>();
+
+    builder.Services.AddDataProtection()
+        .PersistKeysToDbContext<AppDbContext>();
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddRazorPages();
