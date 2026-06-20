@@ -110,10 +110,10 @@
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;
                 display:flex;align-items:center;justify-content:center;padding:20px;
                 animation:fadeIn .2s ease"
-         @onclick="CloseModal">
+         @onmousedown="CloseModal">
         <div class="ccn-panel" style="padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;
                                       box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease"
-             @onclick:stopPropagation="true">
+             @onmousedown:stopPropagation="true">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
                 <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0"><img src="/img/icons/alert.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;opacity:.8" alt="" />Report Incident</h3>
                 <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-mid)" @onclick="CloseModal">✕</button>
