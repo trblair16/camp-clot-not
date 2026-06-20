@@ -39,8 +39,14 @@
             @* Space icon or location image *@
             @if (space.LocationId is not null)
             {
-                <image href="/location-image/@space.LocationId" x="@(sx - 14)" y="@(sy - 14)" width="28" height="28"
-                       preserveAspectRatio="xMidYMid slice" />
+                var clipId = $"clip-{space.SpaceIndex}";
+                <defs>
+                    <clipPath id="@clipId">
+                        <circle cx="@sx" cy="@sy" r="15" />
+                    </clipPath>
+                </defs>
+                <image href="/location-image/@space.LocationId" x="@(sx - 15)" y="@(sy - 15)" width="30" height="30"
+                       preserveAspectRatio="xMidYMid slice" clip-path="url(#@clipId)" />
             }
             else
             {
