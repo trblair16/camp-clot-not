@@ -15,7 +15,7 @@
 
 @if (_showPushBanner)
 {
-    <div style="position:fixed;top:0;left:0;right:0;z-index:100;background:#F5C800;border-bottom:3px solid var(--black);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;animation:fadeIn .2s ease">
+    <div class="ccn-push-banner" style="position:fixed;top:0;left:0;right:0;z-index:100;background:#F5C800;border-bottom:3px solid var(--black);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:none;align-items:center;justify-content:space-between;gap:10px;animation:fadeIn .2s ease">
         <span style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--black)">Enable notifications to get camp announcements</span>
         <div style="display:flex;gap:6px;flex-shrink:0">
             <button class="ccn-btn" style="font-size:11px;padding:5px 12px" @onclick="EnablePush">Enable</button>
