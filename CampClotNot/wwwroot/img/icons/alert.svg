@@ -1,5 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M12 2L2 20h20L12 2z"/>
-  <line x1="12" y1="9" x2="12" y2="14"/>
-  <circle cx="12" cy="17.5" r="1.2" fill="currentColor" stroke="none"/>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Filled equilateral triangle -->
+  <path d="M128 24 L236 216 H20 Z"
+        fill="#E74C3C"
+        stroke="#000000"
+        stroke-width="10"
+        stroke-linejoin="round"/>
+
+  <!-- Exclamation mark -->
+  <g fill="#FFFFFF">
+    <!-- vertical bar -->
+    <rect x="118" y="78" width="20" height="90" rx="10"/>
+
+    <!-- dot -->
+    <circle cx="128" cy="190" r="12"/>
+  </g>
+
 </svg>
