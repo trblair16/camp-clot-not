@@ -5,6 +5,7 @@ using CampClotNot.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using Serilog;
@@ -78,6 +79,12 @@ try
     builder.Services.AddDataProtection()
         .PersistKeysToDbContext<AppDbContext>();
 
+    builder.Services.AddResponseCompression(opts =>
+    {
+        opts.EnableForHttps = true;
+        opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/octet-stream"]);
+    });
+
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddRazorPages();
     builder.Services.AddServerSideBlazor()
@@ -101,6 +108,8 @@ try
         app.UseDeveloperExceptionPage();
         app.UseHttpsRedirection();
     }
+
+    app.UseResponseCompression();
 
     app.UseStaticFiles(new StaticFileOptions
     {
