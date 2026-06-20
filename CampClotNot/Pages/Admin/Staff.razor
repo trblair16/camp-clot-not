@@ -1,0 +1,138 @@
+@page "/admin/staff"
+@attribute [Authorize(Roles = "Admin")]
+@inject StaffDirectoryService StaffSvc
+
+<PageTitle>Staff Admin — Camp Clot Not</PageTitle>
+
+<style>
+    @@media (max-width: 699px) {
+        .admin-staff-table { display: none; }
+        .admin-staff-cards { display: flex; flex-direction: column; gap: 10px; }
+    }
+    @@media (min-width: 700px) {
+        .admin-staff-cards { display: none; }
+    }
+</style>
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/people.svg" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Staff Order</h2>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_members.Any())
+    {
+        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No staff members yet. Add them at <a href="/hub/staff">Hub → Staff</a>.</p>
+    }
+    else
+    {
+        @* ── Mobile cards with up/down ── *@
+        <div class="admin-staff-cards">
+            @for (int i = 0; i < _members.Count; i++)
+            {
+                var idx = i;
+                var m = _members[idx];
+                <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                        @if (m.PhotoContentType is not null)
+                        {
+                            <img src="/staff-photo/@m.StaffMemberId" style="width:40px;height:40px;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:6px;border:2px solid var(--black);flex-shrink:0" alt="" />
+                        }
+                        else
+                        {
+                            <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:6px;border:2px solid var(--black);background:#F5F0E4;flex-shrink:0">@m.AvatarEmoji</div>
+                        }
+                        <div style="min-width:0">
+                            <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@m.DisplayName</div>
+                            <div style="font-size:11px;color:var(--text-light)">@m.RoleTitle</div>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-shrink:0">
+                        <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
+                        <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == _members.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* ── Desktop table with drag ── *@
+        <div class="admin-staff-table">
+            <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">Drag rows to reorder. Changes save immediately.</div>
+            <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <table style="width:100%;border-collapse:collapse">
+                    <thead>
+                        <tr style="background:var(--black)">
+                            <th style="padding:10px 8px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;width:28px"></th>
+                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;width:48px">Photo</th>
+                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
+                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Role</th>
+                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Phone</th>
+                            <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Visible</th>
+                        </tr>
+                    </thead>
+                    <tbody @ondragover:preventDefault="true">
+                        @for (int i = 0; i < _members.Count; i++)
+                        {
+                            var m = _members[i];
+                            var idx = i;
+                            <tr draggable="true"
+                                style="border-bottom:2px solid #E8E0CC"
+                                @ondragstart="() => _dragIndex = idx"
+                                @ondragover:preventDefault="true"
+                                @ondrop="() => DropAsync(idx)">
+                                <td style="padding:10px 8px;color:var(--text-light);cursor:grab;font-size:16px;text-align:center">⠿</td>
+                                <td style="padding:8px 14px">
+                                    @if (m.PhotoContentType is not null)
+                                    {
+                                        <img src="/staff-photo/@m.StaffMemberId" style="width:36px;height:36px;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:6px;border:1px solid var(--black)" alt="" />
+                                    }
+                                    else
+                                    {
+                                        <span style="font-size:22px">@m.AvatarEmoji</span>
+                                    }
+                                </td>
+                                <td style="padding:10px 14px;font-size:13px;font-weight:700">@m.DisplayName</td>
+                                <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@m.RoleTitle</td>
+                                <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@(m.Phone ?? "—")</td>
+                                <td style="padding:10px 14px;font-size:12px">@(m.IsVisible ? "✓" : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private int _dragIndex = -1;
+    private List<StaffMember> _members = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _members = await StaffSvc.GetAllAsync(SeedService.Id.EventCcn2026);
+        _loading = false;
+    }
+
+    private async Task MoveAsync(int fromIndex, int direction)
+    {
+        var toIndex = fromIndex + direction;
+        if (toIndex < 0 || toIndex >= _members.Count) return;
+        var item = _members[fromIndex];
+        _members.RemoveAt(fromIndex);
+        _members.Insert(toIndex, item);
+        await StaffSvc.ReorderAsync(_members.Select(m => m.StaffMemberId).ToList());
+    }
+
+    private async Task DropAsync(int dropIndex)
+    {
+        if (_dragIndex < 0 || _dragIndex == dropIndex) { _dragIndex = -1; return; }
+        var item = _members[_dragIndex];
+        _members.RemoveAt(_dragIndex);
+        _members.Insert(dropIndex, item);
+        _dragIndex = -1;
+        await StaffSvc.ReorderAsync(_members.Select(m => m.StaffMemberId).ToList());
+    }
+}
