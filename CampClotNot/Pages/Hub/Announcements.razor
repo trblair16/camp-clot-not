@@ -1,5 +1,5 @@
 @page "/hub/announcements"
-@attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
+@attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject AnnouncementService AnnouncementSvc
 @inject AuthenticationStateProvider Auth
 
