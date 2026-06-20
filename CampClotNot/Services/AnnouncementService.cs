@@ -58,10 +58,14 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         db.Announcements.Add(announcement);
         await db.SaveChangesAsync();
         cache.Remove(FeedKey);
-        _ = Task.Run(() => pushService.SendToAllAsync(
-            priority == AnnouncementPriority.Urgent ? $"🚨 {title}" : $"📢 {title}",
-            body.Length > 120 ? body[..117] + "..." : body,
-            "/hub/announcements"));
+        try
+        {
+            await pushService.SendToAllAsync(
+                priority == AnnouncementPriority.Urgent ? $"🚨 {title}" : $"📢 {title}",
+                body.Length > 120 ? body[..117] + "..." : body,
+                "/hub/announcements");
+        }
+        catch { }
         return announcement;
     }
 
