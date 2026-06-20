@@ -133,7 +133,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     display: inline-block;
     line-height: 1.4;
 }
-.nav-link img { width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px; filter: invert(1); opacity: 0.8; }
+.nav-link img { width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px; opacity: 0.9; }
 .nav-hub-dropdown,
 .nav-game-dropdown,
 .nav-admin-dropdown { position: relative; }
