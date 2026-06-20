@@ -125,7 +125,7 @@
                     <input type="date" class="incident-input"
                            value="@_fDateOfIncident.ToString("yyyy-MM-dd")"
                            @onchange="e => { if (DateTime.TryParse(e.Value?.ToString(), out var d)) _fDateOfIncident = d; }"
-                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                           max="@CampTime.Now.Date.ToString("yyyy-MM-dd")" />
                 </div>
                 <div style="flex:1">
                     <div class="incident-field-label">Date Completed</div>
@@ -212,8 +212,8 @@
     private string _errorMsg = "";
 
     // Form fields
-    private DateTime _fDateOfIncident = DateTime.Today;
-    private DateTime _fDateCompleted  = DateTime.Today;
+    private DateTime _fDateOfIncident = CampTime.Now.Date;
+    private DateTime _fDateCompleted  = CampTime.Now.Date;
     private string _fPersonsInvolved    = "";
     private string _fDescription        = "";
     private string _fRecommendedAction  = "";
@@ -239,8 +239,8 @@
 
     private void OpenModal()
     {
-        _fDateOfIncident   = DateTime.Today;
-        _fDateCompleted    = DateTime.Today;
+        _fDateOfIncident   = CampTime.Now.Date;
+        _fDateCompleted    = CampTime.Now.Date;
         _fPersonsInvolved  = "";
         _fDescription      = "";
         _fRecommendedAction = "";

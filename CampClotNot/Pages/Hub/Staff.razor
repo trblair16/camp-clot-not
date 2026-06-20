@@ -1,5 +1,5 @@
 @page "/hub/staff"
-@attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
+@attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject StaffDirectoryService StaffSvc
 @inject AuthenticationStateProvider Auth
 @using SixLabors.ImageSharp
@@ -118,7 +118,7 @@
             <MudTextField @bind-Value="_form.RoleTitle"   Label="Role/Title" Class="mb-2" />
             <MudTextField @bind-Value="_form.AvatarEmoji" Label="Avatar Emoji (fallback if no photo)" Class="mb-2" />
             <div style="margin-bottom:12px">
-                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Photo (JPEG/PNG, max 2 MB)</div>
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Photo (JPEG/PNG, max 10 MB)</div>
                 <InputFile OnChange="HandlePhotoUpload" accept="image/*" style="font-size:13px;font-family:'Nunito',sans-serif" />
                 @if (!string.IsNullOrWhiteSpace(_photoUploadError))
                 {
@@ -245,12 +245,12 @@
     {
         _photoUploadError = "";
         var file = e.File;
-        if (file.Size > 2 * 1024 * 1024)
+        if (file.Size > 10 * 1024 * 1024)
         {
-            _photoUploadError = "File too large — maximum 2 MB.";
+            _photoUploadError = "File too large — maximum 10 MB.";
             return;
         }
-        using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms);
 
