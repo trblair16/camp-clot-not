@@ -1,5 +1,5 @@
 @page "/hub/schedule"
-@attribute [Authorize(Roles = "Admin,Staff,Volunteer")]
+@attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject ScheduleService ScheduleSvc
 @inject ScheduleItemTypeService ScheduleItemTypeSvc
 @inject LocationService LocationSvc
@@ -67,8 +67,9 @@
         .sched-form-grid { grid-template-columns: 1fr; }
         .sched-form-grid .full { grid-column: 1; }
     }
-    .sched-item-wrap { border-bottom: 3px solid #3a3a3a; }
+    .sched-item-wrap { border-bottom: 3px solid #3a3a3a; cursor: pointer; }
     .sched-item-wrap:last-child { border-bottom: none; }
+    .sched-item-wrap:active { background: rgba(26,26,26,.04); }
     @@media (max-width: 699px) {
         .sched-loc-img { display: none; }
     }
@@ -148,7 +149,7 @@
         <div class="sched-day-tabs">
             @foreach (var day in AllCampDays())
             {
-                var isToday = day == DateOnly.FromDateTime(DateTime.Today);
+                var isToday = day == CampTime.Today;
                 <button class="sched-day-tab @(day == _selectedDay ? "active" : "")"
                         @onclick="() => _selectedDay = day">
                     <span class="tab-dow">@day.ToString("ddd")</span>
@@ -184,7 +185,7 @@
                             ? $"{ev.StartTime:h:mm tt} – {ev.EndTime.Value:h:mm tt}"
                             : ev.StartTime.ToString("h:mm tt");
 
-                        <div class="sched-item-wrap">
+                        <div class="sched-item-wrap" @onclick="() => _mobileDetailItem = ev">
                             <div class="sched-row">
                                 <div style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);padding-top:2px">@timeStr</div>
                                 <div style="min-width:0">
@@ -194,7 +195,7 @@
                                         <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@displayActivity.Name</div>
                                     }
                                     <div class="sched-inline-meta">
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">@DisplayItemType(ev.ScheduleItemType)</span>
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">@DisplayItemTypeBadge(ev.ScheduleItemType, displayActivity)</span>
                                         @if (displayLocation is not null)
                                         {
                                             @if (displayLocation.ImageContentType is not null)
@@ -245,12 +246,13 @@
                     <table class="sched-tbl">
                         <thead>
                             <tr>
-                                <th style="width:90px">Time</th>
-                                <th style="width:30%">Event</th>
-                                <th style="width:13%">Type</th>
-                                <th style="width:27%">Location</th>
-                                <th style="width:13%">Add'l Location</th>
-                                @if (_canEdit) { <th style="width:160px"></th> }
+                                <th style="width:80px">Time</th>
+                                <th style="width:22%">Event</th>
+                                <th style="width:12%">Type</th>
+                                <th style="width:14%">Location</th>
+                                <th style="width:52px"></th>
+                                <th style="width:15%">Add'l Info</th>
+                                @if (_canEdit) { <th style="width:150px"></th> }
                             </tr>
                         </thead>
                         <tbody>
@@ -267,8 +269,8 @@
 
                                 <tr>
                                     <td style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-mid);white-space:nowrap">@tStr</td>
-                                    <td>
-                                        <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@ev.Title</span>
+                                    <td style="overflow-wrap:break-word;word-break:break-word;min-width:0">
+                                        <span style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--black)">@ev.Title</span>
                                         @if (dispAct is not null) { <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@dispAct.Name</div> }
                                         @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                         {
@@ -283,29 +285,29 @@
                                         }
                                     </td>
                                     <td>
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">@DisplayItemType(ev.ScheduleItemType)</span>
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;display:inline-block">@DisplayItemTypeBadge(ev.ScheduleItemType, dispAct)</span>
                                     </td>
                                     <td>
-                                        <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">
-                                            @if (dispLoc is not null)
-                                            {
-                                                <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@dispLoc.Name</span>
-                                            }
-                                            else
-                                            {
-                                                <span style="color:var(--text-light);font-size:13px">—</span>
-                                            }
-                                            @if (dispLoc?.ImageContentType is not null)
-                                            {
-                                                <img src="/location-image/@dispLoc.LocationId" style="width:48px;height:34px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
-                                            }
-                                        </div>
+                                        @if (dispLoc is not null)
+                                        {
+                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@dispLoc.Name</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="color:var(--text-light);font-size:13px">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (dispLoc?.ImageContentType is not null)
+                                        {
+                                            <img src="/location-image/@dispLoc.LocationId" style="width:44px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--black);cursor:zoom-in" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
+                                        }
                                     </td>
                                     <td style="color:var(--text-mid);font-size:13px">@(string.IsNullOrEmpty(ev.LocationOther) ? "—" : ev.LocationOther)</td>
                                     @if (_canEdit)
                                     {
-                                        <td style="white-space:nowrap">
-                                            <div style="display:flex;gap:4px;justify-content:center">
+                                        <td style="white-space:nowrap;padding-right:4px">
+                                            <div style="display:flex;gap:4px;justify-content:flex-end">
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEditForm(ev)">Edit</button>
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#117A65;color:white" @onclick="() => OpenCopyForm(ev)">Copy</button>
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#D12B2B" @onclick="() => DeleteEvent(ev.ScheduleItemId)">Del</button>
@@ -316,7 +318,7 @@
                                 @if (_isAdminOrStaff && ev.ItemGroups.Any())
                                 {
                                     <tr class="sched-group-row">
-                                        <td colspan="@(_canEdit ? 7 : 6)">
+                                        <td colspan="@(_canEdit ? 8 : 7)">
                                             <details>
                                                 <summary>👥 Group assignments (@ev.ItemGroups.Count)</summary>
                                                 <div class="sched-sub-body">
@@ -373,6 +375,99 @@
     </div>
 }
 
+@if (_mobileDetailItem is not null)
+{
+    var md = _mobileDetailItem;
+    var mdAssignment = _userGroupId.HasValue
+        ? md.ItemGroups.FirstOrDefault(eg => eg.GroupId == _userGroupId.Value)
+        : null;
+    var mdActivity = mdAssignment?.Activity ?? md.Activity;
+    var mdLocation = mdAssignment?.Location ?? md.Location;
+    var mdTime = md.EndTime.HasValue
+        ? $"{md.StartTime:h:mm tt} – {md.EndTime.Value:h:mm tt}"
+        : md.StartTime.ToString("h:mm tt");
+
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:150;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease"
+         @onclick="() => _mobileDetailItem = null">
+        <div class="ccn-panel" style="padding:20px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease" @onclick:stopPropagation>
+
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
+                <div>
+                    <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--black)">@md.Title</div>
+                    @if (mdActivity is not null)
+                    {
+                        <div style="font-size:12px;color:var(--text-light);font-style:italic;margin-top:2px">@mdActivity.Name</div>
+                    }
+                </div>
+                <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-light);line-height:1;padding:0 0 0 12px"
+                        @onclick="() => _mobileDetailItem = null">✕</button>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px">
+                <span style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--text-mid)">@mdTime</span>
+                <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(md.ScheduleItemType?.BadgeColor, md.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">@DisplayItemTypeBadge(md.ScheduleItemType, mdActivity)</span>
+            </div>
+
+            @if (mdLocation is not null)
+            {
+                <div style="margin-bottom:14px">
+                    <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:3px 10px;border-radius:4px;border:2px solid #6B5540"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:3px;opacity:.7" alt="" />@mdLocation.Name</span>
+                    @if (mdLocation.ImageContentType is not null)
+                    {
+                        <div style="margin-top:10px">
+                            <img src="/location-image/@mdLocation.LocationId"
+                                 style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)"
+                                 alt="@mdLocation.Name" />
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(md.LocationOther))
+            {
+                <div style="margin-bottom:14px">
+                    <div style="font-family:'Fredoka One',cursive;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px">Additional Info</div>
+                    <span style="font-size:13px;color:var(--text-mid)">@md.LocationOther</span>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(md.Description))
+            {
+                <div style="margin-bottom:14px">
+                    <div style="font-family:'Fredoka One',cursive;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px">Description</div>
+                    <span style="font-size:13px;color:var(--text-mid)">@md.Description</span>
+                </div>
+            }
+
+            @if (md.ScheduleItemType?.SystemName == "Presentation" && md.PresenterName is not null)
+            {
+                <div style="margin-bottom:14px">
+                    <div style="font-size:13px;color:var(--text-mid)">🎤 @md.PresenterName</div>
+                    @if (md.PresenterBio is not null)
+                    {
+                        <div style="font-size:12px;color:var(--text-light);margin-top:4px">@md.PresenterBio</div>
+                    }
+                </div>
+            }
+
+            @if (_isAdminOrStaff && md.ItemGroups.Any())
+            {
+                <div style="border-top:2px solid #E8E0CC;padding-top:10px;margin-top:4px">
+                    <div style="font-family:'Fredoka One',cursive;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Group Assignments</div>
+                    @foreach (var eg in md.ItemGroups.OrderBy(x => x.Group.Name))
+                    {
+                        <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #E8E0CC;font-size:13px">
+                            <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px">@eg.Group.ShortName</span>
+                            <span style="flex:1">@(eg.Activity?.Name ?? "—")</span>
+                            @if (eg.Location is not null) { <span style="font-weight:600;color:var(--black)"><img src="/img/icons/pin.svg" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span> }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
 @if (_showForm)
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease" @onclick="CloseForm">
@@ -417,7 +512,7 @@
                 </MudSelect>
 
                 <div class="full">
-                    <MudTextField @bind-Value="_fLocationOther" Label="Additional location / other (optional)" Placeholder="e.g. Gym + Pool deck" Class="mb-3" />
+                    <MudTextField @bind-Value="_fLocationOther" Label="Additional Information (optional)" Placeholder="e.g. Gym + Pool deck" Class="mb-3" />
                 </div>
 
                 <div class="full">
@@ -508,6 +603,7 @@
     private bool _isAdminOrStaff;
     private bool _showForm;
     private string? _lightboxSrc;
+    private ScheduleItem? _mobileDetailItem;
     private Guid? _userGroupId;
     private Event? _campEvent;
     private DateOnly? _selectedDay;
@@ -575,7 +671,7 @@
                 .FirstOrDefaultAsync();
         }
 
-        var today = DateOnly.FromDateTime(DateTime.Today);
+        var today = CampTime.Today;
         if (_campEvent is not null)
         {
             if (today < _campEvent.EffDate)
@@ -615,7 +711,7 @@
     {
         _editingId      = Guid.Empty;
         _fTitle         = ""; _fDesc = null;
-        _fDate     = _selectedDay?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
+        _fDate     = _selectedDay?.ToDateTime(TimeOnly.MinValue) ?? CampTime.Now.Date;
         _fStartStr = ""; _fEndStr = "";
         _fTypeId        = _scheduleItemTypes.FirstOrDefault()?.ScheduleItemTypeId ?? Guid.Empty;
         _fLocationId    = null;
@@ -721,6 +817,11 @@
     }
 
     private static string DisplayItemType(ScheduleItemType? t) => t?.Name ?? "—";
+
+    private static string DisplayItemTypeBadge(ScheduleItemType? t, Activity? activity) =>
+        t?.SystemName == "Activity" && activity is not null
+            ? $"Activity – {activity.Name}"
+            : t?.Name ?? "—";
 
     private static string ItemTypeBadgeColor(string? badgeColor, string? systemName) =>
         !string.IsNullOrEmpty(badgeColor) ? badgeColor : systemName switch

@@ -1,5 +1,14 @@
 namespace CampClotNot.Services;
 
+public static class CampTime
+{
+    private static readonly TimeZoneInfo Central =
+        TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
+
+    public static DateTime Now => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Central);
+    public static DateOnly Today => DateOnly.FromDateTime(Now);
+}
+
 /// <summary>
 /// All values that vary between event themes (Mario Party 2026, future events).
 /// Consumed as CSS custom properties via ThemeHead.razor and as CascadingParameter
