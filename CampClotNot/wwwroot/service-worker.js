@@ -1,7 +1,7 @@
-const CACHE_NAME = 'ccn-shell-v5';
+const CACHE_NAME = 'ccn-shell-v6';
 const SHELL_ASSETS = [
     '/offline.html',
-    '/app.css',
+    '/app.css?v=7',
     '/_content/MudBlazor/MudBlazor.min.css',
     '/_content/MudBlazor/MudBlazor.min.js',
     '/icons/icon-192.png',
