@@ -485,32 +485,45 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     // Update space count here if Katelyn/Vicki confirm a different number.
     private async Task SeedBoardSpacesAsync(AppDbContext db)
     {
+        var actByName = await db.Activities
+            .Where(a => a.EventId == Id.EventCcn2026)
+            .ToDictionaryAsync(a => a.Name, a => a.ActivityId);
+
+        Guid Act(string name) => actByName.TryGetValue(name, out var id) ? id : Id.ActBoardCoinBonus;
+
+        var swimming = Act("Swimming");
+        var boating = Act("Boating");
+        var artsCrafts = Act("Arts and Crafts");
+        var canoeing = Act("Canoeing");
+        var archery = Act("Archery");
+        var minigames = Act("Minigames");
+
         var defs = new[]
         {
             // Bottom row — left → right (y=400)
-            new { Id = Id.Space0,  SpaceIndex = 0,  ActivityId = Id.ActBoardStart,      XPos = 80f,  YPos = 400f },
-            new { Id = Id.Space1,  SpaceIndex = 1,  ActivityId = Id.ActBoardCoinBonus,  XPos = 160f, YPos = 400f },
-            new { Id = Id.Space2,  SpaceIndex = 2,  ActivityId = Id.ActMtwiPlaceholder, XPos = 240f, YPos = 400f },
-            new { Id = Id.Space3,  SpaceIndex = 3,  ActivityId = Id.ActBoardCoinBonus,  XPos = 320f, YPos = 400f },
-            new { Id = Id.Space4,  SpaceIndex = 4,  ActivityId = Id.ActBoardPenalty,    XPos = 400f, YPos = 400f },
-            new { Id = Id.Space5,  SpaceIndex = 5,  ActivityId = Id.ActBoardCoinBonus,  XPos = 480f, YPos = 400f },
+            new { Id = Id.Space0,  SpaceIndex = 0,  ActivityId = Id.ActBoardStart,    XPos = 80f,  YPos = 400f },
+            new { Id = Id.Space1,  SpaceIndex = 1,  ActivityId = swimming,            XPos = 160f, YPos = 400f },
+            new { Id = Id.Space2,  SpaceIndex = 2,  ActivityId = boating,             XPos = 240f, YPos = 400f },
+            new { Id = Id.Space3,  SpaceIndex = 3,  ActivityId = artsCrafts,          XPos = 320f, YPos = 400f },
+            new { Id = Id.Space4,  SpaceIndex = 4,  ActivityId = Id.ActBoardPenalty,  XPos = 400f, YPos = 400f },
+            new { Id = Id.Space5,  SpaceIndex = 5,  ActivityId = canoeing,            XPos = 480f, YPos = 400f },
             // Right side — bottom → top (x=540)
-            new { Id = Id.Space6,  SpaceIndex = 6,  ActivityId = Id.ActMtwiPlaceholder, XPos = 540f, YPos = 330f },
-            new { Id = Id.Space7,  SpaceIndex = 7,  ActivityId = Id.ActBoardCoinBonus,  XPos = 540f, YPos = 250f },
-            new { Id = Id.Space8,  SpaceIndex = 8,  ActivityId = Id.ActBoardPrestige,   XPos = 540f, YPos = 170f },
-            new { Id = Id.Space9,  SpaceIndex = 9,  ActivityId = Id.ActBoardCoinBonus,  XPos = 540f, YPos = 90f  },
+            new { Id = Id.Space6,  SpaceIndex = 6,  ActivityId = archery,             XPos = 540f, YPos = 330f },
+            new { Id = Id.Space7,  SpaceIndex = 7,  ActivityId = minigames,           XPos = 540f, YPos = 250f },
+            new { Id = Id.Space8,  SpaceIndex = 8,  ActivityId = Id.ActBoardPrestige, XPos = 540f, YPos = 170f },
+            new { Id = Id.Space9,  SpaceIndex = 9,  ActivityId = swimming,            XPos = 540f, YPos = 90f  },
             // Top row — right → left (y=40)
-            new { Id = Id.Space10, SpaceIndex = 10, ActivityId = Id.ActMtwiPlaceholder, XPos = 480f, YPos = 40f  },
-            new { Id = Id.Space11, SpaceIndex = 11, ActivityId = Id.ActBoardPrestige,   XPos = 400f, YPos = 40f  },
-            new { Id = Id.Space12, SpaceIndex = 12, ActivityId = Id.ActBoardCoinBonus,  XPos = 320f, YPos = 40f  },
-            new { Id = Id.Space13, SpaceIndex = 13, ActivityId = Id.ActMtwiPlaceholder, XPos = 240f, YPos = 40f  },
-            new { Id = Id.Space14, SpaceIndex = 14, ActivityId = Id.ActBoardPenalty,    XPos = 160f, YPos = 40f  },
-            new { Id = Id.Space15, SpaceIndex = 15, ActivityId = Id.ActBoardPrestige,   XPos = 80f,  YPos = 40f  },
+            new { Id = Id.Space10, SpaceIndex = 10, ActivityId = boating,             XPos = 480f, YPos = 40f  },
+            new { Id = Id.Space11, SpaceIndex = 11, ActivityId = Id.ActBoardPrestige, XPos = 400f, YPos = 40f  },
+            new { Id = Id.Space12, SpaceIndex = 12, ActivityId = artsCrafts,          XPos = 320f, YPos = 40f  },
+            new { Id = Id.Space13, SpaceIndex = 13, ActivityId = canoeing,            XPos = 240f, YPos = 40f  },
+            new { Id = Id.Space14, SpaceIndex = 14, ActivityId = Id.ActBoardPenalty,  XPos = 160f, YPos = 40f  },
+            new { Id = Id.Space15, SpaceIndex = 15, ActivityId = Id.ActBoardPrestige, XPos = 80f,  YPos = 40f  },
             // Left side — top → bottom (x=60)
-            new { Id = Id.Space16, SpaceIndex = 16, ActivityId = Id.ActBoardCoinBonus,  XPos = 60f,  YPos = 110f },
-            new { Id = Id.Space17, SpaceIndex = 17, ActivityId = Id.ActMtwiPlaceholder, XPos = 60f,  YPos = 190f },
-            new { Id = Id.Space18, SpaceIndex = 18, ActivityId = Id.ActBoardPrestige,   XPos = 60f,  YPos = 270f },
-            new { Id = Id.Space19, SpaceIndex = 19, ActivityId = Id.ActBoardPenalty,    XPos = 60f,  YPos = 350f },
+            new { Id = Id.Space16, SpaceIndex = 16, ActivityId = archery,             XPos = 60f,  YPos = 110f },
+            new { Id = Id.Space17, SpaceIndex = 17, ActivityId = minigames,           XPos = 60f,  YPos = 190f },
+            new { Id = Id.Space18, SpaceIndex = 18, ActivityId = Id.ActBoardPrestige, XPos = 60f,  YPos = 270f },
+            new { Id = Id.Space19, SpaceIndex = 19, ActivityId = Id.ActBoardPenalty,  XPos = 60f,  YPos = 350f },
         };
 
         foreach (var def in defs)
