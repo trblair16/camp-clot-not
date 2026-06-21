@@ -22,7 +22,51 @@
     }
     else
     {
-        <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+        @* ── Mobile cards (hidden ≥700px) ── *@
+        <div class="tx-mobile-cards">
+            @foreach (var tx in _transactions)
+            {
+                var voided = tx.VoidedAt.HasValue;
+                var isCoins = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
+                var amtColor = voided ? "var(--text-light)" : tx.Amount < 0 ? "#D12B2B" : "#1A7A3E";
+                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);padding:12px 14px;margin-bottom:10px;@(voided ? "opacity:.5" : "")">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <span style="font-family:'Fredoka One',cursive;font-size:14px;color:@(tx.Group?.Color ?? "var(--black)")">@tx.Group?.Name</span>
+                        <span style="font-weight:800;font-size:15px;color:@amtColor;@(voided ? "text-decoration:line-through" : "")">@(tx.Amount > 0 ? "+" : "")@tx.Amount @(isCoins ? "🪙" : "⭐")</span>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">
+                        @tx.CreatedAt.ToLocalTime().ToString("MM/dd h:mm tt") · @tx.LoggedBy
+                    </div>
+                    @if (!string.IsNullOrEmpty(tx.Note))
+                    {
+                        <div style="font-size:12px;color:var(--text-mid);margin-bottom:6px">@tx.Note</div>
+                    }
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        @if (voided)
+                        {
+                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#D12B2B;padding:2px 8px;border-radius:4px;border:2px solid var(--black)">VOIDED</span>
+                        }
+                        else
+                        {
+                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#27AE60;padding:2px 8px;border-radius:4px;border:2px solid var(--black)">Active</span>
+                        }
+                        <AuthorizeView Roles="Admin">
+                            @if (!voided)
+                            {
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => VoidAsync(tx)">Void</button>
+                            }
+                            else
+                            {
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#E67E22;color:white" @onclick="() => ReinstateAsync(tx)">Reinstate</button>
+                            }
+                        </AuthorizeView>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* ── Desktop table (hidden <700px) ── *@
+        <div class="tx-desktop-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
             <table style="width:100%;border-collapse:collapse">
                 <thead>
                     <tr style="background:var(--black)">
@@ -92,6 +136,15 @@
         </div>
     }
 </div>
+
+<style>
+    @@media (max-width: 699px) {
+        .tx-desktop-table { display: none; }
+    }
+    @@media (min-width: 700px) {
+        .tx-mobile-cards { display: none; }
+    }
+</style>
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
