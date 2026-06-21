@@ -41,7 +41,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
             .FirstOrDefaultAsync();
     }
 
-    public async Task<Announcement> PostAsync(string title, string body, AnnouncementPriority priority, Guid authorId)
+    public async Task<Announcement> PostAsync(string title, string body, AnnouncementPriority priority, Guid authorId, string[]? targetRoles = null)
     {
         using var db = factory.CreateDbContext();
         var announcement = new Announcement
@@ -60,10 +60,12 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         cache.Remove(FeedKey);
         try
         {
-            await pushService.SendToAllAsync(
-                priority == AnnouncementPriority.Urgent ? $"🚨 {title}" : $"📢 {title}",
-                body.Length > 120 ? body[..117] + "..." : body,
-                "/hub/announcements");
+            var pushTitle = priority == AnnouncementPriority.Urgent ? $"🚨 {title}" : $"📢 {title}";
+            var pushBody = body.Length > 120 ? body[..117] + "..." : body;
+            if (targetRoles is not null && targetRoles.Length > 0)
+                await pushService.SendToRolesAsync(targetRoles, pushTitle, pushBody, "/hub/announcements");
+            else
+                await pushService.SendToAllAsync(pushTitle, pushBody, "/hub/announcements");
         }
         catch { }
         return announcement;

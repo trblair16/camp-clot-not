@@ -76,11 +76,26 @@ public class PushNotificationService
         }
     }
 
+    public async Task SendToRolesAsync(string[] roleNames, string title, string body, string? url = null)
+    {
+        using var db = _factory.CreateDbContext();
+        var subs = await db.PushSubscriptions
+            .Where(s => s.UserId != null && db.Users
+                .Any(u => u.UserId == s.UserId && db.UserRoles
+                    .Any(r => r.UserRoleId == u.UserRoleId && roleNames.Contains(r.SystemName))))
+            .ToListAsync();
+        await DeliverAsync(db, subs, title, body, url);
+    }
+
     public async Task SendToAllAsync(string title, string body, string? url = null)
     {
         using var db = _factory.CreateDbContext();
         var subs = await db.PushSubscriptions.ToListAsync();
+        await DeliverAsync(db, subs, title, body, url);
+    }
 
+    private async Task DeliverAsync(AppDbContext db, List<DbPushSub> subs, string title, string body, string? url)
+    {
         var payload = JsonSerializer.Serialize(new { title, body, url });
 
         var stale = new List<DbPushSub>();

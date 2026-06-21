@@ -28,6 +28,13 @@
                     <MudSelectItem Value="@AnnouncementPriority.Normal">Normal</MudSelectItem>
                     <MudSelectItem Value="@AnnouncementPriority.Urgent">Urgent</MudSelectItem>
                 </MudSelect>
+                <MudSelect T="string" Label="Send push to" MultiSelection="true" @bind-SelectedValues="_pushTargetRoles" Class="mb-2">
+                    <MudSelectItem T="string" Value="@("Admin")">Admin</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Staff")">Staff</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Volunteer")">Volunteer</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("MedicalStaff")">Medical Staff</MudSelectItem>
+                </MudSelect>
+                <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">Leave empty to push to everyone. Select roles to target specific groups.</div>
             }
             <button class="ccn-btn" @onclick="Post" disabled="@string.IsNullOrWhiteSpace(_newTitle)">Post</button>
         </div>
@@ -81,6 +88,7 @@
     private string _newTitle = "";
     private string _newBody = "";
     private AnnouncementPriority _newPriority = AnnouncementPriority.Normal;
+    private IEnumerable<string> _pushTargetRoles = new HashSet<string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,8 +104,10 @@
     {
         if (string.IsNullOrWhiteSpace(_newTitle)) return;
         var priority = _isAdmin ? _newPriority : AnnouncementPriority.Normal;
-        await AnnouncementSvc.PostAsync(_newTitle, _newBody, priority, _userId);
+        var roles = _pushTargetRoles.Any() ? _pushTargetRoles.ToArray() : null;
+        await AnnouncementSvc.PostAsync(_newTitle, _newBody, priority, _userId, roles);
         _newTitle = ""; _newBody = ""; _newPriority = AnnouncementPriority.Normal;
+        _pushTargetRoles = new HashSet<string>();
         _feed = await AnnouncementSvc.GetFeedAsync();
     }
 
