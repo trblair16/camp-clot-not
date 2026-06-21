@@ -4,6 +4,7 @@
 @inject TransactionService TxSvc
 @inject NavigationManager Nav
 @inject IDialogService DialogService
+@inject AuthenticationStateProvider Auth
 @inject ThemeService ThemeSvc
 @implements IAsyncDisposable
 
@@ -140,8 +141,8 @@ else
         }
     </div>
 
-    @* ── RECENT ACTIVITY ── *@
-    @if (_recentTransactions.Any())
+    @* ── RECENT ACTIVITY (staff/admin only) ── *@
+    @if (_isStaffOrAdmin && _recentTransactions.Any())
     {
         <div class="ccn-section-label">🕐 Recent Activity</div>
         <div class="ccn-panel" style="overflow:hidden;margin-bottom:80px">
@@ -187,11 +188,14 @@ else
     private List<GroupEntry>   _ranked             = new();
     private List<Transaction>  _recentTransactions = new();
     private bool               _loading            = true;
+    private bool               _isStaffOrAdmin;
     private LogTransactionDialog _txDialog         = null!;
     private HubConnection?     _hub;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await Auth.GetAuthenticationStateAsync();
+        _isStaffOrAdmin = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff") || authState.User.IsInRole("MedicalStaff");
         await RefreshAsync();
         _loading = false;
     }
