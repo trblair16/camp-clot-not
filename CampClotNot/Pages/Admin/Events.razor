@@ -1,0 +1,274 @@
+@page "/admin/events"
+@attribute [Authorize(Roles = "Admin")]
+@inject IDbContextFactory<AppDbContext> DbFactory
+@using CampClotNot.Data
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Events — Camp Clot Not</PageTitle>
+
+<style>
+    @@media (max-width: 699px) {
+        .admin-evt-form  { display: none; }
+        .admin-evt-table { display: none; }
+        .admin-evt-cards { display: flex; flex-direction: column; gap: 10px; }
+        .admin-evt-add-mobile { display: block; margin-bottom: 12px; }
+    }
+    @@media (min-width: 700px) {
+        .admin-evt-cards { display: none; }
+        .admin-evt-add-mobile { display: none; }
+    }
+</style>
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/gear.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Events</h2>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+        <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
+             @onclick="CloseFormOverlay">
+        <div class="admin-evt-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+             @onclick:stopPropagation>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Create Event" : "Edit Event")</h3>
+                @if (_mobileFormOpen)
+                {
+                    <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
+                }
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Event Name *</div>
+                <input type="text" @bind="_fName" placeholder="e.g. Men's Retreat 2026"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Start Date *</div>
+                <input type="date" value="@_fStartDate?.ToString("yyyy-MM-dd")"
+                       @onchange="e => { if (DateOnly.TryParse(e.Value?.ToString(), out var d)) _fStartDate = d; }"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">End Date *</div>
+                <input type="date" value="@_fEndDate?.ToString("yyyy-MM-dd")"
+                       @onchange="e => { if (DateOnly.TryParse(e.Value?.ToString(), out var d)) _fEndDate = d; }"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+            </div>
+
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Event Type</div>
+                <select value="@_fEventTypeId.ToString()"
+                        @onchange="e => _fEventTypeId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : _eventTypes.First().EventTypeId"
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                    @foreach (var et in _eventTypes)
+                    {
+                        <option value="@et.EventTypeId">@et.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div style="margin-bottom:16px">
+                <MudSwitch T="bool" @bind-Value="_fIsActive" Label="Active event" Color="MudBlazor.Color.Primary" />
+                <div style="font-size:11px;color:var(--text-light)">Only one event should be active at a time. Setting this active will deactivate others.</div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_saveError))
+            {
+                <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_saveError</div>
+            }
+
+            <div style="display:flex;gap:8px">
+                <button class="ccn-btn" @onclick="SaveAsync">@(_editingId == Guid.Empty ? "Create Event" : "Save Changes")</button>
+                @if (_editingId != Guid.Empty)
+                {
+                    <button class="ccn-btn" style="background:transparent" @onclick="ResetForm">Cancel</button>
+                }
+            </div>
+        </div>
+        </div>
+
+        <div style="flex:1;min-width:240px">
+            <button class="ccn-btn admin-evt-add-mobile" @onclick="() => _mobileFormOpen = true">+ Create Event</button>
+
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_events.Any())
+            {
+                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No events yet. Create the first one →</p>
+            }
+            else
+            {
+                <div class="admin-evt-cards">
+                    @foreach (var ev in _events)
+                    {
+                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                            <div style="flex:1;min-width:0">
+                                <div style="display:flex;align-items:center;gap:6px">
+                                    <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--black)">@ev.Name</div>
+                                    @if (ev.IsActive) { <span style="font-size:9px;font-weight:800;background:#27AE60;color:white;padding:2px 6px;border-radius:3px">ACTIVE</span> }
+                                </div>
+                                <div style="font-size:11px;color:var(--text-light)">@ev.EffDate.ToString("MMM d") – @ev.ExpDate.ToString("MMM d, yyyy")</div>
+                            </div>
+                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => { StartEdit(ev); _mobileFormOpen = true; }">Edit</button>
+                        </div>
+                    }
+                </div>
+
+                <div class="admin-evt-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:var(--black)">
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Type</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Dates</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Status</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ev in _events)
+                            {
+                                <tr style="border-bottom:2px solid #E8E0CC">
+                                    <td style="padding:10px 14px;font-size:13px;font-weight:700">@ev.Name</td>
+                                    <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@ev.EventType.Name</td>
+                                    <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@ev.EffDate.ToString("MMM d") – @ev.ExpDate.ToString("MMM d, yyyy")</td>
+                                    <td style="padding:10px 14px">
+                                        @if (ev.IsActive)
+                                        {
+                                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#27AE60;padding:2px 8px;border-radius:4px;border:2px solid var(--black)">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="font-size:10px;font-weight:800;color:var(--text-light)">Inactive</span>
+                                        }
+                                    </td>
+                                    <td style="padding:8px 10px">
+                                        <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(ev)">Edit</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _mobileFormOpen;
+    private List<Event> _events = new();
+    private List<EventType> _eventTypes = new();
+    private List<Theme> _themes = new();
+
+    private Guid _editingId;
+    private string _fName = "";
+    private DateOnly? _fStartDate;
+    private DateOnly? _fEndDate;
+    private Guid _fEventTypeId;
+    private bool _fIsActive;
+    private string _saveError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Reload();
+        _loading = false;
+    }
+
+    private async Task Reload()
+    {
+        using var db = DbFactory.CreateDbContext();
+        _events = await db.Events.Include(e => e.EventType).OrderByDescending(e => e.EffDate).ToListAsync();
+        _eventTypes = await db.EventTypes.ToListAsync();
+        _themes = await db.Themes.ToListAsync();
+        if (_fEventTypeId == Guid.Empty && _eventTypes.Any())
+            _fEventTypeId = _eventTypes.First().EventTypeId;
+    }
+
+    private void StartEdit(Event ev)
+    {
+        _editingId = ev.EventId;
+        _fName = ev.Name;
+        _fStartDate = ev.EffDate;
+        _fEndDate = ev.ExpDate;
+        _fEventTypeId = ev.EventTypeId;
+        _fIsActive = ev.IsActive;
+        _saveError = "";
+    }
+
+    private void ResetForm()
+    {
+        _editingId = Guid.Empty;
+        _fName = "";
+        _fStartDate = null;
+        _fEndDate = null;
+        _fIsActive = false;
+        _saveError = "";
+        if (_eventTypes.Any()) _fEventTypeId = _eventTypes.First().EventTypeId;
+    }
+
+    private void CloseFormOverlay()
+    {
+        _mobileFormOpen = false;
+        if (_editingId != Guid.Empty) ResetForm();
+    }
+
+    private async Task SaveAsync()
+    {
+        _saveError = "";
+        if (string.IsNullOrWhiteSpace(_fName) || _fStartDate is null || _fEndDate is null)
+        {
+            _saveError = "Name, start date, and end date are required.";
+            return;
+        }
+        if (_fEndDate < _fStartDate)
+        {
+            _saveError = "End date must be after start date.";
+            return;
+        }
+
+        using var db = DbFactory.CreateDbContext();
+
+        if (_fIsActive)
+        {
+            var others = await db.Events.Where(e => e.IsActive && e.EventId != _editingId).ToListAsync();
+            foreach (var o in others) o.IsActive = false;
+        }
+
+        if (_editingId == Guid.Empty)
+        {
+            var themeId = _themes.Any() ? _themes.First().ThemeId : Guid.Empty;
+            db.Events.Add(new Event
+            {
+                EventId = Guid.NewGuid(),
+                Name = _fName.Trim(),
+                EffDate = _fStartDate.Value,
+                ExpDate = _fEndDate.Value,
+                EventTypeId = _fEventTypeId,
+                ThemeId = themeId,
+                IsActive = _fIsActive
+            });
+        }
+        else
+        {
+            var existing = await db.Events.FindAsync(_editingId);
+            if (existing is not null)
+            {
+                existing.Name = _fName.Trim();
+                existing.EffDate = _fStartDate.Value;
+                existing.ExpDate = _fEndDate.Value;
+                existing.EventTypeId = _fEventTypeId;
+                existing.IsActive = _fIsActive;
+            }
+        }
+
+        await db.SaveChangesAsync();
+        ResetForm();
+        _mobileFormOpen = false;
+        await Reload();
+    }
+}
