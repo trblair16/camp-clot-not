@@ -64,21 +64,40 @@
                             @{
                                 var reactions = AnnouncementService.ParseReactions(a.ReactionsJson);
                             }
-                            <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">
-                                @foreach (var emoji in _availableReactions)
+                            <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;align-items:center">
+                                @foreach (var emoji in reactions.Keys.OrderBy(k => Array.IndexOf(_availableReactions, k)))
                                 {
-                                    var count = reactions.ContainsKey(emoji) ? reactions[emoji].Count : 0;
-                                    var reacted = reactions.ContainsKey(emoji) && reactions[emoji].Contains(_userId);
+                                    var count = reactions[emoji].Count;
+                                    if (count == 0) continue;
+                                    var reacted = reactions[emoji].Contains(_userId);
                                     var eid = emoji;
                                     var aid = a.AnnouncementId;
                                     <button style="border:2px solid @(reacted ? "var(--black)" : "#D8D0BC");border-radius:20px;padding:3px 8px;background:@(reacted ? "#E8E0CC" : "transparent");cursor:pointer;font-size:14px;display:flex;align-items:center;gap:3px;transition:all .1s"
                                             @onclick="() => React(aid, eid)">
                                         <span>@emoji</span>
-                                        @if (count > 0)
-                                        {
-                                            <span style="font-size:11px;font-weight:700;color:var(--text-mid)">@count</span>
-                                        }
+                                        <span style="font-size:11px;font-weight:700;color:var(--text-mid)">@count</span>
                                     </button>
+                                }
+                                @{
+                                    var annId = a.AnnouncementId;
+                                    var pickerOpen = _reactionPickerOpen == annId;
+                                }
+                                <button style="border:2px solid #D8D0BC;border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:13px;color:var(--text-light);transition:all .1s"
+                                        @onclick="() => _reactionPickerOpen = pickerOpen ? Guid.Empty : annId">
+                                    @(pickerOpen ? "✕" : "+")
+                                </button>
+                                @if (pickerOpen)
+                                {
+                                    @foreach (var emoji in _availableReactions)
+                                    {
+                                        var alreadyShown = reactions.ContainsKey(emoji) && reactions[emoji].Count > 0;
+                                        if (alreadyShown) continue;
+                                        var eid = emoji;
+                                        <button style="border:2px solid #D8D0BC;border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:14px;transition:all .1s"
+                                                @onclick="() => { React(annId, eid); _reactionPickerOpen = Guid.Empty; }">
+                                            @emoji
+                                        </button>
+                                    }
                                 }
                             </div>
                         </div>
@@ -111,6 +130,7 @@
     private AnnouncementPriority _newPriority = AnnouncementPriority.Normal;
     private IEnumerable<string> _pushTargetRoles = new HashSet<string>();
     private static readonly string[] _availableReactions = ["✅", "❤️", "⭐", "😂", "😢", "❓"];
+    private Guid _reactionPickerOpen;
 
     protected override async Task OnInitializedAsync()
     {
