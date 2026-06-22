@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject SponsorService SponsorSvc
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>Sponsors — Camp Clot Not</PageTitle>
 
@@ -305,6 +306,7 @@
 
     private async Task DeleteAsync(Sponsor s)
     {
+        if (!await JS.InvokeAsync<bool>("confirm", "Delete this sponsor?")) return;
         await SponsorSvc.DeleteAsync(s.SponsorId);
         Snackbar.Add($"{s.Name} deleted.", Severity.Info);
         await Reload();

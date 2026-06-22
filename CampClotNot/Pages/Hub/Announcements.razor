@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject AnnouncementService AnnouncementSvc
 @inject AuthenticationStateProvider Auth
+@inject IJSRuntime JS
 
 <PageTitle>Announcements — Camp Clot Not</PageTitle>
 
@@ -58,7 +59,7 @@
                             <span style="font-family:'Fredoka One',cursive;font-size:16px">@a.Title</span>
                             <p style="margin:8px 0 4px;font-size:14px">@a.Body</p>
                             <div style="font-size:12px;color:var(--text-light)">
-                                @a.Author.Email • @a.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt")
+                                @a.Author.FirstName @a.Author.LastName • @a.CreatedAt.ToString("MMM d, h:mm tt")
                             </div>
                             @{
                                 var reactions = AnnouncementService.ParseReactions(a.ReactionsJson);
@@ -140,6 +141,7 @@
 
     private async Task Archive(Guid id)
     {
+        if (!await JS.InvokeAsync<bool>("confirm", "Archive this announcement?")) return;
         await AnnouncementSvc.ArchiveAsync(id);
         _feed = await AnnouncementSvc.GetFeedAsync();
     }

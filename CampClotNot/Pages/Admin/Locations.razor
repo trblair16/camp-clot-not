@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject LocationService LocationSvc
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>Locations — Camp Clot Not</PageTitle>
 
@@ -265,6 +266,7 @@
 
     private async Task DeleteAsync(Location loc)
     {
+        if (!await JS.InvokeAsync<bool>("confirm", "Delete this location?")) return;
         await LocationSvc.DeleteAsync(loc.LocationId);
         Snackbar.Add($"{loc.Name} deleted.", Severity.Info);
         await Reload();

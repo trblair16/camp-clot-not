@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject StaffDirectoryService StaffSvc
 @inject AuthenticationStateProvider Auth
+@inject IJSRuntime JS
 @using SixLabors.ImageSharp
 @using SixLabors.ImageSharp.Processing
 
@@ -299,6 +300,7 @@
 
     private async Task Delete(Guid id)
     {
+        if (!await JS.InvokeAsync<bool>("confirm", "Delete this staff member?")) return;
         await StaffSvc.DeleteAsync(id);
         await Reload();
     }

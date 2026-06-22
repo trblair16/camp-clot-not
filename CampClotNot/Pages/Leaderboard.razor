@@ -164,7 +164,7 @@ else
                             </span>
                         </div>
                         <div style="font-size:10px;color:var(--text-light);margin-top:2px;font-weight:700">
-                            @(tx.Note != null ? $"{tx.Note} · " : "")@tx.LoggedBy · @tx.CreatedAt.ToLocalTime().ToString("h:mm tt")
+                            @(tx.Note != null ? $"{tx.Note} · " : "")@tx.LoggedBy · @tx.CreatedAt.ToString("h:mm tt")
                         </div>
                     </div>
                 </div>

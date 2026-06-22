@@ -35,7 +35,7 @@
                         <span style="font-weight:800;font-size:15px;color:@amtColor;@(voided ? "text-decoration:line-through" : "")">@(tx.Amount > 0 ? "+" : "")@tx.Amount @(isCoins ? "🪙" : "⭐")</span>
                     </div>
                     <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">
-                        @tx.CreatedAt.ToLocalTime().ToString("MM/dd h:mm tt") · @tx.LoggedBy
+                        @tx.CreatedAt.ToString("MM/dd h:mm tt") · @tx.LoggedBy
                     </div>
                     @if (!string.IsNullOrEmpty(tx.Note))
                     {
@@ -90,7 +90,7 @@
                         var amtColor = voided ? "var(--text-light)" : tx.Amount < 0 ? "#D12B2B" : "#1A7A3E";
                         <tr style="border-bottom:2px solid #E8E0CC;@(voided ? "opacity:.5" : "")">
                             <td style="padding:10px 14px;font-size:12px;color:var(--text-mid);white-space:nowrap">
-                                @tx.CreatedAt.ToLocalTime().ToString("MM/dd h:mm tt")
+                                @tx.CreatedAt.ToString("MM/dd h:mm tt")
                             </td>
                             <td style="padding:10px 14px;font-size:13px;font-weight:700">@tx.Group?.Name</td>
                             <td style="padding:10px 14px;font-size:13px">@(isCoins ? "🪙 Coins" : "⭐ Stars")</td>

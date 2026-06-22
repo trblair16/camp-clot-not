@@ -1,6 +1,7 @@
 @page "/admin/staff"
 @attribute [Authorize(Roles = "Admin")]
 @inject StaffDirectoryService StaffSvc
+@inject IJSRuntime JS
 @using SixLabors.ImageSharp
 @using SixLabors.ImageSharp.Processing
 
@@ -290,6 +291,7 @@
 
     private async Task DeleteAsync(StaffMember m)
     {
+        if (!await JS.InvokeAsync<bool>("confirm", "Delete this staff member?")) return;
         await StaffSvc.DeleteAsync(m.StaffMemberId);
         await Reload();
     }
