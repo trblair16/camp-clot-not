@@ -6,6 +6,14 @@
 
 <PageTitle>Announcements — Camp Clot Not</PageTitle>
 
+<style>
+    .ann-card .react-add { opacity: 0; transition: opacity .15s; }
+    .ann-card:hover .react-add { opacity: 1; }
+    @@media (max-width: 768px) {
+        .ann-card .react-add { opacity: 1; }
+    }
+</style>
+
 <HubSubNav />
 
 <div style="padding: 0 16px 100px">
@@ -44,7 +52,7 @@
         @foreach (var a in _feed)
         {
             var urgent = a.Priority == AnnouncementPriority.Urgent;
-            <div style="border:3px solid var(--black);border-radius:10px;margin-bottom:12px;box-shadow:3px 3px 0 var(--black);overflow:hidden;border-left-width:@(urgent ? "6px" : "3px");border-left-color:@(urgent ? "#D12B2B" : "var(--black)")">
+            <div class="ann-card" style="border:3px solid var(--black);border-radius:10px;margin-bottom:12px;box-shadow:3px 3px 0 var(--black);overflow:hidden;border-left-width:@(urgent ? "6px" : "3px");border-left-color:@(urgent ? "#D12B2B" : "var(--black)")">
                 <div style="padding:14px 16px;background:var(--panel-bg)">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                         <div style="flex:1">
@@ -82,7 +90,7 @@
                                     var annId = a.AnnouncementId;
                                     var pickerOpen = _reactionPickerOpen == annId;
                                 }
-                                <button style="border:2px solid #D8D0BC;border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:13px;color:var(--text-light);transition:all .1s"
+                                <button class="react-add" style="border:2px solid #D8D0BC;border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:13px;color:var(--text-light);transition:all .1s;@(pickerOpen ? "opacity:1 !important" : "")"
                                         @onclick="() => _reactionPickerOpen = pickerOpen ? Guid.Empty : annId">
                                     @(pickerOpen ? "✕" : "+")
                                 </button>
