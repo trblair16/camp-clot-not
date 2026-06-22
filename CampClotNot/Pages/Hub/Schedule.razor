@@ -6,6 +6,7 @@
 @inject MiniGameService MiniGameSvc
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject AuthenticationStateProvider Auth
+@inject IJSRuntime JS
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -516,10 +517,6 @@
                     <MudTextField @bind-Value="_fLocationOther" Label="Additional Information (optional)" Placeholder="e.g. Gym + Pool deck" Class="mb-3" />
                 </div>
 
-                <div class="full">
-                    <MudTextField @bind-Value="_fDesc" Label="Description (optional)" Lines="2" Class="mb-3" />
-                </div>
-
                 @if (SelectedTypeSystemName == "Presentation")
                 {
                     <div class="full">
@@ -813,6 +810,7 @@
 
     private async Task DeleteEvent(Guid id)
     {
+        if (!await JS.InvokeAsync<bool>("confirm", "Delete this schedule item?")) return;
         await ScheduleSvc.DeleteAsync(id);
         await LoadEvents();
     }
