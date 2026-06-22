@@ -7,6 +7,7 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject AuthenticationStateProvider Auth
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -119,12 +120,6 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Additional Information (optional)</div>
                 <input type="text" @bind="_fLocationOther" placeholder="e.g. Gym + Pool deck"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
-            </div>
-
-            <div style="margin-bottom:14px">
-                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Description (optional)</div>
-                <input type="text" @bind="_fDesc" placeholder="Short description"
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
             </div>
 
@@ -565,6 +560,7 @@
 
     private async Task DeleteAsync(ScheduleItem ev)
     {
+        if (!await JS.InvokeAsync<bool>("confirm", "Delete this schedule item?")) return;
         await ScheduleSvc.DeleteAsync(ev.ScheduleItemId);
         Snackbar.Add($"{ev.Title} deleted.", Severity.Info);
         await Reload();

@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject InfoPageService InfoSvc
 @inject DocumentService DocSvc
+@inject IJSRuntime JS
 @inject AuthenticationStateProvider Auth
 @inject NavigationManager Nav
 
@@ -125,7 +126,7 @@
                                     <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid #E8E0CC;flex-wrap:wrap">
                                         <span style="font-family:'Fredoka One',cursive;font-size:14px;flex:1;min-width:120px">📄 @doc.Title</span>
                                         <span style="font-size:11px;color:var(--text-light);flex-shrink:0">
-                                            @doc.UploadedAt.ToLocalTime().ToString("MMM d, yyyy")
+                                            @doc.UploadedAt.ToString("MMM d, yyyy")
                                         </span>
                                         <a href="/hub/documents/@doc.DocumentId/pdf" target="_blank"
                                            class="ccn-btn" style="font-size:12px;padding:4px 10px;text-decoration:none;flex-shrink:0">
@@ -228,7 +229,7 @@
                             }
 
                             <p style="font-size:12px;color:var(--text-light);margin-top:8px">
-                                Last updated @_activePage.UpdatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                                Last updated @_activePage.UpdatedAt.ToString("MMM d, yyyy h:mm tt")
                             </p>
                         }
                     }
@@ -368,6 +369,7 @@
 
     private async Task DeleteDocument(Guid documentId)
     {
+        if (!await JS.InvokeAsync<bool>("confirm", "Delete this document?")) return;
         await DocSvc.DeleteAsync(documentId);
         _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
     }
