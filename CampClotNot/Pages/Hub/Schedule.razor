@@ -203,7 +203,7 @@
                                         }
                                         @if (!string.IsNullOrEmpty(ev.LocationOther))
                                         {
-                                            <span style="font-size:12px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@ev.LocationOther</span>
+                                            <span style="font-size:11px;color:var(--text-mid);overflow-wrap:break-word;word-break:break-word">@ev.LocationOther</span>
                                         }
                                     </div>
                                     @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
