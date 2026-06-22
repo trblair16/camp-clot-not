@@ -63,7 +63,7 @@
                     </div>
                     <input type="number" step="@(IsCoinsSelected ? "5" : "1")"
                            placeholder="@(IsCoinsSelected ? "e.g. 25 or -10 (×5 only)" : "e.g. 1 or -1")"
-                           @bind="_form.Amount" @bind:event="oninput"
+                           @bind="_form.Amount" @bind:event="onchange"
                            style="background:var(--bg-base);border:3px solid @(CoinAmountInvalid ? "#D12B2B" : "var(--black)");border-radius:7px;
                                   color:var(--text-dark);padding:9px 12px;font-size:14px;
                                   font-family:'Nunito',sans-serif;font-weight:700;width:100%;
