@@ -186,7 +186,8 @@ public class BoardService(
         await hub.Clients.All.SendAsync("ScoresUpdated");
     }
 
-    // Dev/testing helper: move all groups back to space 0 and un-trigger all scripts for a given day
+    // Reset a day's block hit scripts. On day 1, positions go to 0.
+    // On later days, positions revert to where each group ended the previous day.
     public async Task ResetDayAsync(Guid eventId, int campDay)
     {
         using var db = factory.CreateDbContext();
@@ -196,15 +197,31 @@ public class BoardService(
             .Select(g => g.GroupId)
             .ToListAsync();
 
-        // Reset positions to space 0
         var positions = await db.GroupBoardPositions
             .Where(p => groupIds.Contains(p.GroupId))
             .ToListAsync();
 
-        foreach (var p in positions)
+        if (campDay <= 1)
         {
-            p.SpaceIndex = 0;
-            p.UpdatedAt  = CampTime.Now;
+            foreach (var p in positions)
+            {
+                p.SpaceIndex = 0;
+                p.UpdatedAt  = CampTime.Now;
+            }
+        }
+        else
+        {
+            var prevDayScripts = await db.ScriptedBlockHits
+                .Where(s => s.EventId == eventId && s.CampDay == campDay - 1 && s.IsTriggered)
+                .ToListAsync();
+
+            foreach (var p in positions)
+            {
+                var prevScript = prevDayScripts.FirstOrDefault(s => s.GroupId == p.GroupId);
+                if (prevScript is not null)
+                    p.SpaceIndex = prevScript.DestinationSpaceIndex;
+                p.UpdatedAt = CampTime.Now;
+            }
         }
 
         // Un-trigger block hit scripts for the specified day
