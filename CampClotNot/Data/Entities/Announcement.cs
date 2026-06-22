@@ -14,4 +14,5 @@ public class Announcement
     public DateTime CreatedAt { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public bool IsArchived { get; set; }
+    public string? ReactionsJson { get; set; }
 }

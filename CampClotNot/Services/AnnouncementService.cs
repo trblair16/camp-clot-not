@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -90,4 +91,35 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         await db.SaveChangesAsync();
         cache.Remove(FeedKey);
     }
+
+    public async Task ToggleReactionAsync(Guid announcementId, string emoji, Guid userId)
+    {
+        using var db = factory.CreateDbContext();
+        var a = await db.Announcements.FindAsync(announcementId);
+        if (a is null) return;
+
+        var reactions = string.IsNullOrEmpty(a.ReactionsJson)
+            ? new Dictionary<string, List<Guid>>()
+            : JsonSerializer.Deserialize<Dictionary<string, List<Guid>>>(a.ReactionsJson) ?? new();
+
+        if (!reactions.ContainsKey(emoji))
+            reactions[emoji] = new List<Guid>();
+
+        if (reactions[emoji].Contains(userId))
+            reactions[emoji].Remove(userId);
+        else
+            reactions[emoji].Add(userId);
+
+        if (reactions[emoji].Count == 0)
+            reactions.Remove(emoji);
+
+        a.ReactionsJson = reactions.Count > 0 ? JsonSerializer.Serialize(reactions) : null;
+        await db.SaveChangesAsync();
+        cache.Remove(FeedKey);
+    }
+
+    public static Dictionary<string, List<Guid>> ParseReactions(string? json) =>
+        string.IsNullOrEmpty(json)
+            ? new()
+            : JsonSerializer.Deserialize<Dictionary<string, List<Guid>>>(json) ?? new();
 }
