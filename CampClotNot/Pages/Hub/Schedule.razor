@@ -192,7 +192,7 @@
                                         <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@displayActivity.Name</div>
                                     }
                                     <div class="sched-inline-meta">
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;flex-shrink:0">@DisplayItemTypeBadge(ev.ScheduleItemType, displayActivity)</span>
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;display:inline-block">@DisplayItemTypeBadge(ev.ScheduleItemType, displayActivity)</span>
                                         @if (displayLocation is not null)
                                         {
                                             @if (displayLocation.ImageContentType is not null)
