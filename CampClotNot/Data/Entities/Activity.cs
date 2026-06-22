@@ -8,6 +8,7 @@ public class Activity
     public Guid? LocationId { get; set; }
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
+    public bool ShowInSpinner { get; set; } = true;
 
     public Event Event { get; set; } = null!;
     public ActivityType ActivityType { get; set; } = null!;

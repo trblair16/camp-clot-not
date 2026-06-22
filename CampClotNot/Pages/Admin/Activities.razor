@@ -120,6 +120,7 @@
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Description</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Location</th>
+                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:center">Spinner</th>
                                 <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
                             </tr>
                         </thead>
@@ -131,6 +132,10 @@
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@a.Name</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(string.IsNullOrEmpty(a.Description) ? "—" : a.Description)</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(locName ?? "—")</td>
+                                    <td style="padding:8px 14px;text-align:center">
+                                        <input type="checkbox" checked="@a.ShowInSpinner"
+                                               @onchange="() => ToggleSpinnerAsync(a)" style="cursor:pointer;width:18px;height:18px" />
+                                    </td>
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(a)">Edit</button>
@@ -204,6 +209,12 @@
             Snackbar.Add($"{a.Name} deleted.", Severity.Info);
         else
             Snackbar.Add($"{a.Name} is assigned to a mini-game script and cannot be deleted.", Severity.Warning);
+        await Reload();
+    }
+
+    private async Task ToggleSpinnerAsync(Activity a)
+    {
+        await MiniGameSvc.ToggleSpinnerAsync(a.ActivityId, !a.ShowInSpinner);
         await Reload();
     }
 }

@@ -39,6 +39,22 @@ public class MiniGameService(
         }) ?? [];
     }
 
+    public async Task<List<Activity>> GetSpinnerActivitiesAsync(Guid eventId)
+    {
+        var all = await GetActivitiesAsync(eventId);
+        return all.Where(a => a.ShowInSpinner).ToList();
+    }
+
+    public async Task ToggleSpinnerAsync(Guid activityId, bool showInSpinner)
+    {
+        using var db = factory.CreateDbContext();
+        var activity = await db.Activities.FindAsync(activityId);
+        if (activity is null) return;
+        activity.ShowInSpinner = showInSpinner;
+        await db.SaveChangesAsync();
+        cache.Remove(ActivitiesKey(activity.EventId));
+    }
+
     public async Task<List<MiniGameScriptView>> GetScriptsAsync(Guid eventId)
     {
         using var db = factory.CreateDbContext();

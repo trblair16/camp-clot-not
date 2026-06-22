@@ -113,7 +113,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _activities = await MiniGameSvc.GetActivitiesAsync(EventId);
+        _activities = await MiniGameSvc.GetSpinnerActivitiesAsync(EventId);
         _loading    = false;
     }
 

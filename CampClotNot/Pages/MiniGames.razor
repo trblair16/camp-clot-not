@@ -181,7 +181,7 @@
     private async Task LoadAsync()
     {
         var (activities, scripts) = (
-            await MiniGameSvc.GetActivitiesAsync(EventId),
+            await MiniGameSvc.GetSpinnerActivitiesAsync(EventId),
             await MiniGameSvc.GetScriptsAsync(EventId)
         );
         _activities = activities;
