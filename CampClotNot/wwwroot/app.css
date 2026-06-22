@@ -248,6 +248,8 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     bottom: calc(60px + env(safe-area-inset-bottom));
     left: 0;
     right: 0;
+    max-height: calc(70vh - 60px);
+    overflow-y: auto;
     background: var(--panel-bg);
     border-top: 4px solid var(--black);
     border-radius: 16px 16px 0 0;
