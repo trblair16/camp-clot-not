@@ -58,14 +58,25 @@
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Event Type</div>
-                <select value="@_fEventTypeId.ToString()"
-                        @onchange="e => _fEventTypeId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : _eventTypes.First().EventTypeId"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
-                    @foreach (var et in _eventTypes)
-                    {
-                        <option value="@et.EventTypeId">@et.Name</option>
-                    }
-                </select>
+                <div style="display:flex;gap:6px;align-items:stretch">
+                    <select value="@_fEventTypeId.ToString()"
+                            @onchange="e => _fEventTypeId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : _eventTypes.First().EventTypeId"
+                            style="flex:1;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                        @foreach (var et in _eventTypes)
+                        {
+                            <option value="@et.EventTypeId">@et.Name</option>
+                        }
+                    </select>
+                    <button class="ccn-btn" style="font-size:11px;padding:6px 10px;flex-shrink:0" @onclick="() => _showNewType = !_showNewType">+</button>
+                </div>
+                @if (_showNewType)
+                {
+                    <div style="display:flex;gap:6px;margin-top:8px;align-items:stretch">
+                        <input type="text" @bind="_newTypeName" placeholder="e.g. Men's Retreat"
+                               style="flex:1;padding:7px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);outline:none;box-sizing:border-box" />
+                        <button class="ccn-btn" style="font-size:11px;padding:6px 10px;flex-shrink:0" disabled="@string.IsNullOrWhiteSpace(_newTypeName)" @onclick="AddEventTypeAsync">Add</button>
+                    </div>
+                }
             </div>
 
             <div style="margin-bottom:16px">
@@ -172,6 +183,8 @@
     private Guid _fEventTypeId;
     private bool _fIsActive;
     private string _saveError = "";
+    private bool _showNewType;
+    private string _newTypeName = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -209,6 +222,27 @@
         _fIsActive = false;
         _saveError = "";
         if (_eventTypes.Any()) _fEventTypeId = _eventTypes.First().EventTypeId;
+    }
+
+    private async Task AddEventTypeAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newTypeName)) return;
+        using var db = DbFactory.CreateDbContext();
+        var name = _newTypeName.Trim();
+        var systemName = System.Text.RegularExpressions.Regex.Replace(name, @"[^A-Za-z0-9]", "");
+        var newType = new EventType
+        {
+            EventTypeId = Guid.NewGuid(),
+            Name = name,
+            Description = name,
+            SystemName = systemName
+        };
+        db.EventTypes.Add(newType);
+        await db.SaveChangesAsync();
+        _eventTypes.Add(newType);
+        _fEventTypeId = newType.EventTypeId;
+        _newTypeName = "";
+        _showNewType = false;
     }
 
     private void CloseFormOverlay()
