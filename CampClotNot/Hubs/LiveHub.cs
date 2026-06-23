@@ -45,4 +45,14 @@ public class LiveHub : Hub
 
     public async Task MiniGameSpinReset() =>
         await Clients.All.SendAsync("MiniGameSpinReset");
+
+    // Bowser event
+    public async Task BowserRollStarted(Guid groupId, string groupName, string groupColor) =>
+        await Clients.All.SendAsync("BowserRollStarted", groupId, groupName, groupColor);
+
+    public async Task BowserRollResult(Guid groupId, int faceIndex, string label, string description) =>
+        await Clients.All.SendAsync("BowserRollResult", groupId, faceIndex, label, description);
+
+    public async Task BowserReset() =>
+        await Clients.All.SendAsync("BowserReset");
 }

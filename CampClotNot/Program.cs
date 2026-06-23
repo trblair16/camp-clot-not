@@ -72,6 +72,7 @@ try
     builder.Services.AddScoped<IncidentReportService>();
     builder.Services.AddScoped<SponsorService>();
     builder.Services.AddScoped<DocumentService>();
+    builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddSingleton<PushNotificationService>();
     builder.Services.AddScoped<SeedService>();

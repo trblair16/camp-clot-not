@@ -1,0 +1,105 @@
+@page "/bowser"
+@attribute [Authorize(Roles = "Admin")]
+@inject BowserEventService BowserSvc
+@inject GroupService GroupSvc
+@inject AuthenticationStateProvider Auth
+
+<PageTitle>Bowser Event — Camp Clot Not</PageTitle>
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 6px">
+        <img src="/img/bowser-space.png" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;border-radius:50%" alt="" />Bowser Event
+    </h2>
+    <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">Each group rolls the Bowser die. Results are applied automatically.</p>
+
+    <div style="margin-bottom:20px">
+        <a href="/bowser/display" target="_blank" class="ccn-btn" style="font-size:13px;padding:8px 16px;text-decoration:none;display:inline-block">
+            📺 Open Projector Display
+        </a>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <div style="display:flex;flex-direction:column;gap:12px">
+            @foreach (var g in _groups)
+            {
+                var hasResult = _results.ContainsKey(g.GroupId);
+                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);display:flex;justify-content:space-between;align-items:center;gap:12px">
+                    <div>
+                        <div style="font-family:'Fredoka One',cursive;font-size:18px;color:@g.Color">@g.Name</div>
+                        @if (hasResult)
+                        {
+                            var r = _results[g.GroupId];
+                            <div style="font-size:14px;margin-top:4px">
+                                <span style="font-size:18px">@r.face.Emoji</span>
+                                <span style="font-family:'Fredoka One',cursive;color:var(--black)">@r.face.Label</span>
+                                <span style="font-size:12px;color:var(--text-light);margin-left:6px">@r.face.Description</span>
+                            </div>
+                        }
+                    </div>
+                    @if (!hasResult)
+                    {
+                        <button class="ccn-btn" style="font-size:14px;padding:10px 20px;background:#D12B2B;color:white"
+                                disabled="@_rolling" @onclick="() => RollAsync(g)">
+                            🎲 Roll
+                        </button>
+                    }
+                    else
+                    {
+                        <span style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-light)">✓ Done</span>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (_results.Count > 0)
+        {
+            <div style="margin-top:20px">
+                <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)"
+                        @onclick="ResetDisplay">Reset Display</button>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Group> _groups = new();
+    private Dictionary<Guid, (int faceIndex, BowserFace face)> _results = new();
+    private bool _loading = true;
+    private bool _rolling;
+    private string _userName = "Admin";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await Auth.GetAuthenticationStateAsync();
+        _userName = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Admin";
+        _groups = await GroupSvc.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task RollAsync(Group group)
+    {
+        _rolling = true;
+        StateHasChanged();
+
+        await BowserSvc.BroadcastRollStart(group.GroupId, group.Name, group.Color);
+        await Task.Delay(500);
+
+        var (faceIndex, face) = await BowserSvc.RollAsync(group.GroupId, SeedService.Id.EventCcn2026, _userName);
+        _results[group.GroupId] = (faceIndex, face);
+
+        await Task.Delay(3000);
+
+        await BowserSvc.BroadcastResult(group.GroupId, faceIndex, face.Label, face.Description);
+        _rolling = false;
+    }
+
+    private async Task ResetDisplay()
+    {
+        await BowserSvc.BroadcastReset();
+    }
+}
