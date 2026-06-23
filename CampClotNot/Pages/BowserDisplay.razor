@@ -1,0 +1,174 @@
+@page "/bowser/display"
+@attribute [Authorize(Roles = "Admin")]
+@layout DisplayLayout
+@inject NavigationManager Nav
+@using Microsoft.AspNetCore.SignalR.Client
+
+<PageTitle>Bowser Event — Display</PageTitle>
+
+<style>
+    .bowser-bg {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1a0a0a 0%, #4a0e0e 50%, #1a0a0a 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+        color: white;
+        font-family: 'Fredoka One', cursive;
+        position: relative;
+        overflow: hidden;
+    }
+    .bowser-title {
+        font-size: clamp(28px, 5vw, 48px);
+        color: #F5C800;
+        text-shadow: 3px 3px 0 #1A1A1A;
+        margin-bottom: 32px;
+        text-align: center;
+    }
+    .bowser-group {
+        font-size: clamp(24px, 4vw, 40px);
+        margin-bottom: 24px;
+        text-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+    .bowser-die-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        max-width: 500px;
+        width: 100%;
+        margin-bottom: 32px;
+    }
+    .bowser-face {
+        border: 4px solid rgba(255,255,255,.2);
+        border-radius: 12px;
+        padding: 16px 12px;
+        text-align: center;
+        font-size: 14px;
+        background: rgba(255,255,255,.05);
+        transition: all .3s ease;
+    }
+    .bowser-face.cycling {
+        animation: bowserPulse .15s ease infinite alternate;
+    }
+    .bowser-face.selected {
+        border-color: #F5C800;
+        background: rgba(245,200,0,.2);
+        box-shadow: 0 0 30px rgba(245,200,0,.4);
+        transform: scale(1.08);
+    }
+    .bowser-face .face-emoji { font-size: 32px; display: block; margin-bottom: 6px; }
+    .bowser-face .face-label { font-family: 'Fredoka One', cursive; font-size: 16px; }
+    .bowser-result {
+        font-size: clamp(20px, 3.5vw, 36px);
+        text-align: center;
+        margin-top: 16px;
+        animation: popIn .3s ease;
+    }
+    .bowser-idle {
+        font-size: clamp(32px, 6vw, 56px);
+        color: #F5C800;
+        text-shadow: 3px 3px 0 #1A1A1A;
+    }
+    @@keyframes bowserPulse { from { opacity: .4; } to { opacity: 1; } }
+</style>
+
+<div class="bowser-bg">
+    <img src="/img/bowser-space.png" style="width:80px;height:80px;border-radius:50%;border:4px solid #F5C800;margin-bottom:16px" alt="" />
+    <div class="bowser-title">BOWSER EVENT</div>
+
+    @if (_state == DisplayState.Idle)
+    {
+        <div class="bowser-idle">Waiting for roll...</div>
+    }
+    else
+    {
+        <div class="bowser-group" style="color:@_groupColor">@_groupName</div>
+
+        <div class="bowser-die-container">
+            @for (int i = 0; i < BowserEventService.Faces.Length; i++)
+            {
+                var face = BowserEventService.Faces[i];
+                var isCycling = _state == DisplayState.Rolling && _highlightIndex == i;
+                var isSelected = _state == DisplayState.Revealed && _revealedIndex == i;
+                <div class="bowser-face @(isCycling ? "cycling" : "") @(isSelected ? "selected" : "")">
+                    <span class="face-emoji">@face.Emoji</span>
+                    <span class="face-label">@face.Label</span>
+                </div>
+            }
+        </div>
+
+        @if (_state == DisplayState.Revealed)
+        {
+            <div class="bowser-result">
+                <div style="font-size:48px;margin-bottom:8px">@BowserEventService.Faces[_revealedIndex].Emoji</div>
+                <div>@_resultDescription</div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private enum DisplayState { Idle, Rolling, Revealed }
+
+    private DisplayState _state = DisplayState.Idle;
+    private string _groupName = "";
+    private string _groupColor = "white";
+    private int _highlightIndex;
+    private int _revealedIndex;
+    private string _resultDescription = "";
+    private HubConnection? _hub;
+    private CancellationTokenSource? _cycleCts;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/livehub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On<Guid, string, string>("BowserRollStarted", async (groupId, name, color) =>
+        {
+            _groupName = name;
+            _groupColor = color;
+            _state = DisplayState.Rolling;
+            _cycleCts = new CancellationTokenSource();
+            await InvokeAsync(StateHasChanged);
+            _ = CycleAsync(_cycleCts.Token);
+        });
+
+        _hub.On<Guid, int, string, string>("BowserRollResult", async (groupId, faceIndex, label, description) =>
+        {
+            _cycleCts?.Cancel();
+            _revealedIndex = faceIndex;
+            _resultDescription = description;
+            _state = DisplayState.Revealed;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On("BowserReset", async () =>
+        {
+            _cycleCts?.Cancel();
+            _state = DisplayState.Idle;
+            _groupName = "";
+            _groupColor = "white";
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hub.StartAsync();
+    }
+
+    private async Task CycleAsync(CancellationToken ct)
+    {
+        var rng = new Random();
+        while (!ct.IsCancellationRequested)
+        {
+            _highlightIndex = rng.Next(BowserEventService.Faces.Length);
+            await InvokeAsync(StateHasChanged);
+            try { await Task.Delay(120, ct); } catch { break; }
+        }
+    }
+}

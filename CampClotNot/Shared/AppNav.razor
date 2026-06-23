@@ -71,6 +71,7 @@
                             </AuthorizeView>
                             <AuthorizeView Roles="Admin" Context="gameAdminCtx">
                                 <a href="/minigames" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
+                                <a href="/bowser" @onclick="() => _gameDropdownOpen = false"><img src="/img/bowser-space.png" style="width:20px;height:20px;border-radius:50%" alt="" /> Bowser Event</a>
                                 <button @onclick="() => { _gameDropdownOpen = false; OnLeaderboardClick.InvokeAsync(); }"><img src="/img/icons/projector.svg?v=3" alt="" /> Projector</button>
                             </AuthorizeView>
                         </div>
@@ -165,6 +166,7 @@
         </AuthorizeView>
         <AuthorizeView Roles="Admin">
             <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
+            <a href="/bowser" @onclick="() => _gameSheetOpen = false"><img src="/img/bowser-space.png" style="width:20px;height:20px;border-radius:50%" alt="" /> Bowser Event</a>
         </AuthorizeView>
     </div>
 }
