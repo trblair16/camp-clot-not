@@ -20,6 +20,32 @@
         position: relative;
         overflow: hidden;
     }
+    .flame {
+        position: absolute;
+        bottom: -20px;
+        width: 60px;
+        height: 120px;
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        opacity: .5;
+        filter: blur(8px);
+        animation: flicker 1.5s ease-in-out infinite alternate;
+        pointer-events: none;
+    }
+    .flame:nth-child(1)  { left: 3%;  width: 50px; height: 100px; background: #E83030; animation-delay: 0s; animation-duration: 1.2s; }
+    .flame:nth-child(2)  { left: 10%; width: 40px; height: 130px; background: #F5C800; animation-delay: .3s; animation-duration: 1.8s; }
+    .flame:nth-child(3)  { left: 18%; width: 55px; height: 110px; background: #E67E22; animation-delay: .6s; animation-duration: 1.4s; }
+    .flame:nth-child(4)  { left: 28%; width: 45px; height: 140px; background: #E83030; animation-delay: .1s; animation-duration: 1.6s; }
+    .flame:nth-child(5)  { left: 40%; width: 60px; height: 100px; background: #F5C800; animation-delay: .8s; animation-duration: 1.3s; }
+    .flame:nth-child(6)  { left: 52%; width: 50px; height: 120px; background: #E67E22; animation-delay: .4s; animation-duration: 1.7s; }
+    .flame:nth-child(7)  { left: 62%; width: 55px; height: 135px; background: #E83030; animation-delay: .2s; animation-duration: 1.5s; }
+    .flame:nth-child(8)  { left: 72%; width: 40px; height: 105px; background: #F5C800; animation-delay: .7s; animation-duration: 1.1s; }
+    .flame:nth-child(9)  { left: 82%; width: 50px; height: 125px; background: #E67E22; animation-delay: .5s; animation-duration: 1.9s; }
+    .flame:nth-child(10) { left: 92%; width: 45px; height: 115px; background: #E83030; animation-delay: .9s; animation-duration: 1.4s; }
+    @@keyframes flicker {
+        0%   { transform: scaleY(1) scaleX(1) translateY(0); opacity: .4; }
+        50%  { transform: scaleY(1.3) scaleX(.9) translateY(-20px); opacity: .7; }
+        100% { transform: scaleY(.8) scaleX(1.1) translateY(-10px); opacity: .5; }
+    }
     .bowser-title {
         font-size: clamp(28px, 5vw, 48px);
         color: #F5C800;
@@ -75,6 +101,10 @@
 </style>
 
 <div class="bowser-bg">
+    <div class="flame"></div><div class="flame"></div><div class="flame"></div>
+    <div class="flame"></div><div class="flame"></div><div class="flame"></div>
+    <div class="flame"></div><div class="flame"></div><div class="flame"></div>
+    <div class="flame"></div>
     <img src="/img/bowser-space.png" style="width:80px;height:80px;border-radius:50%;border:4px solid #F5C800;margin-bottom:16px" alt="" />
     <div class="bowser-title">BOWSER EVENT</div>
 
