@@ -12,11 +12,36 @@
         <button class="ccn-btn" style="font-size:12px;padding:6px 14px" @onclick="LoadAsync">↺ Refresh</button>
     </div>
 
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <input type="text" @bind="_search" @bind:event="oninput" placeholder="Search..."
+               style="flex:1;min-width:150px;padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+        <select class="tx-filter" value="@_filterGroup" @onchange="e => _filterGroup = e.Value?.ToString() ?? string.Empty"
+                style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+            <option value="">All Groups</option>
+            @foreach (var g in _groups)
+            {
+                <option value="@g.Name">@g.Name</option>
+            }
+        </select>
+        <select class="tx-filter" value="@_filterType" @onchange="e => _filterType = e.Value?.ToString() ?? string.Empty"
+                style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+            <option value="">All Types</option>
+            <option value="Primary">Coins</option>
+            <option value="Prestige">Stars</option>
+        </select>
+        <select class="tx-filter" value="@_filterStatus" @onchange="e => _filterStatus = e.Value?.ToString() ?? string.Empty"
+                style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="voided">Voided</option>
+        </select>
+    </div>
+
     @if (_loading)
     {
         <MudProgressCircular Indeterminate="true" />
     }
-    else if (!_transactions.Any())
+    else if (!FilteredTransactions.Any())
     {
         <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No transactions yet.</p>
     }
@@ -24,7 +49,7 @@
     {
         @* ── Mobile cards (hidden ≥700px) ── *@
         <div class="tx-mobile-cards">
-            @foreach (var tx in _transactions)
+            @foreach (var tx in FilteredTransactions)
             {
                 var voided = tx.VoidedAt.HasValue;
                 var isCoins = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
@@ -83,7 +108,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var tx in _transactions)
+                    @foreach (var tx in FilteredTransactions)
                     {
                         var voided   = tx.VoidedAt.HasValue;
                         var isCoins  = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
@@ -140,6 +165,7 @@
 <style>
     @@media (max-width: 699px) {
         .tx-desktop-table { display: none; }
+        .tx-filter { display: none; }
     }
     @@media (min-width: 700px) {
         .tx-mobile-cards { display: none; }
@@ -150,9 +176,35 @@
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
 
     private List<Transaction> _transactions = new();
+    private List<Group> _groups = new();
     private bool _loading = true;
+    private string _search = "";
+    private string _filterGroup = "";
+    private string _filterType = "";
+    private string _filterStatus = "";
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private IEnumerable<Transaction> FilteredTransactions => _transactions.Where(tx =>
+    {
+        if (!string.IsNullOrEmpty(_filterGroup) && tx.Group?.Name != _filterGroup) return false;
+        if (!string.IsNullOrEmpty(_filterType) && tx.CurrencyType?.SystemName != _filterType) return false;
+        if (_filterStatus == "active" && tx.VoidedAt.HasValue) return false;
+        if (_filterStatus == "voided" && !tx.VoidedAt.HasValue) return false;
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            var s = _search.Trim();
+            return (tx.Group?.Name?.Contains(s, StringComparison.OrdinalIgnoreCase) == true)
+                || (tx.LoggedBy?.Contains(s, StringComparison.OrdinalIgnoreCase) == true)
+                || (tx.Note?.Contains(s, StringComparison.OrdinalIgnoreCase) == true)
+                || tx.Amount.ToString().Contains(s);
+        }
+        return true;
+    });
+
+    protected override async Task OnInitializedAsync()
+    {
+        _groups = await GroupSvc.GetAllAsync();
+        await LoadAsync();
+    }
 
     private async Task LoadAsync()
     {
