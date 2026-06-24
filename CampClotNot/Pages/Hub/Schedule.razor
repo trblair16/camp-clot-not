@@ -100,8 +100,8 @@
         }
         .sched-tbl tbody td { padding: 10px 10px; vertical-align: middle; border-bottom: 3px solid #3a3a3a; text-align: center; overflow: hidden; }
         .sched-tbl tbody tr:last-child td { border-bottom: none; }
-        .sched-group-row td { padding: 0; background: #F5F0E4; border-top: 2px solid #C8BBAA; border-bottom: 3px solid #3a3a3a; }
-        .sched-group-row details { width: 0; min-width: 100%; overflow: hidden; }
+        .sched-group-row td { padding: 0; background: #F5F0E4; border-top: 2px solid #C8BBAA; border-bottom: 3px solid #3a3a3a; overflow: hidden; }
+        .sched-group-row details { width: 0; min-width: 100%; overflow: hidden; box-sizing: border-box; }
         .sched-group-row:last-child td { border-bottom: none; }
         .sched-group-row details > summary { list-style: none; display: block; font-family: 'Fredoka One', cursive; font-size: 12px; color: var(--text-light); cursor: pointer; padding: 7px 14px; user-select: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sched-group-row details > summary::-webkit-details-marker,
@@ -284,19 +284,19 @@
                                         }
                                     </td>
                                     <td>
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;display:inline-block">@DisplayItemTypeBadge(ev.ScheduleItemType, dispAct)</span>
+                                        <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@DisplayItemTypeBadge(ev.ScheduleItemType, dispAct)</span>
                                     </td>
                                     <td>
                                         @if (dispLoc is not null)
                                         {
-                                            <span style="font-size:11px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 6px;border-radius:4px;border:2px solid #6B5540;display:inline-block;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@dispLoc.Name</span>
+                                            <span style="font-size:10px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:2px 6px;border-radius:4px;border:2px solid #6B5540;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@dispLoc.Name</span>
                                         }
                                         else
                                         {
                                             <span style="color:var(--text-light);font-size:13px">—</span>
                                         }
                                     </td>
-                                    <td style="overflow:hidden">
+                                    <td>
                                         @if (dispLoc?.ImageContentType is not null)
                                         {
                                             <img src="/location-image/@dispLoc.LocationId" style="max-width:44px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--black);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
@@ -317,7 +317,7 @@
                                 @if (_isAdminOrStaff && ev.ItemGroups.Any())
                                 {
                                     <tr class="sched-group-row">
-                                        <td colspan="@(_canEdit ? 8 : 7)">
+                                        <td colspan="@(_canEdit ? 7 : 6)">
                                             <details>
                                                 <summary>👥 Group assignments (@ev.ItemGroups.Count)</summary>
                                                 <div class="sched-sub-body">
@@ -333,10 +333,10 @@
                                                             <div style="font-family:'Fredoka One',cursive;color:@eg.Group.Color">@eg.Group.ShortName</div>
                                                             <div>@(eg.Activity?.Name ?? "—")</div>
                                                             <div>
-                                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden">
                                                                     @if (eg.Location is not null)
                                                                     {
-                                                                        <span style="font-size:11px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
+                                                                        <span style="font-size:10px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
                                                                     }
                                                                     else { <span style="color:var(--text-light)">—</span> }
                                                                     @if (eg.Location?.ImageContentType is not null)
