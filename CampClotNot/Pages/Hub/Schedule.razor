@@ -222,7 +222,7 @@
                                     }
                                     @if (_isAdminOrStaff && ev.ItemGroups.Any())
                                     {
-                                        <details class="sched-mobile-groups" style="margin-top:6px">
+                                        <details class="sched-mobile-groups" style="margin-top:6px" @onclick:stopPropagation>
                                             <summary style="font-size:12px;color:var(--text-light);cursor:pointer;font-family:'Fredoka One',cursive">Group assignments (@ev.ItemGroups.Count)</summary>
                                             <div style="margin-top:6px;border:2px solid #9E8C70;border-radius:6px;overflow:hidden">
                                                 @foreach (var eg in ev.ItemGroups.OrderBy(x => x.Group.Name))
@@ -230,7 +230,7 @@
                                                     <div style="display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid #C0A882;font-size:13px">
                                                         <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px">@eg.Group.ShortName</span>
                                                         <span style="flex:1">@(eg.Activity?.Name ?? "—")</span>
-                                                        @if (eg.Location is not null) { <span style="font-weight:600;color:var(--black)"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span> }
+                                                        @if (eg.Location is not null) { <span style="font-size:10px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span> }
                                                         @if (!string.IsNullOrEmpty(eg.Note)) { <span style="color:var(--text-mid);font-style:italic">@eg.Note</span> }
                                                     </div>
                                                 }
@@ -283,6 +283,14 @@
                                                 </details>
                                             }
                                         }
+                                        @if (_isAdminOrStaff && ev.ItemGroups.Any())
+                                        {
+                                            var evForGroups = ev;
+                                            <div style="margin-top:6px">
+                                                <button style="font-size:11px;color:var(--text-light);cursor:pointer;font-family:'Fredoka One',cursive;background:none;border:none;padding:0;text-decoration:underline"
+                                                        @onclick="() => _groupDetailItem = evForGroups">👥 Groups (@ev.ItemGroups.Count)</button>
+                                            </div>
+                                        }
                                     </td>
                                     <td>
                                         <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@DisplayItemTypeBadge(ev.ScheduleItemType, dispAct)</span>
@@ -315,46 +323,6 @@
                                         </td>
                                     }
                                 </tr>
-                                @if (_isAdminOrStaff && ev.ItemGroups.Any())
-                                {
-                                    <tr class="sched-group-row">
-                                        <td colspan="@(_canEdit ? 7 : 6)">
-                                            <details>
-                                                <summary>👥 Group assignments (@ev.ItemGroups.Count)</summary>
-                                                <div class="sched-sub-body">
-                                                    <div class="sched-sub-header">
-                                                        <div>Group</div>
-                                                        <div>Activity</div>
-                                                        <div>Location</div>
-                                                        <div></div>
-                                                        <div>Note</div>
-                                                    </div>
-                                                    @foreach (var eg in ev.ItemGroups.OrderBy(x => x.Group.Name))
-                                                    {
-                                                        <div class="sched-sub-row">
-                                                            <div style="font-family:'Fredoka One',cursive;color:@eg.Group.Color">@eg.Group.ShortName</div>
-                                                            <div>@(eg.Activity?.Name ?? "—")</div>
-                                                            <div>
-                                                                @if (eg.Location is not null)
-                                                                {
-                                                                    <span style="font-size:10px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
-                                                                }
-                                                                else { <span style="color:var(--text-light)">—</span> }
-                                                            </div>
-                                                            <div>
-                                                                @if (eg.Location?.ImageContentType is not null)
-                                                                {
-                                                                    <img src="/location-image/@eg.Location.LocationId" style="max-width:30px;height:22px;object-fit:cover;border-radius:3px;border:1px solid var(--black);cursor:zoom-in;display:block;margin:0 auto" alt="@eg.Location.Name" @onclick='() => _lightboxSrc = $"/location-image/{eg.Location.LocationId}"' />
-                                                                }
-                                                            </div>
-                                                            <div style="color:var(--text-mid)">@(string.IsNullOrEmpty(eg.Note) ? "—" : eg.Note)</div>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            </details>
-                                        </td>
-                                    </tr>
-                                }
                             }
                         </tbody>
                     </table>
@@ -462,12 +430,58 @@
                     <div style="font-family:'Fredoka One',cursive;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Group Assignments</div>
                     @foreach (var eg in md.ItemGroups.OrderBy(x => x.Group.Name))
                     {
-                        <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #E8E0CC;font-size:13px">
-                            <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px">@eg.Group.ShortName</span>
-                            <span style="flex:1">@(eg.Activity?.Name ?? "—")</span>
-                            @if (eg.Location is not null) { <span style="font-weight:600;color:var(--black)"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span> }
+                        <div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #E8E0CC;font-size:13px">
+                            <span style="font-family:'Fredoka One',cursive;color:@eg.Group.Color;min-width:36px;flex-shrink:0">@eg.Group.ShortName</span>
+                            <div style="flex:1;min-width:0">
+                                <div>@(eg.Activity?.Name ?? "—")</div>
+                                @if (eg.Location is not null) { <div style="margin-top:3px"><span style="font-size:10px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span></div> }
+                            </div>
                         </div>
                     }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (_groupDetailItem is not null)
+{
+    var gd = _groupDetailItem;
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:150;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease"
+         @onclick="() => _groupDetailItem = null">
+        <div class="ccn-panel" style="padding:20px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease" @onclick:stopPropagation>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                <div>
+                    <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--black)">@gd.Title</div>
+                    <div style="font-size:11px;color:var(--text-light);margin-top:2px">Group Assignments</div>
+                </div>
+                <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-light);line-height:1;padding:0 0 0 12px"
+                        @onclick="() => _groupDetailItem = null">✕</button>
+            </div>
+
+            @foreach (var eg in gd.ItemGroups.OrderBy(x => x.Group.Name))
+            {
+                <div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #E8E0CC">
+                    <span style="font-family:'Fredoka One',cursive;font-size:15px;color:@eg.Group.Color;min-width:40px">@eg.Group.ShortName</span>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-size:13px;font-weight:700;color:var(--black)">@(eg.Activity?.Name ?? "—")</div>
+                        @if (eg.Location is not null)
+                        {
+                            <div style="margin-top:3px">
+                                <span style="font-size:10px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
+                            </div>
+                            @if (eg.Location.ImageContentType is not null)
+                            {
+                                <img src="/location-image/@eg.Location.LocationId"
+                                     style="width:auto;max-width:100%;height:80px;object-fit:cover;border-radius:6px;border:2px solid var(--black);margin-top:6px"
+                                     alt="@eg.Location.Name" />
+                            }
+                        }
+                        @if (!string.IsNullOrEmpty(eg.Note))
+                        {
+                            <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:4px">@eg.Note</div>
+                        }
+                    </div>
                 </div>
             }
         </div>
@@ -606,6 +620,7 @@
     private bool _showForm;
     private string? _lightboxSrc;
     private ScheduleItem? _mobileDetailItem;
+    private ScheduleItem? _groupDetailItem;
     private Guid? _userGroupId;
     private Event? _campEvent;
     private DateOnly? _selectedDay;
