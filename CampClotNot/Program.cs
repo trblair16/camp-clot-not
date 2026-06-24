@@ -112,6 +112,18 @@ try
 
     app.UseResponseCompression();
 
+    app.Use(async (context, next) =>
+    {
+        context.Response.OnStarting(() =>
+        {
+            var reqPath = context.Request.Path.Value ?? "";
+            if (reqPath.StartsWith("/_framework/") || reqPath.StartsWith("/_content/"))
+                context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            return Task.CompletedTask;
+        });
+        await next();
+    });
+
     app.UseStaticFiles(new StaticFileOptions
     {
         OnPrepareResponse = ctx =>
