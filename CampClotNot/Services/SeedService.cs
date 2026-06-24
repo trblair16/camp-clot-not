@@ -354,9 +354,9 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         // CCN 2026 confirmed cabin groups — 3 groups (Mini Marios removed before camp).
         var defs = new[]
         {
-            new { Id = Id.Group2, Name = "Blue Shell Bandits", ShortName = "BB", Color = "#2980B9", Logo = "/img/blue-shell-bandits-logo.webp" },
-            new { Id = Id.Group3, Name = "Mushroom Militia",   ShortName = "MU", Color = "#27AE60", Logo = "/img/mushroom-militia-logo.webp" },
-            new { Id = Id.Group4, Name = "Luma Legends",       ShortName = "LL", Color = "#8E44AD", Logo = "/img/luma-legends-logo.webp" },
+            new { Id = Id.Group2, Name = "Blue Shell Bandits", ShortName = "BB", Color = "#2980B9", Logo = "/img/blue-shell-bandits-logo.png" },
+            new { Id = Id.Group3, Name = "Mushroom Militia",   ShortName = "MU", Color = "#27AE60", Logo = "/img/mushroom-militia-logo.png" },
+            new { Id = Id.Group4, Name = "Luma Legends",       ShortName = "LL", Color = "#8E44AD", Logo = "/img/luma-legends-logo.png" },
         };
 
         foreach (var def in defs)
