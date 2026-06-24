@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" fill="none">
+  <!-- Ribbon -->
+  <path d="M60 0 L80 90 L100 70 L120 90 L140 0" fill="#D12B2B" stroke="#1A1A1A" stroke-width="6"/>
+  <!-- Medal circle -->
+  <circle cx="100" cy="150" r="80" fill="url(#gold)" stroke="#1A1A1A" stroke-width="8"/>
+  <!-- Inner ring -->
+  <circle cx="100" cy="150" r="62" fill="none" stroke="#B8860B" stroke-width="4"/>
+  <!-- Star behind number -->
+  <polygon points="100,95 112,125 145,125 118,143 128,173 100,155 72,173 82,143 55,125 88,125" fill="#B8860B" opacity=".3"/>
+  <!-- Number -->
+  <text x="100" y="168" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="72" font-weight="900" fill="#1A1A1A">1</text>
+  <text x="100" y="168" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="72" font-weight="900" fill="url(#goldText)" opacity=".3"/>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="50%" stop-color="#FFC200"/>
+      <stop offset="100%" stop-color="#DAA520"/>
+    </linearGradient>
+    <linearGradient id="goldText" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFF8DC"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+  </defs>
+</svg>
