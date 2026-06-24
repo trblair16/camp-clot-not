@@ -100,12 +100,12 @@
         }
         .sched-tbl tbody td { padding: 10px 10px; vertical-align: middle; border-bottom: 3px solid #3a3a3a; text-align: center; }
         .sched-tbl tbody tr:last-child td { border-bottom: none; }
-        .sched-group-row td { padding: 0; background: #F5F0E4; border-top: 2px solid #C8BBAA; border-bottom: 3px solid #3a3a3a; }
+        .sched-group-row td { padding: 0; background: #F5F0E4; border-top: 2px solid #C8BBAA; border-bottom: 3px solid #3a3a3a; overflow: hidden; }
         .sched-group-row:last-child td { border-bottom: none; }
         .sched-group-row details > summary { list-style: none; display: block; font-family: 'Fredoka One', cursive; font-size: 12px; color: var(--text-light); cursor: pointer; padding: 7px 14px; user-select: none; }
         .sched-group-row details > summary::-webkit-details-marker,
         .sched-group-row details > summary::marker { display: none; }
-        .sched-sub-body { padding: 0 14px 8px; }
+        .sched-sub-body { padding: 0 14px 8px; max-width: 100%; overflow: hidden; }
         .sched-sub-header, .sched-sub-row {
             display: grid;
             grid-template-columns: 56px minmax(0,2fr) minmax(0,2fr) minmax(0,1.5fr);
@@ -115,6 +115,7 @@
             border-bottom: 1px solid #D8CEBF;
             font-size: 12px;
         }
+        .sched-sub-row div { overflow: hidden; text-overflow: ellipsis; }
         .sched-sub-header {
             font-family: 'Fredoka One', cursive;
             font-size: 10px;
