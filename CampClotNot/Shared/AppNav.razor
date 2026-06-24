@@ -5,7 +5,7 @@
 <div class="nav-mobile-header">
     <div style="display:flex;align-items:center;gap:6px">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
-            <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:36px;width:auto;object-fit:contain" />
+            <img src="/img/ccn-logo-nav.webp" alt="Camp Clot Not" style="height:36px;width:auto;object-fit:contain" />
             <span style="font-family:'Fredoka One',cursive;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;margin-left:8px">SUPER PARTY '26</span>
         </div>
     </div>
@@ -15,7 +15,7 @@
 <div class="nav-desktop-header">
     <div style="display:flex;align-items:center;gap:6px">
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
-            <img src="/img/ccn-logo-nav.png" alt="Camp Clot Not" style="height:42px;width:auto;object-fit:contain" />
+            <img src="/img/ccn-logo-nav.webp" alt="Camp Clot Not" style="height:42px;width:auto;object-fit:contain" />
             <span style="font-family:'Fredoka One',cursive;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;margin-left:8px">SUPER PARTY '26</span>
         </div>
     </div>
@@ -71,7 +71,7 @@
                             </AuthorizeView>
                             <AuthorizeView Roles="Admin" Context="gameAdminCtx">
                                 <a href="/minigames" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
-                                <a href="/bowser" @onclick="() => _gameDropdownOpen = false"><img src="/img/bowser-space.png" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
+                                <a href="/bowser" @onclick="() => _gameDropdownOpen = false"><img src="/img/bowser-space.webp" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
                                 <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
                                 <button @onclick="() => { _gameDropdownOpen = false; OnLeaderboardClick.InvokeAsync(); }"><img src="/img/icons/projector.svg?v=3" alt="" /> Projector</button>
                             </AuthorizeView>
@@ -167,7 +167,7 @@
         </AuthorizeView>
         <AuthorizeView Roles="Admin">
             <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
-            <a href="/bowser" @onclick="() => _gameSheetOpen = false"><img src="/img/bowser-space.png" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
+            <a href="/bowser" @onclick="() => _gameSheetOpen = false"><img src="/img/bowser-space.webp" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
             <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
         </AuthorizeView>
     </div>
