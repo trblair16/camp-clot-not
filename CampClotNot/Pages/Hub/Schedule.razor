@@ -109,12 +109,13 @@
         .sched-sub-body { padding: 0 14px 8px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; }
         .sched-sub-header, .sched-sub-row {
             display: grid;
-            grid-template-columns: 56px minmax(0,2fr) minmax(0,2fr) minmax(0,1.5fr);
+            grid-template-columns: 56px minmax(0,2fr) minmax(0,2fr) 36px minmax(0,1.5fr);
             gap: 0 10px;
             align-items: center;
             padding: 5px 0;
             border-bottom: 1px solid #D8CEBF;
             font-size: 12px;
+            text-align: center;
         }
         .sched-sub-row div { overflow: hidden; text-overflow: ellipsis; }
         .sched-sub-header {
@@ -325,6 +326,7 @@
                                                         <div>Group</div>
                                                         <div>Activity</div>
                                                         <div>Location</div>
+                                                        <div></div>
                                                         <div>Note</div>
                                                     </div>
                                                     @foreach (var eg in ev.ItemGroups.OrderBy(x => x.Group.Name))
@@ -333,17 +335,17 @@
                                                             <div style="font-family:'Fredoka One',cursive;color:@eg.Group.Color">@eg.Group.ShortName</div>
                                                             <div>@(eg.Activity?.Name ?? "—")</div>
                                                             <div>
-                                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden">
-                                                                    @if (eg.Location is not null)
-                                                                    {
-                                                                        <span style="font-size:10px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
-                                                                    }
-                                                                    else { <span style="color:var(--text-light)">—</span> }
-                                                                    @if (eg.Location?.ImageContentType is not null)
-                                                                    {
-                                                                        <img src="/location-image/@eg.Location.LocationId" style="width:36px;height:26px;object-fit:cover;border-radius:3px;border:1px solid var(--black);cursor:zoom-in;flex-shrink:0" alt="@eg.Location.Name" @onclick='() => _lightboxSrc = $"/location-image/{eg.Location.LocationId}"' />
-                                                                    }
-                                                                </div>
+                                                                @if (eg.Location is not null)
+                                                                {
+                                                                    <span style="font-size:10px;font-weight:900;font-family:'Fredoka One',cursive;color:var(--black);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
+                                                                }
+                                                                else { <span style="color:var(--text-light)">—</span> }
+                                                            </div>
+                                                            <div>
+                                                                @if (eg.Location?.ImageContentType is not null)
+                                                                {
+                                                                    <img src="/location-image/@eg.Location.LocationId" style="max-width:30px;height:22px;object-fit:cover;border-radius:3px;border:1px solid var(--black);cursor:zoom-in;display:block;margin:0 auto" alt="@eg.Location.Name" @onclick='() => _lightboxSrc = $"/location-image/{eg.Location.LocationId}"' />
+                                                                }
                                                             </div>
                                                             <div style="color:var(--text-mid)">@(string.IsNullOrEmpty(eg.Note) ? "—" : eg.Note)</div>
                                                         </div>
