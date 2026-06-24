@@ -100,7 +100,8 @@
         }
         .sched-tbl tbody td { padding: 10px 10px; vertical-align: middle; border-bottom: 3px solid #3a3a3a; text-align: center; overflow: hidden; }
         .sched-tbl tbody tr:last-child td { border-bottom: none; }
-        .sched-group-row td { padding: 0; background: #F5F0E4; border-top: 2px solid #C8BBAA; border-bottom: 3px solid #3a3a3a; overflow: hidden; max-width: 0; }
+        .sched-group-row td { padding: 0; background: #F5F0E4; border-top: 2px solid #C8BBAA; border-bottom: 3px solid #3a3a3a; }
+        .sched-group-row details { width: 0; min-width: 100%; overflow: hidden; }
         .sched-group-row:last-child td { border-bottom: none; }
         .sched-group-row details > summary { list-style: none; display: block; font-family: 'Fredoka One', cursive; font-size: 12px; color: var(--text-light); cursor: pointer; padding: 7px 14px; user-select: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sched-group-row details > summary::-webkit-details-marker,
@@ -241,17 +242,16 @@
                     }
 
                     @* Desktop HTML table — hidden <700px via CSS *@
-                    <div style="overflow-x:auto;max-width:100%">
                     <table class="sched-tbl">
                         <thead>
                             <tr>
-                                <th style="width:70px">Time</th>
-                                <th>Event</th>
-                                <th style="width:10%">Type</th>
-                                <th style="width:12%">Location</th>
-                                <th style="width:44px"></th>
-                                <th style="width:18%">Add'l Info</th>
-                                @if (_canEdit) { <th style="width:130px"></th> }
+                                <th style="width:80px">Time</th>
+                                <th style="width:22%">Event</th>
+                                <th style="width:12%">Type</th>
+                                <th style="width:14%">Location</th>
+                                <th style="width:52px"></th>
+                                <th style="width:15%">Add'l Info</th>
+                                @if (_canEdit) { <th style="width:150px"></th> }
                             </tr>
                         </thead>
                         <tbody>
@@ -299,7 +299,7 @@
                                     <td style="overflow:hidden">
                                         @if (dispLoc?.ImageContentType is not null)
                                         {
-                                            <img src="/location-image/@dispLoc.LocationId" style="max-width:36px;height:26px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
+                                            <img src="/location-image/@dispLoc.LocationId" style="max-width:44px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--black);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
                                         }
                                     </td>
                                     <td style="color:var(--text-mid);font-size:13px">@(string.IsNullOrEmpty(ev.LocationOther) ? "—" : ev.LocationOther)</td>
@@ -356,7 +356,6 @@
                             }
                         </tbody>
                     </table>
-                    </div>
                 </div>
             }
         }
