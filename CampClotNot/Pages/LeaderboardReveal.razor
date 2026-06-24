@@ -1,0 +1,163 @@
+@page "/leaderboard/reveal"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.SignalR
+@using CampClotNot.Hubs
+@inject GroupService GroupSvc
+@inject IHubContext<LiveHub> Hub
+
+<PageTitle>Awards Ceremony — Admin</PageTitle>
+
+<div style="padding:0 16px 100px">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 6px">
+        <img src="/img/icons/trophy.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Awards Ceremony
+    </h2>
+    <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">Control the projector reveal. Open the display on the projector screen first.</p>
+
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+        <a href="/leaderboard/reveal/display" target="_blank" class="ccn-btn" style="font-size:13px;padding:8px 16px;text-decoration:none;display:inline-block">
+            📺 Open Projector Display
+        </a>
+        <span style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--text-light)">Phase: @_phase</span>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin-bottom:24px">
+            @foreach (var entry in _ranked)
+            {
+                var revealed = _revealedRanks.Contains(entry.Rank);
+                <div style="border:3px solid var(--black);border-radius:10px;padding:14px 16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);display:flex;align-items:center;gap:12px;@(revealed ? "opacity:.5" : "")">
+                    <div style="font-family:'Fredoka One',cursive;font-size:22px;width:36px;text-align:center;flex-shrink:0">
+                        @(new[] { "", "🥇", "🥈", "🥉" }.ElementAtOrDefault(entry.Rank) ?? $"#{entry.Rank}")
+                    </div>
+                    @if (entry.Group.TokenAssetPath is not null)
+                    {
+                        <div style="width:40px;height:40px;border-radius:50%;border:3px solid var(--black);background:@entry.Group.Color;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                            <img src="@entry.Group.TokenAssetPath" style="width:100%;height:100%;object-fit:contain" />
+                        </div>
+                    }
+                    <div style="flex:1">
+                        <div style="font-family:'Fredoka One',cursive;font-size:16px;color:@entry.Group.Color">@entry.Group.Name</div>
+                        <div style="font-size:12px;color:var(--text-light);font-weight:700">@entry.Coins coins · @entry.Stars stars</div>
+                    </div>
+                    @if (revealed)
+                    {
+                        <span style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-light)">✓ Revealed</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:500px">
+            @switch (_phase)
+            {
+                case Phase.Waiting:
+                    <button class="ccn-btn" style="font-size:15px;padding:12px 24px;background:#F5C800;color:#1A1A1A" @onclick="StartFlying">
+                        ▶ Start Ceremony
+                    </button>
+                    break;
+                case Phase.Flying:
+                    <button class="ccn-btn" style="font-size:15px;padding:12px 24px;background:#CD7F32;color:white" @onclick="() => RevealRank(3)">
+                        🥉 Reveal 3rd Place
+                    </button>
+                    break;
+                case Phase.Reveal3rd:
+                    <button class="ccn-btn" style="font-size:15px;padding:12px 24px;background:#C0C0C0;color:#1A1A1A" @onclick="() => RevealRank(2)">
+                        🥈 Reveal 2nd Place
+                    </button>
+                    break;
+                case Phase.Reveal2nd:
+                    <button class="ccn-btn" style="font-size:15px;padding:12px 24px;background:#F5C800;color:#1A1A1A" @onclick="() => RevealRank(1)">
+                        🥇 Reveal 1st Place!
+                    </button>
+                    break;
+                case Phase.Reveal1st:
+                case Phase.Celebrate:
+                    <span style="font-family:'Fredoka One',cursive;font-size:16px;color:#F5C800">🎉 Ceremony Complete!</span>
+                    break;
+            }
+            <button class="ccn-btn" style="font-size:13px;padding:8px 16px;background:transparent;border-color:var(--black);color:var(--black)" @onclick="ResetCeremony">
+                ↺ Reset (for dry runs)
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private enum Phase { Waiting, Flying, Reveal3rd, Reveal2nd, Reveal1st, Celebrate }
+
+    private Phase _phase = Phase.Waiting;
+    private List<GroupEntry> _ranked = new();
+    private HashSet<int> _revealedRanks = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadScores();
+        _loading = false;
+    }
+
+    private async Task LoadScores()
+    {
+        var groups = await GroupSvc.GetAllAsync();
+        var scores = await GroupSvc.GetAllScoresAsync(groups.Select(g => g.GroupId));
+        _ranked = groups
+            .Select(g => { var (c, s) = scores.GetValueOrDefault(g.GroupId); return new GroupEntry(g, c, s); })
+            .OrderByDescending(e => e.Stars)
+            .ThenByDescending(e => e.Coins)
+            .Select((e, i) => e with { Rank = i + 1 })
+            .ToList();
+    }
+
+    private async Task StartFlying()
+    {
+        _phase = Phase.Flying;
+        var payload = _ranked.Select(e => new
+        {
+            rank = e.Rank,
+            name = e.Group.Name,
+            shortName = e.Group.ShortName,
+            color = e.Group.Color,
+            logo = e.Group.TokenAssetPath,
+            coins = e.Coins,
+            stars = e.Stars
+        }).ToArray();
+        var json = System.Text.Json.JsonSerializer.Serialize(payload);
+        await Hub.Clients.All.SendAsync("CeremonyStart", json);
+    }
+
+    private async Task RevealRank(int rank)
+    {
+        _revealedRanks.Add(rank);
+        await Hub.Clients.All.SendAsync("CeremonyReveal", rank);
+
+        _phase = rank switch
+        {
+            3 => Phase.Reveal3rd,
+            2 => Phase.Reveal2nd,
+            1 => Phase.Reveal1st,
+            _ => _phase
+        };
+
+        if (rank == 1)
+        {
+            await Task.Delay(2500);
+            _phase = Phase.Celebrate;
+            await Hub.Clients.All.SendAsync("CeremonyConfetti");
+        }
+    }
+
+    private async Task ResetCeremony()
+    {
+        _phase = Phase.Waiting;
+        _revealedRanks.Clear();
+        await LoadScores();
+        await Hub.Clients.All.SendAsync("CeremonyReset");
+    }
+
+    private record GroupEntry(Group Group, int Coins, int Stars, int Rank = 0);
+}

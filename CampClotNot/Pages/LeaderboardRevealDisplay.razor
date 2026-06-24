@@ -1,0 +1,386 @@
+@page "/leaderboard/reveal/display"
+@attribute [Authorize(Roles = "Admin")]
+@layout DisplayLayout
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.Text.Json
+
+<PageTitle>Awards Ceremony — Display</PageTitle>
+
+<style>
+    .ceremony-bg {
+        min-height:100vh;
+        background:linear-gradient(135deg, #1a0a2e 0%, #2d1b69 40%, #1a0a2e 100%);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        position:relative;overflow:hidden;font-family:'Fredoka One',cursive;color:white;
+    }
+
+    /* ── Starfield ── */
+    .starfield { position:absolute;inset:0;pointer-events:none; }
+    .starfield span {
+        position:absolute;background:white;border-radius:50%;
+        animation:twinkle 2s ease-in-out infinite alternate;
+    }
+    @@keyframes twinkle { 0%{opacity:.15;transform:scale(1)} 100%{opacity:.9;transform:scale(1.6)} }
+
+    /* ── Title ── */
+    .ceremony-title {
+        font-size:clamp(40px,7vw,80px);color:#F5C800;z-index:10;
+        text-shadow:4px 4px 0 #1A1A1A,0 0 60px rgba(245,200,0,.3);
+        animation:titlePulse 3s ease-in-out infinite;
+    }
+    .ceremony-subtitle {
+        font-size:clamp(18px,3vw,32px);color:rgba(255,255,255,.5);z-index:10;
+        text-shadow:2px 2px 0 rgba(0,0,0,.5);margin-top:12px;
+    }
+    @@keyframes titlePulse {
+        0%,100%{text-shadow:4px 4px 0 #1A1A1A,0 0 40px rgba(245,200,0,.2)}
+        50%{text-shadow:4px 4px 0 #1A1A1A,0 0 80px rgba(245,200,0,.5)}
+    }
+
+    /* ── Flying logos ── */
+    .logo-fly {
+        position:absolute;z-index:20;
+        width:clamp(90px,13vw,150px);height:clamp(90px,13vw,150px);
+        border-radius:50%;border:5px solid rgba(0,0,0,.8);
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 0 40px rgba(0,0,0,.6);
+    }
+    .logo-fly img { width:88%;height:88%;object-fit:contain;border-radius:50%; }
+
+    .logo-fly.orbit-0 { top:15%;left:20%; animation:orbit0 5s ease-in-out infinite; }
+    .logo-fly.orbit-1 { top:30%;left:55%; animation:orbit1 6s ease-in-out infinite; }
+    .logo-fly.orbit-2 { top:20%;left:38%; animation:orbit2 4.5s ease-in-out infinite; }
+
+    @@keyframes orbit0 {
+        0%   {transform:translate(0,0) rotate(0deg) scale(1)}
+        20%  {transform:translate(18vw,12vh) rotate(8deg) scale(1.05)}
+        40%  {transform:translate(25vw,-8vh) rotate(-5deg) scale(.95)}
+        60%  {transform:translate(-5vw,-18vh) rotate(12deg) scale(1.08)}
+        80%  {transform:translate(-15vw,8vh) rotate(-8deg) scale(.97)}
+        100% {transform:translate(0,0) rotate(0deg) scale(1)}
+    }
+    @@keyframes orbit1 {
+        0%   {transform:translate(0,0) rotate(0deg) scale(1)}
+        20%  {transform:translate(-22vw,-10vh) rotate(-12deg) scale(1.06)}
+        40%  {transform:translate(-8vw,20vh) rotate(6deg) scale(.94)}
+        60%  {transform:translate(20vw,10vh) rotate(-10deg) scale(1.04)}
+        80%  {transform:translate(12vw,-15vh) rotate(8deg) scale(.98)}
+        100% {transform:translate(0,0) rotate(0deg) scale(1)}
+    }
+    @@keyframes orbit2 {
+        0%   {transform:translate(0,0) rotate(0deg) scale(1)}
+        20%  {transform:translate(15vw,18vh) rotate(10deg) scale(.96)}
+        40%  {transform:translate(-20vw,5vh) rotate(-15deg) scale(1.07)}
+        60%  {transform:translate(-10vw,-20vh) rotate(5deg) scale(1.02)}
+        80%  {transform:translate(18vw,-8vh) rotate(-7deg) scale(.95)}
+        100% {transform:translate(0,0) rotate(0deg) scale(1)}
+    }
+
+    /* ── Podium ── */
+    .podium-wrap {
+        position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+        display:flex;align-items:flex-end;justify-content:center;gap:0;z-index:15;
+        width:clamp(520px,75vw,960px);
+    }
+    .pod-col {
+        display:flex;flex-direction:column;align-items:center;
+    }
+    .pod-target {
+        width:clamp(100px,15vw,170px);height:clamp(100px,15vw,170px);
+        margin-bottom:10px;
+    }
+    .pod-details {
+        opacity:0;transform:translateY(20px);
+        transition:opacity .6s ease .1s, transform .6s ease .1s;
+    }
+    .pod-details.show {
+        opacity:1;transform:translateY(0);
+    }
+    .pod-name {
+        font-size:clamp(16px,2.5vw,28px);text-align:center;
+        text-shadow:2px 2px 0 rgba(0,0,0,.6);margin-bottom:6px;
+        max-width:clamp(160px,22vw,280px);
+    }
+    .pod-scores { display:flex;gap:8px;margin-bottom:10px; }
+    .pod-pill {
+        display:flex;align-items:center;gap:4px;
+        padding:5px 12px;border-radius:7px;border:3px solid rgba(0,0,0,.8);
+        font-size:clamp(15px,2vw,22px);box-shadow:2px 2px 0 rgba(0,0,0,.5);
+    }
+    .pod-pill img { height:clamp(15px,1.8vw,22px);width:auto; }
+    .pod-block {
+        width:clamp(170px,24vw,300px);
+        border:5px solid rgba(0,0,0,.8);border-bottom:none;
+        border-radius:16px 16px 0 0;
+        display:flex;align-items:center;justify-content:center;
+        font-size:clamp(40px,6vw,80px);
+        box-shadow:inset 0 2px 20px rgba(255,255,255,.1);
+        opacity:0;transform:translateY(30px);
+        transition:opacity .5s ease, transform .5s ease;
+    }
+    .pod-block.show {
+        opacity:1;transform:translateY(0);
+    }
+
+    /* ── Rank banner ── */
+    .rank-pop {
+        position:absolute;top:38%;left:50%;z-index:50;
+        transform:translate(-50%,-50%) scale(0);opacity:0;text-align:center;
+        pointer-events:none;
+    }
+    .rank-pop.show { animation:rankBurst .6s cubic-bezier(.22,1.3,.36,1) forwards; }
+    .rank-pop.hide { animation:rankFade .5s ease forwards; }
+    @@keyframes rankBurst {
+        0%{transform:translate(-50%,-50%) scale(0) rotate(-8deg);opacity:0}
+        100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);opacity:1}
+    }
+    @@keyframes rankFade {
+        0%{transform:translate(-50%,-50%) scale(1);opacity:1}
+        100%{transform:translate(-50%,-50%) scale(.6);opacity:0}
+    }
+    .rank-pop .place-text {
+        font-size:clamp(52px,9vw,110px);line-height:1;
+        text-shadow:4px 4px 0 rgba(0,0,0,.6),0 0 60px rgba(245,200,0,.4);
+    }
+    .rank-pop .place-team {
+        font-size:clamp(28px,5vw,56px);margin-top:12px;
+        text-shadow:3px 3px 0 rgba(0,0,0,.5);
+    }
+
+    /* ── Confetti ── */
+    .confetti-box { position:fixed;inset:0;pointer-events:none;z-index:100;overflow:hidden; }
+    .confetti-p {
+        position:absolute;top:-30px;
+        animation:cFall linear forwards;
+    }
+    @@keyframes cFall {
+        0%   {transform:translateY(0) rotateZ(0deg) rotateY(0deg);opacity:1}
+        80%  {opacity:1}
+        100% {transform:translateY(110vh) rotateZ(1080deg) rotateY(720deg);opacity:0}
+    }
+</style>
+
+<div class="ceremony-bg">
+    <div class="starfield">
+        @foreach (var s in _stars)
+        {
+            <span style="left:@(s.X)%;top:@(s.Y)%;width:@(s.Size)px;height:@(s.Size)px;animation-delay:@(s.Delay)s;animation-duration:@(s.Duration)s"></span>
+        }
+    </div>
+
+    @* Title *@
+    @if (_phase == CPhase.Waiting)
+    {
+        <div class="ceremony-title">AWARDS CEREMONY</div>
+        <div class="ceremony-subtitle">Camp Clot Not — Super Party '26</div>
+    }
+
+    @* Flying logos — one element per group, JS will physically move these *@
+    @if (_phase >= CPhase.Flying)
+    {
+        @for (var i = 0; i < _groups.Count; i++)
+        {
+            var g = _groups[i];
+            var isGlided = _glidedRanks.Contains(g.Rank);
+            <div id="fly-@g.Rank" class="logo-fly @(!isGlided ? $"orbit-{i}" : "")"
+                 style="background:@g.Color;@(isGlided ? "" : "")">
+                @if (g.Logo is not null)
+                {
+                    <img src="@g.Logo" alt="@g.Name" />
+                }
+                else
+                {
+                    <span style="font-size:clamp(32px,5vw,56px);color:white">@(g.ShortName?[..1] ?? "?")</span>
+                }
+            </div>
+        }
+    }
+
+    @* Podium — always rendered when flying, targets for JS glide *@
+    @if (_phase >= CPhase.Flying && _groups.Count >= 3)
+    {
+        var g1 = _groups.FirstOrDefault(g => g.Rank == 1);
+        var g2 = _groups.FirstOrDefault(g => g.Rank == 2);
+        var g3 = _groups.FirstOrDefault(g => g.Rank == 3);
+
+        <div class="podium-wrap">
+            @* 2nd — left *@
+            <div class="pod-col">
+                <div id="pod-target-2" class="pod-target"></div>
+                <div class="pod-details @(_revealedRanks.Contains(2) ? "show" : "")">
+                    <div class="pod-name" style="color:@g2?.Color">@g2?.Name</div>
+                    <div class="pod-scores">
+                        <div class="pod-pill" style="background:var(--color-accent)"><img src="/img/ccn-coin.png" alt="" /><span style="color:white">@g2?.Coins</span></div>
+                        <div class="pod-pill" style="background:#2563C4"><img src="/img/ccn-star.png" alt="" /><span style="color:white">@g2?.Stars</span></div>
+                    </div>
+                </div>
+                <div class="pod-block @(_revealedRanks.Contains(2) ? "show" : "")" style="height:clamp(120px,18vh,210px);background:linear-gradient(180deg,#D0D0D0,#A8A8A8)"><img src="/img/medal-2nd.svg?v=1" style="height:70%;width:auto" alt="2nd" /></div>
+            </div>
+
+            @* 1st — center *@
+            <div class="pod-col">
+                <div id="pod-target-1" class="pod-target"></div>
+                <div class="pod-details @(_revealedRanks.Contains(1) ? "show" : "")">
+                    <div class="pod-name" style="color:#F5C800;font-size:clamp(20px,3vw,34px)">@g1?.Name</div>
+                    <div class="pod-scores">
+                        <div class="pod-pill" style="background:var(--color-accent)"><img src="/img/ccn-coin.png" alt="" /><span style="color:white">@g1?.Coins</span></div>
+                        <div class="pod-pill" style="background:#2563C4"><img src="/img/ccn-star.png" alt="" /><span style="color:white">@g1?.Stars</span></div>
+                    </div>
+                </div>
+                <div class="pod-block @(_revealedRanks.Contains(1) ? "show" : "")" style="height:clamp(170px,26vh,300px);background:linear-gradient(180deg,#F5C800,#D4A800)"><img src="/img/medal-1st.svg?v=1" style="height:60%;width:auto" alt="1st" /></div>
+            </div>
+
+            @* 3rd — right *@
+            <div class="pod-col">
+                <div id="pod-target-3" class="pod-target"></div>
+                <div class="pod-details @(_revealedRanks.Contains(3) ? "show" : "")">
+                    <div class="pod-name" style="color:@g3?.Color">@g3?.Name</div>
+                    <div class="pod-scores">
+                        <div class="pod-pill" style="background:var(--color-accent)"><img src="/img/ccn-coin.png" alt="" /><span style="color:white">@g3?.Coins</span></div>
+                        <div class="pod-pill" style="background:#2563C4"><img src="/img/ccn-star.png" alt="" /><span style="color:white">@g3?.Stars</span></div>
+                    </div>
+                </div>
+                <div class="pod-block @(_revealedRanks.Contains(3) ? "show" : "")" style="height:clamp(80px,12vh,150px);background:linear-gradient(180deg,#CD7F32,#A0622A)"><img src="/img/medal-3rd.svg?v=1" style="height:80%;width:auto" alt="3rd" /></div>
+            </div>
+        </div>
+    }
+
+    @* Rank banner *@
+    @if (_bannerGroup is not null)
+    {
+        var placeLabel = _bannerGroup.Rank switch { 1 => "1ST PLACE!", 2 => "2ND PLACE!", 3 => "3RD PLACE!", _ => "" };
+        var placeColor = _bannerGroup.Rank switch { 1 => "#F5C800", 2 => "#D0D0D0", 3 => "#CD7F32", _ => "white" };
+        <div class="rank-pop @(_bannerVisible ? "show" : "hide")" @key="@_bannerKey">
+            <div class="place-text" style="color:@placeColor">@placeLabel</div>
+            <div class="place-team" style="color:@_bannerGroup.Color">@_bannerGroup.Name</div>
+        </div>
+    }
+
+    @* Confetti *@
+    @if (_confettiOn)
+    {
+        <div class="confetti-box">
+            @foreach (var c in _confetti)
+            {
+                <div class="confetti-p" style="left:@(c.Left)%;width:@(c.W)px;height:@(c.H)px;background:@c.Color;border-radius:@(c.Round ? "50%" : "2px");animation-duration:@(c.Dur)s;animation-delay:@(c.Del)s"></div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private enum CPhase { Waiting, Flying, Revealing, Done }
+
+    private record GroupInfo(int Rank, string Name, string? ShortName, string Color, string? Logo, int Coins, int Stars);
+    private record Star(float X, float Y, int Size, float Delay, float Duration);
+    private record Confetto(float Left, int W, int H, string Color, bool Round, float Dur, float Del);
+
+    private CPhase _phase = CPhase.Waiting;
+    private List<GroupInfo> _groups = new();
+    private HashSet<int> _glidedRanks = new();
+    private HashSet<int> _revealedRanks = new();
+    private GroupInfo? _bannerGroup;
+    private bool _bannerVisible;
+    private int _bannerKey;
+    private bool _confettiOn;
+    private HubConnection? _hub;
+
+    private static readonly string[] CColors = ["#F5C800","#E74C3C","#2980B9","#27AE60","#8E44AD","#E67E22","#FF69B4","#00CED1","#FFFFFF"];
+    private readonly Star[] _stars;
+    private readonly Confetto[] _confetti;
+
+    public LeaderboardRevealDisplay()
+    {
+        var rng = new Random(42);
+        _stars = Enumerable.Range(0, 60).Select(_ => new Star(
+            rng.Next(100), rng.Next(100), rng.Next(2, 5),
+            (float)(rng.NextDouble() * 4), (float)(1.5 + rng.NextDouble() * 2)
+        )).ToArray();
+        _confetti = Enumerable.Range(0, 150).Select(_ => new Confetto(
+            rng.Next(100), rng.Next(6, 16), rng.Next(6, 16),
+            CColors[rng.Next(CColors.Length)], rng.NextDouble() > .4,
+            (float)(2.5 + rng.NextDouble() * 3), (float)(rng.NextDouble() * 3)
+        )).ToArray();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/livehub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On<string>("CeremonyStart", async json =>
+        {
+            try
+            {
+                _groups = JsonSerializer.Deserialize<List<GroupInfo>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+            }
+            catch { _groups = new(); }
+            _phase = CPhase.Flying;
+            _glidedRanks.Clear();
+            _revealedRanks.Clear();
+            _bannerGroup = null;
+            _confettiOn = false;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On<int>("CeremonyReveal", async rank =>
+        {
+            // 1. Render is current with flying logos — give Blazor a tick
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(100);
+
+            // 2. JS: logo continues current motion then arcs smoothly to podium (2.5s bezier path)
+            await JS.InvokeVoidAsync("ceremonyGlide", $"fly-{rank}", $"pod-target-{rank}", 2500);
+
+            // 3. Mark as glided so Blazor removes the orbit class on next render
+            _glidedRanks.Add(rank);
+
+            // 4. Show podium details + block (fade in around the now-landed logo)
+            _revealedRanks.Add(rank);
+            _phase = CPhase.Revealing;
+            await InvokeAsync(StateHasChanged);
+
+            // 5. Bounce the logo on arrival
+            await JS.InvokeVoidAsync("ceremonyBounce", $"fly-{rank}");
+
+            // 6. Show rank banner
+            await Task.Delay(400);
+            _bannerGroup = _groups.FirstOrDefault(g => g.Rank == rank);
+            _bannerVisible = true;
+            _bannerKey++;
+            await InvokeAsync(StateHasChanged);
+
+            // 7. Fade banner after a few seconds
+            await Task.Delay(3500);
+            _bannerVisible = false;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On("CeremonyConfetti", async () =>
+        {
+            _confettiOn = true;
+            _phase = CPhase.Done;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hub.On("CeremonyReset", async () =>
+        {
+            _phase = CPhase.Waiting;
+            _groups.Clear();
+            _glidedRanks.Clear();
+            _revealedRanks.Clear();
+            _bannerGroup = null;
+            _bannerVisible = false;
+            _confettiOn = false;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hub.StartAsync();
+    }
+}

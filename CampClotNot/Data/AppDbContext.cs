@@ -29,6 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<GroupBoardPos> GroupBoardPositions => Set<GroupBoardPos>();
     public DbSet<ScriptedBlockHit> ScriptedBlockHits => Set<ScriptedBlockHit>();
     public DbSet<ScriptedMiniGame> ScriptedMiniGames => Set<ScriptedMiniGame>();
+    public DbSet<BowserScript> BowserScripts => Set<BowserScript>();
 
     // Awards
     public DbSet<AwardType> AwardTypes => Set<AwardType>();

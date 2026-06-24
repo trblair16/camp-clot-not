@@ -57,7 +57,7 @@
                 <div style="border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);padding:12px 14px;margin-bottom:10px;@(voided ? "opacity:.5" : "")">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                         <span style="font-family:'Fredoka One',cursive;font-size:14px;color:@(tx.Group?.Color ?? "var(--black)")">@tx.Group?.Name</span>
-                        <span style="font-weight:800;font-size:15px;color:@amtColor;@(voided ? "text-decoration:line-through" : "")">@(tx.Amount > 0 ? "+" : "")@tx.Amount @(isCoins ? "🪙" : "⭐")</span>
+                        <span style="font-weight:800;font-size:15px;color:@amtColor;@(voided ? "text-decoration:line-through" : "");display:inline-flex;align-items:center;gap:3px">@(tx.Amount > 0 ? "+" : "")@tx.Amount <img src="@(isCoins ? "/img/ccn-coin.png" : "/img/ccn-star.png")" style="height:16px;width:auto" alt="" /></span>
                     </div>
                     <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">
                         @tx.CreatedAt.ToString("MM/dd h:mm tt") · @tx.LoggedBy
@@ -118,7 +118,7 @@
                                 @tx.CreatedAt.ToString("MM/dd h:mm tt")
                             </td>
                             <td style="padding:10px 14px;font-size:13px;font-weight:700">@tx.Group?.Name</td>
-                            <td style="padding:10px 14px;font-size:13px">@(isCoins ? "🪙 Coins" : "⭐ Stars")</td>
+                            <td style="padding:10px 14px;font-size:13px"><img src="@(isCoins ? "/img/ccn-coin.png" : "/img/ccn-star.png")" style="height:14px;width:auto;vertical-align:middle;margin-right:3px" alt="" />@(isCoins ? "Coins" : "Stars")</td>
                             <td style="padding:10px 14px;font-size:13px;font-weight:800;text-align:right;color:@amtColor;@(voided ? "text-decoration:line-through" : "")">
                                 @(tx.Amount > 0 ? "+" : "")@tx.Amount
                             </td>

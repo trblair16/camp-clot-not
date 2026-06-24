@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject BoardService BoardSvc
 @inject MiniGameService MiniGameSvc
+@inject BowserEventService BowserSvc
 @inject GroupService GroupSvc
 
 <PageTitle>Game Admin — Camp Clot Not</PageTitle>
@@ -273,7 +274,86 @@
             }
         </MudTabPanel>
 
-        @* ── TAB 4: RESET (dev/testing) ────────────────────────────────────────── *@
+        @* ── TAB 4: BOWSER SCRIPTS ──────────────────────────────────────────────── *@
+        <MudTabPanel Text="Bowser Scripts">
+            <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">
+                Design custom Bowser dice for each meal. Select a script on the Bowser Event page before rolling.
+            </p>
+
+            <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);background:var(--panel-bg);padding:20px;max-width:640px;margin-bottom:20px">
+                <h3 style="font-family:'Fredoka One',cursive;font-size:15px;margin:0 0 14px">@(_editingScript is null ? "New Script" : "Edit Script")</h3>
+
+                <div style="margin-bottom:12px">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name</div>
+                    <input type="text" @bind="_scriptName" placeholder="e.g. Monday Lunch"
+                           style="width:100%;padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                </div>
+
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px">Die Faces (6)</div>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+                    @for (var i = 0; i < 6; i++)
+                    {
+                        var idx = i;
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <span style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-light);min-width:18px">@(idx + 1).</span>
+                            <input type="text" value="@_editFaces[idx].Emoji" @onchange="e => SetFaceEmoji(idx, e)"
+                                   placeholder="😈" style="width:48px;padding:6px;text-align:center;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:16px;outline:none;box-sizing:border-box" />
+                            <input type="text" value="@_editFaces[idx].Label" @onchange="e => SetFaceLabel(idx, e)"
+                                   placeholder="Label" style="flex:1;min-width:80px;padding:6px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);outline:none;box-sizing:border-box" />
+                            <input type="number" value="@_editFaces[idx].CoinDelta" @onchange="e => SetFaceCoins(idx, e)"
+                                   placeholder="Coins" style="width:80px;padding:6px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);outline:none;box-sizing:border-box;text-align:center" />
+                            <span style="font-size:11px;color:var(--text-light)">🪙</span>
+                        </div>
+                    }
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="ccn-btn" style="font-size:13px;padding:8px 16px" @onclick="SaveScriptAsync">
+                        @(_editingScript is null ? "＋ Add Script" : "💾 Save")
+                    </button>
+                    @if (_editingScript is not null)
+                    {
+                        <button class="ccn-btn" style="font-size:13px;padding:8px 16px;background:transparent;border-color:var(--black);color:var(--black)" @onclick="CancelEdit">Cancel</button>
+                    }
+                    <button class="ccn-btn" style="font-size:11px;padding:6px 12px;background:transparent;border-color:var(--text-light);color:var(--text-light)" @onclick="LoadDefaults">Load Defaults</button>
+                </div>
+
+                @if (_bowserSaveMsg is not null)
+                {
+                    <div style="margin-top:12px;padding:10px 16px;border:2px solid var(--black);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_bowserSaveMsg</div>
+                }
+            </div>
+
+            @if (_bowserScripts is not null && _bowserScripts.Count > 0)
+            {
+                <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+                    @foreach (var script in _bowserScripts)
+                    {
+                        var faces = BowserEventService.ParseFaces(script.FacesJson);
+                        <div style="border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);padding:14px 16px">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                                <span style="font-family:'Fredoka One',cursive;font-size:16px">@script.Name</span>
+                                <div style="display:flex;gap:6px">
+                                    <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => EditScript(script)">Edit</button>
+                                    <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteScriptAsync(script.BowserScriptId)">Del</button>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:4px;flex-wrap:wrap">
+                                @foreach (var f in faces)
+                                {
+                                    var color = f.CoinDelta >= 0 ? "#1A7A3E" : "#D12B2B";
+                                    <span style="font-size:11px;padding:3px 8px;border:2px solid var(--black);border-radius:5px;background:var(--bg-base)">
+                                        @f.Emoji <span style="color:@color;font-weight:700">@(f.CoinDelta > 0 ? "+" : "")@f.CoinDelta</span>
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </MudTabPanel>
+
+        @* ── TAB 5: RESET (dev/testing) ────────────────────────────────────────── *@
         <MudTabPanel Text="Reset">
             <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">
                 Testing utilities — reset scripted sequences so animations can be re-run.
@@ -337,6 +417,13 @@
     private string? _blockHitSaveMsg;
     private string? _miniGameSaveMsg;
 
+    // Bowser scripts
+    private List<BowserScript>? _bowserScripts;
+    private BowserScript? _editingScript;
+    private string _scriptName = "";
+    private BowserFace[] _editFaces = CreateDefaultEditFaces();
+    private string? _bowserSaveMsg;
+
     private int     _resetDay        = 1;
     private bool    _resettingBoard;
     private string? _resetBoardMsg;
@@ -351,7 +438,8 @@
     {
         await Task.WhenAll(
             LoadBoardDataAsync(),
-            LoadMiniGameDataAsync()
+            LoadMiniGameDataAsync(),
+            LoadBowserDataAsync()
         );
     }
 
@@ -418,6 +506,95 @@
         await Task.Delay(4000);
         _resetMiniGameMsg = null;
         StateHasChanged();
+    }
+
+    // ── Bowser ──────────────────────────────────────────────────────────────
+    private async Task LoadBowserDataAsync()
+    {
+        _bowserScripts = await BowserSvc.GetScriptsAsync(EventId);
+    }
+
+    private void SetFaceEmoji(int idx, ChangeEventArgs e) =>
+        _editFaces[idx] = _editFaces[idx] with { Emoji = e.Value?.ToString() ?? "" };
+
+    private void SetFaceLabel(int idx, ChangeEventArgs e) =>
+        _editFaces[idx] = _editFaces[idx] with { Label = e.Value?.ToString() ?? "" };
+
+    private void SetFaceCoins(int idx, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var v))
+            _editFaces[idx] = _editFaces[idx] with { CoinDelta = v };
+    }
+
+    private static BowserFace[] CreateDefaultEditFaces() =>
+    [
+        new("", "", "💀", -50, 0),
+        new("", "", "👎", -30, 0),
+        new("", "", "😤", -20, 0),
+        new("", "", "😅", +10, 0),
+        new("", "", "😏", +15, 0),
+        new("", "", "😈", -5, 0),
+    ];
+
+    private void LoadDefaults()
+    {
+        _editFaces = BowserEventService.DefaultFaces.ToArray();
+    }
+
+    private void EditScript(BowserScript script)
+    {
+        _editingScript = script;
+        _scriptName = script.Name;
+        var faces = BowserEventService.ParseFaces(script.FacesJson);
+        _editFaces = new BowserFace[6];
+        for (var i = 0; i < 6; i++)
+            _editFaces[i] = i < faces.Length ? faces[i] : new("", "", "", 0, 0);
+    }
+
+    private void CancelEdit()
+    {
+        _editingScript = null;
+        _scriptName = "";
+        _editFaces = CreateDefaultEditFaces();
+    }
+
+    private async Task SaveScriptAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_scriptName)) return;
+
+        var faces = _editFaces.Select(f => new BowserFace(
+            string.IsNullOrWhiteSpace(f.Label) ? $"{(f.CoinDelta >= 0 ? "+" : "")}{f.CoinDelta} Coins" : f.Label,
+            string.IsNullOrWhiteSpace(f.Description) ? $"Bowser: {(f.CoinDelta >= 0 ? "+" : "")}{f.CoinDelta} coins" : f.Description,
+            string.IsNullOrWhiteSpace(f.Emoji) ? "🎲" : f.Emoji,
+            f.CoinDelta,
+            f.StarDelta
+        )).ToArray();
+
+        var facesJson = System.Text.Json.JsonSerializer.Serialize(faces);
+
+        var script = _editingScript ?? new BowserScript { EventId = EventId };
+        script.Name = _scriptName;
+        script.FacesJson = facesJson;
+        script.SortOrder = _editingScript?.SortOrder ?? (_bowserScripts?.Count ?? 0);
+
+        await BowserSvc.UpsertScriptAsync(script);
+        _bowserScripts = await BowserSvc.GetScriptsAsync(EventId);
+
+        _bowserSaveMsg = $"'{_scriptName}' saved.";
+        _editingScript = null;
+        _scriptName = "";
+        _editFaces = CreateDefaultEditFaces();
+        StateHasChanged();
+
+        await Task.Delay(2500);
+        _bowserSaveMsg = null;
+        StateHasChanged();
+    }
+
+    private async Task DeleteScriptAsync(Guid scriptId)
+    {
+        await BowserSvc.DeleteScriptAsync(scriptId);
+        _bowserScripts = await BowserSvc.GetScriptsAsync(EventId);
     }
 
     private static string SpaceColor(string cat) => cat switch
