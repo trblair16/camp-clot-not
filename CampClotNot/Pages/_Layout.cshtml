@@ -24,6 +24,14 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 </head>
 <body>
+    <div id="app-loading" style="position:fixed;inset:0;z-index:10000;background:var(--bg-base,#F2ECD8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .3s ease">
+        <img src="/img/ccn-logo-2026.webp?v=2" alt="" style="width:clamp(100px,22vw,160px);height:auto" />
+        <div style="width:clamp(120px,30vw,200px);height:6px;border-radius:3px;border:2px solid #1A1A1A;overflow:hidden;background:#E8E0CC">
+            <div style="width:40%;height:100%;background:#F5C800;border-radius:2px;animation:loadSlide 1.2s ease-in-out infinite"></div>
+        </div>
+        <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#8A7D6A">Loading…</div>
+    </div>
+    <style>@@keyframes loadSlide{0%{transform:translateX(-100%)}50%{transform:translateX(150%)}100%{transform:translateX(-100%)}}</style>
     <div id="components-reconnect-modal" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;padding-top:env(safe-area-inset-top)">
         <div id="ccn-banner-show"     style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#F5C800;color:#1A1A1A;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
             📶 Reconnecting…
@@ -55,6 +63,12 @@
                 retryIntervalMilliseconds: function (n) {
                     return Math.min(n * 2000 + 1000, 20000);
                 }
+            }
+        }).then(function () {
+            var loader = document.getElementById('app-loading');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(function () { loader.remove(); }, 300);
             }
         });
 
