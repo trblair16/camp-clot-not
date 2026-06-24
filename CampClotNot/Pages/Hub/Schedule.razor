@@ -241,16 +241,17 @@
                     }
 
                     @* Desktop HTML table — hidden <700px via CSS *@
+                    <div style="overflow-x:auto;max-width:100%">
                     <table class="sched-tbl">
                         <thead>
                             <tr>
-                                <th style="width:80px">Time</th>
-                                <th style="width:22%">Event</th>
-                                <th style="width:12%">Type</th>
-                                <th style="width:14%">Location</th>
-                                <th style="width:52px"></th>
-                                <th style="width:15%">Add'l Info</th>
-                                @if (_canEdit) { <th style="width:150px"></th> }
+                                <th style="width:70px">Time</th>
+                                <th>Event</th>
+                                <th style="width:10%">Type</th>
+                                <th style="width:12%">Location</th>
+                                <th style="width:44px"></th>
+                                <th style="width:18%">Add'l Info</th>
+                                @if (_canEdit) { <th style="width:130px"></th> }
                             </tr>
                         </thead>
                         <tbody>
@@ -298,7 +299,7 @@
                                     <td style="overflow:hidden">
                                         @if (dispLoc?.ImageContentType is not null)
                                         {
-                                            <img src="/location-image/@dispLoc.LocationId" style="max-width:44px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--black);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
+                                            <img src="/location-image/@dispLoc.LocationId" style="max-width:36px;height:26px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
                                         }
                                     </td>
                                     <td style="color:var(--text-mid);font-size:13px">@(string.IsNullOrEmpty(ev.LocationOther) ? "—" : ev.LocationOther)</td>
@@ -355,6 +356,7 @@
                             }
                         </tbody>
                     </table>
+                    </div>
                 </div>
             }
         }
