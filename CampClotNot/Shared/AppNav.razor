@@ -72,6 +72,7 @@
                             <AuthorizeView Roles="Admin" Context="gameAdminCtx">
                                 <a href="/minigames" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
                                 <a href="/bowser" @onclick="() => _gameDropdownOpen = false"><img src="/img/bowser-space.png" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
+                                <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
                                 <button @onclick="() => { _gameDropdownOpen = false; OnLeaderboardClick.InvokeAsync(); }"><img src="/img/icons/projector.svg?v=3" alt="" /> Projector</button>
                             </AuthorizeView>
                         </div>
@@ -167,6 +168,7 @@
         <AuthorizeView Roles="Admin">
             <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
             <a href="/bowser" @onclick="() => _gameSheetOpen = false"><img src="/img/bowser-space.png" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
+            <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
         </AuthorizeView>
     </div>
 }

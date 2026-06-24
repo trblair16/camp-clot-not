@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" fill="none">
+  <!-- Ribbon -->
+  <path d="M60 0 L80 90 L100 70 L120 90 L140 0" fill="#27AE60" stroke="#1A1A1A" stroke-width="6"/>
+  <!-- Medal circle -->
+  <circle cx="100" cy="150" r="80" fill="url(#bronze)" stroke="#1A1A1A" stroke-width="8"/>
+  <!-- Inner ring -->
+  <circle cx="100" cy="150" r="62" fill="none" stroke="#8B5E3C" stroke-width="4"/>
+  <!-- Star behind number -->
+  <polygon points="100,95 112,125 145,125 118,143 128,173 100,155 72,173 82,143 55,125 88,125" fill="#8B5E3C" opacity=".25"/>
+  <!-- Number -->
+  <text x="100" y="168" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="72" font-weight="900" fill="#1A1A1A">3</text>
+  <defs>
+    <linearGradient id="bronze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D4944A"/>
+      <stop offset="50%" stop-color="#CD7F32"/>
+      <stop offset="100%" stop-color="#A0622A"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -12,11 +12,33 @@
     </h2>
     <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">Each group rolls the Bowser die. Results are applied automatically.</p>
 
-    <div style="margin-bottom:20px">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
         <a href="/bowser/display" target="_blank" class="ccn-btn" style="font-size:13px;padding:8px 16px;text-decoration:none;display:inline-block">
             📺 Open Projector Display
         </a>
+
+        <select value="@(_selectedScriptId?.ToString() ?? "")"
+                @onchange="OnScriptChanged"
+                style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+            <option value="">Default Die</option>
+            @foreach (var s in _scripts)
+            {
+                <option value="@s.BowserScriptId">@s.Name</option>
+            }
+        </select>
     </div>
+
+    @if (_activeFaces.Length > 0)
+    {
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
+            @foreach (var f in _activeFaces)
+            {
+                <span style="font-size:12px;padding:4px 10px;border:2px solid var(--black);border-radius:6px;background:var(--panel-bg);box-shadow:1px 1px 0 var(--black)">
+                    @f.Emoji @f.Label
+                </span>
+            }
+        </div>
+    }
 
     @if (_loading)
     {
@@ -72,6 +94,9 @@
 
 @code {
     private List<Group> _groups = new();
+    private List<BowserScript> _scripts = new();
+    private Guid? _selectedScriptId;
+    private BowserFace[] _activeFaces = BowserEventService.DefaultFaces;
     private Dictionary<Guid, (int faceIndex, BowserFace face)> _results = new();
     private bool _loading = true;
     private bool _rolling;
@@ -82,7 +107,24 @@
         var authState = await Auth.GetAuthenticationStateAsync();
         _userName = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Admin";
         _groups = await GroupSvc.GetAllAsync();
+        _scripts = await BowserSvc.GetScriptsAsync(SeedService.Id.EventCcn2026);
         _loading = false;
+    }
+
+    private void OnScriptChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? "";
+        if (Guid.TryParse(val, out var id))
+        {
+            _selectedScriptId = id;
+            var script = _scripts.FirstOrDefault(s => s.BowserScriptId == id);
+            _activeFaces = BowserEventService.ParseFaces(script?.FacesJson);
+        }
+        else
+        {
+            _selectedScriptId = null;
+            _activeFaces = BowserEventService.DefaultFaces;
+        }
     }
 
     private async Task RollAsync(Group group)
@@ -90,10 +132,10 @@
         _rolling = true;
         StateHasChanged();
 
-        await BowserSvc.BroadcastRollStart(group.GroupId, group.Name, group.Color);
+        await BowserSvc.BroadcastRollStart(group.GroupId, group.Name, group.Color, _activeFaces);
         await Task.Delay(500);
 
-        var (faceIndex, face) = await BowserSvc.RollAsync(group.GroupId, SeedService.Id.EventCcn2026, _userName);
+        var (faceIndex, face) = await BowserSvc.RollAsync(group.GroupId, SeedService.Id.EventCcn2026, _userName, _selectedScriptId);
         _results[group.GroupId] = (faceIndex, face);
 
         await Task.Delay(3000);

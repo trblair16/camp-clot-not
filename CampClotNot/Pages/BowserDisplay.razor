@@ -117,9 +117,9 @@
         <div class="bowser-group" style="color:@_groupColor">@_groupName</div>
 
         <div class="bowser-die-container">
-            @for (int i = 0; i < BowserEventService.Faces.Length; i++)
+            @for (int i = 0; i < _faces.Length; i++)
             {
-                var face = BowserEventService.Faces[i];
+                var face = _faces[i];
                 var isCycling = _state == DisplayState.Rolling && _highlightIndex == i;
                 var isSelected = _state == DisplayState.Revealed && _revealedIndex == i;
                 <div class="bowser-face @(isCycling ? "cycling" : "") @(isSelected ? "selected" : "")">
@@ -132,7 +132,7 @@
         @if (_state == DisplayState.Revealed)
         {
             <div class="bowser-result">
-                <div style="font-size:48px;margin-bottom:8px">@BowserEventService.Faces[_revealedIndex].Emoji</div>
+                <div style="font-size:48px;margin-bottom:8px">@_faces[_revealedIndex].Emoji</div>
                 <div>@_resultDescription</div>
             </div>
         }
@@ -142,12 +142,15 @@
 @code {
     private enum DisplayState { Idle, Rolling, Revealed }
 
+    private record DisplayFace(string Emoji, string Label);
+
     private DisplayState _state = DisplayState.Idle;
     private string _groupName = "";
     private string _groupColor = "white";
     private int _highlightIndex;
     private int _revealedIndex;
     private string _resultDescription = "";
+    private DisplayFace[] _faces = BowserEventService.DefaultFaces.Select(f => new DisplayFace(f.Emoji, f.Label)).ToArray();
     private HubConnection? _hub;
     private CancellationTokenSource? _cycleCts;
 
@@ -160,10 +163,17 @@
             .WithAutomaticReconnect()
             .Build();
 
-        _hub.On<Guid, string, string>("BowserRollStarted", async (groupId, name, color) =>
+        _hub.On<Guid, string, string, object[]>("BowserRollStarted", async (groupId, name, color, facesPayload) =>
         {
             _groupName = name;
             _groupColor = color;
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(facesPayload);
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<DisplayFace[]>(json);
+                if (parsed is { Length: > 0 }) _faces = parsed;
+            }
+            catch { }
             _state = DisplayState.Rolling;
             _cycleCts = new CancellationTokenSource();
             await InvokeAsync(StateHasChanged);
@@ -185,6 +195,7 @@
             _state = DisplayState.Idle;
             _groupName = "";
             _groupColor = "white";
+            _faces = BowserEventService.DefaultFaces.Select(f => new DisplayFace(f.Emoji, f.Label)).ToArray();
             await InvokeAsync(StateHasChanged);
         });
 
@@ -196,7 +207,7 @@
         var rng = new Random();
         while (!ct.IsCancellationRequested)
         {
-            _highlightIndex = rng.Next(BowserEventService.Faces.Length);
+            _highlightIndex = rng.Next(_faces.Length);
             await InvokeAsync(StateHasChanged);
             try { await Task.Delay(120, ct); } catch { break; }
         }
