@@ -20,7 +20,7 @@ public class BowserEventService(
         new("−20 Coins",  "Bowser nabs 20 coins!",           "😤", -20, 0),
         new("+10 Coins",  "Bowser drops 10 coins!",          "😅", +10, 0),
         new("+15 Coins",  "Bowser fumbles 15 coins!",        "😏", +15, 0),
-        new("FREE STAR",  "Bowser accidentally gives a star!","⭐",  0, 1),
+        new("−5 Coins",   "Bowser pinches 5 coins!",           "😈", -5, 0),
     ];
 
     private static readonly Random _rng = new();
