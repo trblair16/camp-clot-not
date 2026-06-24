@@ -116,8 +116,19 @@ try
     {
         OnPrepareResponse = ctx =>
         {
-            if (ctx.File.Name.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+            var path = ctx.File.Name;
+            if (path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+            {
                 ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
+            }
+            else if (path.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+                  || path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                  || path.EndsWith(".css", StringComparison.OrdinalIgnoreCase)
+                  || path.EndsWith(".js", StringComparison.OrdinalIgnoreCase)
+                  || path.EndsWith(".woff2", StringComparison.OrdinalIgnoreCase))
+            {
+                ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            }
         }
     });
     app.UseRouting();
