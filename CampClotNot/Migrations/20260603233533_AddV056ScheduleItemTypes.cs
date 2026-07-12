@@ -65,14 +65,25 @@ namespace CampClotNot.Migrations
                 });
 
             // ── 4. Seed CCN 2026 event with all six types ─────────────────────
+            // Guarded by WHERE EXISTS: on a fresh database, migrations run before
+            // SeedService creates the CCN 2026 Events row, so an unconditional INSERT
+            // here violates the EventId FK. SeedService's own idempotent
+            // EventScheduleItemTypes seeding (SeedService.cs, SeedEventScheduleItemTypesAsync)
+            // backfills these rows after the Events row exists, so skipping here on a
+            // fresh DB is safe. On any DB where the Events row already exists (prod, dev),
+            // behavior is unchanged.
             migrationBuilder.Sql(@"
-                INSERT INTO ""EventScheduleItemTypes"" (""EventId"", ""ScheduleItemTypeId"") VALUES
-                ('00000009-0009-0009-0009-000000000001', '0000000f-000f-000f-000f-000000000001'),
-                ('00000009-0009-0009-0009-000000000001', '0000000f-000f-000f-000f-000000000002'),
-                ('00000009-0009-0009-0009-000000000001', '0000000f-000f-000f-000f-000000000003'),
-                ('00000009-0009-0009-0009-000000000001', '0000000f-000f-000f-000f-000000000004'),
-                ('00000009-0009-0009-0009-000000000001', '0000000f-000f-000f-000f-000000000005'),
-                ('00000009-0009-0009-0009-000000000001', '0000000f-000f-000f-000f-000000000006')
+                INSERT INTO ""EventScheduleItemTypes"" (""EventId"", ""ScheduleItemTypeId"")
+                SELECT '00000009-0009-0009-0009-000000000001', t.id
+                FROM (VALUES
+                    ('0000000f-000f-000f-000f-000000000001'::uuid),
+                    ('0000000f-000f-000f-000f-000000000002'::uuid),
+                    ('0000000f-000f-000f-000f-000000000003'::uuid),
+                    ('0000000f-000f-000f-000f-000000000004'::uuid),
+                    ('0000000f-000f-000f-000f-000000000005'::uuid),
+                    ('0000000f-000f-000f-000f-000000000006'::uuid)
+                ) AS t(id)
+                WHERE EXISTS (SELECT 1 FROM ""Events"" WHERE ""EventId"" = '00000009-0009-0009-0009-000000000001')
                 ON CONFLICT DO NOTHING;
             ");
 
