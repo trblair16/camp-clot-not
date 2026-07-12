@@ -1,6 +1,7 @@
 @page "/admin/activities"
 @attribute [Authorize(Roles = "Admin")]
 @inject MiniGameService MiniGameSvc
+@inject ActiveEventService ActiveEventSvc
 @inject LocationService LocationSvc
 @inject ISnackbar Snackbar
 
@@ -173,7 +174,8 @@
 
     private async Task Reload()
     {
-        _activities = await MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _activities = await MiniGameSvc.GetActivitiesAsync(eventId);
     }
 
     private void StartEdit(Activity a)
@@ -196,7 +198,8 @@
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(_fName)) return;
-        await MiniGameSvc.UpsertActivityAsync(_editingId, SeedService.Id.EventCcn2026, _fName.Trim(), _fDescription.Trim(), _fLocationId);
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        await MiniGameSvc.UpsertActivityAsync(_editingId, eventId, _fName.Trim(), _fDescription.Trim(), _fLocationId);
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
         CancelEdit();
         await Reload();
