@@ -1,6 +1,7 @@
 @page "/admin/events"
 @attribute [Authorize(Roles = "Admin")]
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject ActiveEventService ActiveEventSvc
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -301,6 +302,7 @@
         }
 
         await db.SaveChangesAsync();
+        ActiveEventSvc.InvalidateCache();
         ResetForm();
         _mobileFormOpen = false;
         await Reload();
