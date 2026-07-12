@@ -1,6 +1,7 @@
 @page "/board"
 @attribute [Authorize(Roles = "Admin,Staff")]
 @inject BoardService BoardSvc
+@inject ActiveEventService ActiveEventSvc
 @inject GroupService GroupSvc
 @inject AuthenticationStateProvider AuthState
 @inject ThemeService ThemeSvc
@@ -238,7 +239,7 @@
     private Dictionary<Guid, int>? _livePositions;
     private HubConnection?    _hub;
 
-    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+    private Guid EventId;
 
     private static readonly (string Label, string Icon, string Color)[] _legend = new (string Label, string Icon, string Color)[]
     {
@@ -251,6 +252,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        EventId = await ActiveEventSvc.GetActiveEventIdAsync();
+
         var auth = await AuthState.GetAuthenticationStateAsync();
         _isAdmin = auth.User.IsInRole(nameof(Role.Admin));
 
