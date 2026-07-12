@@ -1,6 +1,7 @@
 @page "/admin/sponsors"
 @attribute [Authorize(Roles = "Admin")]
 @inject SponsorService SponsorSvc
+@inject ActiveEventService ActiveEventSvc
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 
@@ -227,7 +228,7 @@
 
     private async Task Reload()
     {
-        _sponsors = await SponsorSvc.GetAllForEventAsync(Services.SeedService.Id.EventCcn2026);
+        _sponsors = await SponsorSvc.GetAllForEventAsync(await ActiveEventSvc.GetActiveEventIdAsync());
     }
 
     private async Task HandleLogoUpload(InputFileChangeEventArgs e)
@@ -286,10 +287,11 @@
             _saveError = "Provide a logo file or a logo URL.";
             return;
         }
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
         await SponsorSvc.UpsertAsync(new Sponsor
         {
             SponsorId        = _editingId,
-            EventId          = Services.SeedService.Id.EventCcn2026,
+            EventId          = eventId,
             Name             = _fName.Trim(),
             LogoUrl          = string.IsNullOrWhiteSpace(_fLogoUrl) ? null : _fLogoUrl.Trim(),
             LogoData         = _fLogoData,
