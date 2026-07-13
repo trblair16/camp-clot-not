@@ -1,5 +1,7 @@
 @inject NavigationManager Nav
 @inject ThemeService ThemeSvc
+@inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 
 @* ── MOBILE HEADER ──────────────────────────────────────────────── *@
 <div class="nav-mobile-header">
@@ -67,12 +69,24 @@
                         <div class="nav-admin-panel">
                             <a href="/leaderboard" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/leaderboard.svg?v=3" alt="" /> Leaderboard</a>
                             <AuthorizeView Roles="Admin,Staff" Context="boardCtx">
-                                <a href="/board" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/board.svg?v=3" alt="" /> Board Game</a>
+                                @if (_boardGameEnabled)
+                                {
+                                    <a href="/board" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/board.svg?v=3" alt="" /> Board Game</a>
+                                }
                             </AuthorizeView>
                             <AuthorizeView Roles="Admin" Context="gameAdminCtx">
-                                <a href="/minigames" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
-                                <a href="/bowser" @onclick="() => _gameDropdownOpen = false"><img src="/img/bowser-space.webp" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
-                                <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
+                                @if (_miniGameEnabled)
+                                {
+                                    <a href="/minigames" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
+                                }
+                                @if (_bowserEnabled)
+                                {
+                                    <a href="/bowser" @onclick="() => _gameDropdownOpen = false"><img src="/img/bowser-space.webp" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
+                                }
+                                @if (_awardsEnabled)
+                                {
+                                    <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameDropdownOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
+                                }
                                 <button @onclick="() => { _gameDropdownOpen = false; OnLeaderboardClick.InvokeAsync(); }"><img src="/img/icons/projector.svg?v=3" alt="" /> Projector</button>
                             </AuthorizeView>
                         </div>
@@ -80,7 +94,10 @@
                 </div>
 
                 <AuthorizeView Roles="Admin" Context="adminDesktopCtx">
-                    <a href="/transactions" class="nav-link" style="@ActiveStyle("/transactions", "#2563C4")"><img src="/img/icons/transactions.svg?v=3" class="nav-link-icon" alt="" /> Transactions</a>
+                    @if (_coinShopEnabled)
+                    {
+                        <a href="/transactions" class="nav-link" style="@ActiveStyle("/transactions", "#2563C4")"><img src="/img/icons/transactions.svg?v=3" class="nav-link-icon" alt="" /> Transactions</a>
+                    }
 
                     <div class="nav-admin-dropdown">
                         @if (_adminDropdownOpen)
@@ -163,12 +180,24 @@
     <div class="nav-game-sheet">
         <a href="/leaderboard" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/leaderboard.svg?v=3" alt="" /> Leaderboard</a>
         <AuthorizeView Roles="Admin,Staff">
-            <a href="/board" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/board.svg?v=3" alt="" /> Board Game</a>
+            @if (_boardGameEnabled)
+            {
+                <a href="/board" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/board.svg?v=3" alt="" /> Board Game</a>
+            }
         </AuthorizeView>
         <AuthorizeView Roles="Admin">
-            <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
-            <a href="/bowser" @onclick="() => _gameSheetOpen = false"><img src="/img/bowser-space.webp" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
-            <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
+            @if (_miniGameEnabled)
+            {
+                <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
+            }
+            @if (_bowserEnabled)
+            {
+                <a href="/bowser" @onclick="() => _gameSheetOpen = false"><img src="/img/bowser-space.webp" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
+            }
+            @if (_awardsEnabled)
+            {
+                <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
+            }
         </AuthorizeView>
     </div>
 }
@@ -179,7 +208,10 @@
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _adminSheetOpen = false"></div>
     <div class="nav-admin-sheet">
-        <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/transactions.svg?v=3" alt="" /> Transactions</a>
+        @if (_coinShopEnabled)
+        {
+            <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/transactions.svg?v=3" alt="" /> Transactions</a>
+        }
         <a href="/admin/events"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/gear.svg?v=3" alt="" /> Events</a>
         <div class="nav-admin-sheet-section">Game</div>
         <a href="/admin/games"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/game.svg?v=3" alt="" /> Game Admin</a>
@@ -206,6 +238,22 @@
     private bool _adminDropdownOpen;
     private bool _gameSheetOpen;
     private bool _adminSheetOpen;
+
+    private bool _boardGameEnabled = true;
+    private bool _miniGameEnabled = true;
+    private bool _bowserEnabled = true;
+    private bool _coinShopEnabled = true;
+    private bool _awardsEnabled = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _boardGameEnabled = await CapSvc.IsEnabledAsync(eventId, Feature.BoardGame);
+        _miniGameEnabled  = await CapSvc.IsEnabledAsync(eventId, Feature.MiniGameSpinner);
+        _bowserEnabled    = await CapSvc.IsEnabledAsync(eventId, Feature.BowserEvent);
+        _coinShopEnabled  = await CapSvc.IsEnabledAsync(eventId, Feature.CoinShop);
+        _awardsEnabled    = await CapSvc.IsEnabledAsync(eventId, Feature.Awards);
+    }
 
     private bool IsActive(string href) =>
         href == "/"
