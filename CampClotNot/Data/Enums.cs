@@ -8,7 +8,7 @@ public enum Role { Admin, Staff, MedicalStaff, Volunteer }
 
 public enum IncidentReportType { Internal = 0, ChildrensHarbor = 1 }
 
-public enum Feature { BoardGame, CoinShop, MiniGameSpinner, Announcements, Itinerary }
+public enum Feature { BoardGame, CoinShop, MiniGameSpinner, Announcements, Itinerary, BowserEvent, Awards }
 
 public enum Permission
 {
