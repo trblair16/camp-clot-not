@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -85,6 +86,17 @@
                 <div style="font-size:11px;color:var(--text-light)">Only one event should be active at a time. Setting this active will deactivate others.</div>
             </div>
 
+            <div style="margin-bottom:16px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px">Capabilities</div>
+                @foreach (var cap in _allCapabilities)
+                {
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                        <input type="checkbox" checked="@_fEnabledCapIds.Contains(cap.CapabilityId)" @onchange="() => ToggleCapability(cap.CapabilityId)" />
+                        <span style="font-size:13px;font-family:'Nunito',sans-serif;font-weight:600">@cap.Name</span>
+                    </div>
+                }
+            </div>
+
             @if (!string.IsNullOrEmpty(_saveError))
             {
                 <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_saveError</div>
@@ -124,7 +136,7 @@
                                 </div>
                                 <div style="font-size:11px;color:var(--text-light)">@ev.EffDate.ToString("MMM d") – @ev.ExpDate.ToString("MMM d, yyyy")</div>
                             </div>
-                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => { StartEdit(ev); _mobileFormOpen = true; }">Edit</button>
+                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="async () => { await StartEdit(ev); _mobileFormOpen = true; }">Edit</button>
                         </div>
                     }
                 </div>
@@ -183,6 +195,8 @@
     private DateOnly? _fEndDate;
     private Guid _fEventTypeId;
     private bool _fIsActive;
+    private List<Capability> _allCapabilities = new();
+    private HashSet<Guid> _fEnabledCapIds = new();
     private string _saveError = "";
     private bool _showNewType;
     private string _newTypeName = "";
@@ -199,11 +213,12 @@
         _events = await db.Events.Include(e => e.EventType).OrderByDescending(e => e.EffDate).ToListAsync();
         _eventTypes = await db.EventTypes.ToListAsync();
         _themes = await db.Themes.ToListAsync();
+        _allCapabilities = await db.Capabilities.OrderBy(c => c.Name).ToListAsync();
         if (_fEventTypeId == Guid.Empty && _eventTypes.Any())
             _fEventTypeId = _eventTypes.First().EventTypeId;
     }
 
-    private void StartEdit(Event ev)
+    private async Task StartEdit(Event ev)
     {
         _editingId = ev.EventId;
         _fName = ev.Name;
@@ -212,6 +227,8 @@
         _fEventTypeId = ev.EventTypeId;
         _fIsActive = ev.IsActive;
         _saveError = "";
+        var enabled = await CapSvc.GetEnabledCapabilitiesAsync(ev.EventId);
+        _fEnabledCapIds = enabled.Select(c => c.CapabilityId).ToHashSet();
     }
 
     private void ResetForm()
@@ -222,6 +239,7 @@
         _fEndDate = null;
         _fIsActive = false;
         _saveError = "";
+        _fEnabledCapIds = _allCapabilities.Select(c => c.CapabilityId).ToHashSet();
         if (_eventTypes.Any()) _fEventTypeId = _eventTypes.First().EventTypeId;
     }
 
@@ -244,6 +262,12 @@
         _fEventTypeId = newType.EventTypeId;
         _newTypeName = "";
         _showNewType = false;
+    }
+
+    private void ToggleCapability(Guid capabilityId)
+    {
+        if (!_fEnabledCapIds.Add(capabilityId))
+            _fEnabledCapIds.Remove(capabilityId);
     }
 
     private void CloseFormOverlay()
@@ -288,12 +312,14 @@
             foreach (var o in others) o.IsActive = false;
         }
 
+        Guid targetEventId;
         if (_editingId == Guid.Empty)
         {
+            targetEventId = Guid.NewGuid();
             var themeId = _themes.Any() ? _themes.First().ThemeId : Guid.Empty;
             db.Events.Add(new Event
             {
-                EventId = Guid.NewGuid(),
+                EventId = targetEventId,
                 Name = _fName.Trim(),
                 EffDate = _fStartDate.Value,
                 ExpDate = _fEndDate.Value,
@@ -304,6 +330,7 @@
         }
         else
         {
+            targetEventId = _editingId;
             var existing = await db.Events.FindAsync(_editingId);
             if (existing is not null)
             {
@@ -316,6 +343,10 @@
         }
 
         await db.SaveChangesAsync();
+
+        foreach (var cap in _allCapabilities)
+            await CapSvc.SetEventCapabilityAsync(targetEventId, cap.CapabilityId, _fEnabledCapIds.Contains(cap.CapabilityId));
+
         ActiveEventSvc.InvalidateCache();
         ResetForm();
         _mobileFormOpen = false;
