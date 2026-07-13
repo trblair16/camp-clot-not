@@ -1,6 +1,7 @@
 @page "/admin/events"
 @attribute [Authorize(Roles = "Admin")]
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject ActiveEventService ActiveEventSvc
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -267,6 +268,20 @@
 
         using var db = DbFactory.CreateDbContext();
 
+        if (!_fIsActive && _editingId != Guid.Empty)
+        {
+            var editingIsCurrentlyActive = await db.Events.Where(e => e.EventId == _editingId).Select(e => e.IsActive).FirstOrDefaultAsync();
+            if (editingIsCurrentlyActive)
+            {
+                var anotherEventIsActive = await db.Events.AnyAsync(e => e.IsActive && e.EventId != _editingId);
+                if (!anotherEventIsActive)
+                {
+                    _saveError = "At least one event must stay active. Activate another event before deactivating this one.";
+                    return;
+                }
+            }
+        }
+
         if (_fIsActive)
         {
             var others = await db.Events.Where(e => e.IsActive && e.EventId != _editingId).ToListAsync();
@@ -301,6 +316,7 @@
         }
 
         await db.SaveChangesAsync();
+        ActiveEventSvc.InvalidateCache();
         ResetForm();
         _mobileFormOpen = false;
         await Reload();

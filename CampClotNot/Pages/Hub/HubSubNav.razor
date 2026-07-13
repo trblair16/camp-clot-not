@@ -1,5 +1,6 @@
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider Auth
+@inject ActiveEventService ActiveEventSvc
 
 <style>
     .hub-subnav {
@@ -287,10 +288,11 @@
         var userId = Guid.TryParse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : Guid.Empty;
         var name   = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Unknown";
         var role   = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Unknown";
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
 
         await IncidentSvc.SubmitAsync(new IncidentReport
         {
-            EventId                = Services.SeedService.Id.EventCcn2026,
+            EventId                = eventId,
             DateOfIncident         = _fDateOfIncident,
             DateCompleted          = _fDateCompleted,
             PersonsInvolved        = _fPersonsInvolved.Trim(),

@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @using Microsoft.EntityFrameworkCore
 @inject SponsorService SponsorSvc
+@inject ActiveEventService ActiveEventSvc
 @inject ScheduleService ScheduleSvc
 @inject AnnouncementService AnnouncementSvc
 @inject IDbContextFactory<AppDbContext> DbFactory
@@ -220,11 +221,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _sponsors = await SponsorSvc.GetAllForEventAsync(SeedService.Id.EventCcn2026);
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _sponsors = await SponsorSvc.GetAllForEventAsync(eventId);
 
         var today = CampTime.Today;
-        using var db = DbFactory.CreateDbContext();
-        var campEvent = await db.Events.FindAsync(SeedService.Id.EventCcn2026);
+        var campEvent = await ActiveEventSvc.GetActiveEventAsync();
 
         if (campEvent is not null)
         {
@@ -242,7 +243,7 @@ else
         {
             _scheduleDay = today;
         }
-        _todayEvents = await ScheduleSvc.GetForDayAsync(SeedService.Id.EventCcn2026, _scheduleDay);
+        _todayEvents = await ScheduleSvc.GetForDayAsync(eventId, _scheduleDay);
 
         var feed = await AnnouncementSvc.GetFeedAsync();
         _latestAnnouncement = feed.FirstOrDefault();

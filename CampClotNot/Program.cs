@@ -59,6 +59,7 @@ try
 
     // Services
     builder.Services.AddSingleton<ThemeService>();   // one active theme per app instance
+    builder.Services.AddScoped<ActiveEventService>();
     builder.Services.AddScoped<GroupService>();
     builder.Services.AddScoped<TransactionService>();
     builder.Services.AddScoped<BoardService>();

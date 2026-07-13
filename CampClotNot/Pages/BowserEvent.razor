@@ -1,6 +1,7 @@
 @page "/bowser"
 @attribute [Authorize(Roles = "Admin")]
 @inject BowserEventService BowserSvc
+@inject ActiveEventService ActiveEventSvc
 @inject GroupService GroupSvc
 @inject AuthenticationStateProvider Auth
 
@@ -101,13 +102,15 @@
     private bool _loading = true;
     private bool _rolling;
     private string _userName = "Admin";
+    private Guid _eventId;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await Auth.GetAuthenticationStateAsync();
         _userName = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Admin";
+        _eventId = await ActiveEventSvc.GetActiveEventIdAsync();
         _groups = await GroupSvc.GetAllAsync();
-        _scripts = await BowserSvc.GetScriptsAsync(SeedService.Id.EventCcn2026);
+        _scripts = await BowserSvc.GetScriptsAsync(_eventId);
         _loading = false;
     }
 
@@ -135,7 +138,7 @@
         await BowserSvc.BroadcastRollStart(group.GroupId, group.Name, group.Color, _activeFaces);
         await Task.Delay(500);
 
-        var (faceIndex, face) = await BowserSvc.RollAsync(group.GroupId, SeedService.Id.EventCcn2026, _userName, _selectedScriptId);
+        var (faceIndex, face) = await BowserSvc.RollAsync(group.GroupId, _eventId, _userName, _selectedScriptId);
         _results[group.GroupId] = (faceIndex, face);
 
         await Task.Delay(3000);

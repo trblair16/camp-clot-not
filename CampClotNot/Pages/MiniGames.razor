@@ -1,6 +1,7 @@
 @page "/minigames"
 @attribute [Authorize(Roles = "Admin")]
 @inject MiniGameService MiniGameSvc
+@inject ActiveEventService ActiveEventSvc
 @inject NavigationManager Nav
 
 <PageTitle>Mini-Game — Camp Clot Not</PageTitle>
@@ -170,10 +171,11 @@
     private string _phase         = "idle";   // idle | spinning | revealed
     private string? _revealedName;
 
-    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+    private Guid EventId;
 
     protected override async Task OnInitializedAsync()
     {
+        EventId = await ActiveEventSvc.GetActiveEventIdAsync();
         await LoadAsync();
         _loading = false;
     }

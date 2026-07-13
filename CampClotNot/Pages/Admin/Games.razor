@@ -1,6 +1,7 @@
 @page "/admin/games"
 @attribute [Authorize(Roles = "Admin")]
 @inject BoardService BoardSvc
+@inject ActiveEventService ActiveEventSvc
 @inject MiniGameService MiniGameSvc
 @inject BowserEventService BowserSvc
 @inject GroupService GroupSvc
@@ -432,10 +433,11 @@
     private bool    _resettingMiniGame;
     private string? _resetMiniGameMsg;
 
-    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+    private Guid EventId;
 
     protected override async Task OnInitializedAsync()
     {
+        EventId = await ActiveEventSvc.GetActiveEventIdAsync();
         await Task.WhenAll(
             LoadBoardDataAsync(),
             LoadMiniGameDataAsync(),

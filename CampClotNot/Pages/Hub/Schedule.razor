@@ -7,6 +7,7 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject AuthenticationStateProvider Auth
 @inject IJSRuntime JS
+@inject ActiveEventService ActiveEventSvc
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -642,6 +643,7 @@
     private Guid _editingId;
     private Guid _userId;
     private string? _copyingFromTitle;
+    private Guid _eventId;
 
     // Form fields
     private string _fTitle = "";
@@ -668,15 +670,16 @@
         _isAdminOrStaff = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
 
+        _eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+
         // Run all independent reference-data queries in parallel
-        using var dbEvent  = DbFactory.CreateDbContext();
         using var dbGroups = DbFactory.CreateDbContext();
-        var campEventTask  = dbEvent.Events.FindAsync(SeedService.Id.EventCcn2026).AsTask();
-        var sitTask        = ScheduleItemTypeSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+        var campEventTask  = ActiveEventSvc.GetActiveEventAsync();
+        var sitTask        = ScheduleItemTypeSvc.GetForEventAsync(_eventId);
         var locsTask       = LocationSvc.GetAllAsync();
-        var actsTask       = MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
+        var actsTask       = MiniGameSvc.GetActivitiesAsync(_eventId);
         var groupsTask     = dbGroups.Groups
-            .Where(g => g.EventId == SeedService.Id.EventCcn2026)
+            .Where(g => g.EventId == _eventId)
             .OrderBy(g => g.Name)
             .ToListAsync();
 
@@ -714,7 +717,7 @@
 
     private async Task LoadEvents()
     {
-        var events = await ScheduleSvc.GetByEventAsync(SeedService.Id.EventCcn2026);
+        var events = await ScheduleSvc.GetByEventAsync(_eventId);
 
         if (!_isAdminOrStaff && !_userGroupId.HasValue)
             events = events.Where(e => e.AppliesToAllGroups).ToList();
@@ -818,7 +821,7 @@
             ? TimeOnly.FromDateTime(endDt) : null;
         var dto = new ScheduleItemDto(
             _editingId,
-            SeedService.Id.EventCcn2026,
+            _eventId,
             DateOnly.FromDateTime(_fDate.Value),
             TimeOnly.FromDateTime(startDt),
             end,

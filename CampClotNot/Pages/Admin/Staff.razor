@@ -1,6 +1,7 @@
 @page "/admin/staff"
 @attribute [Authorize(Roles = "Admin")]
 @inject StaffDirectoryService StaffSvc
+@inject ActiveEventService ActiveEventSvc
 @inject IJSRuntime JS
 @using SixLabors.ImageSharp
 @using SixLabors.ImageSharp.Processing
@@ -229,7 +230,7 @@
 
     private async Task Reload()
     {
-        _members = await StaffSvc.GetAllAsync(SeedService.Id.EventCcn2026);
+        _members = await StaffSvc.GetAllAsync(await ActiveEventSvc.GetActiveEventIdAsync());
     }
 
     private void StartEdit(StaffMember m)
@@ -268,10 +269,11 @@
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(_fName)) return;
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
         var member = new StaffMember
         {
             StaffMemberId      = _editingId == Guid.Empty ? Guid.Empty : _editingId,
-            CampEventId        = SeedService.Id.EventCcn2026,
+            CampEventId        = eventId,
             DisplayName        = _fName,
             RoleTitle          = _fRoleTitle,
             AvatarEmoji        = _fAvatarEmoji,

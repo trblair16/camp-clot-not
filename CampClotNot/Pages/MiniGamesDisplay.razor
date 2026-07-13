@@ -2,6 +2,7 @@
 @layout DisplayLayout
 @attribute [Authorize(Roles = "Admin")]
 @inject MiniGameService MiniGameSvc
+@inject ActiveEventService ActiveEventSvc
 @inject NavigationManager Nav
 @implements IAsyncDisposable
 
@@ -109,10 +110,11 @@
     private Guid?   _revealedActivityId;
     private System.Timers.Timer? _cycleTimer;
 
-    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+    private Guid EventId;
 
     protected override async Task OnInitializedAsync()
     {
+        EventId     = await ActiveEventSvc.GetActiveEventIdAsync();
         _activities = await MiniGameSvc.GetSpinnerActivitiesAsync(EventId);
         _loading    = false;
     }

@@ -4,6 +4,7 @@
 @inject ScheduleItemTypeService ScheduleItemTypeSvc
 @inject LocationService LocationSvc
 @inject MiniGameService MiniGameSvc
+@inject ActiveEventService ActiveEventSvc
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject AuthenticationStateProvider Auth
 @inject ISnackbar Snackbar
@@ -381,6 +382,7 @@
     private bool _loading = true;
     private Guid _userId;
     private Guid _editingId;
+    private Guid _eventId;
 
     private string _fTitle = "";
     private string _fDateStr = "";
@@ -414,8 +416,8 @@
         var authState = await Auth.GetAuthenticationStateAsync();
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
 
-        using var dbEvent = DbFactory.CreateDbContext();
-        var campEvent = await dbEvent.Events.FindAsync(SeedService.Id.EventCcn2026);
+        _eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        var campEvent = await ActiveEventSvc.GetActiveEventAsync();
         if (campEvent is not null)
         {
             _minDate  = campEvent.EffDate.ToString("yyyy-MM-dd");
@@ -423,15 +425,15 @@
             _fDateStr = _minDate;
         }
 
-        _scheduleItemTypes = await ScheduleItemTypeSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+        _scheduleItemTypes = await ScheduleItemTypeSvc.GetForEventAsync(_eventId);
         _fTypeId = _scheduleItemTypes.FirstOrDefault()?.ScheduleItemTypeId ?? Guid.Empty;
 
         _locations  = await LocationSvc.GetAllAsync();
-        _activities = await MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
+        _activities = await MiniGameSvc.GetActivitiesAsync(_eventId);
 
         using var dbGroups = DbFactory.CreateDbContext();
         _groups = await dbGroups.Groups
-            .Where(g => g.EventId == SeedService.Id.EventCcn2026)
+            .Where(g => g.EventId == _eventId)
             .OrderBy(g => g.Name)
             .ToListAsync();
 
@@ -442,7 +444,7 @@
 
     private async Task Reload()
     {
-        _events  = await ScheduleSvc.GetByEventAsync(SeedService.Id.EventCcn2026);
+        _events  = await ScheduleSvc.GetByEventAsync(_eventId);
         _loading = false;
     }
 
@@ -541,7 +543,7 @@
         var isPresentation = SelectedTypeSystemName == "Presentation";
         var dto = new ScheduleItemDto(
             _editingId,
-            SeedService.Id.EventCcn2026,
+            _eventId,
             day, start, end,
             _fTitle.Trim(), _fDesc,
             _fLocationId, _fActivityId, _fTypeId,
