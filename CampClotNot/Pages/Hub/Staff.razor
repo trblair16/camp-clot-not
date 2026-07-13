@@ -1,6 +1,7 @@
 @page "/hub/staff"
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject StaffDirectoryService StaffSvc
+@inject ActiveEventService ActiveEventSvc
 @inject AuthenticationStateProvider Auth
 @inject IJSRuntime JS
 @using SixLabors.ImageSharp
@@ -195,7 +196,7 @@
 
     private async Task Reload()
     {
-        var eventId = SeedService.Id.EventCcn2026;
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
         _members = _isAdmin
             ? await StaffSvc.GetAllAsync(eventId)
             : await StaffSvc.GetVisibleAsync(eventId);
@@ -203,9 +204,9 @@
             _eligibleUsers = await StaffSvc.GetEligibleUsersAsync(eventId);
     }
 
-    private void OpenAdd()
+    private async Task OpenAdd()
     {
-        _form = new() { CampEventId = SeedService.Id.EventCcn2026, AvatarEmoji = "👤", IsVisible = true };
+        _form = new() { CampEventId = await ActiveEventSvc.GetActiveEventIdAsync(), AvatarEmoji = "👤", IsVisible = true };
         _fPhotoData = null; _fPhotoContentType = null; _currentHasPhoto = false; _photoUploadError = "";
         _fPhotoX = 50; _fPhotoY = 50;
         _showForm   = true;
@@ -307,7 +308,7 @@
 
     private async Task ImportUser(Guid userId)
     {
-        await StaffSvc.ImportUserAsync(SeedService.Id.EventCcn2026, userId);
+        await StaffSvc.ImportUserAsync(await ActiveEventSvc.GetActiveEventIdAsync(), userId);
         await Reload();
     }
 }
