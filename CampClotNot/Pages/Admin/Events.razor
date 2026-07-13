@@ -204,6 +204,7 @@
     protected override async Task OnInitializedAsync()
     {
         await Reload();
+        _fEnabledCapIds = _allCapabilities.Select(c => c.CapabilityId).ToHashSet();
         _loading = false;
     }
 
