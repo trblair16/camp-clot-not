@@ -38,6 +38,8 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid CapMiniGameSpinner = new("00000005-0005-0005-0005-000000000003");
         public static readonly Guid CapAnnouncements   = new("00000005-0005-0005-0005-000000000004");
         public static readonly Guid CapItinerary       = new("00000005-0005-0005-0005-000000000005");
+        public static readonly Guid CapBowserEvent     = new("00000005-0005-0005-0005-000000000006");
+        public static readonly Guid CapAwards          = new("00000005-0005-0005-0005-000000000007");
 
         // ActivityTypeCategories — camp activities
         public static readonly Guid CatMinuteToWinIt   = new("00000006-0006-0006-0006-000000000001");
@@ -250,14 +252,22 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedCapabilitiesAsync(AppDbContext db)
     {
-        if (await db.Capabilities.AnyAsync()) return;
-        db.Capabilities.AddRange(
-            new Capability { CapabilityId = Id.CapBoardGame,       Name = "Board Game",        Description = "Mario Party-style board game with block hits", SystemName = nameof(Feature.BoardGame) },
-            new Capability { CapabilityId = Id.CapCoinShop,        Name = "Coin Shop",         Description = "Shop where groups spend coins for rewards",     SystemName = nameof(Feature.CoinShop) },
-            new Capability { CapabilityId = Id.CapMiniGameSpinner, Name = "Mini-Game Spinner", Description = "Pre-scripted evening mini-game selector",        SystemName = nameof(Feature.MiniGameSpinner) },
-            new Capability { CapabilityId = Id.CapAnnouncements,   Name = "Announcements",     Description = "Real-time schedule announcements",              SystemName = nameof(Feature.Announcements) },
-            new Capability { CapabilityId = Id.CapItinerary,       Name = "Itinerary",         Description = "Camp itinerary and schedule",                    SystemName = nameof(Feature.Itinerary) }
-        );
+        var defs = new[]
+        {
+            new { Id = Id.CapBoardGame,       Name = "Board Game",        Description = "Mario Party-style board game with block hits",  SystemName = nameof(Feature.BoardGame) },
+            new { Id = Id.CapCoinShop,        Name = "Coin Shop",         Description = "Shop where groups spend coins for rewards",      SystemName = nameof(Feature.CoinShop) },
+            new { Id = Id.CapMiniGameSpinner, Name = "Mini-Game Spinner", Description = "Pre-scripted evening mini-game selector",        SystemName = nameof(Feature.MiniGameSpinner) },
+            new { Id = Id.CapAnnouncements,   Name = "Announcements",     Description = "Real-time schedule announcements",               SystemName = nameof(Feature.Announcements) },
+            new { Id = Id.CapItinerary,       Name = "Itinerary",         Description = "Camp itinerary and schedule",                     SystemName = nameof(Feature.Itinerary) },
+            new { Id = Id.CapBowserEvent,     Name = "Bowser Event",      Description = "Random die-roll event with projector display",   SystemName = nameof(Feature.BowserEvent) },
+            new { Id = Id.CapAwards,          Name = "Awards",            Description = "Awards ceremony leaderboard reveal",              SystemName = nameof(Feature.Awards) }
+        };
+
+        foreach (var d in defs)
+        {
+            if (await db.Capabilities.AnyAsync(c => c.CapabilityId == d.Id)) continue;
+            db.Capabilities.Add(new Capability { CapabilityId = d.Id, Name = d.Name, Description = d.Description, SystemName = d.SystemName });
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded Capabilities.");
     }
@@ -337,14 +347,17 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedEventCapabilitiesAsync(AppDbContext db)
     {
-        if (await db.EventCapabilities.AnyAsync()) return;
-        var capIds = new[] { Id.CapBoardGame, Id.CapCoinShop, Id.CapMiniGameSpinner, Id.CapAnnouncements, Id.CapItinerary };
-        db.EventCapabilities.AddRange(capIds.Select(capId => new EventCapability
+        var capIds = new[] { Id.CapBoardGame, Id.CapCoinShop, Id.CapMiniGameSpinner, Id.CapAnnouncements, Id.CapItinerary, Id.CapBowserEvent, Id.CapAwards };
+        foreach (var capId in capIds)
         {
-            EventCapabilityId = Guid.NewGuid(),
-            EventId           = Id.EventCcn2026,
-            CapabilityId      = capId
-        }));
+            if (await db.EventCapabilities.AnyAsync(e => e.EventId == Id.EventCcn2026 && e.CapabilityId == capId)) continue;
+            db.EventCapabilities.Add(new EventCapability
+            {
+                EventCapabilityId = Guid.NewGuid(),
+                EventId           = Id.EventCcn2026,
+                CapabilityId      = capId
+            });
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded EventCapabilities for CCN 2026.");
     }
