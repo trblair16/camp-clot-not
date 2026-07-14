@@ -2,6 +2,8 @@
 @attribute [Authorize(Roles = "Admin")]
 @layout DisplayLayout
 @inject NavigationManager Nav
+@inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 @using Microsoft.AspNetCore.SignalR.Client
 
 <PageTitle>Bowser Event — Display</PageTitle>
@@ -100,6 +102,15 @@
     @@keyframes bowserPulse { from { opacity: .4; } to { opacity: 1; } }
 </style>
 
+@if (!_capabilityEnabled)
+{
+    <div style="text-align:center;padding:80px 20px;color:var(--text-light)">
+        <p style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 8px;color:var(--text-dark)">Not available for this event</p>
+        <p style="font-size:14px">This feature isn't enabled for the current event.</p>
+    </div>
+}
+else
+{
 <div class="bowser-bg">
     <div class="flame"></div><div class="flame"></div><div class="flame"></div>
     <div class="flame"></div><div class="flame"></div><div class="flame"></div>
@@ -138,6 +149,7 @@
         }
     }
 </div>
+}
 
 @code {
     private enum DisplayState { Idle, Rolling, Revealed }
@@ -153,10 +165,19 @@
     private DisplayFace[] _faces = BowserEventService.DefaultFaces.Select(f => new DisplayFace(f.Emoji, f.Label)).ToArray();
     private HubConnection? _hub;
     private CancellationTokenSource? _cycleCts;
+    private bool _capabilityEnabled = true;
+    private Guid EventId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        EventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _capabilityEnabled = await CapSvc.IsEnabledAsync(EventId, Feature.BowserEvent);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
+        if (!_capabilityEnabled) return;
 
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("/livehub"))
