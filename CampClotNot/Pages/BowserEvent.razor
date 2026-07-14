@@ -1,6 +1,8 @@
 @page "/bowser"
 @attribute [Authorize(Roles = "Admin")]
 @inject BowserEventService BowserSvc
+@inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 @inject GroupService GroupSvc
 @inject AuthenticationStateProvider Auth
 
@@ -12,40 +14,47 @@
     </h2>
     <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">Each group rolls the Bowser die. Results are applied automatically.</p>
 
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
-        <a href="/bowser/display" target="_blank" class="ccn-btn" style="font-size:13px;padding:8px 16px;text-decoration:none;display:inline-block">
-            📺 Open Projector Display
-        </a>
-
-        <select value="@(_selectedScriptId?.ToString() ?? "")"
-                @onchange="OnScriptChanged"
-                style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
-            <option value="">Default Die</option>
-            @foreach (var s in _scripts)
-            {
-                <option value="@s.BowserScriptId">@s.Name</option>
-            }
-        </select>
-    </div>
-
-    @if (_activeFaces.Length > 0)
-    {
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
-            @foreach (var f in _activeFaces)
-            {
-                <span style="font-size:12px;padding:4px 10px;border:2px solid var(--black);border-radius:6px;background:var(--panel-bg);box-shadow:1px 1px 0 var(--black)">
-                    @f.Emoji @f.Label
-                </span>
-            }
-        </div>
-    }
-
     @if (_loading)
     {
         <MudProgressCircular Indeterminate="true" />
     }
+    else if (!_capabilityEnabled)
+    {
+        <div style="text-align:center;padding:80px 20px;color:var(--text-light)">
+            <p style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 8px;color:var(--text-dark)">Not available for this event</p>
+            <p style="font-size:14px">This feature isn't enabled for the current event.</p>
+        </div>
+    }
     else
     {
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+            <a href="/bowser/display" target="_blank" class="ccn-btn" style="font-size:13px;padding:8px 16px;text-decoration:none;display:inline-block">
+                📺 Open Projector Display
+            </a>
+
+            <select value="@(_selectedScriptId?.ToString() ?? "")"
+                    @onchange="OnScriptChanged"
+                    style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+                <option value="">Default Die</option>
+                @foreach (var s in _scripts)
+                {
+                    <option value="@s.BowserScriptId">@s.Name</option>
+                }
+            </select>
+        </div>
+
+        @if (_activeFaces.Length > 0)
+        {
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
+                @foreach (var f in _activeFaces)
+                {
+                    <span style="font-size:12px;padding:4px 10px;border:2px solid var(--black);border-radius:6px;background:var(--panel-bg);box-shadow:1px 1px 0 var(--black)">
+                        @f.Emoji @f.Label
+                    </span>
+                }
+            </div>
+        }
+
         <div style="display:flex;flex-direction:column;gap:12px">
             @foreach (var g in _groups)
             {
@@ -100,14 +109,21 @@
     private Dictionary<Guid, (int faceIndex, BowserFace face)> _results = new();
     private bool _loading = true;
     private bool _rolling;
+    private bool _capabilityEnabled = true;
     private string _userName = "Admin";
+    private Guid _eventId;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await Auth.GetAuthenticationStateAsync();
         _userName = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Admin";
+        _eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+
+        _capabilityEnabled = await CapSvc.IsEnabledAsync(_eventId, Feature.BowserEvent);
+        if (!_capabilityEnabled) { _loading = false; return; }
+
         _groups = await GroupSvc.GetAllAsync();
-        _scripts = await BowserSvc.GetScriptsAsync(SeedService.Id.EventCcn2026);
+        _scripts = await BowserSvc.GetScriptsAsync(_eventId);
         _loading = false;
     }
 
@@ -135,7 +151,7 @@
         await BowserSvc.BroadcastRollStart(group.GroupId, group.Name, group.Color, _activeFaces);
         await Task.Delay(500);
 
-        var (faceIndex, face) = await BowserSvc.RollAsync(group.GroupId, SeedService.Id.EventCcn2026, _userName, _selectedScriptId);
+        var (faceIndex, face) = await BowserSvc.RollAsync(group.GroupId, _eventId, _userName, _selectedScriptId);
         _results[group.GroupId] = (faceIndex, face);
 
         await Task.Delay(3000);

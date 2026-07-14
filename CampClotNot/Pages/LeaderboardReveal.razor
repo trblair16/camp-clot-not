@@ -4,6 +4,8 @@
 @using CampClotNot.Hubs
 @inject GroupService GroupSvc
 @inject IHubContext<LiveHub> Hub
+@inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 
 <PageTitle>Awards Ceremony — Admin</PageTitle>
 
@@ -13,19 +15,26 @@
     </h2>
     <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">Control the projector reveal. Open the display on the projector screen first.</p>
 
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
-        <a href="/leaderboard/reveal/display" target="_blank" class="ccn-btn" style="font-size:13px;padding:8px 16px;text-decoration:none;display:inline-block">
-            📺 Open Projector Display
-        </a>
-        <span style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--text-light)">Phase: @_phase</span>
-    </div>
-
     @if (_loading)
     {
         <MudProgressCircular Indeterminate="true" />
     }
+    else if (!_capabilityEnabled)
+    {
+        <div style="text-align:center;padding:80px 20px;color:var(--text-light)">
+            <p style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 8px;color:var(--text-dark)">Not available for this event</p>
+            <p style="font-size:14px">This feature isn't enabled for the current event.</p>
+        </div>
+    }
     else
     {
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+            <a href="/leaderboard/reveal/display" target="_blank" class="ccn-btn" style="font-size:13px;padding:8px 16px;text-decoration:none;display:inline-block">
+                📺 Open Projector Display
+            </a>
+            <span style="font-family:'Fredoka One',cursive;font-size:13px;color:var(--text-light)">Phase: @_phase</span>
+        </div>
+
         <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin-bottom:24px">
             @foreach (var entry in _ranked)
             {
@@ -94,9 +103,14 @@
     private List<GroupEntry> _ranked = new();
     private HashSet<int> _revealedRanks = new();
     private bool _loading = true;
+    private bool _capabilityEnabled = true;
 
     protected override async Task OnInitializedAsync()
     {
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _capabilityEnabled = await CapSvc.IsEnabledAsync(eventId, Feature.Awards);
+        if (!_capabilityEnabled) { _loading = false; return; }
+
         await LoadScores();
         _loading = false;
     }

@@ -3,12 +3,23 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject GroupService GroupSvc
 @inject BoardService BoardSvc
+@inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 @inject NavigationManager Nav
 @inject ThemeService ThemeSvc
 @implements IAsyncDisposable
 
 <PageTitle>Camp Clot Not — Scoreboard</PageTitle>
 
+@if (!_capabilityEnabled)
+{
+    <div style="text-align:center;padding:80px 20px;color:var(--text-light)">
+        <p style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 8px;color:var(--text-dark)">Not available for this event</p>
+        <p style="font-size:14px">This feature isn't enabled for the current event.</p>
+    </div>
+}
+else
+{
 <div style="display:flex;height:100vh;@ThemeSvc.Active.BackgroundGradient;color:white;overflow:hidden">
 
     @* ── LEFT: Board 70% ────────────────────────────────────────────────────── *@
@@ -176,10 +187,12 @@
         }
     </div>
 </div>
+}
 
 @code {
     private List<GroupEntry>      _ranked       = new();
     private bool                  _loading      = true;
+    private bool                  _capabilityEnabled = true;
     private HubConnection?        _hub;
 
     private List<BoardSpaceView>  _spaces       = new();
@@ -197,10 +210,15 @@
     private int           _cycleNumber     = 1;
     private System.Timers.Timer? _cycleTimer;
 
-    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+    private Guid EventId;
 
     protected override async Task OnInitializedAsync()
     {
+        EventId = await ActiveEventSvc.GetActiveEventIdAsync();
+
+        _capabilityEnabled = await CapSvc.IsEnabledAsync(EventId, Feature.BoardGame);
+        if (!_capabilityEnabled) { _loading = false; return; }
+
         _spaces = await BoardSvc.GetSpacesAsync(EventId);
         await RefreshAsync();
         _loading = false;

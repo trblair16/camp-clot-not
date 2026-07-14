@@ -1,6 +1,8 @@
 @page "/board"
 @attribute [Authorize(Roles = "Admin,Staff")]
 @inject BoardService BoardSvc
+@inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 @inject GroupService GroupSvc
 @inject AuthenticationStateProvider AuthState
 @inject ThemeService ThemeSvc
@@ -31,6 +33,13 @@
     {
         <div style="display:flex;justify-content:center;padding:60px 0">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+        </div>
+    }
+    else if (!_capabilityEnabled)
+    {
+        <div style="text-align:center;padding:80px 20px;color:var(--text-light)">
+            <p style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 8px;color:var(--text-dark)">Not available for this event</p>
+            <p style="font-size:14px">This feature isn't enabled for the current event.</p>
         </div>
     }
     else
@@ -219,6 +228,7 @@
     private List<Group>             _groups    = new();
     private bool                    _loading   = true;
     private bool                    _isAdmin;
+    private bool                    _capabilityEnabled = true;
 
     // 3-phase trigger state: idle → selecting → diceBlock → revealed → animating
     private string            _triggerPhase    = "idle";
@@ -238,7 +248,7 @@
     private Dictionary<Guid, int>? _livePositions;
     private HubConnection?    _hub;
 
-    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+    private Guid EventId;
 
     private static readonly (string Label, string Icon, string Color)[] _legend = new (string Label, string Icon, string Color)[]
     {
@@ -251,6 +261,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        EventId = await ActiveEventSvc.GetActiveEventIdAsync();
+
+        _capabilityEnabled = await CapSvc.IsEnabledAsync(EventId, Feature.BoardGame);
+        if (!_capabilityEnabled) { _loading = false; return; }
+
         var auth = await AuthState.GetAuthenticationStateAsync();
         _isAdmin = auth.User.IsInRole(nameof(Role.Admin));
 

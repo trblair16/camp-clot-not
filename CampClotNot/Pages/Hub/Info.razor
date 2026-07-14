@@ -5,6 +5,7 @@
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider Auth
 @inject NavigationManager Nav
+@inject ActiveEventService ActiveEventSvc
 
 <PageTitle>Info — Camp Clot Not</PageTitle>
 
@@ -301,7 +302,7 @@
         _pages = await InfoSvc.GetAllAsync();
         UpdateActivePage();
         if (IsDocumentsPage)
-            _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+            _documents = await DocSvc.GetForEventAsync(await ActiveEventSvc.GetActiveEventIdAsync());
         _loading = false;
     }
 
@@ -310,7 +311,7 @@
         if (!_pages.Any()) return;
         UpdateActivePage();
         if (IsDocumentsPage)
-            _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+            _documents = await DocSvc.GetForEventAsync(await ActiveEventSvc.GetActiveEventIdAsync());
     }
 
     private void UpdateActivePage()
@@ -346,8 +347,9 @@
         {
             if (string.IsNullOrWhiteSpace(_fDocTitle) || _fDocData is null) return;
             var docRoles = ComputeDocVisibleRoles();
-            await DocSvc.AddAsync(SeedService.Id.EventCcn2026, _fDocTitle, _fDocFileName, _fDocData, "application/pdf", docRoles, _userId);
-            _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+            var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+            await DocSvc.AddAsync(eventId, _fDocTitle, _fDocFileName, _fDocData, "application/pdf", docRoles, _userId);
+            _documents = await DocSvc.GetForEventAsync(eventId);
             CancelEdit();
             return;
         }
@@ -371,7 +373,7 @@
     {
         if (!await JS.InvokeAsync<bool>("confirm", "Delete this document?")) return;
         await DocSvc.DeleteAsync(documentId);
-        _documents = await DocSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+        _documents = await DocSvc.GetForEventAsync(await ActiveEventSvc.GetActiveEventIdAsync());
     }
 
     private async Task HandlePdfUpload(InputFileChangeEventArgs e)

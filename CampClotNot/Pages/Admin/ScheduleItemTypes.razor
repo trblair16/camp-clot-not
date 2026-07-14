@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @using Microsoft.EntityFrameworkCore
 @inject ScheduleItemTypeService ScheduleItemTypeSvc
+@inject ActiveEventService ActiveEventSvc
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject ISnackbar Snackbar
 
@@ -222,7 +223,7 @@
         _events = await db.Events.OrderByDescending(e => e.EffDate).ToListAsync();
         _selectedEventId = _events.FirstOrDefault(e => e.IsActive)?.EventId
                         ?? _events.FirstOrDefault()?.EventId
-                        ?? SeedService.Id.EventCcn2026;
+                        ?? await ActiveEventSvc.GetActiveEventIdAsync();
         await Reload();
     }
 

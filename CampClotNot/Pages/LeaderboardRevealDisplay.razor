@@ -3,6 +3,8 @@
 @layout DisplayLayout
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 @using Microsoft.AspNetCore.SignalR.Client
 @using System.Text.Json
 
@@ -162,6 +164,15 @@
     }
 </style>
 
+@if (!_capabilityEnabled)
+{
+    <div style="text-align:center;padding:80px 20px;color:var(--text-light)">
+        <p style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 8px;color:var(--text-dark)">Not available for this event</p>
+        <p style="font-size:14px">This feature isn't enabled for the current event.</p>
+    </div>
+}
+else
+{
 <div class="ceremony-bg">
     <div class="starfield">
         @foreach (var s in _stars)
@@ -269,6 +280,7 @@
         </div>
     }
 </div>
+}
 
 @code {
     private enum CPhase { Waiting, Flying, Revealing, Done }
@@ -286,6 +298,7 @@
     private int _bannerKey;
     private bool _confettiOn;
     private HubConnection? _hub;
+    private bool _capabilityEnabled = true;
 
     private static readonly string[] CColors = ["#F5C800","#E74C3C","#2980B9","#27AE60","#8E44AD","#E67E22","#FF69B4","#00CED1","#FFFFFF"];
     private readonly Star[] _stars;
@@ -305,9 +318,16 @@
         )).ToArray();
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _capabilityEnabled = await CapSvc.IsEnabledAsync(eventId, Feature.Awards);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
+        if (!_capabilityEnabled) return;
 
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("/livehub"))
