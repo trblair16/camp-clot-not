@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject MiniGameService MiniGameSvc
 @inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 @inject NavigationManager Nav
 
 <PageTitle>Mini-Game — Camp Clot Not</PageTitle>
@@ -48,6 +49,15 @@
         </a>
     </div>
 
+    @if (!_capabilityEnabled)
+    {
+        <div style="text-align:center;padding:80px 20px;color:var(--text-light)">
+            <p style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 8px;color:var(--text-dark)">Not available for this event</p>
+            <p style="font-size:14px">This feature isn't enabled for the current event.</p>
+        </div>
+    }
+    else
+    {
     @* ── Day selector ── *@
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
         <span style="font-family:'Fredoka One',cursive;font-size:14px">Camp Day:</span>
@@ -62,24 +72,21 @@
     </div>
 
     @* ── Scripted result for selected day ── *@
-    @{
-        var todayScript = _scripts?.FirstOrDefault(s => s.CampDay == _selectedDay);
-    }
     <div style="padding:14px 18px;border:3px solid var(--black);border-radius:10px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black);margin-bottom:20px">
         <div style="font-size:11px;font-weight:800;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Day @_selectedDay — Scripted Result</div>
         @if (_loading)
         {
             <MudProgressLinear Indeterminate="true" Color="Color.Warning" />
         }
-        else if (todayScript is null)
+        else if (TodayScript is null)
         {
             <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#AAA">Not scripted — set in Game Admin</div>
         }
         else
         {
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-                <div style="font-family:'Fredoka One',cursive;font-size:18px">🎮 @todayScript.ActivityName</div>
-                @if (todayScript.IsTriggered)
+                <div style="font-family:'Fredoka One',cursive;font-size:18px">🎮 @TodayScript.ActivityName</div>
+                @if (TodayScript.IsTriggered)
                 {
                     <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">✓ Triggered</MudChip>
                 }
@@ -92,7 +99,7 @@
         @if (_phase == "idle")
         {
             <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large"
-                       Disabled="@(todayScript is null || todayScript.IsTriggered)"
+                       Disabled="@(TodayScript is null || TodayScript.IsTriggered)"
                        OnClick="StartSpinAsync"
                        Style="font-family:'Fredoka One',cursive;font-size:16px;border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)">
                 🎰 Start Spin
@@ -136,8 +143,8 @@
         {
             @foreach (var activity in _activities)
             {
-                var isScripted  = todayScript?.ActivityId == activity.ActivityId;
-                var isTriggered = isScripted && todayScript!.IsTriggered;
+                var isScripted  = TodayScript?.ActivityId == activity.ActivityId;
+                var isTriggered = isScripted && TodayScript!.IsTriggered;
                 <div class="mg-activity-row @(isTriggered ? "triggered" : isScripted ? "scripted" : "")">
                     <span style="font-size:20px">🎮</span>
                     <div style="flex:1;min-width:0">
@@ -157,6 +164,7 @@
             }
         }
     }
+    }
 </div>
 
 <LogTransactionDialog @ref="_txDialog" OnTransactionPosted="LoadAsync" />
@@ -165,6 +173,7 @@
     private List<Activity>           _activities = new();
     private List<MiniGameScriptView> _scripts    = new();
     private bool                     _loading    = true;
+    private bool                     _capabilityEnabled = true;
     private LogTransactionDialog     _txDialog = null!;
 
     private int    _selectedDay   = 1;
@@ -173,9 +182,13 @@
 
     private Guid EventId;
 
+    private MiniGameScriptView? TodayScript => _scripts?.FirstOrDefault(s => s.CampDay == _selectedDay);
+
     protected override async Task OnInitializedAsync()
     {
         EventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _capabilityEnabled = await CapSvc.IsEnabledAsync(EventId, Feature.MiniGameSpinner);
+        if (!_capabilityEnabled) { _loading = false; return; }
         await LoadAsync();
         _loading = false;
     }
