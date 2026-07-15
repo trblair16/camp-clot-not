@@ -82,7 +82,7 @@
             </div>
 
             <div style="margin-bottom:16px">
-                <MudSwitch T="bool" @bind-Value="_fIsActive" Label="Active event" Color="MudBlazor.Color.Primary" />
+                <MudSwitch @key="_editingId" T="bool" @bind-Value="_fIsActive" Label="Active event" Color="MudBlazor.Color.Primary" />
                 <div style="font-size:11px;color:var(--text-light)">Only one event should be active at a time. Setting this active will deactivate others.</div>
             </div>
 
