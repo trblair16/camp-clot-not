@@ -201,10 +201,15 @@
     private bool _showNewType;
     private string _newTypeName = "";
 
+    // New events default to only the non-game-specific capabilities on (Announcements, Itinerary).
+    // Board Game, Coin Shop, Mini-Game Spinner, Bowser Event, and Awards are Mario-camp-specific
+    // and must be explicitly turned on per event rather than requiring an admin to uncheck them.
+    private static readonly HashSet<string> DefaultEnabledCapabilitySystemNames = new() { "Announcements", "Itinerary" };
+
     protected override async Task OnInitializedAsync()
     {
         await Reload();
-        _fEnabledCapIds = _allCapabilities.Select(c => c.CapabilityId).ToHashSet();
+        _fEnabledCapIds = _allCapabilities.Where(c => DefaultEnabledCapabilitySystemNames.Contains(c.SystemName)).Select(c => c.CapabilityId).ToHashSet();
         _loading = false;
     }
 
@@ -240,7 +245,7 @@
         _fEndDate = null;
         _fIsActive = false;
         _saveError = "";
-        _fEnabledCapIds = _allCapabilities.Select(c => c.CapabilityId).ToHashSet();
+        _fEnabledCapIds = _allCapabilities.Where(c => DefaultEnabledCapabilitySystemNames.Contains(c.SystemName)).Select(c => c.CapabilityId).ToHashSet();
         if (_eventTypes.Any()) _fEventTypeId = _eventTypes.First().EventTypeId;
     }
 
