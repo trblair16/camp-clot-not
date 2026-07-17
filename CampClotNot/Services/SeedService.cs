@@ -239,22 +239,26 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedThemeAsync(AppDbContext db)
     {
+        // Sampled directly from the Men's Retreat flyer (Columbus GA riverwalk photo,
+        // HBDA in blue, MEN'S RETREAT in gold, red date ribbon, dark wood sign, tree
+        // foliage) so the theme actually matches the logo instead of an approximation.
         var mensRetreatPalette = new ThemeConfig(
             AppTitle:      "HBDA MEN'S RETREAT",
             AppSubtitle:   "HBDA Men's Retreat 2026",
-            BgStart:       "#0d1f14",
-            BgMid:         "#1a3620",
-            BgEnd:         "#2e2416",
-            Primary:       "#C9A063",   // warm wood/tan
-            Accent:        "#8B4A2B",   // rust/burnt orange
-            Success:       "#3E7C4A",   // forest green
-            Info:          "#5C7A6E",   // muted sage
-            TrackFill:     "rgba(62,124,74,0.35)",
-            TrackBg:       "rgba(26,54,32,0.5)",
+            BgStart:       "#071c33",   // deep navy — from the flyer's sky blue, darkened
+            BgMid:         "#16241a",   // dark forest — from the riverwalk tree foliage
+            BgEnd:         "#2b1608",   // dark wood brown — from the wood sign
+            Primary:       "#D9A62A",   // gold — matches "MEN'S RETREAT" lettering
+            Accent:        "#D71E03",   // red — matches the date ribbon
+            Success:       "#4C7A34",   // green — matches sunlit tree foliage
+            Info:          "#0F75DC",   // blue — matches "HBDA" lettering exactly
+            TrackFill:     "rgba(15,117,220,0.35)",
+            TrackBg:       "rgba(22,36,26,0.5)",
             Currency1Icon: "🪙",
             Currency1Name: "Coins",
             Currency2Icon: "⭐",
-            Currency2Name: "Stars"
+            Currency2Name: "Stars",
+            BannerAssetPath: "/img/mens-retreat-banner.webp"
         );
 
         var defs = new[]
