@@ -120,3 +120,7 @@
         background: var(--panel-bg) !important;
     }
 </style>
+
+@code {
+    protected override async Task OnInitializedAsync() => await ThemeSvc.LoadAsync();
+}

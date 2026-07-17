@@ -214,6 +214,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await ThemeSvc.LoadAsync();
         EventId = await ActiveEventSvc.GetActiveEventIdAsync();
 
         _capabilityEnabled = await CapSvc.IsEnabledAsync(EventId, Feature.BoardGame);

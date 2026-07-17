@@ -31,6 +31,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
         // Themes
         public static readonly Guid ThemeSuperMarioParty2026 = new("00000004-0004-0004-0004-000000000001");
+        public static readonly Guid ThemeMensRetreat2026 = new("00000004-0004-0004-0004-000000000002");
 
         // Capabilities
         public static readonly Guid CapBoardGame       = new("00000005-0005-0005-0005-000000000001");
@@ -238,14 +239,45 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedThemeAsync(AppDbContext db)
     {
-        if (await db.Themes.AnyAsync()) return;
-        db.Themes.Add(new Theme
+        var mensRetreatPalette = new ThemeConfig(
+            AppTitle:      "HBDA MEN'S RETREAT",
+            AppSubtitle:   "HBDA Men's Retreat 2026",
+            BgStart:       "#0d1f14",
+            BgMid:         "#1a3620",
+            BgEnd:         "#2e2416",
+            Primary:       "#C9A063",   // warm wood/tan
+            Accent:        "#8B4A2B",   // rust/burnt orange
+            Success:       "#3E7C4A",   // forest green
+            Info:          "#5C7A6E",   // muted sage
+            TrackFill:     "rgba(62,124,74,0.35)",
+            TrackBg:       "rgba(26,54,32,0.5)",
+            Currency1Icon: "🪙",
+            Currency1Name: "Coins",
+            Currency2Icon: "⭐",
+            Currency2Name: "Stars"
+        );
+
+        var defs = new[]
         {
-            ThemeId     = Id.ThemeSuperMarioParty2026,
-            Name        = "Super Mario Party",
-            Year        = 2026,
-            Description = "Super Mario Party themed camp — CCN 2026"
-        });
+            new { Id = Id.ThemeSuperMarioParty2026, Name = "Super Mario Party", Year = 2026,
+                  Description = "Super Mario Party themed camp — CCN 2026", Palette = (string?)null, Logo = (string?)null },
+            new { Id = Id.ThemeMensRetreat2026, Name = "Men's Retreat", Year = 2026,
+                  Description = "HBDA Men's Retreat 2026 — forest green & tan", Palette = mensRetreatPalette.ToJson(), Logo = "/img/mens-retreat-nav-logo.webp" },
+        };
+
+        foreach (var d in defs)
+        {
+            if (await db.Themes.AnyAsync(t => t.ThemeId == d.Id)) continue;
+            db.Themes.Add(new Theme
+            {
+                ThemeId        = d.Id,
+                Name           = d.Name,
+                Year           = d.Year,
+                Description    = d.Description,
+                ColorPalette   = d.Palette,
+                LogoAssetPath  = d.Logo
+            });
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded Themes.");
     }

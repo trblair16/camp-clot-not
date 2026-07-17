@@ -1,3 +1,7 @@
+using System.Text.Json;
+using CampClotNot.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace CampClotNot.Services;
 
 public static class CampTime
@@ -62,13 +66,25 @@ public record ThemeConfig(
         --text-mid: #4A4035;
         --text-light: #8A7D6A;
         """;
+
+    private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    // Serialized into Theme.ColorPalette so each event can carry its own ThemeConfig.
+    public string ToJson() => JsonSerializer.Serialize(this, JsonOpts);
+
+    public static ThemeConfig? FromJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return JsonSerializer.Deserialize<ThemeConfig>(json, JsonOpts); }
+        catch (JsonException) { return null; }
+    }
 }
 
-public class ThemeService
+public class ThemeService(IDbContextFactory<AppDbContext> factory, ActiveEventService activeEventSvc)
 {
     private static readonly ThemeConfig MarioParty2026 = new(
         AppTitle:      "SUPER CLOT NOT PARTY '26",
-        AppSubtitle:   "Camp Clot Not · Super Mario Party",
+        AppSubtitle:   "Super Party '26",   // drives the nav badge text — matches the literal it replaces
         // Deep royal blue-purple — matches Mario Party title screens and Switch UI chrome.
         // The old teal-green (#0d2b1e) read as sci-fi, not Mario.
         BgStart:       "#08091e",
@@ -89,5 +105,28 @@ public class ThemeService
 
     // Default defined after MarioParty2026 to avoid null-before-init warning
     public static readonly ThemeConfig Default = MarioParty2026;
-    public ThemeConfig Active { get; } = MarioParty2026;
+
+    private ThemeConfig? _active;
+    public ThemeConfig Active => _active ?? Default;
+
+    // Kept separate from ThemeConfig/ColorPalette — logo is a DB column on Theme,
+    // not part of the JSON-serialized color config. Null falls back to the CCN nav logo.
+    public string? LogoAssetPath { get; private set; }
+
+    /// Resolves the active event's Theme row into a ThemeConfig + logo path.
+    /// Idempotent per scope/circuit — safe to call from multiple components.
+    public async Task LoadAsync()
+    {
+        if (_active is not null) return;
+
+        var ev = await activeEventSvc.GetActiveEventAsync();
+        if (ev is null) { _active = Default; return; }
+
+        using var db = factory.CreateDbContext();
+        var themeRow = await db.Themes.AsNoTracking()
+            .FirstOrDefaultAsync(t => t.ThemeId == ev.ThemeId);
+
+        _active = ThemeConfig.FromJson(themeRow?.ColorPalette) ?? Default;
+        LogoAssetPath = themeRow?.LogoAssetPath;
+    }
 }
