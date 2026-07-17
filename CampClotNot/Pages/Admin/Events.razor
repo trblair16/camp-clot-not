@@ -81,6 +81,18 @@
                 }
             </div>
 
+            <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Theme</div>
+                <select value="@_fThemeId.ToString()"
+                        @onchange="e => _fThemeId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : _fThemeId"
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                    @foreach (var th in _themes)
+                    {
+                        <option value="@th.ThemeId">@th.Name</option>
+                    }
+                </select>
+            </div>
+
             <div style="margin-bottom:16px">
                 <div style="display:flex;align-items:center;gap:8px">
                     <input type="checkbox" checked="@_fIsActive" @onchange="() => _fIsActive = !_fIsActive" />
@@ -197,6 +209,7 @@
     private DateOnly? _fStartDate;
     private DateOnly? _fEndDate;
     private Guid _fEventTypeId;
+    private Guid _fThemeId;
     private bool _fIsActive;
     private List<Capability> _allCapabilities = new();
     private HashSet<Guid> _fEnabledCapIds = new();
@@ -225,6 +238,8 @@
         _allCapabilities = await db.Capabilities.OrderBy(c => c.Name).ToListAsync();
         if (_fEventTypeId == Guid.Empty && _eventTypes.Any())
             _fEventTypeId = _eventTypes.First().EventTypeId;
+        if (_fThemeId == Guid.Empty && _themes.Any())
+            _fThemeId = _themes.First().ThemeId;
     }
 
     private async Task StartEdit(Event ev)
@@ -234,6 +249,7 @@
         _fStartDate = ev.EffDate;
         _fEndDate = ev.ExpDate;
         _fEventTypeId = ev.EventTypeId;
+        _fThemeId = ev.ThemeId;
         _fIsActive = ev.IsActive;
         _saveError = "";
         var enabled = await CapSvc.GetEnabledCapabilitiesAsync(ev.EventId);
@@ -250,6 +266,7 @@
         _saveError = "";
         _fEnabledCapIds = _allCapabilities.Where(c => DefaultEnabledCapabilitySystemNames.Contains(c.SystemName)).Select(c => c.CapabilityId).ToHashSet();
         if (_eventTypes.Any()) _fEventTypeId = _eventTypes.First().EventTypeId;
+        if (_themes.Any()) _fThemeId = _themes.First().ThemeId;
     }
 
     private async Task AddEventTypeAsync()
@@ -325,7 +342,7 @@
         if (_editingId == Guid.Empty)
         {
             targetEventId = Guid.NewGuid();
-            var themeId = _themes.Any() ? _themes.First().ThemeId : Guid.Empty;
+            var themeId = _fThemeId != Guid.Empty ? _fThemeId : (_themes.Any() ? _themes.First().ThemeId : Guid.Empty);
             db.Events.Add(new Event
             {
                 EventId = targetEventId,
@@ -347,6 +364,7 @@
                 existing.EffDate = _fStartDate.Value;
                 existing.ExpDate = _fEndDate.Value;
                 existing.EventTypeId = _fEventTypeId;
+                existing.ThemeId = _fThemeId;
                 existing.IsActive = _fIsActive;
             }
         }
