@@ -6,9 +6,9 @@
 @* ── MOBILE HEADER ──────────────────────────────────────────────── *@
 <div class="nav-mobile-header">
     <div style="display:flex;align-items:center;gap:6px">
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
             <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:36px;width:auto;object-fit:contain" />
-            <span style="font-family:'Fredoka One',cursive;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;margin-left:8px">@ThemeSvc.Active.AppSubtitle</span>
+            <span style="font-family:'Fredoka One',cursive;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
         </div>
     </div>
 </div>
@@ -16,9 +16,9 @@
 @* ── DESKTOP HEADER ─────────────────────────────────────────────── *@
 <div class="nav-desktop-header">
     <div style="display:flex;align-items:center;gap:6px">
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
             <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:42px;width:auto;object-fit:contain" />
-            <span style="font-family:'Fredoka One',cursive;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;margin-left:8px">@ThemeSvc.Active.AppSubtitle</span>
+            <span style="font-family:'Fredoka One',cursive;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
         </div>
     </div>
 
@@ -54,6 +54,8 @@
                 </div>
 
                 @* ── Game dropdown ── *@
+                @if (AnyGameEnabled())
+                {
                 <div class="nav-game-dropdown">
                     @if (_gameDropdownOpen)
                     {
@@ -92,6 +94,7 @@
                         </div>
                     }
                 </div>
+                }
 
                 <AuthorizeView Roles="Admin" Context="adminDesktopCtx">
                     @if (_coinShopEnabled)
@@ -156,11 +159,14 @@
                 <span class="tab-icon"><img src="/img/icons/hub.svg?v=3" alt="" /></span>
                 <span>Hub</span>
             </button>
-            <button class="nav-tab @(IsGameActive() ? "active" : "")"
-                    @onclick="() => { _gameSheetOpen = !_gameSheetOpen; _adminSheetOpen = false; }">
-                <span class="tab-icon"><img src="/img/icons/game.svg?v=3" alt="" /></span>
-                <span>Game</span>
-            </button>
+            @if (AnyGameEnabled())
+            {
+                <button class="nav-tab @(IsGameActive() ? "active" : "")"
+                        @onclick="() => { _gameSheetOpen = !_gameSheetOpen; _adminSheetOpen = false; }">
+                    <span class="tab-icon"><img src="/img/icons/game.svg?v=3" alt="" /></span>
+                    <span>Game</span>
+                </button>
+            }
             <AuthorizeView Roles="Admin" Context="mobileAdminCtx">
                 <button class="nav-tab @(_adminSheetOpen ? "active" : "")"
                         @onclick="() => { _adminSheetOpen = !_adminSheetOpen; _gameSheetOpen = false; }">
@@ -173,7 +179,7 @@
 </AuthorizeView>
 
 @* ── GAME BOTTOM SHEET (mobile) ───────────────────────────────────── *@
-@if (_gameSheetOpen)
+@if (_gameSheetOpen && AnyGameEnabled())
 {
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _gameSheetOpen = false"></div>
@@ -244,6 +250,12 @@
     private bool _bowserEnabled = true;
     private bool _coinShopEnabled = true;
     private bool _awardsEnabled = true;
+
+    // Whole "Game" tab (Leaderboard + Board/Mini-Game/Bowser/Awards) hides when
+    // an event has none of these on — Men's Retreat and future non-scoring HBDA
+    // events won't use it at all.
+    private bool AnyGameEnabled() =>
+        _boardGameEnabled || _miniGameEnabled || _bowserEnabled || _awardsEnabled;
 
     protected override async Task OnInitializedAsync()
     {
