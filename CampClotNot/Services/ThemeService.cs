@@ -53,7 +53,12 @@ public record ThemeConfig(
     string PanelBg = "#FFFEF7",
     string TextDark = "#1A1A1A",
     string TextMid = "#4A4035",
-    string TextLight = "#8A7D6A"
+    string TextLight = "#8A7D6A",
+    // The polka-dot page texture is a party/confetti motif, not a neutral pattern —
+    // changing its color alone still reads as "Mario Party but recolored." Themes that
+    // aren't a kids' party (Men's Retreat, future HBDA events) turn it off entirely for
+    // a plain background instead of trying to reskin it.
+    bool UseDotPattern = true
 )
 {
     public string BackgroundGradient =>
@@ -73,6 +78,7 @@ public record ThemeConfig(
         --font-display: 'Fredoka One', cursive;
         --bg-base: {BgBase};
         --bg-dot: {BgDot};
+        --bg-dot-image: {(UseDotPattern ? $"radial-gradient(circle, {BgDot} 1.5px, transparent 1.5px)" : "none")};
         --black: #1A1A1A;
         --panel-bg: {PanelBg};
         --panel-shadow: 4px 4px 0 #1A1A1A;
@@ -122,7 +128,8 @@ public class ThemeService(IDbContextFactory<AppDbContext> factory, ActiveEventSe
         PanelBg:   "#FFFEF7",
         TextDark:  "#1A1A1A",
         TextMid:   "#4A4035",
-        TextLight: "#8A7D6A"
+        TextLight: "#8A7D6A",
+        UseDotPattern: true
     );
 
     // Default defined after MarioParty2026 to avoid null-before-init warning

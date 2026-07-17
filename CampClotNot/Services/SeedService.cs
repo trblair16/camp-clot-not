@@ -266,7 +266,9 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             PanelBg:   "#FBF6E8",
             TextDark:  "#2A1D0F",
             TextMid:   "#5C4A32",
-            TextLight: "#8C795C"
+            TextLight: "#8C795C",
+            // Polka dots read as party/confetti no matter the color — off for a retreat.
+            UseDotPattern: false
         );
 
         var defs = new[]
