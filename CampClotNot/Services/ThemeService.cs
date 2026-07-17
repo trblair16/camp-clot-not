@@ -39,7 +39,10 @@ public record ThemeConfig(
     string Currency1Icon,
     string Currency1Name,
     string Currency2Icon,
-    string Currency2Name
+    string Currency2Name,
+    // Full-size hero image for the Dashboard — distinct from Theme.LogoAssetPath,
+    // which is cropped/sized for the compact nav slot. Null falls back to CCN's hero logo.
+    string? BannerAssetPath = null
 )
 {
     public string BackgroundGradient =>

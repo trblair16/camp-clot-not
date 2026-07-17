@@ -6,6 +6,8 @@
 @inject ScheduleService ScheduleSvc
 @inject AnnouncementService AnnouncementSvc
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject ThemeService ThemeSvc
+@inject CapabilityService CapSvc
 
 <PageTitle>Home — Camp Clot Not</PageTitle>
 
@@ -69,10 +71,20 @@ else
         <img src="/img/ccn-coin.webp" aria-hidden="true"
              style="position:absolute;bottom:-4px;right:24px;width:48px;opacity:.18;transform:rotate(25deg)" />
 
-        @* Logo *@
-        <img src="/img/ccn-logo-2026.webp" alt="Camp Clot Not Super Party '26"
-             style="height:72px;width:auto;object-fit:contain;margin-bottom:14px;
-                    filter:drop-shadow(2px 3px 0 rgba(0,0,0,.25))" />
+        @* Logo — full theme banners (photo-based, detail-heavy) get a larger framed
+           treatment; CCN's compact transparent mark keeps its original small size. *@
+        @if (ThemeSvc.Active.BannerAssetPath is { } bannerSrc)
+        {
+            <img src="@bannerSrc" alt="@ThemeSvc.Active.AppTitle"
+                 style="width:100%;max-width:420px;height:auto;object-fit:contain;margin-bottom:14px;
+                        border-radius:10px;border:3px solid var(--black);box-shadow:4px 4px 0 var(--black)" />
+        }
+        else
+        {
+            <img src="/img/ccn-logo-2026.webp" alt="Camp Clot Not Super Party '26"
+                 style="height:72px;width:auto;object-fit:contain;margin-bottom:14px;
+                        filter:drop-shadow(2px 3px 0 rgba(0,0,0,.25))" />
+        }
 
         @* Welcome text *@
         <div style="font-family:'Fredoka One',cursive;font-size:clamp(20px,5vw,28px);
@@ -86,7 +98,10 @@ else
 
         @* Quick nav pills *@
         <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px">
-            <a href="/leaderboard"      class="hero-pill"><img src="/img/icons/leaderboard.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Leaderboard</a>
+            @if (_anyGameEnabled)
+            {
+                <a href="/leaderboard" class="hero-pill"><img src="/img/icons/leaderboard.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Leaderboard</a>
+            }
             <a href="/hub/schedule"     class="hero-pill"><img src="/img/icons/schedule.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Schedule</a>
             <a href="/hub/staff"        class="hero-pill"><img src="/img/icons/person.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Staff</a>
             <a href="/hub/info"         class="hero-pill"><img src="/img/icons/hub.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Camp Info</a>
@@ -218,11 +233,18 @@ else
     private bool                _loading            = true;
     private DateOnly            _scheduleDay;
     private bool                _showingFirstDay;
+    private bool                _anyGameEnabled;
 
     protected override async Task OnInitializedAsync()
     {
+        await ThemeSvc.LoadAsync();
         var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
         _sponsors = await SponsorSvc.GetAllForEventAsync(eventId);
+
+        _anyGameEnabled = await CapSvc.IsEnabledAsync(eventId, Feature.BoardGame)
+            || await CapSvc.IsEnabledAsync(eventId, Feature.MiniGameSpinner)
+            || await CapSvc.IsEnabledAsync(eventId, Feature.BowserEvent)
+            || await CapSvc.IsEnabledAsync(eventId, Feature.Awards);
 
         var today = CampTime.Today;
         var campEvent = await ActiveEventSvc.GetActiveEventAsync();
