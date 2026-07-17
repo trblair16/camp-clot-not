@@ -266,21 +266,36 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             new { Id = Id.ThemeSuperMarioParty2026, Name = "Super Mario Party", Year = 2026,
                   Description = "Super Mario Party themed camp — CCN 2026", Palette = (string?)null, Logo = (string?)null },
             new { Id = Id.ThemeMensRetreat2026, Name = "Men's Retreat", Year = 2026,
-                  Description = "HBDA Men's Retreat 2026 — forest green & tan", Palette = mensRetreatPalette.ToJson(), Logo = "/img/mens-retreat-nav-logo.webp" },
+                  Description = "HBDA Men's Retreat 2026 — colors sampled from the flyer", Palette = mensRetreatPalette.ToJson(), Logo = "/img/mens-retreat-nav-logo.webp" },
         };
 
+        // True upsert (not insert-only-if-missing like most other seed methods) — Theme has
+        // no admin edit UI yet (deferred to v2.0's self-service /admin/theme), so the seed is
+        // the only source of truth today and must sync on every restart as the palette gets
+        // tuned. Once /admin/theme ships, this needs to stop overwriting admin-made edits.
         foreach (var d in defs)
         {
-            if (await db.Themes.AnyAsync(t => t.ThemeId == d.Id)) continue;
-            db.Themes.Add(new Theme
+            var existing = await db.Themes.FirstOrDefaultAsync(t => t.ThemeId == d.Id);
+            if (existing is null)
             {
-                ThemeId        = d.Id,
-                Name           = d.Name,
-                Year           = d.Year,
-                Description    = d.Description,
-                ColorPalette   = d.Palette,
-                LogoAssetPath  = d.Logo
-            });
+                db.Themes.Add(new Theme
+                {
+                    ThemeId        = d.Id,
+                    Name           = d.Name,
+                    Year           = d.Year,
+                    Description    = d.Description,
+                    ColorPalette   = d.Palette,
+                    LogoAssetPath  = d.Logo
+                });
+            }
+            else
+            {
+                existing.Name          = d.Name;
+                existing.Year          = d.Year;
+                existing.Description   = d.Description;
+                existing.ColorPalette  = d.Palette;
+                existing.LogoAssetPath = d.Logo;
+            }
         }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded Themes.");
