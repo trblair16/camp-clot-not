@@ -258,7 +258,15 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             Currency1Name: "Coins",
             Currency2Icon: "⭐",
             Currency2Name: "Stars",
-            BannerAssetPath: "/img/mens-retreat-banner.webp"
+            BannerAssetPath: "/img/mens-retreat-banner.webp",
+            // Page chrome — warm khaki/parchment instead of CCN's cream, dark brown text
+            // instead of near-black, evoking the wood sign and outdoor riverwalk setting.
+            BgBase:    "#EDE0C4",
+            BgDot:     "#D4C29A",
+            PanelBg:   "#FBF6E8",
+            TextDark:  "#2A1D0F",
+            TextMid:   "#5C4A32",
+            TextLight: "#8C795C"
         );
 
         var defs = new[]
