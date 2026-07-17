@@ -42,7 +42,18 @@ public record ThemeConfig(
     string Currency2Name,
     // Full-size hero image for the Dashboard — distinct from Theme.LogoAssetPath,
     // which is cropped/sized for the compact nav slot. Null falls back to CCN's hero logo.
-    string? BannerAssetPath = null
+    string? BannerAssetPath = null,
+    // Page chrome — background, panels, text. Defaulted to CCN's exact current values so
+    // the Mario theme (and any older serialized palette missing these fields) is unaffected.
+    // --black (borders/shadows) is deliberately NOT themed — the thick black border/offset
+    // shadow is the constant neo-brutalist signature across every theme, only the colors
+    // inside it change.
+    string BgBase = "#F2ECD8",
+    string BgDot = "#DDD5BE",
+    string PanelBg = "#FFFEF7",
+    string TextDark = "#1A1A1A",
+    string TextMid = "#4A4035",
+    string TextLight = "#8A7D6A"
 )
 {
     public string BackgroundGradient =>
@@ -60,14 +71,14 @@ public record ThemeConfig(
         --track-fill: {TrackFill};
         --track-bg: {TrackBg};
         --font-display: 'Fredoka One', cursive;
-        --bg-base: #F2ECD8;
-        --bg-dot: #DDD5BE;
+        --bg-base: {BgBase};
+        --bg-dot: {BgDot};
         --black: #1A1A1A;
-        --panel-bg: #FFFEF7;
+        --panel-bg: {PanelBg};
         --panel-shadow: 4px 4px 0 #1A1A1A;
-        --text-dark: #1A1A1A;
-        --text-mid: #4A4035;
-        --text-light: #8A7D6A;
+        --text-dark: {TextDark};
+        --text-mid: {TextMid};
+        --text-light: {TextLight};
         """;
 
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
@@ -103,7 +114,15 @@ public class ThemeService(IDbContextFactory<AppDbContext> factory, ActiveEventSe
         Currency1Icon: "🪙",
         Currency1Name: "Coins",
         Currency2Icon: "⭐",
-        Currency2Name: "Stars"
+        Currency2Name: "Stars",
+        // Explicit rather than relying on the record's defaults — keeps every event's
+        // theme, including CCN's, a fully self-contained palette as more events are added.
+        BgBase:    "#F2ECD8",
+        BgDot:     "#DDD5BE",
+        PanelBg:   "#FFFEF7",
+        TextDark:  "#1A1A1A",
+        TextMid:   "#4A4035",
+        TextLight: "#8A7D6A"
     );
 
     // Default defined after MarioParty2026 to avoid null-before-init warning
