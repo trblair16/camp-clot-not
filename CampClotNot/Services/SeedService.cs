@@ -268,7 +268,16 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             TextMid:   "#5C4A32",
             TextLight: "#8C795C",
             // Polka dots read as party/confetti no matter the color — off for a retreat.
-            UseDotPattern: false
+            UseDotPattern: false,
+            // Warm-professional shape language: clean rounded sans instead of the comic-book
+            // display font, thin warm-brown border instead of thick black, soft warm-tinted
+            // shadow instead of a hard offset — reads as a nonprofit event app, not a re-skinned
+            // party game, while keeping some warmth (rounded corners, soft shadow) rather than
+            // going flat/corporate-cold.
+            HeadingFont: "'Poppins', sans-serif",
+            BorderColor: "#B89968",
+            BorderWidth: "1.5px",
+            PanelShadow: "0 4px 14px rgba(42,29,15,0.16)"
         );
 
         var defs = new[]
