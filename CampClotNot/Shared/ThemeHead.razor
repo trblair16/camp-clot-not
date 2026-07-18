@@ -4,7 +4,7 @@
 @inject ThemeService ThemeSvc
 
 <style>
-    @@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
+    @@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@600;700&family=Nunito:wght@400;600;700;800;900&display=swap');
 
     :root {
         @((MarkupString)ThemeSvc.Active.CssVariables)
@@ -20,31 +20,32 @@
         color: var(--text-dark);
     }
 
-    /* ── Shared neo-brutalist panel ── */
+    /* ── Shared panel — border/shadow shape (thick offset vs. thin+soft) is theme-driven ── */
     .ccn-panel {
         background: var(--panel-bg);
-        border: 3px solid var(--black);
+        border: var(--panel-border);
         border-radius: 10px;
         box-shadow: var(--panel-shadow);
     }
 
-    /* ── Shared neo-brutalist button ── */
+    /* ── Shared button ── */
     .ccn-btn {
-        font-family: 'Fredoka One', cursive;
+        font-family: var(--font-display);
+        font-weight: 700;
         font-size: 13px;
         letter-spacing: .4px;
         padding: 9px 18px;
         border-radius: 7px;
-        border: 3px solid var(--black);
+        border: var(--panel-border);
         cursor: pointer;
-        box-shadow: 3px 3px 0 var(--black);
-        transition: transform .1s, box-shadow .1s;
-        color: var(--black);
+        box-shadow: var(--panel-shadow);
+        transition: transform .12s ease, filter .12s ease;
+        color: var(--text-dark);
         background: var(--panel-bg);
     }
-    .ccn-btn:hover  { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--black); }
-    .ccn-btn:active { transform: translate(2px,2px);   box-shadow: 1px 1px 0 var(--black); }
-    .ccn-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--black); }
+    .ccn-btn:hover  { transform: translateY(-2px); filter: brightness(1.05); }
+    .ccn-btn:active { transform: translateY(1px);  filter: brightness(0.95); }
+    .ccn-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; filter: none; }
 
     /* ── Rank rows ── */
     .ccn-rank-row {
@@ -52,13 +53,14 @@
         align-items: center;
         gap: 12px;
         padding: 12px 14px;
-        border-bottom: 3px solid var(--black);
+        border-bottom: var(--border-width) solid var(--border-color);
     }
     .ccn-rank-row:last-child { border-bottom: none; }
 
     /* ── Section label ── */
     .ccn-section-label {
-        font-family: 'Fredoka One', cursive;
+        font-family: var(--font-display);
+        font-weight: 700;
         font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 2px;
@@ -85,19 +87,20 @@
         .ccn-push-banner { display: flex !important; }
     }
 
-    /* ── MudTabs neo-brutalist override ── */
+    /* ── MudTabs override — border/shadow/font all theme-driven ── */
     .mud-tabs {
-        border: 3px solid var(--black);
+        border: var(--panel-border);
         border-radius: 10px;
-        box-shadow: 4px 4px 0 var(--black);
+        box-shadow: var(--panel-shadow);
         overflow: hidden;
     }
     .mud-tabs-header {
         background: var(--panel-bg) !important;
-        border-bottom: 3px solid var(--black) !important;
+        border-bottom: var(--border-width) solid var(--border-color) !important;
     }
     .mud-tabs-header .mud-tab {
-        font-family: 'Fredoka One', cursive !important;
+        font-family: var(--font-display) !important;
+        font-weight: 700 !important;
         font-size: 13px !important;
         color: var(--text-mid) !important;
         opacity: 1 !important;
@@ -105,15 +108,15 @@
     }
     .mud-tabs-header .mud-tab:hover {
         background-color: rgba(26,26,26,0.05) !important;
-        color: var(--black) !important;
+        color: var(--text-dark) !important;
     }
     .mud-tabs-header .mud-tab.mud-tab-active {
-        color: var(--black) !important;
+        color: var(--text-dark) !important;
         background-color: var(--bg-base) !important;
     }
     .mud-tab-slider {
-        background: var(--black) !important;
-        background-color: var(--black) !important;
+        background: var(--border-color) !important;
+        background-color: var(--border-color) !important;
         height: 4px !important;
     }
     .mud-tabs-panels {

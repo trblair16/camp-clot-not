@@ -3,7 +3,7 @@
 }
 
 h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-appbar-text {
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-display); font-weight: 700;
 }
 
 #blazor-error-ui {
@@ -45,7 +45,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     justify-content: center;
     gap: 10px;
     padding: 9px 16px;
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-display); font-weight: 700;
     font-size: 14px;
     border-bottom: 3px solid #1A1A1A;
 }
@@ -65,7 +65,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     color: white;
 }
 .ccn-reconnect-reload-btn {
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-display); font-weight: 700;
     font-size: 12px;
     padding: 3px 12px;
     background: rgba(255,255,255,.9);
@@ -119,7 +119,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     z-index: 50;
 }
 .nav-link {
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-display); font-weight: 700;
     font-size: 12px;
     padding: 6px 14px;
     border-radius: 6px;
@@ -142,9 +142,9 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     top: calc(100% + 8px);
     right: 0;
     background: var(--panel-bg);
-    border: 3px solid var(--black);
+    border: var(--panel-border);
     border-radius: 10px;
-    box-shadow: 4px 4px 0 var(--black);
+    box-shadow: var(--panel-shadow);
     min-width: 180px;
     z-index: 51;
     overflow: hidden;
@@ -156,9 +156,9 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     gap: 8px;
     width: 100%;
     padding: 12px 16px;
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-display); font-weight: 700;
     font-size: 13px;
-    color: var(--black);
+    color: var(--text-dark);
     text-decoration: none;
     border: none;
     border-bottom: 2px solid #E8E0CC;
@@ -200,7 +200,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     left: 0;
     right: 0;
     background: var(--bg-base);
-    border-top: 4px solid var(--black);
+    border-top: var(--border-width) solid var(--border-color);
     z-index: 40;
     height: calc(60px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
@@ -223,7 +223,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     cursor: pointer;
     text-decoration: none;
     color: var(--text-light);
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-display); font-weight: 700;
     font-size: 10px;
     letter-spacing: 0.5px;
     transition: color .15s, border-color .15s;
@@ -231,8 +231,8 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     appearance: none;
 }
 .nav-tab.active {
-    color: var(--black);
-    border-top-color: var(--black);
+    color: var(--text-dark);
+    border-top-color: var(--border-color);
 }
 .nav-tab .tab-icon { font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; }
 .nav-tab .tab-icon svg { width: 22px; height: 22px; display: block; }
@@ -251,9 +251,9 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     max-height: calc(70vh - 60px);
     overflow-y: auto;
     background: var(--panel-bg);
-    border-top: 4px solid var(--black);
+    border-top: var(--border-width) solid var(--border-color);
     border-radius: 16px 16px 0 0;
-    box-shadow: 0 -4px 0 var(--black);
+    box-shadow: 0 -4px 0 var(--border-color);
     z-index: 52;
     animation: slideUp .2s ease;
 }
@@ -265,9 +265,9 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     align-items: center;
     gap: 12px;
     padding: 16px 20px;
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-display); font-weight: 700;
     font-size: 16px;
-    color: var(--black);
+    color: var(--text-dark);
     text-decoration: none;
     border: none;
     border-bottom: 2px solid #E8E0CC;
