@@ -58,7 +58,15 @@ public record ThemeConfig(
     // changing its color alone still reads as "Mario Party but recolored." Themes that
     // aren't a kids' party (Men's Retreat, future HBDA events) turn it off entirely for
     // a plain background instead of trying to reskin it.
-    bool UseDotPattern = true
+    bool UseDotPattern = true,
+    // Typography + border/shadow "shape language" — the other half of what reads as
+    // Mario Party independent of color: the bold comic-style heading font and the thick
+    // black offset hard-shadow (neo-brutalist game-UI convention). Defaulted to CCN's
+    // current exact values so Mario is unaffected.
+    string HeadingFont = "'Fredoka One', cursive",
+    string BorderColor = "#1A1A1A",
+    string BorderWidth = "3px",
+    string PanelShadow = "4px 4px 0 #1A1A1A"
 )
 {
     public string BackgroundGradient =>
@@ -75,13 +83,16 @@ public record ThemeConfig(
         --color-info: {Info};
         --track-fill: {TrackFill};
         --track-bg: {TrackBg};
-        --font-display: 'Fredoka One', cursive;
+        --font-display: {HeadingFont};
         --bg-base: {BgBase};
         --bg-dot: {BgDot};
         --bg-dot-image: {(UseDotPattern ? $"radial-gradient(circle, {BgDot} 1.5px, transparent 1.5px)" : "none")};
         --black: #1A1A1A;
+        --border-color: {BorderColor};
+        --border-width: {BorderWidth};
         --panel-bg: {PanelBg};
-        --panel-shadow: 4px 4px 0 #1A1A1A;
+        --panel-border: {BorderWidth} solid {BorderColor};
+        --panel-shadow: {PanelShadow};
         --text-dark: {TextDark};
         --text-mid: {TextMid};
         --text-light: {TextLight};
@@ -129,7 +140,11 @@ public class ThemeService(IDbContextFactory<AppDbContext> factory, ActiveEventSe
         TextDark:  "#1A1A1A",
         TextMid:   "#4A4035",
         TextLight: "#8A7D6A",
-        UseDotPattern: true
+        UseDotPattern: true,
+        HeadingFont: "'Fredoka One', cursive",
+        BorderColor: "#1A1A1A",
+        BorderWidth: "3px",
+        PanelShadow: "4px 4px 0 #1A1A1A"
     );
 
     // Default defined after MarioParty2026 to avoid null-before-init warning
