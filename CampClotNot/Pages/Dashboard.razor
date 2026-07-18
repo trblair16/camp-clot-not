@@ -272,7 +272,7 @@ else
         }
         _todayEvents = await ScheduleSvc.GetForDayAsync(eventId, _scheduleDay);
 
-        var feed = await AnnouncementSvc.GetFeedAsync();
+        var feed = await AnnouncementSvc.GetFeedAsync(eventId);
         _latestAnnouncement = feed.FirstOrDefault();
 
         _loading = false;

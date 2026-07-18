@@ -1,6 +1,7 @@
 @page "/hub/announcements"
 @attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
 @inject AnnouncementService AnnouncementSvc
+@inject ActiveEventService ActiveEventSvc
 @inject AuthenticationStateProvider Auth
 @inject IJSRuntime JS
 
@@ -139,6 +140,7 @@
     private IEnumerable<string> _pushTargetRoles = new HashSet<string>();
     private static readonly string[] _availableReactions = ["✅", "❤️", "⭐", "😂", "😢", "❓"];
     private Guid _reactionPickerOpen;
+    private Guid _eventId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -146,7 +148,8 @@
         _isAdmin  = authState.User.IsInRole("Admin");
         _canPost  = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
         _loading = false;
     }
 
@@ -155,28 +158,28 @@
         if (string.IsNullOrWhiteSpace(_newTitle)) return;
         var priority = _isAdmin ? _newPriority : AnnouncementPriority.Normal;
         var roles = _pushTargetRoles.Any() ? _pushTargetRoles.ToArray() : null;
-        await AnnouncementSvc.PostAsync(_newTitle, _newBody, priority, _userId, roles);
+        await AnnouncementSvc.PostAsync(_eventId, _newTitle, _newBody, priority, _userId, roles);
         _newTitle = ""; _newBody = ""; _newPriority = AnnouncementPriority.Normal;
         _pushTargetRoles = new HashSet<string>();
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
     }
 
     private async Task TogglePin(Announcement a)
     {
         await AnnouncementSvc.PinAsync(a.AnnouncementId, !a.IsPinned);
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
     }
 
     private async Task Archive(Guid id)
     {
         if (!await JS.InvokeAsync<bool>("confirm", "Archive this announcement?")) return;
         await AnnouncementSvc.ArchiveAsync(id);
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
     }
 
     private async Task React(Guid announcementId, string emoji)
     {
         await AnnouncementSvc.ToggleReactionAsync(announcementId, emoji, _userId);
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
     }
 }
