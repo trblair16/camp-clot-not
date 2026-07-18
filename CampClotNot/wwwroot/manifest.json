@@ -1,7 +1,7 @@
 {
-  "name": "Camp Clot Not — Super Party '26",
-  "short_name": "CCN 2026",
-  "description": "Staff dashboard for Super Clot Not Party 2026",
+  "name": "HBDA Events",
+  "short_name": "HBDA Events",
+  "description": "Staff dashboard for HBDA events",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F2ECD8",
