@@ -676,10 +676,12 @@
         _isGuest = guestEventId.HasValue;
         _eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
 
-        // Run all independent reference-data queries in parallel
+        // Run all independent reference-data queries in parallel — each on its own DbContext
+        // instance, since DbContext isn't thread-safe for concurrent operations on one instance.
         using var dbGroups = DbFactory.CreateDbContext();
+        using var dbEvent  = DbFactory.CreateDbContext();
         var campEventTask  = _isGuest
-            ? dbGroups.Events.AsNoTracking().FirstOrDefaultAsync(e => e.EventId == _eventId)
+            ? dbEvent.Events.AsNoTracking().FirstOrDefaultAsync(e => e.EventId == _eventId)
             : ActiveEventSvc.GetActiveEventAsync();
         var sitTask        = ScheduleItemTypeSvc.GetForEventAsync(_eventId);
         var locsTask       = LocationSvc.GetAllAsync();
