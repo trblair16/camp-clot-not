@@ -3,6 +3,7 @@
 @inject ThemeService ThemeSvc
 @inject AuthenticationStateProvider AuthState
 @inject IJSRuntime JS
+@inject GuestAccessService GuestSvc
 
 <ThemeHead />
 <MudThemeProvider IsDarkMode="false" Theme="@_mudTheme" />
@@ -11,7 +12,14 @@
 
 <ProjectorOverlay Visible="_showProjector" OnClose="@(() => _showProjector = false)" />
 
-<AppNav OnLeaderboardClick="@(() => _showProjector = true)" />
+@if (_isGuest)
+{
+    <GuestNav />
+}
+else
+{
+    <AppNav OnLeaderboardClick="@(() => _showProjector = true)" />
+}
 
 @if (_showPushBanner)
 {
@@ -33,10 +41,17 @@
 @code {
     private bool _showProjector;
     private bool _showPushBanner;
+    private bool _isGuest;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        _isGuest = GuestSvc.GetGuestEventId(state.User).HasValue;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
+        if (!firstRender || _isGuest) return;
         var state = await AuthState.GetAuthenticationStateAsync();
         if (state.User.HasClaim("mustChangePassword", "true"))
             Nav.NavigateTo("/change-password", forceLoad: false);

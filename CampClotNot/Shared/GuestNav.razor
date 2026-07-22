@@ -1,0 +1,14 @@
+@inject NavigationManager Nav
+
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--black);border-bottom:3px solid var(--black)">
+    <img src="/img/ccn-logo-nav.webp" alt="Camp Clot Not" style="height:34px;width:auto;object-fit:contain" />
+    <div style="display:flex;gap:6px">
+        <a href="/hub/schedule" style="padding:8px 14px;border-radius:8px;font-family:'Fredoka One',cursive;font-size:13px;text-decoration:none;color:@(IsActive("/hub/schedule") ? "#1A1A1A" : "#F5C800");background:@(IsActive("/hub/schedule") ? "#F5C800" : "transparent")">Schedule</a>
+        <a href="/hub/announcements" style="padding:8px 14px;border-radius:8px;font-family:'Fredoka One',cursive;font-size:13px;text-decoration:none;color:@(IsActive("/hub/announcements") ? "#1A1A1A" : "#F5C800");background:@(IsActive("/hub/announcements") ? "#F5C800" : "transparent")">Announcements</a>
+    </div>
+</div>
+
+@code {
+    private bool IsActive(string href) =>
+        ("/" + Nav.ToBaseRelativePath(Nav.Uri)).StartsWith(href, StringComparison.OrdinalIgnoreCase);
+}
