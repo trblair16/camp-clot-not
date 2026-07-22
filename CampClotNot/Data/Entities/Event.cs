@@ -9,6 +9,7 @@ public class Event
     public DateOnly EffDate { get; set; }
     public DateOnly ExpDate { get; set; }
     public bool IsActive { get; set; }
+    public string? GuestCode { get; set; }
 
     public EventType EventType { get; set; } = null!;
     public Theme Theme { get; set; } = null!;
