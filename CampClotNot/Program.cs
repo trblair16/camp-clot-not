@@ -229,6 +229,26 @@ try
         ctx.Response.Redirect("/login");
     });
 
+    // Guest join flow — cookie sign-in requires a real HTTP response, not a Blazor SignalR circuit,
+    // same reason /account/login is a native form POST rather than a Blazor button click.
+    app.MapPost("/account/join", async (HttpContext ctx, GuestAccessService guestSvc) =>
+    {
+        var form = await ctx.Request.ReadFormAsync();
+        var code = form["code"].ToString();
+        var ev = await guestSvc.ValidateCodeAsync(code);
+        if (ev is null) return Results.Redirect("/join?error=true");
+        await guestSvc.SignInGuestAsync(ctx, ev);
+        return Results.Redirect("/hub/schedule");
+    }).AllowAnonymous();
+
+    app.MapGet("/join/{code}", async (string code, HttpContext ctx, GuestAccessService guestSvc) =>
+    {
+        var ev = await guestSvc.ValidateCodeAsync(code);
+        if (ev is null) return Results.Redirect("/join?error=true");
+        await guestSvc.SignInGuestAsync(ctx, ev);
+        return Results.Redirect("/hub/schedule");
+    }).AllowAnonymous();
+
     // Serve sponsor logos stored as bytea in the database
     app.MapGet("/sponsors/logo/{id:guid}", async (Guid id, SponsorService svc) =>
     {
