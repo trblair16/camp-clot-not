@@ -273,6 +273,17 @@ try
         return Results.File(loc.ImageData, loc.ImageContentType ?? "image/jpeg");
     }).AllowAnonymous();
 
+    app.MapGet("/admin/events/{id:guid}/guest-qr", async (Guid id, HttpRequest req, IDbContextFactory<AppDbContext> factory, GuestAccessService guestSvc) =>
+    {
+        using var db = factory.CreateDbContext();
+        var ev = await db.Events.FindAsync(id);
+        if (ev?.GuestCode is null) return Results.NotFound();
+
+        var joinUrl = $"{req.Scheme}://{req.Host}/join/{Uri.EscapeDataString(ev.GuestCode)}";
+        var png = guestSvc.GenerateJoinQrPng(joinUrl);
+        return Results.File(png, "image/png");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
     app.MapGet("/hub/info/{slug}/pdf", async (string slug, HttpContext ctx, IDbContextFactory<AppDbContext> factory) =>
     {
         using var db = factory.CreateDbContext();
