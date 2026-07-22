@@ -1,8 +1,9 @@
 @page "/hub/announcements"
-@attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
+@attribute [Authorize(Policy = "HubGuestAccess")]
 @inject AnnouncementService AnnouncementSvc
 @inject AuthenticationStateProvider Auth
 @inject IJSRuntime JS
+@inject GuestAccessService GuestSvc
 
 <PageTitle>Announcements — Camp Clot Not</PageTitle>
 
@@ -14,7 +15,10 @@
     }
 </style>
 
-<HubSubNav />
+@if (!_isGuest)
+{
+    <HubSubNav />
+}
 
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 16px"><img src="/img/icons/announcements.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Announcements</h2>
@@ -72,6 +76,8 @@
                             @{
                                 var reactions = AnnouncementService.ParseReactions(a.ReactionsJson);
                             }
+                            @if (!_isGuest)
+                            {
                             <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;align-items:center">
                                 @foreach (var emoji in reactions.Keys.OrderBy(k => Array.IndexOf(_availableReactions, k)))
                                 {
@@ -108,6 +114,7 @@
                                     }
                                 }
                             </div>
+                            }
                         </div>
                         @if (_isAdmin)
                         {
@@ -131,6 +138,7 @@
     private bool _loading = true;
     private bool _isAdmin;
     private bool _canPost;
+    private bool _isGuest;
     private Guid _userId;
     private List<Announcement> _feed = new();
     private string _newTitle = "";
@@ -145,6 +153,7 @@
         var authState = await Auth.GetAuthenticationStateAsync();
         _isAdmin  = authState.User.IsInRole("Admin");
         _canPost  = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
+        _isGuest  = GuestSvc.GetGuestEventId(authState.User).HasValue;
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
         _feed = await AnnouncementSvc.GetFeedAsync();
         _loading = false;
