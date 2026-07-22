@@ -49,7 +49,13 @@ try
             opt.ExpireTimeSpan = TimeSpan.FromHours(24);
             opt.SlidingExpiration = true;
         });
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("HubGuestAccess", policy => policy.RequireAssertion(ctx =>
+            ctx.User.IsInRole("Admin") || ctx.User.IsInRole("Staff") ||
+            ctx.User.IsInRole("Volunteer") || ctx.User.IsInRole("MedicalStaff") ||
+            ctx.User.HasClaim(c => c.Type == GuestClaimTypes.EventId)));
+    });
     builder.Services.AddMemoryCache();
 
     // Repositories
@@ -75,6 +81,7 @@ try
     builder.Services.AddScoped<SponsorService>();
     builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<BowserEventService>();
+    builder.Services.AddScoped<GuestAccessService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddSingleton<PushNotificationService>();
     builder.Services.AddScoped<SeedService>();
