@@ -1,11 +1,16 @@
 @page "/hub/sponsors"
-@attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
+@attribute [Authorize(Policy = "HubGuestAccess")]
 @inject SponsorService SponsorSvc
 @inject ActiveEventService ActiveEventSvc
+@inject GuestAccessService GuestSvc
+@inject AuthenticationStateProvider Auth
 
 <PageTitle>Sponsors — Camp Clot Not</PageTitle>
 
-<HubSubNav HideFabOnMobile="true" />
+@if (!_isGuest)
+{
+    <HubSubNav HideFabOnMobile="true" />
+}
 
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/trophy.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Sponsors</h2>
@@ -92,10 +97,15 @@
 @code {
     private List<Sponsor> _sponsors = [];
     private bool _loading = true;
+    private bool _isGuest;
 
     protected override async Task OnInitializedAsync()
     {
-        _sponsors = await SponsorSvc.GetAllForEventAsync(await ActiveEventSvc.GetActiveEventIdAsync());
+        var authState = await Auth.GetAuthenticationStateAsync();
+        var guestEventId = GuestSvc.GetGuestEventId(authState.User);
+        _isGuest = guestEventId.HasValue;
+        var eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
+        _sponsors = await SponsorSvc.GetAllForEventAsync(eventId);
         _loading  = false;
     }
 

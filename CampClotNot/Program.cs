@@ -49,7 +49,13 @@ try
             opt.ExpireTimeSpan = TimeSpan.FromHours(24);
             opt.SlidingExpiration = true;
         });
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("HubGuestAccess", policy => policy.RequireAssertion(ctx =>
+            ctx.User.IsInRole("Admin") || ctx.User.IsInRole("Staff") ||
+            ctx.User.IsInRole("Volunteer") || ctx.User.IsInRole("MedicalStaff") ||
+            ctx.User.HasClaim(c => c.Type == GuestClaimTypes.EventId)));
+    });
     builder.Services.AddMemoryCache();
 
     // Repositories
@@ -75,6 +81,7 @@ try
     builder.Services.AddScoped<SponsorService>();
     builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<BowserEventService>();
+    builder.Services.AddScoped<GuestAccessService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddSingleton<PushNotificationService>();
     builder.Services.AddScoped<SeedService>();
@@ -222,6 +229,20 @@ try
         ctx.Response.Redirect("/login");
     });
 
+    // Guest join flow — cookie sign-in requires a real HTTP response, not a Blazor SignalR circuit,
+    // same reason /account/login is a native form POST rather than a Blazor button click.
+    // The QR code links to the bare /join page (not a code-carrying deep link) — scanning is a
+    // shortcut to the entry form, not a substitute for typing the code.
+    app.MapPost("/account/join", async (HttpContext ctx, GuestAccessService guestSvc) =>
+    {
+        var form = await ctx.Request.ReadFormAsync();
+        var code = form["code"].ToString();
+        var ev = await guestSvc.ValidateCodeAsync(code);
+        if (ev is null) return Results.Redirect("/join?error=true");
+        await guestSvc.SignInGuestAsync(ctx, ev);
+        return Results.Redirect("/hub/schedule");
+    }).AllowAnonymous();
+
     // Serve sponsor logos stored as bytea in the database
     app.MapGet("/sponsors/logo/{id:guid}", async (Guid id, SponsorService svc) =>
     {
@@ -245,6 +266,19 @@ try
         if (loc?.ImageData is null) return Results.NotFound();
         return Results.File(loc.ImageData, loc.ImageContentType ?? "image/jpeg");
     }).AllowAnonymous();
+
+    app.MapGet("/admin/events/{id:guid}/guest-qr", async (Guid id, HttpRequest req, IDbContextFactory<AppDbContext> factory, GuestAccessService guestSvc) =>
+    {
+        using var db = factory.CreateDbContext();
+        var ev = await db.Events.FindAsync(id);
+        if (ev?.GuestCode is null) return Results.NotFound();
+
+        // Links to the bare /join entry form, not a code-carrying deep link — scanning still
+        // requires typing the code shown on the flyer, by design.
+        var joinUrl = $"{req.Scheme}://{req.Host}/join";
+        var png = guestSvc.GenerateJoinQrPng(joinUrl);
+        return Results.File(png, "image/png");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
 
     app.MapGet("/hub/info/{slug}/pdf", async (string slug, HttpContext ctx, IDbContextFactory<AppDbContext> factory) =>
     {

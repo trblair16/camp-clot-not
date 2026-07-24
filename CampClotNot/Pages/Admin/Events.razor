@@ -102,6 +102,18 @@
             </div>
 
             <div style="margin-bottom:16px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Guest Code</div>
+                <input type="text" @bind="_fGuestCode" placeholder="e.g. MENSRETREAT26"
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;text-transform:uppercase" />
+                <div style="font-size:11px;color:var(--text-light);margin-top:4px">Attendees scan a QR code or type this to reach a read-only Schedule/Announcements view. Leave blank to disable guest access for this event.</div>
+                @if (_editingId != Guid.Empty && !string.IsNullOrWhiteSpace(_fGuestCode))
+                {
+                    <a class="ccn-btn" style="display:inline-block;margin-top:8px;font-size:11px;padding:6px 10px;text-decoration:none"
+                       href="/admin/events/@_editingId/guest-qr" target="_blank">Generate QR</a>
+                }
+            </div>
+
+            <div style="margin-bottom:16px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px">Capabilities</div>
                 @foreach (var cap in _allCapabilities)
                 {
@@ -211,6 +223,7 @@
     private Guid _fEventTypeId;
     private Guid _fThemeId;
     private bool _fIsActive;
+    private string _fGuestCode = "";
     private List<Capability> _allCapabilities = new();
     private HashSet<Guid> _fEnabledCapIds = new();
     private string _saveError = "";
@@ -251,6 +264,7 @@
         _fEventTypeId = ev.EventTypeId;
         _fThemeId = ev.ThemeId;
         _fIsActive = ev.IsActive;
+        _fGuestCode = ev.GuestCode ?? "";
         _saveError = "";
         var enabled = await CapSvc.GetEnabledCapabilitiesAsync(ev.EventId);
         _fEnabledCapIds = enabled.Select(c => c.CapabilityId).ToHashSet();
@@ -263,6 +277,7 @@
         _fStartDate = null;
         _fEndDate = null;
         _fIsActive = false;
+        _fGuestCode = "";
         _saveError = "";
         _fEnabledCapIds = _allCapabilities.Where(c => DefaultEnabledCapabilitySystemNames.Contains(c.SystemName)).Select(c => c.CapabilityId).ToHashSet();
         if (_eventTypes.Any()) _fEventTypeId = _eventTypes.First().EventTypeId;
@@ -318,6 +333,17 @@
 
         using var db = DbFactory.CreateDbContext();
 
+        if (!string.IsNullOrWhiteSpace(_fGuestCode))
+        {
+            var normalized = _fGuestCode.Trim().ToUpperInvariant();
+            var codeTaken = await db.Events.AnyAsync(e => e.GuestCode == normalized && e.EventId != _editingId);
+            if (codeTaken)
+            {
+                _saveError = "That guest code is already used by another event.";
+                return;
+            }
+        }
+
         if (!_fIsActive && _editingId != Guid.Empty)
         {
             var editingIsCurrentlyActive = await db.Events.Where(e => e.EventId == _editingId).Select(e => e.IsActive).FirstOrDefaultAsync();
@@ -351,7 +377,8 @@
                 ExpDate = _fEndDate.Value,
                 EventTypeId = _fEventTypeId,
                 ThemeId = themeId,
-                IsActive = _fIsActive
+                IsActive = _fIsActive,
+                GuestCode = string.IsNullOrWhiteSpace(_fGuestCode) ? null : _fGuestCode.Trim().ToUpperInvariant()
             });
         }
         else
@@ -366,6 +393,7 @@
                 existing.EventTypeId = _fEventTypeId;
                 existing.ThemeId = _fThemeId;
                 existing.IsActive = _fIsActive;
+                existing.GuestCode = string.IsNullOrWhiteSpace(_fGuestCode) ? null : _fGuestCode.Trim().ToUpperInvariant();
             }
         }
 

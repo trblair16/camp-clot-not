@@ -1,6 +1,7 @@
 @inject NavigationManager Nav
 @inject IHttpContextAccessor HttpCtx
 @inject AuthenticationStateProvider AuthState
+@inject GuestAccessService GuestSvc
 
 @code {
     protected override async Task OnInitializedAsync()
@@ -8,9 +9,11 @@
         var http = HttpCtx.HttpContext;
         if (http is not null && !http.Response.HasStarted)
         {
-            // During prerendering: authenticated users who lack a role go to dashboard,
-            // unauthenticated users go to login.
-            if (http.User.Identity?.IsAuthenticated == true)
+            // During prerendering: guests go back to their read-only schedule view,
+            // authenticated staff who lack the role go to dashboard, unauthenticated users go to login.
+            if (GuestSvc.GetGuestEventId(http.User).HasValue)
+                http.Response.Redirect("/hub/schedule");
+            else if (http.User.Identity?.IsAuthenticated == true)
                 http.Response.Redirect("/dashboard");
             else
                 http.Response.Redirect("/login");
@@ -18,7 +21,9 @@
         else
         {
             var state = await AuthState.GetAuthenticationStateAsync();
-            if (state.User.Identity?.IsAuthenticated == true)
+            if (GuestSvc.GetGuestEventId(state.User).HasValue)
+                Nav.NavigateTo("/hub/schedule", replace: true);
+            else if (state.User.Identity?.IsAuthenticated == true)
                 Nav.NavigateTo("/dashboard", replace: true);
             else
                 Nav.NavigateTo("/login", forceLoad: true);

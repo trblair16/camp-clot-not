@@ -129,6 +129,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(p => p.Slug)
             .IsUnique();
 
+        // Event: unique guest join code (nullable — Postgres allows multiple NULLs under a unique index)
+        modelBuilder.Entity<Event>()
+            .HasIndex(e => e.GuestCode)
+            .IsUnique();
+
         // Activity → Location (optional): explicit FK to avoid shadow property bug
         modelBuilder.Entity<Activity>()
             .HasOne(a => a.Location)
