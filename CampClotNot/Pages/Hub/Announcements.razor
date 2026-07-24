@@ -155,9 +155,10 @@
         var authState = await Auth.GetAuthenticationStateAsync();
         _isAdmin  = authState.User.IsInRole("Admin");
         _canPost  = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
-        _isGuest  = GuestSvc.GetGuestEventId(authState.User).HasValue;
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
-        _eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        var guestEventId = GuestSvc.GetGuestEventId(authState.User);
+        _isGuest = guestEventId.HasValue;
+        _eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
         _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
         _loading = false;
     }

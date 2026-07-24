@@ -47,9 +47,8 @@ else
     {
         var state = await AuthState.GetAuthenticationStateAsync();
         _isGuest = GuestSvc.GetGuestEventId(state.User).HasValue;
+        await ThemeSvc.LoadAsync();
     }
-
-    protected override async Task OnInitializedAsync() => await ThemeSvc.LoadAsync();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
