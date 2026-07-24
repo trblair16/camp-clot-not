@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ccn-shell-v7';
+const CACHE_NAME = 'ccn-shell-v8';
 const SHELL_ASSETS = [
     '/offline.html',
     '/app.css?v=8',
