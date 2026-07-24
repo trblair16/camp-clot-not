@@ -3,6 +3,8 @@
 @inject TransactionService TxSvc
 @inject GroupService GroupSvc
 @inject IDialogService DialogService
+@inject ActiveEventService ActiveEventSvc
+@inject CapabilityService CapSvc
 
 <PageTitle>Transactions — Camp Clot Not</PageTitle>
 
@@ -40,6 +42,13 @@
     @if (_loading)
     {
         <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_capabilityEnabled)
+    {
+        <div style="text-align:center;padding:80px 20px;color:var(--text-light)">
+            <p style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 8px;color:var(--text-dark)">Not available for this event</p>
+            <p style="font-size:14px">This feature isn't enabled for the current event.</p>
+        </div>
     }
     else if (!FilteredTransactions.Any())
     {
@@ -178,6 +187,7 @@
     private List<Transaction> _transactions = new();
     private List<Group> _groups = new();
     private bool _loading = true;
+    private bool _capabilityEnabled = true;
     private string _search = "";
     private string _filterGroup = "";
     private string _filterType = "";
@@ -202,6 +212,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _capabilityEnabled = await CapSvc.IsEnabledAsync(eventId, Feature.CoinShop);
+        if (!_capabilityEnabled) { _loading = false; return; }
+
         _groups = await GroupSvc.GetAllAsync();
         await LoadAsync();
     }

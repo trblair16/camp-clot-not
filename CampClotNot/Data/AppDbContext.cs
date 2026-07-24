@@ -118,9 +118,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(e => e.ScheduleItemTypeId);
 
+        // Announcement → Event: explicit FK to avoid shadow property bug
+        modelBuilder.Entity<Announcement>()
+            .HasOne(a => a.Event)
+            .WithMany()
+            .HasForeignKey(a => a.EventId);
+
         // InfoPage: unique index on Slug
         modelBuilder.Entity<InfoPage>()
             .HasIndex(p => p.Slug)
+            .IsUnique();
+
+        // Event: unique guest join code (nullable — Postgres allows multiple NULLs under a unique index)
+        modelBuilder.Entity<Event>()
+            .HasIndex(e => e.GuestCode)
             .IsUnique();
 
         // Activity → Location (optional): explicit FK to avoid shadow property bug

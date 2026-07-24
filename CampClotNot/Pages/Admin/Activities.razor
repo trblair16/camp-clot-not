@@ -1,6 +1,7 @@
 @page "/admin/activities"
 @attribute [Authorize(Roles = "Admin")]
 @inject MiniGameService MiniGameSvc
+@inject ActiveEventService ActiveEventSvc
 @inject LocationService LocationSvc
 @inject ISnackbar Snackbar
 
@@ -20,7 +21,7 @@
 </style>
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 4px"><img src="/img/icons/dice.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Activities</h2>
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 4px"><img src="/img/icons/dice.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Activities</h2>
     <p style="font-size:13px;color:var(--text-light);margin:0 0 20px">
         Mini-game activities available in the evening spinner and schedule group assignments.
     </p>
@@ -30,10 +31,10 @@
         @* ── Form panel (desktop) / mobile overlay ── *@
         <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
              @onclick="CloseFormOverlay">
-        <div class="admin-act-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 300px;min-width:240px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+        <div class="admin-act-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 300px;min-width:240px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Activity" : "Edit Activity")</h3>
+                <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Activity" : "Edit Activity")</h3>
                 @if (_mobileFormOpen)
                 {
                     <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
@@ -43,20 +44,20 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name</div>
                 <input type="text" @bind="_fName" placeholder="e.g. Mushroom Kingdom Trivia"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Description (optional)</div>
                 <input type="text" @bind="_fDescription" placeholder="Short description"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:16px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Location (optional — used for board space image)</div>
                 <select value="@(_fLocationId?.ToString() ?? "")"
                         @onchange="e => _fLocationId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box">
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box">
                     <option value="">— No location —</option>
                     @foreach (var loc in _locations)
                     {
@@ -85,7 +86,7 @@
             }
             else if (!_activities.Any())
             {
-                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No activities yet. Add the first one →</p>
+                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No activities yet. Add the first one →</p>
             }
             else
             {
@@ -93,9 +94,9 @@
                     @foreach (var a in _activities)
                     {
                         var locName = a.LocationId.HasValue ? _locations.FirstOrDefault(l => l.LocationId == a.LocationId.Value)?.Name : null;
-                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                             <div style="flex:1;min-width:0">
-                                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black);margin-bottom:4px">@a.Name</div>
+                                <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark);margin-bottom:4px">@a.Name</div>
                                 @if (!string.IsNullOrEmpty(a.Description))
                                 {
                                     <div style="font-size:12px;color:var(--text-mid);margin-bottom:3px">@a.Description</div>
@@ -113,15 +114,15 @@
                     }
                 </div>
 
-                <div class="admin-act-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div class="admin-act-table" style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Description</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Location</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:center">Spinner</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Name</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Description</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Location</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:center">Spinner</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -173,7 +174,8 @@
 
     private async Task Reload()
     {
-        _activities = await MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _activities = await MiniGameSvc.GetActivitiesAsync(eventId);
     }
 
     private void StartEdit(Activity a)
@@ -196,7 +198,8 @@
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(_fName)) return;
-        await MiniGameSvc.UpsertActivityAsync(_editingId, SeedService.Id.EventCcn2026, _fName.Trim(), _fDescription.Trim(), _fLocationId);
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        await MiniGameSvc.UpsertActivityAsync(_editingId, eventId, _fName.Trim(), _fDescription.Trim(), _fLocationId);
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
         CancelEdit();
         await Reload();

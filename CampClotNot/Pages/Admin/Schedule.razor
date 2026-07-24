@@ -4,6 +4,7 @@
 @inject ScheduleItemTypeService ScheduleItemTypeSvc
 @inject LocationService LocationSvc
 @inject MiniGameService MiniGameSvc
+@inject ActiveEventService ActiveEventSvc
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject AuthenticationStateProvider Auth
 @inject ISnackbar Snackbar
@@ -29,21 +30,21 @@
 </style>
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/schedule.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Schedule Events</h2>
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/schedule.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Schedule Events</h2>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Form panel (desktop) / mobile overlay ── *@
         <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
              @onclick="CloseFormOverlay">
-        <div class="admin-sched-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 340px;min-width:280px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+        <div class="admin-sched-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 340px;min-width:280px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
             @if (!string.IsNullOrEmpty(_copyingFromTitle))
             {
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;font-family:'Nunito',sans-serif">Copying: @_copyingFromTitle</div>
             }
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">
+                <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">
                     @(!string.IsNullOrEmpty(_copyingFromTitle) ? "Copy to New Day" : _editingId == Guid.Empty ? "Add Event" : "Edit Event")
                 </h3>
                 @if (_mobileFormOpen)
@@ -55,26 +56,26 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Title</div>
                 <input type="text" @bind="_fTitle" placeholder="e.g. Morning Swim"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Day</div>
                 <input type="date" value="@_fDateStr" min="@_minDate" max="@_maxDate"
                        @onchange="e => _fDateStr = e.Value?.ToString() ?? string.Empty"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="display:flex;gap:10px;margin-bottom:14px">
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Start</div>
                     <input type="text" @bind="_fStartStr" placeholder="9:30 AM"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                 </div>
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">End (optional)</div>
                     <input type="text" @bind="_fEndStr" placeholder="10:30 AM"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                 </div>
             </div>
 
@@ -82,7 +83,7 @@
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Type</div>
                 <select value="@_fTypeId.ToString()"
                         @onchange="e => _fTypeId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : _fTypeId"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box">
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box">
                     @foreach (var t in _scheduleItemTypes)
                     {
                         <option value="@t.ScheduleItemTypeId">@DisplayItemType(t)</option>
@@ -95,12 +96,12 @@
                 <div style="margin-bottom:14px">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Presenter Name</div>
                     <input type="text" @bind="_fPresenterName" placeholder="e.g. Dr. Jane Smith"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                 </div>
                 <div style="margin-bottom:14px">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Presenter Bio (optional)</div>
                     <textarea @bind="_fPresenterBio" rows="3" placeholder="Short bio shown to attendees"
-                              style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;resize:vertical"></textarea>
+                              style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;resize:vertical"></textarea>
                 </div>
             }
 
@@ -108,7 +109,7 @@
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Location (optional)</div>
                 <select value="@(_fLocationId?.ToString() ?? "")"
                         @onchange="e => _fLocationId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box">
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box">
                     <option value="">— None —</option>
                     @foreach (var loc in _locations)
                     {
@@ -120,14 +121,14 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Additional Information (optional)</div>
                 <input type="text" @bind="_fLocationOther" placeholder="e.g. Gym + Pool deck"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Activity (optional)</div>
                 <select value="@(_fActivityId?.ToString() ?? "")"
                         @onchange="e => _fActivityId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box">
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box">
                     <option value="">— N/A —</option>
                     @foreach (var act in _activities)
                     {
@@ -142,8 +143,8 @@
                         style="width:100%;padding:10px 12px;background:#F8F4EC;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"
                         @onclick="() => _assignmentsExpanded = !_assignmentsExpanded">
                     <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-family:'Fredoka One',cursive;font-size:13px">Group Assignments</span>
-                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:#E8E0CC;color:var(--text-light);font-family:'Fredoka One',cursive">
+                        <span style="font-family:var(--font-display);font-weight:700;font-size:13px">Group Assignments</span>
+                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:#E8E0CC;color:var(--text-light);font-family:var(--font-display);font-weight:700">
                             @(_assignedCount > 0 ? $"{_assignedCount} set" : "Optional")
                         </span>
                     </div>
@@ -162,14 +163,14 @@
                         {
                             var group = _groups.FirstOrDefault(g => g.GroupId == row.GroupId);
                             <div style="margin-bottom:10px;padding:8px;background:#F8F4EC;border-radius:6px">
-                                <div style="font-family:'Fredoka One',cursive;font-size:12px;color:@(group?.Color ?? "#555");margin-bottom:6px">
+                                <div style="font-family:var(--font-display);font-weight:700;font-size:12px;color:@(group?.Color ?? "#555");margin-bottom:6px">
                                     @(group?.Name ?? "—")
                                 </div>
                                 <div style="margin-bottom:6px">
                                     <div style="font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:3px">Activity</div>
                                     <select value="@(row.ActivityId?.ToString() ?? "")"
                                             @onchange="e => row.ActivityId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null"
-                                            style="width:100%;padding:6px 8px;background:var(--bg-base);border:2px solid var(--black);border-radius:5px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark)">
+                                            style="width:100%;padding:6px 8px;background:var(--bg-base);border:2px solid var(--border-color);border-radius:5px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark)">
                                         <option value="">— None —</option>
                                         @foreach (var act in _activities)
                                         {
@@ -181,7 +182,7 @@
                                     <div style="font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:3px">Location override</div>
                                     <select value="@(row.LocationId?.ToString() ?? "")"
                                             @onchange="e => row.LocationId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null"
-                                            style="width:100%;padding:6px 8px;background:var(--bg-base);border:2px solid var(--black);border-radius:5px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark)">
+                                            style="width:100%;padding:6px 8px;background:var(--bg-base);border:2px solid var(--border-color);border-radius:5px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark)">
                                         <option value="">— None —</option>
                                         @foreach (var loc in _locations)
                                         {
@@ -193,7 +194,7 @@
                                     <div style="font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:3px">Note</div>
                                     <input type="text" value="@(row.Note ?? "")"
                                            @onchange="e => row.Note = string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString()"
-                                           style="width:100%;padding:6px 8px;background:var(--bg-base);border:2px solid var(--black);border-radius:5px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-sizing:border-box" />
+                                           style="width:100%;padding:6px 8px;background:var(--bg-base);border:2px solid var(--border-color);border-radius:5px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-sizing:border-box" />
                                 </div>
                             </div>
                         }
@@ -226,7 +227,7 @@
             }
             else if (!_events.Any())
             {
-                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No events yet. Add the first one →</p>
+                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No events yet. Add the first one →</p>
             }
             else
             {
@@ -234,17 +235,17 @@
                 <div class="admin-sched-cards">
                     @foreach (var ev in _events)
                     {
-                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px">
                             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                                 <div style="flex:1;min-width:0">
                                     <div style="font-size:11px;color:var(--text-light);font-weight:700;margin-bottom:3px">
                                         @ev.CampDay.ToString("ddd M/d") &nbsp;·&nbsp; @ev.StartTime.ToString("h:mm tt")@(ev.EndTime.HasValue ? $" – {ev.EndTime.Value.ToString("h:mm tt")}" : "")
                                     </div>
-                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black);line-height:1.2;margin-bottom:6px">
+                                    <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark);line-height:1.2;margin-bottom:6px">
                                         @ev.Title
                                     </div>
                                     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:var(--font-display);font-weight:700">
                                             @DisplayItemType(ev.ScheduleItemType)
                                         </span>
                                         @if (ev.Location is not null)
@@ -268,7 +269,7 @@
                 </div>
 
                 @* ── Desktop table ── *@
-                <div class="admin-sched-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div class="admin-sched-table" style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow:hidden">
                     <div style="overflow-x:auto">
                     <table style="width:100%;border-collapse:collapse;min-width:520px">
                         <colgroup>
@@ -281,12 +282,12 @@
                         </colgroup>
                         <thead>
                             <tr style="background:var(--black)">
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Day</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Time</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Title</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Type</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Location</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Day</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Time</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Title</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Type</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Location</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -313,7 +314,7 @@
                                         }
                                     </td>
                                     <td style="padding:8px 14px">
-                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:'Fredoka One',cursive">
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:var(--font-display);font-weight:700">
                                             @DisplayItemType(ev.ScheduleItemType)
                                         </span>
                                     </td>
@@ -325,7 +326,7 @@
                                                 {
                                                     <img src="/location-image/@ev.Location.LocationId"
                                                          class="admin-sched-loc-img"
-                                                         style="width:42px;height:30px;object-fit:cover;border-radius:3px;border:2px solid var(--black);cursor:zoom-in;flex-shrink:0"
+                                                         style="width:42px;height:30px;object-fit:cover;border-radius:3px;border:2px solid var(--border-color);cursor:zoom-in;flex-shrink:0"
                                                          alt="@ev.Location.Name"
                                                          @onclick='() => _lightboxSrc = $"/location-image/{ev.Location.LocationId}"' />
                                                 }
@@ -365,7 +366,7 @@
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.85);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease;cursor:zoom-out"
          @onclick="() => _lightboxSrc = null">
         <img src="@_lightboxSrc"
-             style="max-width:92vw;max-height:88vh;object-fit:contain;border:3px solid var(--black);border-radius:10px;box-shadow:6px 6px 0 var(--black);animation:popIn .2s ease"
+             style="max-width:92vw;max-height:88vh;object-fit:contain;border:var(--panel-border);border-radius:10px;box-shadow:6px 6px 0 var(--border-color);animation:popIn .2s ease"
              alt="Location image" @onclick:stopPropagation />
         <button style="position:fixed;top:16px;right:20px;background:none;border:none;color:white;font-size:28px;cursor:pointer;line-height:1"
                 @onclick="() => _lightboxSrc = null">✕</button>
@@ -381,6 +382,7 @@
     private bool _loading = true;
     private Guid _userId;
     private Guid _editingId;
+    private Guid _eventId;
 
     private string _fTitle = "";
     private string _fDateStr = "";
@@ -414,8 +416,8 @@
         var authState = await Auth.GetAuthenticationStateAsync();
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
 
-        using var dbEvent = DbFactory.CreateDbContext();
-        var campEvent = await dbEvent.Events.FindAsync(SeedService.Id.EventCcn2026);
+        _eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        var campEvent = await ActiveEventSvc.GetActiveEventAsync();
         if (campEvent is not null)
         {
             _minDate  = campEvent.EffDate.ToString("yyyy-MM-dd");
@@ -423,15 +425,15 @@
             _fDateStr = _minDate;
         }
 
-        _scheduleItemTypes = await ScheduleItemTypeSvc.GetForEventAsync(SeedService.Id.EventCcn2026);
+        _scheduleItemTypes = await ScheduleItemTypeSvc.GetForEventAsync(_eventId);
         _fTypeId = _scheduleItemTypes.FirstOrDefault()?.ScheduleItemTypeId ?? Guid.Empty;
 
         _locations  = await LocationSvc.GetAllAsync();
-        _activities = await MiniGameSvc.GetActivitiesAsync(SeedService.Id.EventCcn2026);
+        _activities = await MiniGameSvc.GetActivitiesAsync(_eventId);
 
         using var dbGroups = DbFactory.CreateDbContext();
         _groups = await dbGroups.Groups
-            .Where(g => g.EventId == SeedService.Id.EventCcn2026)
+            .Where(g => g.EventId == _eventId)
             .OrderBy(g => g.Name)
             .ToListAsync();
 
@@ -442,7 +444,7 @@
 
     private async Task Reload()
     {
-        _events  = await ScheduleSvc.GetByEventAsync(SeedService.Id.EventCcn2026);
+        _events  = await ScheduleSvc.GetByEventAsync(_eventId);
         _loading = false;
     }
 
@@ -541,7 +543,7 @@
         var isPresentation = SelectedTypeSystemName == "Presentation";
         var dto = new ScheduleItemDto(
             _editingId,
-            SeedService.Id.EventCcn2026,
+            _eventId,
             day, start, end,
             _fTitle.Trim(), _fDesc,
             _fLocationId, _fActivityId, _fTypeId,

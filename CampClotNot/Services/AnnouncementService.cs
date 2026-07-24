@@ -8,24 +8,24 @@ namespace CampClotNot.Services;
 
 public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache, PushNotificationService pushService)
 {
-    private const string FeedKey = "ann.feed";
+    private static string FeedKey(Guid eventId) => $"ann.feed.{eventId}";
 
-    public async Task<List<Announcement>> GetFeedAsync()
+    public async Task<List<Announcement>> GetFeedAsync(Guid eventId)
     {
-        return await cache.GetOrCreateAsync(FeedKey, async entry =>
+        return await cache.GetOrCreateAsync(FeedKey(eventId), async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20);
             using var db = factory.CreateDbContext();
             var now = CampTime.Now;
 
             var expired = await db.Announcements
-                .Where(a => !a.IsArchived && a.ExpiresAt != null && a.ExpiresAt <= now)
+                .Where(a => a.EventId == eventId && !a.IsArchived && a.ExpiresAt != null && a.ExpiresAt <= now)
                 .ToListAsync();
             foreach (var a in expired) a.IsArchived = true;
             if (expired.Count > 0) await db.SaveChangesAsync();
 
             return await db.Announcements
-                .Where(a => !a.IsArchived)
+                .Where(a => a.EventId == eventId && !a.IsArchived)
                 .Include(a => a.Author)
                 .OrderByDescending(a => a.IsPinned)
                 .ThenByDescending(a => a.CreatedAt)
@@ -33,21 +33,22 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         }) ?? [];
     }
 
-    public async Task<Announcement?> GetLatestPinnedAsync()
+    public async Task<Announcement?> GetLatestPinnedAsync(Guid eventId)
     {
         using var db = factory.CreateDbContext();
         return await db.Announcements
-            .Where(a => !a.IsArchived && a.IsPinned)
+            .Where(a => a.EventId == eventId && !a.IsArchived && a.IsPinned)
             .OrderByDescending(a => a.CreatedAt)
             .FirstOrDefaultAsync();
     }
 
-    public async Task<Announcement> PostAsync(string title, string body, AnnouncementPriority priority, Guid authorId, string[]? targetRoles = null)
+    public async Task<Announcement> PostAsync(Guid eventId, string title, string body, AnnouncementPriority priority, Guid authorId, string[]? targetRoles = null)
     {
         using var db = factory.CreateDbContext();
         var announcement = new Announcement
         {
             AnnouncementId = Guid.NewGuid(),
+            EventId        = eventId,
             Title          = title,
             Body           = body,
             Priority       = priority,
@@ -58,7 +59,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         };
         db.Announcements.Add(announcement);
         await db.SaveChangesAsync();
-        cache.Remove(FeedKey);
+        cache.Remove(FeedKey(eventId));
         try
         {
             var pushTitle = priority == AnnouncementPriority.Urgent ? $"🚨 {title}" : $"📢 {title}";
@@ -79,7 +80,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         if (a is null) return;
         a.IsPinned = isPinned;
         await db.SaveChangesAsync();
-        cache.Remove(FeedKey);
+        cache.Remove(FeedKey(a.EventId));
     }
 
     public async Task ArchiveAsync(Guid id)
@@ -89,7 +90,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         if (a is null) return;
         a.IsArchived = true;
         await db.SaveChangesAsync();
-        cache.Remove(FeedKey);
+        cache.Remove(FeedKey(a.EventId));
     }
 
     public async Task ToggleReactionAsync(Guid announcementId, string emoji, Guid userId)
@@ -115,7 +116,7 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
 
         a.ReactionsJson = reactions.Count > 0 ? JsonSerializer.Serialize(reactions) : null;
         await db.SaveChangesAsync();
-        cache.Remove(FeedKey);
+        cache.Remove(FeedKey(a.EventId));
     }
 
     public static Dictionary<string, List<Guid>> ParseReactions(string? json) =>

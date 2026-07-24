@@ -31,6 +31,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
         // Themes
         public static readonly Guid ThemeSuperMarioParty2026 = new("00000004-0004-0004-0004-000000000001");
+        public static readonly Guid ThemeMensRetreat2026 = new("00000004-0004-0004-0004-000000000002");
 
         // Capabilities
         public static readonly Guid CapBoardGame       = new("00000005-0005-0005-0005-000000000001");
@@ -38,6 +39,8 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid CapMiniGameSpinner = new("00000005-0005-0005-0005-000000000003");
         public static readonly Guid CapAnnouncements   = new("00000005-0005-0005-0005-000000000004");
         public static readonly Guid CapItinerary       = new("00000005-0005-0005-0005-000000000005");
+        public static readonly Guid CapBowserEvent     = new("00000005-0005-0005-0005-000000000006");
+        public static readonly Guid CapAwards          = new("00000005-0005-0005-0005-000000000007");
 
         // ActivityTypeCategories — camp activities
         public static readonly Guid CatMinuteToWinIt   = new("00000006-0006-0006-0006-000000000001");
@@ -236,28 +239,105 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedThemeAsync(AppDbContext db)
     {
-        if (await db.Themes.AnyAsync()) return;
-        db.Themes.Add(new Theme
+        // Sampled directly from the Men's Retreat flyer (Columbus GA riverwalk photo,
+        // HBDA in blue, MEN'S RETREAT in gold, red date ribbon, dark wood sign, tree
+        // foliage) so the theme actually matches the logo instead of an approximation.
+        var mensRetreatPalette = new ThemeConfig(
+            AppTitle:      "HBDA MEN'S RETREAT",
+            AppSubtitle:   "HBDA Men's Retreat 2026",
+            BgStart:       "#071c33",   // deep navy — from the flyer's sky blue, darkened
+            BgMid:         "#16241a",   // dark forest — from the riverwalk tree foliage
+            BgEnd:         "#2b1608",   // dark wood brown — from the wood sign
+            Primary:       "#D9A62A",   // gold — matches "MEN'S RETREAT" lettering
+            Accent:        "#D71E03",   // red — matches the date ribbon
+            Success:       "#4C7A34",   // green — matches sunlit tree foliage
+            Info:          "#0F75DC",   // blue — matches "HBDA" lettering exactly
+            TrackFill:     "rgba(15,117,220,0.35)",
+            TrackBg:       "rgba(22,36,26,0.5)",
+            Currency1Icon: "🪙",
+            Currency1Name: "Coins",
+            Currency2Icon: "⭐",
+            Currency2Name: "Stars",
+            BannerAssetPath: "/img/mens-retreat-banner.webp",
+            // Page chrome — warm khaki/parchment instead of CCN's cream, dark brown text
+            // instead of near-black, evoking the wood sign and outdoor riverwalk setting.
+            BgBase:    "#EDE0C4",
+            BgDot:     "#D4C29A",
+            PanelBg:   "#FBF6E8",
+            TextDark:  "#2A1D0F",
+            TextMid:   "#5C4A32",
+            TextLight: "#8C795C",
+            // Polka dots read as party/confetti no matter the color — off for a retreat.
+            UseDotPattern: false,
+            // Warm-professional shape language: clean rounded sans instead of the comic-book
+            // display font, thin warm-brown border instead of thick black, soft warm-tinted
+            // shadow instead of a hard offset — reads as a nonprofit event app, not a re-skinned
+            // party game, while keeping some warmth (rounded corners, soft shadow) rather than
+            // going flat/corporate-cold.
+            HeadingFont: "'Poppins', sans-serif",
+            BorderColor: "#B89968",
+            BorderWidth: "1.5px",
+            PanelShadow: "0 4px 14px rgba(42,29,15,0.16)"
+        );
+
+        var defs = new[]
         {
-            ThemeId     = Id.ThemeSuperMarioParty2026,
-            Name        = "Super Mario Party",
-            Year        = 2026,
-            Description = "Super Mario Party themed camp — CCN 2026"
-        });
+            new { Id = Id.ThemeSuperMarioParty2026, Name = "Super Mario Party", Year = 2026,
+                  Description = "Super Mario Party themed camp — CCN 2026", Palette = (string?)null, Logo = (string?)null },
+            new { Id = Id.ThemeMensRetreat2026, Name = "Men's Retreat", Year = 2026,
+                  Description = "HBDA Men's Retreat 2026 — colors sampled from the flyer", Palette = mensRetreatPalette.ToJson(), Logo = "/img/mens-retreat-nav-logo.webp" },
+        };
+
+        // True upsert (not insert-only-if-missing like most other seed methods) — Theme has
+        // no admin edit UI yet (deferred to v2.0's self-service /admin/theme), so the seed is
+        // the only source of truth today and must sync on every restart as the palette gets
+        // tuned. Once /admin/theme ships, this needs to stop overwriting admin-made edits.
+        foreach (var d in defs)
+        {
+            var existing = await db.Themes.FirstOrDefaultAsync(t => t.ThemeId == d.Id);
+            if (existing is null)
+            {
+                db.Themes.Add(new Theme
+                {
+                    ThemeId        = d.Id,
+                    Name           = d.Name,
+                    Year           = d.Year,
+                    Description    = d.Description,
+                    ColorPalette   = d.Palette,
+                    LogoAssetPath  = d.Logo
+                });
+            }
+            else
+            {
+                existing.Name          = d.Name;
+                existing.Year          = d.Year;
+                existing.Description   = d.Description;
+                existing.ColorPalette  = d.Palette;
+                existing.LogoAssetPath = d.Logo;
+            }
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded Themes.");
     }
 
     private async Task SeedCapabilitiesAsync(AppDbContext db)
     {
-        if (await db.Capabilities.AnyAsync()) return;
-        db.Capabilities.AddRange(
-            new Capability { CapabilityId = Id.CapBoardGame,       Name = "Board Game",        Description = "Mario Party-style board game with block hits", SystemName = nameof(Feature.BoardGame) },
-            new Capability { CapabilityId = Id.CapCoinShop,        Name = "Coin Shop",         Description = "Shop where groups spend coins for rewards",     SystemName = nameof(Feature.CoinShop) },
-            new Capability { CapabilityId = Id.CapMiniGameSpinner, Name = "Mini-Game Spinner", Description = "Pre-scripted evening mini-game selector",        SystemName = nameof(Feature.MiniGameSpinner) },
-            new Capability { CapabilityId = Id.CapAnnouncements,   Name = "Announcements",     Description = "Real-time schedule announcements",              SystemName = nameof(Feature.Announcements) },
-            new Capability { CapabilityId = Id.CapItinerary,       Name = "Itinerary",         Description = "Camp itinerary and schedule",                    SystemName = nameof(Feature.Itinerary) }
-        );
+        var defs = new[]
+        {
+            new { Id = Id.CapBoardGame,       Name = "Board Game",        Description = "Mario Party-style board game with block hits",  SystemName = nameof(Feature.BoardGame) },
+            new { Id = Id.CapCoinShop,        Name = "Coin Shop",         Description = "Shop where groups spend coins for rewards",      SystemName = nameof(Feature.CoinShop) },
+            new { Id = Id.CapMiniGameSpinner, Name = "Mini-Game Spinner", Description = "Pre-scripted evening mini-game selector",        SystemName = nameof(Feature.MiniGameSpinner) },
+            new { Id = Id.CapAnnouncements,   Name = "Announcements",     Description = "Real-time schedule announcements",               SystemName = nameof(Feature.Announcements) },
+            new { Id = Id.CapItinerary,       Name = "Itinerary",         Description = "Camp itinerary and schedule",                     SystemName = nameof(Feature.Itinerary) },
+            new { Id = Id.CapBowserEvent,     Name = "Bowser Event",      Description = "Random die-roll event with projector display",   SystemName = nameof(Feature.BowserEvent) },
+            new { Id = Id.CapAwards,          Name = "Awards",            Description = "Awards ceremony leaderboard reveal",              SystemName = nameof(Feature.Awards) }
+        };
+
+        foreach (var d in defs)
+        {
+            if (await db.Capabilities.AnyAsync(c => c.CapabilityId == d.Id)) continue;
+            db.Capabilities.Add(new Capability { CapabilityId = d.Id, Name = d.Name, Description = d.Description, SystemName = d.SystemName });
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded Capabilities.");
     }
@@ -337,14 +417,17 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedEventCapabilitiesAsync(AppDbContext db)
     {
-        if (await db.EventCapabilities.AnyAsync()) return;
-        var capIds = new[] { Id.CapBoardGame, Id.CapCoinShop, Id.CapMiniGameSpinner, Id.CapAnnouncements, Id.CapItinerary };
-        db.EventCapabilities.AddRange(capIds.Select(capId => new EventCapability
+        var capIds = new[] { Id.CapBoardGame, Id.CapCoinShop, Id.CapMiniGameSpinner, Id.CapAnnouncements, Id.CapItinerary, Id.CapBowserEvent, Id.CapAwards };
+        foreach (var capId in capIds)
         {
-            EventCapabilityId = Guid.NewGuid(),
-            EventId           = Id.EventCcn2026,
-            CapabilityId      = capId
-        }));
+            if (await db.EventCapabilities.AnyAsync(e => e.EventId == Id.EventCcn2026 && e.CapabilityId == capId)) continue;
+            db.EventCapabilities.Add(new EventCapability
+            {
+                EventCapabilityId = Guid.NewGuid(),
+                EventId           = Id.EventCcn2026,
+                CapabilityId      = capId
+            });
+        }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded EventCapabilities for CCN 2026.");
     }

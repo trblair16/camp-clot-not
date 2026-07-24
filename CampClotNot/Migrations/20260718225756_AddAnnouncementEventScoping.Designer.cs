@@ -3,6 +3,7 @@ using System;
 using CampClotNot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CampClotNot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260718225756_AddAnnouncementEventScoping")]
+    partial class AddAnnouncementEventScoping
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -408,9 +411,6 @@ namespace CampClotNot.Migrations
                     b.Property<DateOnly>("ExpDate")
                         .HasColumnType("date");
 
-                    b.Property<string>("GuestCode")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -424,9 +424,6 @@ namespace CampClotNot.Migrations
                     b.HasKey("EventId");
 
                     b.HasIndex("EventTypeId");
-
-                    b.HasIndex("GuestCode")
-                        .IsUnique();
 
                     b.HasIndex("ThemeId");
 

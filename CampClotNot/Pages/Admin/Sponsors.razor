@@ -1,6 +1,7 @@
 @page "/admin/sponsors"
 @attribute [Authorize(Roles = "Admin")]
 @inject SponsorService SponsorSvc
+@inject ActiveEventService ActiveEventSvc
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 
@@ -20,17 +21,17 @@
 </style>
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/trophy.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Sponsors</h2>
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/trophy.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Sponsors</h2>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Form panel (desktop) / mobile overlay ── *@
         <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
              @onclick="CloseFormOverlay">
-        <div class="admin-spo-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+        <div class="admin-spo-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Sponsor" : "Edit Sponsor")</h3>
+                <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Sponsor" : "Edit Sponsor")</h3>
                 @if (_mobileFormOpen)
                 {
                     <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
@@ -40,7 +41,7 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name *</div>
                 <input type="text" @bind="_fName" placeholder="e.g. Children's Harbor"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
@@ -64,31 +65,31 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Logo URL (fallback if no file uploaded)</div>
                 <input type="url" @bind="_fLogoUrl" placeholder="https://..."
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Website URL — clicking logo navigates here (optional)</div>
                 <input type="url" @bind="_fWebsite" placeholder="https://..."
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Contact Name (optional)</div>
                 <input type="text" @bind="_fContactName" placeholder="e.g. Jane Smith"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Phone (optional — tap-to-call)</div>
                 <input type="tel" @bind="_fPhone" placeholder="e.g. (205) 555-1234"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:16px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Sort Order</div>
                 <input type="number" @bind="_fSortOrder"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             @if (!string.IsNullOrWhiteSpace(_saveError))
@@ -116,7 +117,7 @@
             }
             else if (!_sponsors.Any())
             {
-                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No sponsors yet. Add the first one →</p>
+                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No sponsors yet. Add the first one →</p>
             }
             else
             {
@@ -125,12 +126,12 @@
                     {
                         var s   = _sponsors[i];
                         var idx = i;
-                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
                             <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
                                 <img src="@LogoSrc(s)" alt="@s.Name"
                                      style="height:36px;width:48px;object-fit:contain;border:1px solid #E8E0CC;border-radius:4px;background:white;padding:2px;flex-shrink:0" />
                                 <div style="min-width:0">
-                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">@s.Name</div>
+                                    <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark)">@s.Name</div>
                                     @if (!string.IsNullOrWhiteSpace(s.Website))
                                     {
                                         <div style="font-size:11px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@s.Website</div>
@@ -149,15 +150,15 @@
 
                 <div class="admin-spo-table">
                 <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">Drag rows to reorder. Changes save immediately.</div>
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow-x:auto">
+                <div style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow-x:auto">
                     <table style="width:100%;border-collapse:collapse;min-width:560px">
                         <thead>
                             <tr style="background:var(--black)">
-                                <th style="padding:10px 8px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;width:28px"></th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Name</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Logo</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Website</th>
-                                <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Actions</th>
+                                <th style="padding:10px 8px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left;width:28px"></th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Name</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Logo</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Website</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Actions</th>
                             </tr>
                         </thead>
                         <tbody ondragover="event.preventDefault()">
@@ -227,7 +228,7 @@
 
     private async Task Reload()
     {
-        _sponsors = await SponsorSvc.GetAllForEventAsync(Services.SeedService.Id.EventCcn2026);
+        _sponsors = await SponsorSvc.GetAllForEventAsync(await ActiveEventSvc.GetActiveEventIdAsync());
     }
 
     private async Task HandleLogoUpload(InputFileChangeEventArgs e)
@@ -286,10 +287,11 @@
             _saveError = "Provide a logo file or a logo URL.";
             return;
         }
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
         await SponsorSvc.UpsertAsync(new Sponsor
         {
             SponsorId        = _editingId,
-            EventId          = Services.SeedService.Id.EventCcn2026,
+            EventId          = eventId,
             Name             = _fName.Trim(),
             LogoUrl          = string.IsNullOrWhiteSpace(_fLogoUrl) ? null : _fLogoUrl.Trim(),
             LogoData         = _fLogoData,

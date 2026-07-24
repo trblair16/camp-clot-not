@@ -3,15 +3,23 @@
 @inject ThemeService ThemeSvc
 @inject AuthenticationStateProvider AuthState
 @inject IJSRuntime JS
+@inject GuestAccessService GuestSvc
 
 <ThemeHead />
-<MudThemeProvider IsDarkMode="false" Theme="@_mudTheme" />
+<MudThemeProvider IsDarkMode="false" Theme="@BuildMudTheme()" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <ProjectorOverlay Visible="_showProjector" OnClose="@(() => _showProjector = false)" />
 
-<AppNav OnLeaderboardClick="@(() => _showProjector = true)" />
+@if (_isGuest)
+{
+    <GuestNav />
+}
+else
+{
+    <AppNav OnLeaderboardClick="@(() => _showProjector = true)" />
+}
 
 @if (_showPushBanner)
 {
@@ -33,10 +41,18 @@
 @code {
     private bool _showProjector;
     private bool _showPushBanner;
+    private bool _isGuest;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        _isGuest = GuestSvc.GetGuestEventId(state.User).HasValue;
+        await ThemeSvc.LoadAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
+        if (!firstRender || _isGuest) return;
         var state = await AuthState.GetAuthenticationStateAsync();
         if (state.User.HasClaim("mustChangePassword", "true"))
             Nav.NavigateTo("/change-password", forceLoad: false);
@@ -70,21 +86,28 @@
         catch { _showPushBanner = false; }
     }
 
-    private static readonly MudTheme _mudTheme = new()
+    // Was a static field with hardcoded Mario colors — MudBlazor's own theme (dialogs,
+    // snackbars, spinners, tabs) never picked up the active event's theme at all. Now
+    // resolved per-render from ThemeSvc.Active, same as the CSS variables.
+    private MudTheme BuildMudTheme()
     {
-        Palette = new Palette
+        var t = ThemeSvc.Active;
+        return new MudTheme
         {
-            Primary         = "#F5C800",
-            Secondary       = "#D12B2B",
-            Success         = "#2B8A3E",
-            Info            = "#2563C4",
-            Background      = "#F2ECD8",
-            Surface         = "#FFFEF7",
-            DrawerBackground= "#FFFEF7",
-            TextPrimary     = "#1A1A1A",
-            TextSecondary   = "#4A4035",
-            AppbarBackground= "#1A1A1A",
-            AppbarText      = "#F5C800",
-        }
-    };
+            Palette = new Palette
+            {
+                Primary          = t.Primary,
+                Secondary        = t.Accent,
+                Success          = t.Success,
+                Info             = t.Info,
+                Background       = t.BgBase,
+                Surface          = t.PanelBg,
+                DrawerBackground = t.PanelBg,
+                TextPrimary      = t.TextDark,
+                TextSecondary    = t.TextMid,
+                AppbarBackground = "#1A1A1A",   // matches --black, constant across themes
+                AppbarText       = t.Primary,
+            }
+        };
+    }
 }

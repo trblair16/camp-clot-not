@@ -1,6 +1,8 @@
 @page "/hub/staff"
-@attribute [Authorize(Roles = "Admin,Staff,Volunteer,MedicalStaff")]
+@attribute [Authorize(Policy = "HubGuestAccess")]
 @inject StaffDirectoryService StaffSvc
+@inject ActiveEventService ActiveEventSvc
+@inject GuestAccessService GuestSvc
 @inject AuthenticationStateProvider Auth
 @inject IJSRuntime JS
 @using SixLabors.ImageSharp
@@ -8,11 +10,14 @@
 
 <PageTitle>Staff — Camp Clot Not</PageTitle>
 
-<HubSubNav />
+@if (!_isGuest)
+{
+    <HubSubNav />
+}
 
 <div style="padding: 0 16px 100px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0"><img src="/img/icons/people.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Staff Directory</h2>
+        <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0"><img src="/img/icons/people.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Staff Directory</h2>
         @if (_isAdmin)
         {
             <div style="display:flex;gap:8px">
@@ -27,14 +32,14 @@
     @* ── Import from Users panel ── *@
     @if (_showImport && _isAdmin)
     {
-        <div style="border:3px solid var(--black);border-radius:10px;margin-bottom:20px;box-shadow:3px 3px 0 var(--black);overflow:hidden">
+        <div style="border:var(--panel-border);border-radius:10px;margin-bottom:20px;box-shadow:3px 3px 0 var(--border-color);overflow:hidden">
             <div style="padding:12px 16px;background:#F8F4EC;border-bottom:2px solid #E8E0CC">
-                <span style="font-family:'Fredoka One',cursive;font-size:15px">Import from User Accounts</span>
+                <span style="font-family:var(--font-display);font-weight:700;font-size:15px">Import from User Accounts</span>
                 <span style="font-size:12px;color:var(--text-light);margin-left:8px">Admin, Staff, and Volunteer users not yet in this event's directory</span>
             </div>
             @if (!_eligibleUsers.Any())
             {
-                <p style="padding:16px;color:var(--text-light);font-family:'Fredoka One',cursive;margin:0">
+                <p style="padding:16px;color:var(--text-light);font-family:var(--font-display);font-weight:700;margin:0">
                     All eligible user accounts are already in the directory.
                 </p>
             }
@@ -44,7 +49,7 @@
                 {
                     <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:2px solid #E8E0CC">
                         <div style="flex:1;min-width:0">
-                            <div style="font-family:'Fredoka One',cursive;font-size:14px">@u.FirstName @u.LastName</div>
+                            <div style="font-family:var(--font-display);font-weight:700;font-size:14px">@u.FirstName @u.LastName</div>
                             <div style="font-size:12px;color:var(--text-light)">@u.UserRole.SystemName · @u.Email</div>
                         </div>
                         <button class="ccn-btn" style="font-size:12px;padding:5px 12px;flex-shrink:0"
@@ -64,7 +69,7 @@
     }
     else if (!_members.Any())
     {
-        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No staff listed yet.</p>
+        <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No staff listed yet.</p>
     }
     else
     {
@@ -73,18 +78,18 @@
             {
                 var idx = i;
                 var m = _members[idx];
-                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);text-align:center;display:flex;flex-direction:column">
+                <div style="border:var(--panel-border);border-radius:10px;padding:16px;box-shadow:3px 3px 0 var(--border-color);background:var(--panel-bg);text-align:center;display:flex;flex-direction:column">
                     @if (m.PhotoContentType is not null)
                     {
                         <img src="/staff-photo/@m.StaffMemberId"
-                             style="width:100%;aspect-ratio:1/1;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:8px;border:2px solid var(--black);margin-bottom:8px;display:block"
+                             style="width:100%;aspect-ratio:1/1;object-fit:cover;object-position:@(m.PhotoObjectPosition ?? "50% 50%");border-radius:8px;border:2px solid var(--border-color);margin-bottom:8px;display:block"
                              alt="@m.DisplayName" />
                     }
                     else
                     {
-                        <div style="width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:48px;border-radius:8px;border:2px solid var(--black);margin-bottom:8px;background:#F5F0E4">@m.AvatarEmoji</div>
+                        <div style="width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:48px;border-radius:8px;border:2px solid var(--border-color);margin-bottom:8px;background:#F5F0E4">@m.AvatarEmoji</div>
                     }
-                    <div style="font-family:'Fredoka One',cursive;font-size:15px">@m.DisplayName</div>
+                    <div style="font-family:var(--font-display);font-weight:700;font-size:15px">@m.DisplayName</div>
                     <div style="font-size:12px;color:var(--text-light);margin-bottom:8px">@m.RoleTitle</div>
                     @if (!string.IsNullOrEmpty(m.Phone))
                     {
@@ -115,8 +120,8 @@
 @if (_showForm && _isAdmin)
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px" @onmousedown="Close">
-        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:4px 4px 0 var(--black);padding:24px;width:100%;max-width:400px" @onmousedown:stopPropagation>
-            <h3 style="font-family:'Fredoka One',cursive;margin:0 0 16px">@(_form.StaffMemberId == Guid.Empty ? "Add Staff Member" : "Edit Staff Member")</h3>
+        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:12px;box-shadow:4px 4px 0 var(--border-color);padding:24px;width:100%;max-width:400px" @onmousedown:stopPropagation>
+            <h3 style="font-family:var(--font-display);font-weight:700;margin:0 0 16px">@(_form.StaffMemberId == Guid.Empty ? "Add Staff Member" : "Edit Staff Member")</h3>
             <MudTextField @bind-Value="_form.DisplayName" Label="Name" Required="true" Class="mb-2" />
             <MudTextField @bind-Value="_form.RoleTitle"   Label="Role/Title" Class="mb-2" />
             <MudTextField @bind-Value="_form.AvatarEmoji" Label="Avatar Emoji (fallback if no photo)" Class="mb-2" />
@@ -133,20 +138,20 @@
                         <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Position Preview</div>
                         <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
                             <img src="@PhotoPreviewSrc"
-                                 style="width:96px;height:96px;object-fit:cover;object-position:@_fPhotoX% @_fPhotoY%;border-radius:8px;border:3px solid var(--black);flex-shrink:0"
+                                 style="width:96px;height:96px;object-fit:cover;object-position:@_fPhotoX% @_fPhotoY%;border-radius:8px;border:var(--panel-border);flex-shrink:0"
                                  alt="Preview" />
                             <div style="flex:1;min-width:140px">
                                 <div style="margin-bottom:10px">
                                     <div style="font-size:11px;font-weight:700;color:var(--text-mid);margin-bottom:3px">Horizontal — @_fPhotoX%</div>
                                     <input type="range" min="0" max="100" value="@_fPhotoX"
                                            @oninput="e => _fPhotoX = int.TryParse(e.Value?.ToString(), out var v) ? v : 50"
-                                           style="width:100%;accent-color:var(--black)" />
+                                           style="width:100%;accent-color:var(--text-dark)" />
                                 </div>
                                 <div>
                                     <div style="font-size:11px;font-weight:700;color:var(--text-mid);margin-bottom:3px">Vertical — @_fPhotoY%</div>
                                     <input type="range" min="0" max="100" value="@_fPhotoY"
                                            @oninput="e => _fPhotoY = int.TryParse(e.Value?.ToString(), out var v) ? v : 50"
-                                           style="width:100%;accent-color:var(--black)" />
+                                           style="width:100%;accent-color:var(--text-dark)" />
                                 </div>
                             </div>
                         </div>
@@ -157,7 +162,7 @@
             <MudTextField @bind-Value="_form.Email"       Label="Email (optional)" Class="mb-2" />
             <MudSwitch T="bool" @bind-Value="_form.IsVisible" Label="Visible in directory" Color="MudBlazor.Color.Primary" Class="mb-2" />
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-                <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="Close">Cancel</button>
+                <button class="ccn-btn" style="background:transparent;border-color:var(--text-dark);color:var(--text-dark)" @onclick="Close">Cancel</button>
                 <button class="ccn-btn" @onclick="Save">Save</button>
             </div>
         </div>
@@ -167,6 +172,8 @@
 @code {
     private bool _loading = true;
     private bool _isAdmin;
+    private bool _isGuest;
+    private Guid _eventId;
     private bool _showForm;
     private bool _showImport;
     private List<StaffMember> _members = new();
@@ -189,23 +196,25 @@
     {
         var authState = await Auth.GetAuthenticationStateAsync();
         _isAdmin = authState.User.IsInRole("Admin");
+        var guestEventId = GuestSvc.GetGuestEventId(authState.User);
+        _isGuest = guestEventId.HasValue;
+        _eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
         await Reload();
         _loading = false;
     }
 
     private async Task Reload()
     {
-        var eventId = SeedService.Id.EventCcn2026;
         _members = _isAdmin
-            ? await StaffSvc.GetAllAsync(eventId)
-            : await StaffSvc.GetVisibleAsync(eventId);
+            ? await StaffSvc.GetAllAsync(_eventId)
+            : await StaffSvc.GetVisibleAsync(_eventId);
         if (_isAdmin)
-            _eligibleUsers = await StaffSvc.GetEligibleUsersAsync(eventId);
+            _eligibleUsers = await StaffSvc.GetEligibleUsersAsync(_eventId);
     }
 
     private void OpenAdd()
     {
-        _form = new() { CampEventId = SeedService.Id.EventCcn2026, AvatarEmoji = "👤", IsVisible = true };
+        _form = new() { CampEventId = _eventId, AvatarEmoji = "👤", IsVisible = true };
         _fPhotoData = null; _fPhotoContentType = null; _currentHasPhoto = false; _photoUploadError = "";
         _fPhotoX = 50; _fPhotoY = 50;
         _showForm   = true;
@@ -307,7 +316,7 @@
 
     private async Task ImportUser(Guid userId)
     {
-        await StaffSvc.ImportUserAsync(SeedService.Id.EventCcn2026, userId);
+        await StaffSvc.ImportUserAsync(_eventId, userId);
         await Reload();
     }
 }

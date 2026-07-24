@@ -1,10 +1,11 @@
 @page "/login"
 @layout LoginLayout
+@inject ThemeService ThemeSvc
 
 <PageTitle>Sign In — Camp Clot Not</PageTitle>
 
 @* Logo: fixed above the card, centered horizontally *@
-<img src="/img/ccn-logo-2026.webp?v=2" alt="Camp Clot Not — Super Party 2026" fetchpriority="high"
+<img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-2026.webp?v=2")" alt="@ThemeSvc.Active.AppTitle" fetchpriority="high"
      style="position:fixed;bottom:calc(50% + 195px);left:50%;transform:translateX(-50%);width:clamp(120px,25vw,180px);height:auto;pointer-events:none" />
 
 @* Card: exactly at viewport center *@
@@ -53,4 +54,6 @@
     [Parameter]
     [SupplyParameterFromQuery(Name = "error")]
     public bool Error { get; set; }
+
+    protected override async Task OnInitializedAsync() => await ThemeSvc.LoadAsync();
 }

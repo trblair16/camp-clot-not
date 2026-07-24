@@ -1,14 +1,15 @@
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider Auth
+@inject ActiveEventService ActiveEventSvc
 
 <style>
     .hub-subnav {
         display: flex;
-        border: 3px solid var(--black);
+        border: var(--panel-border);
         border-radius: 10px;
         margin-bottom: 20px;
         background: var(--panel-bg);
-        box-shadow: 4px 4px 0 var(--black);
+        box-shadow: 4px 4px 0 var(--border-color);
         overflow-x: auto;
         overflow-y: hidden;
         scrollbar-width: none;
@@ -19,7 +20,7 @@
         min-width: 72px;
         padding: 12px 10px;
         text-align: center;
-        font-family: 'Fredoka One', cursive;
+        font-family: var(--font-display); font-weight: 700;
         font-size: 12px;
         color: var(--text-mid);
         text-decoration: none;
@@ -33,12 +34,12 @@
     }
     .hub-tab:hover {
         background: rgba(26,26,26,0.05);
-        color: var(--black);
+        color: var(--text-dark);
     }
     .hub-tab .tab-icon { font-size: 18px; line-height: 1; }
     .hub-tab.active {
-        color: var(--black);
-        border-bottom-color: var(--black);
+        color: var(--text-dark);
+        border-bottom-color: var(--border-color);
         background: var(--bg-base);
     }
     @@media (min-width: 640px) {
@@ -64,13 +65,13 @@
         width: 100%;
         padding: 9px 12px;
         background: var(--bg-base);
-        border: 3px solid var(--black);
+        border: var(--panel-border);
         border-radius: 7px;
         font-size: 14px;
         font-family: 'Nunito', sans-serif;
         font-weight: 600;
         color: var(--text-dark);
-        box-shadow: 2px 2px 0 var(--black);
+        box-shadow: 2px 2px 0 var(--border-color);
         outline: none;
         box-sizing: border-box;
         resize: vertical;
@@ -100,8 +101,8 @@
 @* ── Floating Report Incident button ── *@
 <button class="ccn-btn ccn-fab-mobile report-incident-btn @(HideFabOnMobile ? "hide-on-mobile" : "")"
         style="position:fixed;bottom:24px;right:24px;background:#D12B2B;color:white;
-               font-size:13px;padding:13px 20px;border-radius:50px;border-color:var(--black);
-               box-shadow:4px 4px 0 var(--black);z-index:50;white-space:nowrap"
+               font-size:13px;padding:13px 20px;border-radius:50px;border-color:var(--text-dark);
+               box-shadow:4px 4px 0 var(--border-color);z-index:50;white-space:nowrap"
         @onclick="OpenModal"><img src="/img/icons/alert.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Report Incident</button>
 
 @* ── Report Incident modal ── *@
@@ -112,10 +113,10 @@
                 animation:fadeIn .2s ease"
          @onmousedown="CloseModal">
         <div class="ccn-panel" style="padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;
-                                      box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease"
+                                      box-shadow:8px 8px 0 var(--border-color);animation:popIn .25s ease"
              @onmousedown:stopPropagation="true">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-                <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0"><img src="/img/icons/alert.svg?v=3" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;opacity:.8" alt="" />Report Incident</h3>
+                <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0"><img src="/img/icons/alert.svg?v=3" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;opacity:.8" alt="" />Report Incident</h3>
                 <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-mid)" @onclick="CloseModal">✕</button>
             </div>
 
@@ -287,10 +288,11 @@
         var userId = Guid.TryParse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : Guid.Empty;
         var name   = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Unknown";
         var role   = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Unknown";
+        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
 
         await IncidentSvc.SubmitAsync(new IncidentReport
         {
-            EventId                = Services.SeedService.Id.EventCcn2026,
+            EventId                = eventId,
             DateOfIncident         = _fDateOfIncident,
             DateCompleted          = _fDateCompleted,
             PersonsInvolved        = _fPersonsInvolved.Trim(),

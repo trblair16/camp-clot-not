@@ -1,9 +1,11 @@
 @page "/admin/games"
 @attribute [Authorize(Roles = "Admin")]
 @inject BoardService BoardSvc
+@inject ActiveEventService ActiveEventSvc
 @inject MiniGameService MiniGameSvc
 @inject BowserEventService BowserSvc
 @inject GroupService GroupSvc
+@inject CapabilityService CapSvc
 
 <PageTitle>Game Admin — Camp Clot Not</PageTitle>
 
@@ -25,6 +27,8 @@
 
     <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
 
+        @if (_boardGameEnabled)
+        {
         @* ── TAB 1: BOARD SPACES ───────────────────────────────────────────────── *@
         <MudTabPanel Text="Board Spaces">
             <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">
@@ -153,7 +157,9 @@
                 }
             }
         </MudTabPanel>
-
+        }
+        @if (_miniGameEnabled)
+        {
         @* ── TAB 3: MINI-GAME SCRIPTS ──────────────────────────────────────────── *@
         <MudTabPanel Text="Mini-Game Scripts">
             <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">
@@ -273,7 +279,9 @@
                 }
             }
         </MudTabPanel>
-
+        }
+        @if (_bowserEnabled)
+        {
         @* ── TAB 4: BOWSER SCRIPTS ──────────────────────────────────────────────── *@
         <MudTabPanel Text="Bowser Scripts">
             <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">
@@ -352,6 +360,7 @@
                 </div>
             }
         </MudTabPanel>
+        }
 
         @* ── TAB 5: RESET (dev/testing) ────────────────────────────────────────── *@
         <MudTabPanel Text="Reset">
@@ -361,6 +370,8 @@
 
             <div style="display:flex;flex-direction:column;gap:16px;max-width:480px">
 
+                @if (_boardGameEnabled)
+                {
                 <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px">
                     <h3 style="font-family:'Fredoka One',cursive;font-size:15px;margin:0 0 6px">Block Hit — Reset Day</h3>
                     <p style="font-size:13px;color:var(--text-light);margin:0 0 14px">Moves all groups back to space 0 and un-triggers all block hit scripts for the selected day.</p>
@@ -380,7 +391,10 @@
                         <div style="margin-top:12px;padding:8px 14px;border:2px solid var(--black);border-radius:7px;background:#FFF8E1;font-family:'Fredoka One',cursive;font-size:13px">@_resetBoardMsg</div>
                     }
                 </div>
+                }
 
+                @if (_miniGameEnabled)
+                {
                 <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px">
                     <h3 style="font-family:'Fredoka One',cursive;font-size:15px;margin:0 0 6px">Mini-Game — Reset Day</h3>
                     <p style="font-size:13px;color:var(--text-light);margin:0 0 14px">Un-triggers the mini-game script for the selected day so the spinner can be re-run.</p>
@@ -400,6 +414,7 @@
                         <div style="margin-top:12px;padding:8px 14px;border:2px solid var(--black);border-radius:7px;background:#FFF8E1;font-family:'Fredoka One',cursive;font-size:13px">@_resetMiniGameMsg</div>
                     }
                 </div>
+                }
 
             </div>
         </MudTabPanel>
@@ -432,10 +447,20 @@
     private bool    _resettingMiniGame;
     private string? _resetMiniGameMsg;
 
-    private static readonly Guid EventId = SeedService.Id.EventCcn2026;
+    private Guid EventId;
+
+    private bool _boardGameEnabled = true;
+    private bool _miniGameEnabled  = true;
+    private bool _bowserEnabled    = true;
 
     protected override async Task OnInitializedAsync()
     {
+        EventId = await ActiveEventSvc.GetActiveEventIdAsync();
+
+        _boardGameEnabled = await CapSvc.IsEnabledAsync(EventId, Feature.BoardGame);
+        _miniGameEnabled  = await CapSvc.IsEnabledAsync(EventId, Feature.MiniGameSpinner);
+        _bowserEnabled    = await CapSvc.IsEnabledAsync(EventId, Feature.BowserEvent);
+
         await Task.WhenAll(
             LoadBoardDataAsync(),
             LoadMiniGameDataAsync(),

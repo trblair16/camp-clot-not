@@ -1,6 +1,7 @@
 @page "/hub/incidents"
 @attribute [Authorize(Roles = "Admin,MedicalStaff")]
 @inject IncidentReportService IncidentSvc
+@inject ActiveEventService ActiveEventSvc
 @inject AuthenticationStateProvider Auth
 @inject ISnackbar Snackbar
 
@@ -9,7 +10,7 @@
 <HubSubNav />
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/alert.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Incident Reports</h2>
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/alert.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Incident Reports</h2>
 
     @if (_loading)
     {
@@ -17,21 +18,21 @@
     }
     else if (!_reports.Any())
     {
-        <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No incident reports submitted yet.</p>
+        <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No incident reports submitted yet.</p>
     }
     else
     {
-        <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+        <div style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow:hidden">
             <table style="width:100%;border-collapse:collapse">
                 <thead>
                     <tr style="background:var(--black)">
-                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Date</th>
-                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Submitted By</th>
-                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Persons Involved</th>
-                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Location</th>
-                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Type</th>
-                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Status</th>
-                        <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                        <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Date</th>
+                        <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Submitted By</th>
+                        <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Persons Involved</th>
+                        <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Location</th>
+                        <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Type</th>
+                        <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Status</th>
+                        <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -109,7 +110,7 @@
 
     private async Task Reload()
     {
-        _reports = await IncidentSvc.GetAllForEventAsync(Services.SeedService.Id.EventCcn2026);
+        _reports = await IncidentSvc.GetAllForEventAsync(await ActiveEventSvc.GetActiveEventIdAsync());
     }
 
     private async Task AcknowledgeAsync(IncidentReport r)
