@@ -118,6 +118,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(e => e.ScheduleItemTypeId);
 
+        // Announcement → Event: explicit FK to avoid shadow property bug
+        modelBuilder.Entity<Announcement>()
+            .HasOne(a => a.Event)
+            .WithMany()
+            .HasForeignKey(a => a.EventId);
+
         // InfoPage: unique index on Slug
         modelBuilder.Entity<InfoPage>()
             .HasIndex(p => p.Slug)

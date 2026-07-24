@@ -1,6 +1,7 @@
 @page "/hub/announcements"
 @attribute [Authorize(Policy = "HubGuestAccess")]
 @inject AnnouncementService AnnouncementSvc
+@inject ActiveEventService ActiveEventSvc
 @inject AuthenticationStateProvider Auth
 @inject IJSRuntime JS
 @inject GuestAccessService GuestSvc
@@ -21,7 +22,7 @@
 }
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 16px"><img src="/img/icons/announcements.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Announcements</h2>
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 16px"><img src="/img/icons/announcements.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Announcements</h2>
 
     @if (_loading)
     {
@@ -31,8 +32,8 @@
     {
         @if (_canPost)
         {
-        <div style="border:3px solid var(--black);border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg)">
-            <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0 0 12px">New Announcement</h3>
+        <div style="border:var(--panel-border);border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:3px 3px 0 var(--border-color);background:var(--panel-bg)">
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0 0 12px">New Announcement</h3>
             <MudTextField @bind-Value="_newTitle" Label="Title" Required="true" Class="mb-2" />
             <MudTextField @bind-Value="_newBody"  Label="Message" Lines="3" Class="mb-2" />
             @if (_isAdmin)
@@ -56,19 +57,19 @@
         @foreach (var a in _feed)
         {
             var urgent = a.Priority == AnnouncementPriority.Urgent;
-            <div class="ann-card" style="border:3px solid var(--black);border-radius:10px;margin-bottom:12px;box-shadow:3px 3px 0 var(--black);overflow:hidden;border-left-width:@(urgent ? "6px" : "3px");border-left-color:@(urgent ? "#D12B2B" : "var(--black)")">
+            <div class="ann-card" style="border:var(--panel-border);border-radius:10px;margin-bottom:12px;box-shadow:3px 3px 0 var(--border-color);overflow:hidden;border-left-width:@(urgent ? "6px" : "3px");border-left-color:@(urgent ? "#D12B2B" : "var(--border-color)")">
                 <div style="padding:14px 16px;background:var(--panel-bg)">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                         <div style="flex:1">
                             @if (urgent)
                             {
-                                <span style="font-size:11px;background:#D12B2B;color:white;padding:2px 8px;border-radius:4px;font-family:'Fredoka One',cursive;margin-right:6px">URGENT</span>
+                                <span style="font-size:11px;background:#D12B2B;color:white;padding:2px 8px;border-radius:4px;font-family:var(--font-display);font-weight:700;margin-right:6px">URGENT</span>
                             }
                             @if (a.IsPinned)
                             {
-                                <span style="font-size:11px;background:#F5C800;color:#1A1A1A;padding:2px 8px;border-radius:4px;font-family:'Fredoka One',cursive;margin-right:6px">Pinned</span>
+                                <span style="font-size:11px;background:#F5C800;color:#1A1A1A;padding:2px 8px;border-radius:4px;font-family:var(--font-display);font-weight:700;margin-right:6px">Pinned</span>
                             }
-                            <span style="font-family:'Fredoka One',cursive;font-size:16px">@a.Title</span>
+                            <span style="font-family:var(--font-display);font-weight:700;font-size:16px">@a.Title</span>
                             <p style="margin:8px 0 4px;font-size:14px">@a.Body</p>
                             <div style="font-size:12px;color:var(--text-light)">
                                 @a.Author.FirstName @a.Author.LastName • @a.CreatedAt.ToString("MMM d, h:mm tt")
@@ -86,7 +87,7 @@
                                     var reacted = reactions[emoji].Contains(_userId);
                                     var eid = emoji;
                                     var aid = a.AnnouncementId;
-                                    <button style="border:2px solid @(reacted ? "var(--black)" : "#D8D0BC");border-radius:20px;padding:3px 8px;background:@(reacted ? "#E8E0CC" : "transparent");cursor:pointer;font-size:14px;display:flex;align-items:center;gap:3px;transition:all .1s"
+                                    <button style="border:2px solid @(reacted ? "var(--border-color)" : "#D8D0BC");border-radius:20px;padding:3px 8px;background:@(reacted ? "#E8E0CC" : "transparent");cursor:pointer;font-size:14px;display:flex;align-items:center;gap:3px;transition:all .1s"
                                             @onclick="() => React(aid, eid)">
                                         <span>@emoji</span>
                                         <span style="font-size:11px;font-weight:700;color:var(--text-mid)">@count</span>
@@ -129,7 +130,7 @@
         }
         @if (!_feed.Any())
         {
-            <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No announcements yet.</p>
+            <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No announcements yet.</p>
         }
     }
 </div>
@@ -147,6 +148,7 @@
     private IEnumerable<string> _pushTargetRoles = new HashSet<string>();
     private static readonly string[] _availableReactions = ["✅", "❤️", "⭐", "😂", "😢", "❓"];
     private Guid _reactionPickerOpen;
+    private Guid _eventId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -155,7 +157,8 @@
         _canPost  = authState.User.IsInRole("Admin") || authState.User.IsInRole("Staff");
         _isGuest  = GuestSvc.GetGuestEventId(authState.User).HasValue;
         Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
         _loading = false;
     }
 
@@ -164,28 +167,28 @@
         if (string.IsNullOrWhiteSpace(_newTitle)) return;
         var priority = _isAdmin ? _newPriority : AnnouncementPriority.Normal;
         var roles = _pushTargetRoles.Any() ? _pushTargetRoles.ToArray() : null;
-        await AnnouncementSvc.PostAsync(_newTitle, _newBody, priority, _userId, roles);
+        await AnnouncementSvc.PostAsync(_eventId, _newTitle, _newBody, priority, _userId, roles);
         _newTitle = ""; _newBody = ""; _newPriority = AnnouncementPriority.Normal;
         _pushTargetRoles = new HashSet<string>();
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
     }
 
     private async Task TogglePin(Announcement a)
     {
         await AnnouncementSvc.PinAsync(a.AnnouncementId, !a.IsPinned);
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
     }
 
     private async Task Archive(Guid id)
     {
         if (!await JS.InvokeAsync<bool>("confirm", "Archive this announcement?")) return;
         await AnnouncementSvc.ArchiveAsync(id);
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
     }
 
     private async Task React(Guid announcementId, string emoji)
     {
         await AnnouncementSvc.ToggleReactionAsync(announcementId, emoji, _userId);
-        _feed = await AnnouncementSvc.GetFeedAsync();
+        _feed = await AnnouncementSvc.GetFeedAsync(_eventId);
     }
 }

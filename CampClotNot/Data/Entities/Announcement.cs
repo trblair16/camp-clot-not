@@ -5,6 +5,8 @@ public enum AnnouncementPriority { Normal, Urgent }
 public class Announcement
 {
     public Guid AnnouncementId { get; set; }
+    public Guid EventId { get; set; }
+    public Event Event { get; set; } = null!;
     public string Title { get; set; } = "";
     public string Body { get; set; } = "";
     public AnnouncementPriority Priority { get; set; } = AnnouncementPriority.Normal;

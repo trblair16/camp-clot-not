@@ -22,17 +22,17 @@
 </style>
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:'Fredoka One',cursive;font-size:22px;margin:0 0 20px"><img src="/img/icons/key.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />User Accounts</h2>
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/key.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />User Accounts</h2>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Create Account form (desktop) / mobile overlay ── *@
         <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
              @onclick="CloseCreateOverlay">
-        <div class="admin-usr-form" style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--black)" : "4px 4px 0 var(--black)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+        <div class="admin-usr-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <h3 style="font-family:'Fredoka One',cursive;font-size:16px;margin:0">Create Account</h3>
+                <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">Create Account</h3>
                 @if (_mobileFormOpen)
                 {
                     <button @onclick="CloseCreateOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
@@ -43,26 +43,26 @@
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">First Name</div>
                     <input type="text" @bind="_form.FirstName" placeholder="First"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                 </div>
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Last Name</div>
                     <input type="text" @bind="_form.LastName" placeholder="Last"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                 </div>
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Email</div>
                 <input type="email" @bind="_form.Email" placeholder="you@example.com"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Temporary Password</div>
                 <div style="position:relative">
                     <input type="@(_showCreatePw ? "text" : "password")" @bind="_form.Password" placeholder="••••••••"
-                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                     <button type="button" @onclick="() => _showCreatePw = !_showCreatePw"
                             style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;color:var(--text-light)">
                         @(_showCreatePw ? "🙈" : "👁")
@@ -74,7 +74,7 @@
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Role</div>
                 <select value="@_form.Role.ToString()"
                         @onchange="e => _form.Role = Enum.Parse<Role>(e.Value?.ToString() ?? nameof(Role.Staff))"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
                     <option value="Staff">Staff</option>
                     <option value="Volunteer">Volunteer / Counselor</option>
                     <option value="MedicalStaff">Medical Staff</option>
@@ -88,7 +88,7 @@
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Assigned Group</div>
                     <select value="@(_form.GroupId?.ToString() ?? "")"
                             @onchange="e => _form.GroupId = Guid.TryParse(e.Value?.ToString(), out var gid) ? gid : null"
-                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
                         <option value="">— None —</option>
                         @foreach (var g in _groups)
                         {
@@ -112,16 +112,16 @@
             }
             else if (!_users.Any())
             {
-                <p style="color:var(--text-light);font-family:'Fredoka One',cursive">No users yet.</p>
+                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No users yet.</p>
             }
             else
             {
                 @* Search / filter toolbar *@
                 <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
                     <input type="text" @bind="_search" @bind:event="oninput" placeholder="Search name or email…"
-                           style="flex:1;min-width:160px;padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="flex:1;min-width:160px;padding:8px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                     <select @bind="_roleFilter"
-                            style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+                            style="padding:8px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;cursor:pointer">
                         <option value="">All roles</option>
                         <option value="Admin">Admin</option>
                         <option value="MedicalStaff">Medical Staff</option>
@@ -133,14 +133,14 @@
                 <div class="admin-usr-cards">
                     @foreach (var u in FilteredUsers)
                     {
-                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                             <div style="flex:1;min-width:0">
                                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap">
-                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">@u.FirstName @u.LastName</div>
-                                    <span style="background:var(--black);color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px;flex-shrink:0">@u.UserRole.SystemName</span>
+                                    <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark)">@u.FirstName @u.LastName</div>
+                                    <span style="background:var(--black);color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px;flex-shrink:0">@u.UserRole.SystemName</span>
                                     @if (!u.IsActive)
                                     {
-                                        <span style="background:#E67E22;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">Inactive</span>
+                                        <span style="background:#E67E22;color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px">Inactive</span>
                                     }
                                 </div>
                                 <div style="font-size:12px;color:var(--text-mid);overflow-wrap:break-word">@u.Email</div>
@@ -165,27 +165,27 @@
                     }
                     @if (!FilteredUsers.Any())
                     {
-                        <p style="color:var(--text-light);font-family:'Fredoka One',cursive;font-style:italic">No users match your search.</p>
+                        <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700;font-style:italic">No users match your search.</p>
                     }
                 </div>
 
-                <div class="admin-usr-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div class="admin-usr-table" style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow:hidden">
                     <div style="overflow-x:auto">
                         <table style="width:100%;border-collapse:collapse;min-width:600px">
                             <thead>
                                 <tr style="background:var(--black)">
-                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;cursor:pointer;user-select:none"
+                                    <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left;cursor:pointer;user-select:none"
                                         @onclick='() => SetSort("name")'>
                                         Name @SortIndicator("name")
                                     </th>
-                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Email</th>
-                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left;cursor:pointer;user-select:none"
+                                    <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Email</th>
+                                    <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left;cursor:pointer;user-select:none"
                                         @onclick='() => SetSort("role")'>
                                         Role @SortIndicator("role")
                                     </th>
-                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Group</th>
-                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left">Active</th>
-                                    <th style="padding:10px 14px;color:white;font-family:'Fredoka One',cursive;font-size:12px;text-align:left"></th>
+                                    <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Group</th>
+                                    <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Active</th>
+                                    <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -195,7 +195,7 @@
                                         <td style="padding:10px 14px;font-size:13px;font-weight:700">@u.FirstName @u.LastName</td>
                                         <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@u.Email</td>
                                         <td style="padding:10px 14px">
-                                            <span style="background:var(--black);color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">@u.UserRole.SystemName</span>
+                                            <span style="background:var(--black);color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px">@u.UserRole.SystemName</span>
                                         </td>
                                         <td style="padding:10px 14px;font-size:13px">@(_groups.FirstOrDefault(g => g.GroupId == u.GroupId)?.ShortName ?? "—")</td>
                                         <td style="padding:10px 14px;font-size:13px">@(u.IsActive ? "✓" : "—")</td>
@@ -234,34 +234,34 @@
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease"
          @onclick="CloseEditDialog">
-        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:6px 6px 0 var(--black);padding:24px;width:100%;max-width:440px;animation:popIn .2s ease"
+        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:12px;box-shadow:6px 6px 0 var(--border-color);padding:24px;width:100%;max-width:440px;animation:popIn .2s ease"
              @onclick:stopPropagation>
-            <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 18px">Edit User</h3>
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 18px">Edit User</h3>
 
             <div style="display:flex;gap:10px;margin-bottom:14px">
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">First Name</div>
                     <input type="text" @bind="_editForm.FirstName" placeholder="First"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                 </div>
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Last Name</div>
                     <input type="text" @bind="_editForm.LastName" placeholder="Last"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                 </div>
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Email</div>
                 <input type="email" @bind="_editForm.Email" placeholder="you@example.com"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Role</div>
                 <select value="@_editForm.Role.ToString()"
                         @onchange="e => _editForm.Role = Enum.Parse<Role>(e.Value?.ToString() ?? nameof(Role.Staff))"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
                     <option value="Staff">Staff</option>
                     <option value="Volunteer">Volunteer / Counselor</option>
                     <option value="MedicalStaff">Medical Staff</option>
@@ -275,7 +275,7 @@
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Assigned Group</div>
                     <select value="@(_editForm.GroupId?.ToString() ?? "")"
                             @onchange="e => _editForm.GroupId = Guid.TryParse(e.Value?.ToString(), out var gid) ? gid : null"
-                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;cursor:pointer">
+                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
                         <option value="">— None —</option>
                         @foreach (var g in _groups)
                         {
@@ -303,16 +303,16 @@
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease"
          @onclick="CloseResetDialog">
-        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:12px;box-shadow:6px 6px 0 var(--black);padding:24px;width:100%;max-width:400px;animation:popIn .2s ease"
+        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:12px;box-shadow:6px 6px 0 var(--border-color);padding:24px;width:100%;max-width:400px;animation:popIn .2s ease"
              @onclick:stopPropagation>
-            <h3 style="font-family:'Fredoka One',cursive;font-size:18px;margin:0 0 18px">Reset Password</h3>
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 18px">Reset Password</h3>
             <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">@_resetting?.FirstName @_resetting?.LastName</p>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">New Password</div>
                 <div style="position:relative">
                     <input type="@(_showResetPw ? "text" : "password")" @bind="_resetPassword" placeholder="••••••••"
-                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                     <button type="button" @onclick="() => _showResetPw = !_showResetPw"
                             style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;color:var(--text-light)">
                         @(_showResetPw ? "🙈" : "👁")
@@ -324,7 +324,7 @@
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Confirm Password</div>
                 <div style="position:relative">
                     <input type="@(_showResetConfirm ? "text" : "password")" @bind="_resetConfirm" placeholder="••••••••"
-                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 40px 9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                     <button type="button" @onclick="() => _showResetConfirm = !_showResetConfirm"
                             style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;color:var(--text-light)">
                         @(_showResetConfirm ? "🙈" : "👁")

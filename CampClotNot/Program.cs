@@ -64,7 +64,7 @@ try
     builder.Services.AddScoped<IUserRepository, UserRepository>();
 
     // Services
-    builder.Services.AddSingleton<ThemeService>();   // one active theme per app instance
+    builder.Services.AddScoped<ThemeService>();   // resolved per circuit via the active event's Theme
     builder.Services.AddScoped<ActiveEventService>();
     builder.Services.AddScoped<CapabilityService>();
     builder.Services.AddScoped<GroupService>();

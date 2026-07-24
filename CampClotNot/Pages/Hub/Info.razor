@@ -15,10 +15,10 @@
     .info-sidebar {
         flex-shrink: 0;
         width: 160px;
-        border: 3px solid var(--black);
+        border: var(--panel-border);
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: 3px 3px 0 var(--black);
+        box-shadow: 3px 3px 0 var(--border-color);
         background: var(--panel-bg);
     }
     @@media (max-width: 500px) {
@@ -38,7 +38,7 @@
                 @foreach (var p in _pages)
                 {
                     <a href="/hub/info?slug=@p.Slug"
-                       style="display:block;padding:12px 16px;font-family:'Fredoka One',cursive;font-size:14px;text-decoration:none;border-bottom:2px solid #E8E0CC;color:@(p.Slug == _activeSlug ? "white" : "var(--black)");background:@(p.Slug == _activeSlug ? "var(--black)" : "transparent")">
+                       style="display:block;padding:12px 16px;font-family:var(--font-display);font-weight:700;font-size:14px;text-decoration:none;border-bottom:2px solid #E8E0CC;color:@(p.Slug == _activeSlug ? "white" : "var(--text-dark)");background:@(p.Slug == _activeSlug ? "var(--text-dark)" : "transparent")">
                         @p.IconEmoji @p.Title
                     </a>
                 }
@@ -48,7 +48,7 @@
                 @if (_activePage is not null)
                 {
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                        <h2 style="font-family:'Fredoka One',cursive;font-size:20px;margin:0">@_activePage.IconEmoji @_activePage.Title</h2>
+                        <h2 style="font-family:var(--font-display);font-weight:700;font-size:20px;margin:0">@_activePage.IconEmoji @_activePage.Title</h2>
                         @if (_isAdmin && !_editing)
                         {
                             <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="StartEdit">
@@ -62,13 +62,13 @@
                     {
                         @if (_editing && _isAdmin)
                         {
-                            <div style="border:3px solid var(--black);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black);margin-bottom:16px">
-                                <div style="font-family:'Fredoka One',cursive;font-size:15px;margin-bottom:12px">📤 Upload New Document</div>
+                            <div style="border:var(--panel-border);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--border-color);margin-bottom:16px">
+                                <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:12px">📤 Upload New Document</div>
 
                                 <div style="margin-bottom:12px">
                                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Title</div>
                                     <input type="text" @bind="_fDocTitle" placeholder="e.g. Emergency Contacts"
-                                           style="width:100%;font-size:14px;font-family:'Nunito',sans-serif;padding:8px 12px;border:3px solid var(--black);border-radius:6px;background:var(--bg-base);box-sizing:border-box" />
+                                           style="width:100%;font-size:14px;font-family:'Nunito',sans-serif;padding:8px 12px;border:var(--panel-border);border-radius:6px;background:var(--bg-base);box-sizing:border-box" />
                                 </div>
 
                                 <div style="margin-bottom:12px">
@@ -104,7 +104,7 @@
                             </div>
 
                             <div style="display:flex;gap:8px;margin-bottom:20px">
-                                <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CancelEdit">Cancel</button>
+                                <button class="ccn-btn" style="background:transparent;border-color:var(--text-dark);color:var(--text-dark)" @onclick="CancelEdit">Cancel</button>
                                 <button class="ccn-btn" @onclick="SaveEdit"
                                         disabled="@(string.IsNullOrWhiteSpace(_fDocTitle) || _fDocData is null)">
                                     Upload
@@ -115,17 +115,17 @@
                         @* Document list — always visible on documents tab *@
                         @if (!_documents.Any(CanSeeDocument))
                         {
-                            <p style="color:var(--text-light);font-family:'Fredoka One',cursive;padding:16px 0">
+                            <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700;padding:16px 0">
                                 @(_isAdmin ? "No documents uploaded yet." : "No documents available.")
                             </p>
                         }
                         else
                         {
-                            <div style="border:3px solid var(--black);border-radius:10px;overflow:hidden;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg)">
+                            <div style="border:var(--panel-border);border-radius:10px;overflow:hidden;box-shadow:3px 3px 0 var(--border-color);background:var(--panel-bg)">
                                 @foreach (var doc in _documents.Where(CanSeeDocument))
                                 {
                                     <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid #E8E0CC;flex-wrap:wrap">
-                                        <span style="font-family:'Fredoka One',cursive;font-size:14px;flex:1;min-width:120px">📄 @doc.Title</span>
+                                        <span style="font-family:var(--font-display);font-weight:700;font-size:14px;flex:1;min-width:120px">📄 @doc.Title</span>
                                         <span style="font-size:11px;color:var(--text-light);flex-shrink:0">
                                             @doc.UploadedAt.ToString("MMM d, yyyy")
                                         </span>
@@ -152,13 +152,13 @@
                         @if (_editing && _isAdmin)
                         {
                             <textarea @bind="_editBody" rows="16"
-                                      style="width:100%;font-family:monospace;font-size:13px;padding:12px;border:3px solid var(--black);border-radius:8px;background:var(--bg-base);resize:vertical;box-sizing:border-box"></textarea>
+                                      style="width:100%;font-family:monospace;font-size:13px;padding:12px;border:var(--panel-border);border-radius:8px;background:var(--bg-base);resize:vertical;box-sizing:border-box"></textarea>
 
                             @if (IsMedicalPage)
                             {
                                 @* ── Emergency contacts PDF section below the textarea ── *@
-                                <div style="border:3px solid var(--black);border-radius:10px;padding:16px;margin-top:12px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
-                                    <div style="font-family:'Fredoka One',cursive;font-size:15px;margin-bottom:12px">📄 Emergency Contacts PDF</div>
+                                <div style="border:var(--panel-border);border-radius:10px;padding:16px;margin-top:12px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--border-color)">
+                                    <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:12px">📄 Emergency Contacts PDF</div>
 
                                     @if (_activePage.PdfContentType is not null && !_fRemovePdf)
                                     {
@@ -206,13 +206,13 @@
                             }
 
                             <div style="display:flex;gap:8px;margin-top:10px">
-                                <button class="ccn-btn" style="background:transparent;border-color:var(--black);color:var(--black)" @onclick="CancelEdit">Cancel</button>
+                                <button class="ccn-btn" style="background:transparent;border-color:var(--text-dark);color:var(--text-dark)" @onclick="CancelEdit">Cancel</button>
                                 <button class="ccn-btn" @onclick="SaveEdit">Save</button>
                             </div>
                         }
                         else
                         {
-                            <div style="border:3px solid var(--black);border-radius:10px;padding:20px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--black)">
+                            <div style="border:var(--panel-border);border-radius:10px;padding:20px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--border-color)">
                                 @((MarkupString)Markdig.Markdown.ToHtml(_activePage.Body ?? ""))
                             </div>
 
@@ -224,7 +224,7 @@
                                         📄 Open Emergency Contacts PDF
                                     </a>
                                     <iframe src="/hub/info/@_activePage.Slug/pdf"
-                                            style="display:block;width:100%;height:520px;border:3px solid var(--black);border-radius:8px;box-shadow:3px 3px 0 var(--black);margin-top:10px"
+                                            style="display:block;width:100%;height:520px;border:var(--panel-border);border-radius:8px;box-shadow:3px 3px 0 var(--border-color);margin-top:10px"
                                             title="Emergency Contacts PDF"></iframe>
                                 </div>
                             }
