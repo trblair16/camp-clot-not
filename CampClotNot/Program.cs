@@ -231,18 +231,12 @@ try
 
     // Guest join flow — cookie sign-in requires a real HTTP response, not a Blazor SignalR circuit,
     // same reason /account/login is a native form POST rather than a Blazor button click.
+    // The QR code links to the bare /join page (not a code-carrying deep link) — scanning is a
+    // shortcut to the entry form, not a substitute for typing the code.
     app.MapPost("/account/join", async (HttpContext ctx, GuestAccessService guestSvc) =>
     {
         var form = await ctx.Request.ReadFormAsync();
         var code = form["code"].ToString();
-        var ev = await guestSvc.ValidateCodeAsync(code);
-        if (ev is null) return Results.Redirect("/join?error=true");
-        await guestSvc.SignInGuestAsync(ctx, ev);
-        return Results.Redirect("/hub/schedule");
-    }).AllowAnonymous();
-
-    app.MapGet("/join/{code}", async (string code, HttpContext ctx, GuestAccessService guestSvc) =>
-    {
         var ev = await guestSvc.ValidateCodeAsync(code);
         if (ev is null) return Results.Redirect("/join?error=true");
         await guestSvc.SignInGuestAsync(ctx, ev);
@@ -279,7 +273,9 @@ try
         var ev = await db.Events.FindAsync(id);
         if (ev?.GuestCode is null) return Results.NotFound();
 
-        var joinUrl = $"{req.Scheme}://{req.Host}/join/{Uri.EscapeDataString(ev.GuestCode)}";
+        // Links to the bare /join entry form, not a code-carrying deep link — scanning still
+        // requires typing the code shown on the flyer, by design.
+        var joinUrl = $"{req.Scheme}://{req.Host}/join";
         var png = guestSvc.GenerateJoinQrPng(joinUrl);
         return Results.File(png, "image/png");
     }).RequireAuthorization(policy => policy.RequireRole("Admin"));
