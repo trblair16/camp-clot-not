@@ -1,11 +1,11 @@
-const CACHE_NAME = 'ccn-shell-v8';
+const CACHE_NAME = 'ccn-shell-v9';
 const SHELL_ASSETS = [
     '/offline.html',
     '/app.css?v=8',
     '/_content/MudBlazor/MudBlazor.min.css',
     '/_content/MudBlazor/MudBlazor.min.js',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    '/icons/icon-192.png?v=2',
+    '/icons/icon-512.png?v=2'
 ];
 const SKIP_PREFIXES = ['/livehub', '/account/', '/api/'];
 
@@ -59,8 +59,8 @@ self.addEventListener('push', function(event) {
     event.waitUntil(
         self.registration.showNotification(data.title, {
             body: data.body,
-            icon: '/icons/icon-192.png',
-            badge: '/icons/icon-192.png',
+            icon: '/icons/icon-192.png?v=2',
+            badge: '/icons/icon-192.png?v=2',
             data: { url: data.url || '/hub/announcements' },
             vibrate: [200, 100, 200]
         })
