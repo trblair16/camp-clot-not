@@ -1,16 +1,63 @@
 @inject NavigationManager Nav
+@inject ThemeService ThemeSvc
 
-<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--black);border-bottom:3px solid var(--black)">
-    <img src="/img/ccn-logo-nav.webp" alt="Camp Clot Not" style="height:34px;width:auto;object-fit:contain" />
-    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-        <a href="/hub/schedule" style="padding:8px 14px;border-radius:8px;font-family:'Fredoka One',cursive;font-size:13px;text-decoration:none;color:@(IsActive("/hub/schedule") ? "#1A1A1A" : "#F5C800");background:@(IsActive("/hub/schedule") ? "#F5C800" : "transparent")">Schedule</a>
-        <a href="/hub/announcements" style="padding:8px 14px;border-radius:8px;font-family:'Fredoka One',cursive;font-size:13px;text-decoration:none;color:@(IsActive("/hub/announcements") ? "#1A1A1A" : "#F5C800");background:@(IsActive("/hub/announcements") ? "#F5C800" : "transparent")">Announcements</a>
-        <a href="/hub/staff" style="padding:8px 14px;border-radius:8px;font-family:'Fredoka One',cursive;font-size:13px;text-decoration:none;color:@(IsActive("/hub/staff") ? "#1A1A1A" : "#F5C800");background:@(IsActive("/hub/staff") ? "#F5C800" : "transparent")">Staff</a>
-        <a href="/hub/sponsors" style="padding:8px 14px;border-radius:8px;font-family:'Fredoka One',cursive;font-size:13px;text-decoration:none;color:@(IsActive("/hub/sponsors") ? "#1A1A1A" : "#F5C800");background:@(IsActive("/hub/sponsors") ? "#F5C800" : "transparent")">Sponsors</a>
+@* ── MOBILE HEADER ──────────────────────────────────────────────── *@
+<div class="nav-mobile-header">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:36px;width:auto;object-fit:contain" />
+        <span style="font-family:var(--font-display);font-weight:700;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
     </div>
 </div>
 
+@* ── DESKTOP HEADER ─────────────────────────────────────────────── *@
+<div class="nav-desktop-header">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:42px;width:auto;object-fit:contain" />
+        <span style="font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+    </div>
+
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <a href="/hub/schedule" class="nav-link" style="@ActiveStyle("/hub/schedule", "#2980B9")"><img src="/img/icons/schedule.svg?v=3" class="nav-link-icon" alt="" /> Schedule</a>
+        <a href="/hub/announcements" class="nav-link" style="@ActiveStyle("/hub/announcements", "#F5C800")"><img src="/img/icons/announcements.svg?v=3" class="nav-link-icon" alt="" /> Announcements</a>
+        <a href="/hub/staff" class="nav-link" style="@ActiveStyle("/hub/staff", "#27AE60")"><img src="/img/icons/person.svg?v=3" class="nav-link-icon" alt="" /> Staff</a>
+        <a href="/hub/sponsors" class="nav-link" style="@ActiveStyle("/hub/sponsors", "#9B59B6")"><img src="/img/icons/trophy.svg?v=3" class="nav-link-icon" alt="" /> Sponsors</a>
+    </div>
+</div>
+
+@* ── BOTTOM BAR (mobile) ─────────────────────────────────────────── *@
+<div class="nav-bottom-bar">
+    <button class="nav-tab @(IsActive("/hub/schedule") ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/schedule")'>
+        <span class="tab-icon"><img src="/img/icons/schedule.svg?v=3" alt="" /></span>
+        <span>Schedule</span>
+    </button>
+    <button class="nav-tab @(IsActive("/hub/announcements") ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/announcements")'>
+        <span class="tab-icon"><img src="/img/icons/announcements.svg?v=3" alt="" /></span>
+        <span>News</span>
+    </button>
+    <button class="nav-tab @(IsActive("/hub/staff") ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/staff")'>
+        <span class="tab-icon"><img src="/img/icons/person.svg?v=3" alt="" /></span>
+        <span>Staff</span>
+    </button>
+    <button class="nav-tab @(IsActive("/hub/sponsors") ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/sponsors")'>
+        <span class="tab-icon"><img src="/img/icons/trophy.svg?v=3" alt="" /></span>
+        <span>Sponsors</span>
+    </button>
+</div>
+
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        await ThemeSvc.LoadAsync();
+    }
+
     private bool IsActive(string href) =>
         ("/" + Nav.ToBaseRelativePath(Nav.Uri)).StartsWith(href, StringComparison.OrdinalIgnoreCase);
+
+    private string ActiveStyle(string href, string color)
+    {
+        var active = IsActive(href);
+        return active
+            ? $"border-color:{color};box-shadow:2px 2px 0 {color};background:{color};color:#1A1A1A"
+            : "";
+    }
 }
