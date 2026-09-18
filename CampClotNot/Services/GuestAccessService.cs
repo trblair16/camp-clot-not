@@ -84,8 +84,26 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
             CreatedAt = DateTime.UtcNow
         };
         db.GuestAttendees.Add(guest);
-        await db.SaveChangesAsync();
-        return guest;
+        try
+        {
+            await db.SaveChangesAsync();
+            return guest;
+        }
+        catch (DbUpdateException)
+        {
+            // A concurrent request won the race to insert the same normalized name,
+            // tripping the DB-level unique index on (NormalizedFirstName, NormalizedLastName).
+            // The original context may be in a bad state after the failed save, so
+            // re-query with a fresh context and return the winner's row instead of throwing.
+            using var db2 = factory.CreateDbContext();
+            var winner = await db2.GuestAttendees.FirstOrDefaultAsync(g =>
+                g.NormalizedFirstName == normFirst && g.NormalizedLastName == normLast);
+            if (winner is not null) return winner;
+
+            // Should not happen given the unique index, but don't return null
+            // from a non-nullable method if it somehow does.
+            throw;
+        }
     }
 
     public async Task RecordVisitAsync(Guid guestAttendeeId, Guid eventId)
