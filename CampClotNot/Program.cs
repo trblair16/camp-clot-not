@@ -235,11 +235,20 @@ try
     // shortcut to the entry form, not a substitute for typing the code.
     app.MapPost("/account/join", async (HttpContext ctx, GuestAccessService guestSvc) =>
     {
-        var form = await ctx.Request.ReadFormAsync();
-        var code = form["code"].ToString();
+        var form      = await ctx.Request.ReadFormAsync();
+        var code      = form["code"].ToString();
+        var firstName = form["firstName"].ToString();
+        var lastName  = form["lastName"].ToString();
+
         var ev = await guestSvc.ValidateCodeAsync(code);
         if (ev is null) return Results.Redirect("/join?error=true");
-        await guestSvc.SignInGuestAsync(ctx, ev);
+
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            return Results.Redirect("/join?error=name");
+
+        var guest = await guestSvc.GetOrCreateGuestAsync(firstName, lastName);
+        await guestSvc.RecordVisitAsync(guest.GuestAttendeeId, ev.EventId);
+        await guestSvc.SignInGuestAsync(ctx, ev, guest);
         return Results.Redirect("/hub/schedule");
     }).AllowAnonymous();
 
