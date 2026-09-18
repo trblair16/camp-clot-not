@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.AspNetCore.Authentication;
@@ -11,6 +12,7 @@ namespace CampClotNot.Services;
 public static class GuestClaimTypes
 {
     public const string EventId = "ccn:guestEventId";
+    public const string GuestAttendeeId = "ccn:guestAttendeeId";
 }
 
 public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
@@ -30,12 +32,13 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
         return ev;
     }
 
-    public async Task SignInGuestAsync(HttpContext httpContext, Event ev)
+    public async Task SignInGuestAsync(HttpContext httpContext, Event ev, GuestAttendee guest)
     {
         var claims = new List<Claim>
         {
             new(GuestClaimTypes.EventId, ev.EventId.ToString()),
-            new(ClaimTypes.Name, "Guest")
+            new(GuestClaimTypes.GuestAttendeeId, guest.GuestAttendeeId.ToString()),
+            new(ClaimTypes.Name, guest.FirstName)
         };
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var expiresUtc = new DateTimeOffset(ev.ExpDate.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
@@ -50,6 +53,97 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
     {
         var claim = user.FindFirst(GuestClaimTypes.EventId)?.Value;
         return Guid.TryParse(claim, out var id) ? id : null;
+    }
+
+    public Guid? GetGuestAttendeeId(ClaimsPrincipal user)
+    {
+        var claim = user.FindFirst(GuestClaimTypes.GuestAttendeeId)?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
+    }
+
+    private static string Normalize(string s) =>
+        Regex.Replace(s.Trim(), @"\s+", " ").ToLowerInvariant();
+
+    public async Task<GuestAttendee> GetOrCreateGuestAsync(string firstName, string lastName)
+    {
+        var normFirst = Normalize(firstName);
+        var normLast = Normalize(lastName);
+
+        using var db = factory.CreateDbContext();
+        var existing = await db.GuestAttendees.FirstOrDefaultAsync(g =>
+            g.NormalizedFirstName == normFirst && g.NormalizedLastName == normLast);
+        if (existing is not null) return existing;
+
+        var guest = new GuestAttendee
+        {
+            GuestAttendeeId = Guid.NewGuid(),
+            FirstName = firstName.Trim(),
+            LastName = lastName.Trim(),
+            NormalizedFirstName = normFirst,
+            NormalizedLastName = normLast,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.GuestAttendees.Add(guest);
+        await db.SaveChangesAsync();
+        return guest;
+    }
+
+    public async Task RecordVisitAsync(Guid guestAttendeeId, Guid eventId)
+    {
+        using var db = factory.CreateDbContext();
+        var now = DateTime.UtcNow;
+        var visit = await db.GuestEventVisits.FirstOrDefaultAsync(v =>
+            v.GuestAttendeeId == guestAttendeeId && v.EventId == eventId);
+
+        if (visit is null)
+        {
+            db.GuestEventVisits.Add(new GuestEventVisit
+            {
+                GuestEventVisitId = Guid.NewGuid(),
+                GuestAttendeeId = guestAttendeeId,
+                EventId = eventId,
+                FirstJoinedAt = now,
+                LastSeenAt = now
+            });
+        }
+        else
+        {
+            visit.LastSeenAt = now;
+        }
+        await db.SaveChangesAsync();
+    }
+
+    public async Task<List<GuestAttendee>> GetAllGuestsWithVisitsAsync()
+    {
+        using var db = factory.CreateDbContext();
+        return await db.GuestAttendees
+            .Include(g => g.Visits)
+            .ThenInclude(v => v.Event)
+            .OrderBy(g => g.LastName)
+            .ThenBy(g => g.FirstName)
+            .ToListAsync();
+    }
+
+    public async Task UpdateGuestNameAsync(Guid guestAttendeeId, string firstName, string lastName)
+    {
+        using var db = factory.CreateDbContext();
+        var guest = await db.GuestAttendees.FindAsync(guestAttendeeId);
+        if (guest is null) return;
+
+        guest.FirstName = firstName.Trim();
+        guest.LastName = lastName.Trim();
+        guest.NormalizedFirstName = Normalize(firstName);
+        guest.NormalizedLastName = Normalize(lastName);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteGuestAsync(Guid guestAttendeeId)
+    {
+        using var db = factory.CreateDbContext();
+        var guest = await db.GuestAttendees.FindAsync(guestAttendeeId);
+        if (guest is null) return;
+        db.GuestAttendees.Remove(guest);
+        await db.SaveChangesAsync();
     }
 
     public byte[] GenerateJoinQrPng(string joinUrl)
