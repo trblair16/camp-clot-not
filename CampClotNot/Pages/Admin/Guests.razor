@@ -1,0 +1,153 @@
+@page "/admin/guests"
+@attribute [Authorize(Roles = "Admin")]
+@inject GuestAccessService GuestSvc
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<PageTitle>Guests — Camp Clot Not</PageTitle>
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/person.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Guests</h2>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);padding:20px;flex:0 0 320px;min-width:260px">
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Rename a Guest" : "Edit Guest")</h3>
+
+            @if (_editingId == Guid.Empty)
+            {
+                <p style="font-size:13px;color:var(--text-mid);margin:0">Click "Edit" on a guest in the table to rename or delete them. Guests are created automatically when they join an event — there's no manual "add" here.</p>
+            }
+            else
+            {
+                <div style="margin-bottom:14px">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">First Name</div>
+                    <input type="text" @bind="_fFirstName"
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                </div>
+                <div style="margin-bottom:16px">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Last Name</div>
+                    <input type="text" @bind="_fLastName"
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_saveError))
+                {
+                    <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_saveError</div>
+                }
+
+                <div style="display:flex;gap:8px">
+                    <button class="ccn-btn" @onclick="SaveAsync">Save Changes</button>
+                    <button class="ccn-btn" style="background:transparent" @onclick="CancelEdit">Cancel</button>
+                </div>
+            }
+        </div>
+
+        <div style="flex:1;min-width:240px">
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!_guests.Any())
+            {
+                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No guests have joined an event yet.</p>
+            }
+            else
+            {
+                <div style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow-x:auto">
+                    <table style="width:100%;border-collapse:collapse;min-width:640px">
+                        <thead>
+                            <tr style="background:var(--black)">
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Name</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Events Joined</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Created</th>
+                                <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var g in _guests)
+                            {
+                                <tr style="border-bottom:2px solid #E8E0CC">
+                                    <td style="padding:10px 14px;font-size:13px;font-weight:700">@g.FirstName @g.LastName</td>
+                                    <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">
+                                        @if (g.Visits.Any())
+                                        {
+                                            @string.Join(", ", g.Visits.Select(v => v.Event.Name))
+                                        }
+                                        else { <span>—</span> }
+                                    </td>
+                                    <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@g.CreatedAt.ToString("MMM d, yyyy")</td>
+                                    <td style="padding:8px 10px">
+                                        <div style="display:flex;gap:4px">
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(g)">Edit</button>
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(g)">Del</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private List<GuestAttendee> _guests = [];
+    private bool _loading = true;
+    private Guid _editingId;
+    private string _fFirstName = "";
+    private string _fLastName = "";
+    private string _saveError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Reload();
+        _loading = false;
+    }
+
+    private async Task Reload()
+    {
+        _guests = await GuestSvc.GetAllGuestsWithVisitsAsync();
+    }
+
+    private void StartEdit(GuestAttendee g)
+    {
+        _editingId = g.GuestAttendeeId;
+        _fFirstName = g.FirstName;
+        _fLastName = g.LastName;
+        _saveError = "";
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = Guid.Empty;
+        _fFirstName = "";
+        _fLastName = "";
+        _saveError = "";
+    }
+
+    private async Task SaveAsync()
+    {
+        _saveError = "";
+        if (string.IsNullOrWhiteSpace(_fFirstName) || string.IsNullOrWhiteSpace(_fLastName))
+        {
+            _saveError = "First and last name are both required.";
+            return;
+        }
+        await GuestSvc.UpdateGuestNameAsync(_editingId, _fFirstName, _fLastName);
+        Snackbar.Add("Guest updated.", Severity.Success);
+        CancelEdit();
+        await Reload();
+    }
+
+    private async Task DeleteAsync(GuestAttendee g)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"Delete {g.FirstName} {g.LastName}? This removes their join history for all events.")) return;
+        await GuestSvc.DeleteGuestAsync(g.GuestAttendeeId);
+        Snackbar.Add("Guest deleted.", Severity.Info);
+        await Reload();
+    }
+}
