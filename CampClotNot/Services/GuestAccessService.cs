@@ -68,6 +68,8 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
     {
         var normFirst = Normalize(firstName);
         var normLast = Normalize(lastName);
+        if (string.IsNullOrEmpty(normFirst) || string.IsNullOrEmpty(normLast))
+            throw new ArgumentException("First and last name cannot be empty.");
 
         using var db = factory.CreateDbContext();
         var existing = await db.GuestAttendees.FirstOrDefaultAsync(g =>
@@ -123,11 +125,34 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
                 FirstJoinedAt = now,
                 LastSeenAt = now
             });
+
+            try
+            {
+                await db.SaveChangesAsync();
+                return;
+            }
+            catch (DbUpdateException)
+            {
+                // A concurrent request won the race to insert the same (GuestAttendeeId, EventId)
+                // pair, tripping the DB-level unique index. The original context may be in a bad
+                // state after the failed save, so re-query with a fresh context and update the
+                // winner's row instead of throwing.
+                using var db2 = factory.CreateDbContext();
+                var winner = await db2.GuestEventVisits.FirstOrDefaultAsync(v =>
+                    v.GuestAttendeeId == guestAttendeeId && v.EventId == eventId);
+                if (winner is not null)
+                {
+                    winner.LastSeenAt = now;
+                    await db2.SaveChangesAsync();
+                    return;
+                }
+
+                // Should not happen given the unique index, but don't silently swallow it if it does.
+                throw;
+            }
         }
-        else
-        {
-            visit.LastSeenAt = now;
-        }
+
+        visit.LastSeenAt = now;
         await db.SaveChangesAsync();
     }
 
@@ -142,17 +167,29 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
             .ToListAsync();
     }
 
-    public async Task UpdateGuestNameAsync(Guid guestAttendeeId, string firstName, string lastName)
+    public async Task<bool> UpdateGuestNameAsync(Guid guestAttendeeId, string firstName, string lastName)
     {
+        var normFirst = Normalize(firstName);
+        var normLast = Normalize(lastName);
+        if (string.IsNullOrEmpty(normFirst) || string.IsNullOrEmpty(normLast))
+            throw new ArgumentException("First and last name cannot be empty.");
+
         using var db = factory.CreateDbContext();
         var guest = await db.GuestAttendees.FindAsync(guestAttendeeId);
-        if (guest is null) return;
+        if (guest is null) return true;
+
+        var collision = await db.GuestAttendees.AnyAsync(g =>
+            g.GuestAttendeeId != guestAttendeeId &&
+            g.NormalizedFirstName == normFirst &&
+            g.NormalizedLastName == normLast);
+        if (collision) return false;
 
         guest.FirstName = firstName.Trim();
         guest.LastName = lastName.Trim();
-        guest.NormalizedFirstName = Normalize(firstName);
-        guest.NormalizedLastName = Normalize(lastName);
+        guest.NormalizedFirstName = normFirst;
+        guest.NormalizedLastName = normLast;
         await db.SaveChangesAsync();
+        return true;
     }
 
     public async Task DeleteGuestAsync(Guid guestAttendeeId)

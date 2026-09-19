@@ -137,7 +137,12 @@
             _saveError = "First and last name are both required.";
             return;
         }
-        await GuestSvc.UpdateGuestNameAsync(_editingId, _fFirstName, _fLastName);
+        var success = await GuestSvc.UpdateGuestNameAsync(_editingId, _fFirstName, _fLastName);
+        if (!success)
+        {
+            _saveError = $"A guest named {_fFirstName} {_fLastName} already exists.";
+            return;
+        }
         Snackbar.Add("Guest updated.", Severity.Success);
         CancelEdit();
         await Reload();
