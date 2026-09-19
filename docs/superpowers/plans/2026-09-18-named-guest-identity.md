@@ -517,74 +517,120 @@ git commit -m "feat: capture guest name on join, link to persistent GuestAttende
 
 ### Task 4: Show the guest's name in `GuestNav`
 
+**CORRECTED 2026-09-19:** `GuestNav.razor` was redesigned by an already-merged PR (mobile/desktop responsive header split) after this plan's original Task 4 text was written. The steps below reflect the file's actual current structure — the file now has separate `nav-mobile-header`, `nav-desktop-header`, and `nav-bottom-bar` sections, a `ThemeService`-driven logo, and an `ActiveStyle` helper. If you are an implementer reading this, trust these corrected steps, not any earlier draft you may have seen.
+
 **Files:**
 - Modify: `CampClotNot/Shared/GuestNav.razor`
 
 **Interfaces:**
 - Consumes: `AuthenticationStateProvider` (standard Blazor DI, already used elsewhere e.g. `ChangePassword.razor`).
 
-- [ ] **Step 1: Inject auth state and read the guest's name**
+- [ ] **Step 1: Inject auth state**
 
 In `CampClotNot/Shared/GuestNav.razor`, find:
 
 ```razor
 @inject NavigationManager Nav
-
-<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--black);border-bottom:3px solid var(--black)">
-    <img src="/img/ccn-logo-nav.webp" alt="Camp Clot Not" style="height:34px;width:auto;object-fit:contain" />
-    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+@inject ThemeService ThemeSvc
 ```
 
 Replace with:
 
 ```razor
 @inject NavigationManager Nav
+@inject ThemeService ThemeSvc
 @inject AuthenticationStateProvider Auth
-
-<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--black);border-bottom:3px solid var(--black)">
-    <div style="display:flex;align-items:center;gap:10px">
-        <img src="/img/ccn-logo-nav.webp" alt="Camp Clot Not" style="height:34px;width:auto;object-fit:contain" />
-        @if (!string.IsNullOrWhiteSpace(_guestFirstName))
-        {
-            <span style="font-family:'Fredoka One',cursive;font-size:13px;color:#F5C800">Hi, @_guestFirstName!</span>
-        }
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
 ```
 
-- [ ] **Step 2: Add the code-behind for reading the guest's name**
+- [ ] **Step 2: Add the greeting to the mobile header**
 
-Step 1 already opened and closed the new logo/greeting wrapper div (the `</div>` right before `<div style="display:flex;gap:6px;...">` in Step 1's replacement) — the file's overall div nesting is already balanced after Step 1. This step only touches the `@code` block. Find the end of the file:
+Find:
 
 ```razor
+@* ── MOBILE HEADER ──────────────────────────────────────────────── *@
+<div class="nav-mobile-header">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:36px;width:auto;object-fit:contain" />
+        <span style="font-family:var(--font-display);font-weight:700;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+    </div>
 </div>
-
-@code {
-    private bool IsActive(string href) =>
-        ("/" + Nav.ToBaseRelativePath(Nav.Uri)).StartsWith(href, StringComparison.OrdinalIgnoreCase);
-}
 ```
 
 Replace with:
 
 ```razor
+@* ── MOBILE HEADER ──────────────────────────────────────────────── *@
+<div class="nav-mobile-header">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:36px;width:auto;object-fit:contain" />
+        <span style="font-family:var(--font-display);font-weight:700;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+        @if (!string.IsNullOrWhiteSpace(_guestFirstName))
+        {
+            <span style="font-family:'Fredoka One',cursive;font-size:11px;color:var(--color-primary)">Hi, @_guestFirstName!</span>
+        }
+    </div>
 </div>
+```
 
+- [ ] **Step 3: Add the greeting to the desktop header**
+
+Find:
+
+```razor
+@* ── DESKTOP HEADER ─────────────────────────────────────────────── *@
+<div class="nav-desktop-header">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:42px;width:auto;object-fit:contain" />
+        <span style="font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+    </div>
+```
+
+Replace with:
+
+```razor
+@* ── DESKTOP HEADER ─────────────────────────────────────────────── *@
+<div class="nav-desktop-header">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:42px;width:auto;object-fit:contain" />
+        <span style="font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+        @if (!string.IsNullOrWhiteSpace(_guestFirstName))
+        {
+            <span style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--color-primary)">Hi, @_guestFirstName!</span>
+        }
+    </div>
+```
+
+(Only the opening portion of the desktop header block is shown/replaced — the nav-links `<div>` that follows it, and everything after, stays untouched.)
+
+- [ ] **Step 4: Add the code-behind for reading the guest's name**
+
+Find:
+
+```razor
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await ThemeSvc.LoadAsync();
+    }
+```
+
+Replace with:
+
+```razor
 @code {
     private string? _guestFirstName;
 
     protected override async Task OnInitializedAsync()
     {
+        await ThemeSvc.LoadAsync();
         var state = await Auth.GetAuthenticationStateAsync();
         _guestFirstName = state.User.Identity?.Name;
     }
-
-    private bool IsActive(string href) =>
-        ("/" + Nav.ToBaseRelativePath(Nav.Uri)).StartsWith(href, StringComparison.OrdinalIgnoreCase);
-}
 ```
 
-- [ ] **Step 3: Verify build**
+(The rest of the `@code` block — `IsActive` and `ActiveStyle` — stays unchanged.)
+
+- [ ] **Step 5: Verify build**
 
 ```bash
 dotnet build CampClotNot
@@ -592,7 +638,7 @@ dotnet build CampClotNot
 
 Expected: succeeds with no errors.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add CampClotNot/Shared/GuestNav.razor
