@@ -56,6 +56,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CampDocument> CampDocuments => Set<CampDocument>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
+    // Guest identity
+    public DbSet<GuestAttendee> GuestAttendees => Set<GuestAttendee>();
+    public DbSet<GuestEventVisit> GuestEventVisits => Set<GuestEventVisit>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Non-conventional primary keys
@@ -158,5 +162,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(d => d.UploadedBy)
             .WithMany()
             .HasForeignKey(d => d.UploadedByUserId);
+
+        // GuestAttendee: unique on normalized name pair (the cross-event matching key)
+        modelBuilder.Entity<GuestAttendee>()
+            .HasIndex(g => new { g.NormalizedFirstName, g.NormalizedLastName })
+            .IsUnique();
+
+        // GuestEventVisit: composite unique (one row per guest per event) + explicit FKs
+        modelBuilder.Entity<GuestEventVisit>()
+            .HasIndex(v => new { v.GuestAttendeeId, v.EventId })
+            .IsUnique();
+        modelBuilder.Entity<GuestEventVisit>()
+            .HasOne(v => v.GuestAttendee)
+            .WithMany(g => g.Visits)
+            .HasForeignKey(v => v.GuestAttendeeId);
+        modelBuilder.Entity<GuestEventVisit>()
+            .HasOne(v => v.Event)
+            .WithMany()
+            .HasForeignKey(v => v.EventId);
     }
 }
