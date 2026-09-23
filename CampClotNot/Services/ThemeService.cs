@@ -66,7 +66,11 @@ public record ThemeConfig(
     string HeadingFont = "'Fredoka One', cursive",
     string BorderColor = "#1A1A1A",
     string BorderWidth = "3px",
-    string PanelShadow = "4px 4px 0 #1A1A1A"
+    string PanelShadow = "4px 4px 0 #1A1A1A",
+    // What shows when the theme has no logo/banner of its own: CCN's Mario artwork (nav logo,
+    // hero logo, Dashboard coins/stars) when true, a plain text wordmark when false. Part of a
+    // preset's look, so older serialized palettes without it (Men's Retreat) read as false.
+    bool UseCcnArtwork = false
 )
 {
     public string BackgroundGradient =>
@@ -144,7 +148,8 @@ public class ThemeService(IDbContextFactory<AppDbContext> factory, ActiveEventSe
         HeadingFont: "'Fredoka One', cursive",
         BorderColor: "#1A1A1A",
         BorderWidth: "3px",
-        PanelShadow: "4px 4px 0 #1A1A1A"
+        PanelShadow: "4px 4px 0 #1A1A1A",
+        UseCcnArtwork: true
     );
 
     // Default defined after MarioParty2026 to avoid null-before-init warning
