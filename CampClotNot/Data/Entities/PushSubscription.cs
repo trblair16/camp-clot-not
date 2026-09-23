@@ -7,5 +7,6 @@ public class PushSubscription
     public string P256dh { get; set; } = "";
     public string Auth { get; set; } = "";
     public Guid? UserId { get; set; }
+    public Guid? GuestAttendeeId { get; set; }
     public DateTime CreatedAt { get; set; }
 }

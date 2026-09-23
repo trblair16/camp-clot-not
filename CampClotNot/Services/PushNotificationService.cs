@@ -37,7 +37,7 @@ public class PushNotificationService
             vapidSubject, vapidPublic[..20] + "...");
     }
 
-    public async Task SubscribeAsync(string endpoint, string p256dh, string auth, Guid? userId)
+    public async Task SubscribeAsync(string endpoint, string p256dh, string auth, Guid? userId, Guid? guestAttendeeId = null)
     {
         using var db = _factory.CreateDbContext();
         var existing = await db.PushSubscriptions
@@ -48,6 +48,7 @@ public class PushNotificationService
             existing.P256dh = p256dh;
             existing.Auth = auth;
             existing.UserId = userId;
+            existing.GuestAttendeeId = guestAttendeeId;
         }
         else
         {
@@ -58,6 +59,7 @@ public class PushNotificationService
                 P256dh = p256dh,
                 Auth = auth,
                 UserId = userId,
+                GuestAttendeeId = guestAttendeeId,
                 CreatedAt = CampTime.Now
             });
         }
@@ -90,7 +92,19 @@ public class PushNotificationService
     public async Task SendToAllAsync(string title, string body, string? url = null)
     {
         using var db = _factory.CreateDbContext();
-        var subs = await db.PushSubscriptions.ToListAsync();
+        // Staff only — guest subscriptions are event-scoped via SendToGuestsForEventAsync.
+        var subs = await db.PushSubscriptions.Where(s => s.UserId != null).ToListAsync();
+        await DeliverAsync(db, subs, title, body, url);
+    }
+
+    // Guests only get pushes for events they actually joined (GuestEventVisit), never globally.
+    public async Task SendToGuestsForEventAsync(Guid eventId, string title, string body, string? url = null)
+    {
+        using var db = _factory.CreateDbContext();
+        var subs = await db.PushSubscriptions
+            .Where(s => s.GuestAttendeeId != null && db.GuestEventVisits
+                .Any(v => v.GuestAttendeeId == s.GuestAttendeeId && v.EventId == eventId))
+            .ToListAsync();
         await DeliverAsync(db, subs, title, body, url);
     }
 

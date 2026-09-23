@@ -1,7 +1,7 @@
 # Guest Push Notifications
 
 **Date:** 2026-09-21
-**Status:** Approved, pending implementation plan
+**Status:** Implemented (2026-09-23) — see "Implementation Notes" for deviations
 **Driver:** Camp Harvest 2026 is coming up fast. Tyler wants this delivered before then. This is
 sub-project 2 of a 4-part roadmap (guest identity → guest push notifications → attendance
 tracking → admin event configurability), high priority.
@@ -143,3 +143,24 @@ verification is `dotnet build` succeeding plus a manual walkthrough: subscribe a
 fresh join, post an announcement as staff for that guest's event, confirm the guest's browser
 receives the push; confirm a guest who joined a *different* event does NOT receive it; confirm
 existing staff push behavior (`SendToRolesAsync`/`SendToAllAsync`) is unaffected.
+
+## Implementation Notes (2026-09-23)
+
+Three deviations from the design above, all found while implementing:
+
+1. **`SendToAllAsync` is now staff-only (`UserId != null`).** It previously selected every
+   `PushSubscriptions` row. That was harmless while only staff could subscribe, but once guests
+   can subscribe it would have sent them untargeted announcements from *every* event and a
+   duplicate push for their own event. Event-scoping for guests lives only in
+   `SendToGuestsForEventAsync`.
+2. **Guest push only fires for "everyone" announcements.** The announcements form says "Leave
+   empty to push to everyone. Select roles to target specific groups." A role-targeted push
+   (e.g. Medical Staff only) is not for guests, so `SendToGuestsForEventAsync` runs only when
+   `targetRoles` is empty. It keeps its own try/catch, separate from the staff push.
+3. **`/api/push/subscribe` rejects ownerless subscriptions.** If neither a `NameIdentifier` nor a
+   `GuestAttendeeId` claim is present (e.g. a pre-sub-project-1 guest cookie), it returns 401
+   instead of storing a row that no send method would ever target.
+
+Migration: `AddGuestPushSubscription` (adds nullable `GuestAttendeeId uuid` to `PushSubscriptions`).
+Migrations are not auto-applied at startup, so run it against prod before deploying.
+

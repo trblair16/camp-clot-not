@@ -325,14 +325,17 @@ try
     app.MapGet("/api/vapid-public-key", (IConfiguration config) =>
         Results.Ok(new { key = config["Vapid:PublicKey"] }));
 
-    app.MapPost("/api/push/subscribe", async (HttpContext ctx, PushNotificationService pushSvc) =>
+    app.MapPost("/api/push/subscribe", async (HttpContext ctx, PushNotificationService pushSvc, GuestAccessService guestSvc) =>
     {
         var form = await ctx.Request.ReadFromJsonAsync<PushSubscribeRequest>();
         if (form is null) return Results.BadRequest();
         Guid? userId = null;
         if (Guid.TryParse(ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid))
             userId = uid;
-        await pushSvc.SubscribeAsync(form.Endpoint, form.P256dh, form.Auth, userId);
+        var guestAttendeeId = guestSvc.GetGuestAttendeeId(ctx.User);
+        // A subscription with no owner would never be targeted (legacy guest cookie without a GuestAttendeeId).
+        if (userId is null && guestAttendeeId is null) return Results.Unauthorized();
+        await pushSvc.SubscribeAsync(form.Endpoint, form.P256dh, form.Auth, userId, guestAttendeeId);
         return Results.Ok();
     });
 
