@@ -83,6 +83,8 @@ try
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
     builder.Services.AddScoped<AttendanceService>();
+    builder.Services.AddScoped<ThemeAdminService>();
+    builder.Services.AddScoped<EventSetupService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddSingleton<PushNotificationService>();
     builder.Services.AddScoped<SeedService>();
@@ -275,6 +277,26 @@ try
         var loc = await db.Locations.FindAsync(id);
         if (loc?.ImageData is null) return Results.NotFound();
         return Results.File(loc.ImageData, loc.ImageContentType ?? "image/jpeg");
+    }).AllowAnonymous();
+
+    // Theme images uploaded on /admin/theme. Anonymous because the login page and guest nav
+    // show the logo. URLs carry ?v=<UpdatedAt ticks>, so a day of caching never serves a stale image.
+    app.MapGet("/theme-logo/{id:guid}", async (Guid id, HttpContext ctx, IDbContextFactory<AppDbContext> factory) =>
+    {
+        using var db = factory.CreateDbContext();
+        var theme = await db.Themes.FindAsync(id);
+        if (theme?.LogoData is null) return Results.NotFound();
+        ctx.Response.Headers.CacheControl = "public, max-age=86400";
+        return Results.File(theme.LogoData, theme.LogoContentType ?? "image/png");
+    }).AllowAnonymous();
+
+    app.MapGet("/theme-banner/{id:guid}", async (Guid id, HttpContext ctx, IDbContextFactory<AppDbContext> factory) =>
+    {
+        using var db = factory.CreateDbContext();
+        var theme = await db.Themes.FindAsync(id);
+        if (theme?.BannerData is null) return Results.NotFound();
+        ctx.Response.Headers.CacheControl = "public, max-age=86400";
+        return Results.File(theme.BannerData, theme.BannerContentType ?? "image/png");
     }).AllowAnonymous();
 
     app.MapGet("/admin/events/{id:guid}/guest-qr", async (Guid id, HttpRequest req, IDbContextFactory<AppDbContext> factory, GuestAccessService guestSvc) =>

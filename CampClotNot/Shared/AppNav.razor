@@ -7,8 +7,7 @@
 <div class="nav-mobile-header">
     <div style="display:flex;align-items:center;gap:6px">
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-            <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:36px;width:auto;object-fit:contain" />
-            <span style="font-family:var(--font-display);font-weight:700;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+            <NavBrand Height="36" SubtitleSize="10" />
         </div>
     </div>
 </div>
@@ -17,8 +16,7 @@
 <div class="nav-desktop-header">
     <div style="display:flex;align-items:center;gap:6px">
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-            <img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-nav.webp")" alt="@ThemeSvc.Active.AppTitle" style="height:42px;width:auto;object-fit:contain" />
-            <span style="font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+            <NavBrand Height="42" SubtitleSize="11" />
         </div>
     </div>
 
@@ -116,6 +114,7 @@
                         {
                             <div class="nav-admin-panel">
                                 <a href="/admin/events"              @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/gear.svg?v=3" alt="" /> Events</a>
+                                <a href="/admin/theme"               @onclick="() => _adminDropdownOpen = false">🎨 Theme</a>
                                 <div class="nav-admin-section">Game</div>
                                 <a href="/admin/games"               @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/game.svg?v=3" alt="" /> Game Admin</a>
                                 <a href="/admin/activities"          @onclick="() => _adminDropdownOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Activities</a>
@@ -221,6 +220,7 @@
             <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/transactions.svg?v=3" alt="" /> Transactions</a>
         }
         <a href="/admin/events"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/gear.svg?v=3" alt="" /> Events</a>
+        <a href="/admin/theme"               @onclick="() => _adminSheetOpen = false">🎨 Theme</a>
         <div class="nav-admin-sheet-section">Game</div>
         <a href="/admin/games"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/game.svg?v=3" alt="" /> Game Admin</a>
         <a href="/admin/activities"          @onclick="() => _adminSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Activities</a>

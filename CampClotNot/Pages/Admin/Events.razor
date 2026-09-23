@@ -3,6 +3,7 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject ActiveEventService ActiveEventSvc
 @inject CapabilityService CapSvc
+@inject EventSetupService EventSetup
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -37,6 +38,35 @@
                     <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
                 }
             </div>
+
+            @if (_editingId == Guid.Empty && _events.Any())
+            {
+                <div style="margin-bottom:14px;padding:12px;background:var(--bg-base);border:2px dashed var(--border-color);border-radius:8px">
+                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Copy setup from</div>
+                    <select value="@(_copyFromId?.ToString() ?? "")" @onchange="OnCopyFromChanged"
+                            style="width:100%;padding:9px 12px;background:var(--panel-bg);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
+                        <option value="">None — start fresh</option>
+                        @foreach (var ev in _events)
+                        {
+                            <option value="@ev.EventId">@ev.Name</option>
+                        }
+                    </select>
+                    @if (_copyFromId is not null && _copyCounts is not null)
+                    {
+                        <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin:10px 0 5px">Also copy</div>
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer">
+                            <input type="checkbox" checked="@_copySponsors" @onchange="() => _copySponsors = !_copySponsors" /> Sponsors (@_copyCounts.Sponsors)
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer">
+                            <input type="checkbox" checked="@_copyStaff" @onchange="() => _copyStaff = !_copyStaff" /> Staff directory (@_copyCounts.StaffDirectory)
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer">
+                            <input type="checkbox" checked="@_copyActivities" @onchange="() => _copyActivities = !_copyActivities" /> Activities (@_copyCounts.Activities)
+                        </label>
+                        <div style="font-size:11px;color:var(--text-light);margin-top:6px">Capabilities (below) and enabled schedule item types are always copied. Groups, schedule items, announcements, and documents aren't. Locations and info pages are shared by all events.</div>
+                    }
+                </div>
+            }
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Event Name *</div>
@@ -83,14 +113,26 @@
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Theme</div>
-                <select value="@_fThemeId.ToString()"
-                        @onchange="e => _fThemeId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : _fThemeId"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
-                    @foreach (var th in _themes)
-                    {
-                        <option value="@th.ThemeId">@th.Name</option>
-                    }
-                </select>
+                @if (_editingId == Guid.Empty)
+                {
+                    <select value="@_fThemeStart" @onchange="e => _fThemeStart = e.Value?.ToString() ?? _fThemeStart"
+                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
+                        @if (_copyFromId is { } srcId)
+                        {
+                            <option value="@SourceThemeKey">Same as @(_events.FirstOrDefault(e => e.EventId == srcId)?.Name)</option>
+                        }
+                        @foreach (var p in ThemePresets.All)
+                        {
+                            <option value="@p.Key">Start from @p.Name</option>
+                        }
+                    </select>
+                    <div style="font-size:11px;color:var(--text-light);margin-top:4px">Each event gets its own theme. Customize colors and upload a logo on the Theme page after creating.</div>
+                }
+                else
+                {
+                    <a class="ccn-btn" style="display:inline-block;font-size:11px;padding:6px 10px;text-decoration:none"
+                       href="/admin/theme?eventId=@_editingId">Edit theme →</a>
+                }
             </div>
 
             <div style="margin-bottom:16px">
@@ -163,7 +205,10 @@
                                 </div>
                                 <div style="font-size:11px;color:var(--text-light)">@ev.EffDate.ToString("MMM d") – @ev.ExpDate.ToString("MMM d, yyyy")</div>
                             </div>
-                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="async () => { await StartEdit(ev); _mobileFormOpen = true; }">Edit</button>
+                            <div style="display:flex;gap:6px;flex-shrink:0">
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="async () => { await StartEdit(ev); _mobileFormOpen = true; }">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent" @onclick="async () => { await StartDuplicate(ev); _mobileFormOpen = true; }">Duplicate</button>
+                            </div>
                         </div>
                     }
                 </div>
@@ -197,7 +242,11 @@
                                         }
                                     </td>
                                     <td style="padding:8px 10px">
-                                        <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(ev)">Edit</button>
+                                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(ev)">Edit</button>
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent" @onclick="() => StartDuplicate(ev)">Duplicate</button>
+                                            <a class="ccn-btn" style="font-size:11px;padding:4px 10px;text-decoration:none;background:transparent" href="/admin/theme?eventId=@ev.EventId">Theme</a>
+                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -214,14 +263,20 @@
     private bool _mobileFormOpen;
     private List<Event> _events = new();
     private List<EventType> _eventTypes = new();
-    private List<Theme> _themes = new();
 
     private Guid _editingId;
     private string _fName = "";
     private DateOnly? _fStartDate;
     private DateOnly? _fEndDate;
     private Guid _fEventTypeId;
-    private Guid _fThemeId;
+    // "Start from" for a new event's theme: a preset key, or SourceThemeKey to copy the source event's theme.
+    private const string SourceThemeKey = "source";
+    private string _fThemeStart = ThemePresets.Classic.Key;
+    private Guid? _copyFromId;
+    private CopyCounts? _copyCounts;
+    private bool _copySponsors;
+    private bool _copyStaff;
+    private bool _copyActivities;
     private bool _fIsActive;
     private string _fGuestCode = "";
     private List<Capability> _allCapabilities = new();
@@ -247,12 +302,9 @@
         using var db = DbFactory.CreateDbContext();
         _events = await db.Events.Include(e => e.EventType).OrderByDescending(e => e.EffDate).ToListAsync();
         _eventTypes = await db.EventTypes.ToListAsync();
-        _themes = await db.Themes.ToListAsync();
         _allCapabilities = await db.Capabilities.OrderBy(c => c.Name).ToListAsync();
         if (_fEventTypeId == Guid.Empty && _eventTypes.Any())
             _fEventTypeId = _eventTypes.First().EventTypeId;
-        if (_fThemeId == Guid.Empty && _themes.Any())
-            _fThemeId = _themes.First().ThemeId;
     }
 
     private async Task StartEdit(Event ev)
@@ -262,7 +314,6 @@
         _fStartDate = ev.EffDate;
         _fEndDate = ev.ExpDate;
         _fEventTypeId = ev.EventTypeId;
-        _fThemeId = ev.ThemeId;
         _fIsActive = ev.IsActive;
         _fGuestCode = ev.GuestCode ?? "";
         _saveError = "";
@@ -281,7 +332,10 @@
         _saveError = "";
         _fEnabledCapIds = _allCapabilities.Where(c => DefaultEnabledCapabilitySystemNames.Contains(c.SystemName)).Select(c => c.CapabilityId).ToHashSet();
         if (_eventTypes.Any()) _fEventTypeId = _eventTypes.First().EventTypeId;
-        if (_themes.Any()) _fThemeId = _themes.First().ThemeId;
+        _fThemeStart = ThemePresets.Classic.Key;
+        _copyFromId = null;
+        _copyCounts = null;
+        _copySponsors = _copyStaff = _copyActivities = false;
     }
 
     private async Task AddEventTypeAsync()
@@ -311,6 +365,35 @@
             _fEnabledCapIds.Remove(capabilityId);
     }
 
+    private async Task OnCopyFromChanged(ChangeEventArgs e) =>
+        await SetCopySourceAsync(Guid.TryParse(e.Value?.ToString(), out var id) ? id : null);
+
+    private async Task SetCopySourceAsync(Guid? sourceId)
+    {
+        _copyFromId = sourceId;
+        _copySponsors = _copyStaff = _copyActivities = false;
+        if (sourceId is { } src)
+        {
+            _copyCounts = await EventSetup.GetCopyCountsAsync(src);
+            var enabled = await CapSvc.GetEnabledCapabilitiesAsync(src);
+            _fEnabledCapIds = enabled.Select(c => c.CapabilityId).ToHashSet();
+            _fThemeStart = SourceThemeKey;
+        }
+        else
+        {
+            _copyCounts = null;
+            _fEnabledCapIds = _allCapabilities.Where(c => DefaultEnabledCapabilitySystemNames.Contains(c.SystemName)).Select(c => c.CapabilityId).ToHashSet();
+            _fThemeStart = ThemePresets.Classic.Key;
+        }
+    }
+
+    private async Task StartDuplicate(Event ev)
+    {
+        ResetForm();
+        _fEventTypeId = ev.EventTypeId;
+        await SetCopySourceAsync(ev.EventId);
+    }
+
     private void CloseFormOverlay()
     {
         _mobileFormOpen = false;
@@ -328,6 +411,28 @@
         if (_fEndDate < _fStartDate)
         {
             _saveError = "End date must be after start date.";
+            return;
+        }
+
+        if (_editingId == Guid.Empty)
+        {
+            try
+            {
+                await EventSetup.CreateAsync(new NewEventRequest(
+                    _fName, _fStartDate.Value, _fEndDate.Value, _fEventTypeId, _fIsActive, _fGuestCode,
+                    _fEnabledCapIds,
+                    ThemePresetKey: _copyFromId is not null && _fThemeStart == SourceThemeKey ? null : _fThemeStart,
+                    CopyFromEventId: _copyFromId,
+                    Copy: new EventCopyOptions(_copySponsors, _copyStaff, _copyActivities)));
+            }
+            catch (InvalidOperationException ex)
+            {
+                _saveError = ex.Message;
+                return;
+            }
+            ResetForm();
+            _mobileFormOpen = false;
+            await Reload();
             return;
         }
 
@@ -364,37 +469,16 @@
             foreach (var o in others) o.IsActive = false;
         }
 
-        Guid targetEventId;
-        if (_editingId == Guid.Empty)
+        var targetEventId = _editingId;
+        var existing = await db.Events.FindAsync(_editingId);
+        if (existing is not null)
         {
-            targetEventId = Guid.NewGuid();
-            var themeId = _fThemeId != Guid.Empty ? _fThemeId : (_themes.Any() ? _themes.First().ThemeId : Guid.Empty);
-            db.Events.Add(new Event
-            {
-                EventId = targetEventId,
-                Name = _fName.Trim(),
-                EffDate = _fStartDate.Value,
-                ExpDate = _fEndDate.Value,
-                EventTypeId = _fEventTypeId,
-                ThemeId = themeId,
-                IsActive = _fIsActive,
-                GuestCode = string.IsNullOrWhiteSpace(_fGuestCode) ? null : _fGuestCode.Trim().ToUpperInvariant()
-            });
-        }
-        else
-        {
-            targetEventId = _editingId;
-            var existing = await db.Events.FindAsync(_editingId);
-            if (existing is not null)
-            {
-                existing.Name = _fName.Trim();
-                existing.EffDate = _fStartDate.Value;
-                existing.ExpDate = _fEndDate.Value;
-                existing.EventTypeId = _fEventTypeId;
-                existing.ThemeId = _fThemeId;
-                existing.IsActive = _fIsActive;
-                existing.GuestCode = string.IsNullOrWhiteSpace(_fGuestCode) ? null : _fGuestCode.Trim().ToUpperInvariant();
-            }
+            existing.Name = _fName.Trim();
+            existing.EffDate = _fStartDate.Value;
+            existing.ExpDate = _fEndDate.Value;
+            existing.EventTypeId = _fEventTypeId;
+            existing.IsActive = _fIsActive;
+            existing.GuestCode = string.IsNullOrWhiteSpace(_fGuestCode) ? null : _fGuestCode.Trim().ToUpperInvariant();
         }
 
         await db.SaveChangesAsync();

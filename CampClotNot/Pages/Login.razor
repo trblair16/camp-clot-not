@@ -5,8 +5,11 @@
 <PageTitle>Sign In — Camp Clot Not</PageTitle>
 
 @* Logo: fixed above the card, centered horizontally *@
-<img src="@(ThemeSvc.LogoAssetPath ?? "/img/ccn-logo-2026.webp?v=2")" alt="@ThemeSvc.Active.AppTitle" fetchpriority="high"
-     style="position:fixed;bottom:calc(50% + 195px);left:50%;transform:translateX(-50%);width:clamp(120px,25vw,180px);height:auto;pointer-events:none" />
+@if (ThemeSvc.HeroLogoUrl is { } heroLogo)
+{
+    <img src="@heroLogo" alt="@ThemeSvc.Active.AppTitle" fetchpriority="high"
+         style="position:fixed;bottom:calc(50% + 195px);left:50%;transform:translateX(-50%);width:clamp(120px,25vw,180px);height:auto;pointer-events:none" />
+}
 
 @* Card: exactly at viewport center *@
 <div class="ccn-panel"

@@ -145,6 +145,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         await SeedCurrencyTypesAsync(db);
         await SeedAwardTypesAsync(db);
         await SeedEventAsync(db);
+        await SplitSharedThemesAsync(db);
         await SeedEventCapabilitiesAsync(db);
         await SeedGroupsAsync(db);
         await SeedAdminUserAsync(db);
@@ -239,59 +240,16 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
     private async Task SeedThemeAsync(AppDbContext db)
     {
-        // Sampled directly from the Men's Retreat flyer (Columbus GA riverwalk photo,
-        // HBDA in blue, MEN'S RETREAT in gold, red date ribbon, dark wood sign, tree
-        // foliage) so the theme actually matches the logo instead of an approximation.
-        var mensRetreatPalette = new ThemeConfig(
-            AppTitle:      "HBDA MEN'S RETREAT",
-            AppSubtitle:   "HBDA Men's Retreat 2026",
-            BgStart:       "#071c33",   // deep navy — from the flyer's sky blue, darkened
-            BgMid:         "#16241a",   // dark forest — from the riverwalk tree foliage
-            BgEnd:         "#2b1608",   // dark wood brown — from the wood sign
-            Primary:       "#D9A62A",   // gold — matches "MEN'S RETREAT" lettering
-            Accent:        "#D71E03",   // red — matches the date ribbon
-            Success:       "#4C7A34",   // green — matches sunlit tree foliage
-            Info:          "#0F75DC",   // blue — matches "HBDA" lettering exactly
-            TrackFill:     "rgba(15,117,220,0.35)",
-            TrackBg:       "rgba(22,36,26,0.5)",
-            Currency1Icon: "🪙",
-            Currency1Name: "Coins",
-            Currency2Icon: "⭐",
-            Currency2Name: "Stars",
-            BannerAssetPath: "/img/mens-retreat-banner.webp",
-            // Page chrome — warm khaki/parchment instead of CCN's cream, dark brown text
-            // instead of near-black, evoking the wood sign and outdoor riverwalk setting.
-            BgBase:    "#EDE0C4",
-            BgDot:     "#D4C29A",
-            PanelBg:   "#FBF6E8",
-            TextDark:  "#2A1D0F",
-            TextMid:   "#5C4A32",
-            TextLight: "#8C795C",
-            // Polka dots read as party/confetti no matter the color — off for a retreat.
-            UseDotPattern: false,
-            // Warm-professional shape language: clean rounded sans instead of the comic-book
-            // display font, thin warm-brown border instead of thick black, soft warm-tinted
-            // shadow instead of a hard offset — reads as a nonprofit event app, not a re-skinned
-            // party game, while keeping some warmth (rounded corners, soft shadow) rather than
-            // going flat/corporate-cold.
-            HeadingFont: "'Poppins', sans-serif",
-            BorderColor: "#B89968",
-            BorderWidth: "1.5px",
-            PanelShadow: "0 4px 14px rgba(42,29,15,0.16)"
-        );
-
+        // Insert-only: admins own theme rows now (/admin/theme), so the seed must never
+        // overwrite a palette or logo an admin has edited. Palette tweaks go through the UI.
         var defs = new[]
         {
-            new { Id = Id.ThemeSuperMarioParty2026, Name = "Super Mario Party", Year = 2026,
-                  Description = "Super Mario Party themed camp — CCN 2026", Palette = (string?)null, Logo = (string?)null },
-            new { Id = Id.ThemeMensRetreat2026, Name = "Men's Retreat", Year = 2026,
-                  Description = "HBDA Men's Retreat 2026 — colors sampled from the flyer", Palette = mensRetreatPalette.ToJson(), Logo = "/img/mens-retreat-nav-logo.webp" },
+            (Id: Id.ThemeSuperMarioParty2026, Preset: ThemePresets.Mario,
+             Description: "Super Mario Party themed camp — CCN 2026"),
+            (Id: Id.ThemeMensRetreat2026, Preset: ThemePresets.MensRetreat,
+             Description: "HBDA Men's Retreat 2026 — colors sampled from the flyer"),
         };
 
-        // True upsert (not insert-only-if-missing like most other seed methods) — Theme has
-        // no admin edit UI yet (deferred to v2.0's self-service /admin/theme), so the seed is
-        // the only source of truth today and must sync on every restart as the palette gets
-        // tuned. Once /admin/theme ships, this needs to stop overwriting admin-made edits.
         foreach (var d in defs)
         {
             var existing = await db.Themes.FirstOrDefaultAsync(t => t.ThemeId == d.Id);
@@ -299,25 +257,56 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             {
                 db.Themes.Add(new Theme
                 {
-                    ThemeId        = d.Id,
-                    Name           = d.Name,
-                    Year           = d.Year,
-                    Description    = d.Description,
-                    ColorPalette   = d.Palette,
-                    LogoAssetPath  = d.Logo
+                    ThemeId       = d.Id,
+                    Name          = d.Preset.Name,
+                    Year          = 2026,
+                    Description   = d.Description,
+                    ColorPalette  = d.Preset.Config.ToJson(),
+                    LogoAssetPath = d.Preset.LogoAssetPath
                 });
             }
-            else
+            else if (existing.ColorPalette is null)
             {
-                existing.Name          = d.Name;
-                existing.Year          = d.Year;
-                existing.Description   = d.Description;
-                existing.ColorPalette  = d.Palette;
-                existing.LogoAssetPath = d.Logo;
+                // One-time backfill: CCN's row used to rely on ThemeService's null fallback.
+                // Writing the same palette as real JSON renders identically and makes it editable.
+                existing.ColorPalette = d.Preset.Config.ToJson();
             }
         }
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded Themes.");
+    }
+
+    // Every event owns its own Theme row (see ThemeCloner). Events created before #310 could
+    // share one via the old Theme dropdown; give each extra event a copy. Idempotent — once
+    // nothing is shared this does nothing.
+    private async Task SplitSharedThemesAsync(AppDbContext db)
+    {
+        var shared = await db.Events
+            .GroupBy(e => e.ThemeId)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToListAsync();
+        if (shared.Count == 0) return;
+
+        var split = 0;
+        foreach (var themeId in shared)
+        {
+            var theme = await db.Themes.FirstAsync(t => t.ThemeId == themeId);
+            var events = await db.Events.Where(e => e.ThemeId == themeId)
+                .OrderBy(e => e.EventId == Id.EventCcn2026 ? 0 : 1)
+                .ThenBy(e => e.EffDate)
+                .ToListAsync();
+
+            foreach (var ev in events.Skip(1))
+            {
+                var copy = ThemeCloner.Clone(theme, ev.Name, ev.EffDate.Year);
+                db.Themes.Add(copy);
+                ev.ThemeId = copy.ThemeId;
+                split++;
+            }
+        }
+        await db.SaveChangesAsync();
+        logger.LogInformation("Split {Count} shared theme row(s) into per-event copies.", split);
     }
 
     private async Task SeedCapabilitiesAsync(AppDbContext db)
