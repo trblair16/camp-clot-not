@@ -21,6 +21,7 @@ public class ScheduleItem
     public string? PresenterBio { get; set; }
     public bool AppliesToAllGroups { get; set; } = true;
     public int? MaxCapacity { get; set; }
+    public bool TrackAttendance { get; set; }
     public Guid CreatedBy { get; set; }
     public User CreatedByUser { get; set; } = null!;
     public DateTime UpdatedAt { get; set; }
