@@ -290,6 +290,19 @@ try
         return Results.File(png, "image/png");
     }).RequireAuthorization(policy => policy.RequireRole("Admin"));
 
+    // Attendance CSV downloads — file responses need a real HTTP endpoint, not a Blazor circuit.
+    app.MapGet("/admin/attendance/item/{id:guid}/csv", async (Guid id, AttendanceService svc) =>
+    {
+        var csv = await svc.BuildItemCsvAsync(id);
+        return csv is { } f ? Results.File(f.Content, "text/csv; charset=utf-8", f.FileName) : Results.NotFound();
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+    app.MapGet("/admin/attendance/event/{id:guid}/csv", async (Guid id, AttendanceService svc) =>
+    {
+        var csv = await svc.BuildEventCsvAsync(id);
+        return csv is { } f ? Results.File(f.Content, "text/csv; charset=utf-8", f.FileName) : Results.NotFound();
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
     app.MapGet("/hub/info/{slug}/pdf", async (string slug, HttpContext ctx, IDbContextFactory<AppDbContext> factory) =>
     {
         using var db = factory.CreateDbContext();
