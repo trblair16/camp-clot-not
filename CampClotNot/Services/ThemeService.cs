@@ -11,6 +11,8 @@ public static class CampTime
 
     public static DateTime Now => DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Central), DateTimeKind.Utc);
     public static DateOnly Today => DateOnly.FromDateTime(Now);
+
+    public static DateTime FromUtc(DateTime utc) => TimeZoneInfo.ConvertTimeFromUtc(utc, Central);
 }
 
 /// <summary>
