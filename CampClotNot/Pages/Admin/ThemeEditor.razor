@@ -212,7 +212,10 @@
                             {
                                 <span style="font-family:var(--font-display);font-weight:700;font-size:18px;color:#fff;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@_title</span>
                             }
-                            <span style="font-family:var(--font-display);font-weight:700;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1">@_subtitle</span>
+                            @if (PreviewLogo is not null || !string.Equals(_subtitle.Trim(), _title.Trim(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span style="font-family:var(--font-display);font-weight:700;font-size:10px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1">@_subtitle</span>
+                            }
                         </div>
                         <div style="background-color:var(--bg-base);background-image:var(--bg-dot-image);background-size:22px 22px;padding:16px;font-family:'Nunito',sans-serif;color:var(--text-dark)">
                             <div style="background:var(--color-primary);border:var(--panel-border);border-radius:12px;box-shadow:var(--panel-shadow);padding:16px;text-align:center;margin-bottom:14px">

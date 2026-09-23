@@ -1,7 +1,7 @@
 # Admin Event Configurability
 
 **Date:** 2026-09-23
-**Status:** Approved, pending implementation
+**Status:** Implemented (2026-09-23). See "Implementation Notes" for deviations.
 **Driver:** Camp Harvest 2026 (mid-October) is the next chapter event. Vicki and Amanda need to stand
 it up and give it its own look from the admin UI, without Tyler editing seed code. This is
 sub-project 4 of 4 on the guest roadmap (guest identity → guest push notifications → attendance
@@ -347,3 +347,34 @@ Verification is `dotnet build` with no new warnings, plus a manual walkthrough:
 - Duplicate CCN with Activities checked. Activities are copied without board spaces or scripts.
 - Duplicate with the guest code set to one already in use. The save fails with the existing message
   and nothing is created.
+
+## Implementation Notes (2026-09-23)
+
+- **`NavBrand.razor`** is a new shared component for the nav badge. It's used twice each by `AppNav`
+  and `GuestNav` (mobile and desktop). It calls `ThemeService.LoadAsync()` itself: its parameters
+  never change, so it wouldn't re-render when the parent's load finished, and a non-CCN event showed
+  the CCN logo in the nav until this was fixed.
+- **Duplicate wordmark text is hidden.** A new event's subtitle defaults to its name, so when there's
+  no logo and the subtitle matches the title (ignoring case), the nav and the editor preview show
+  only the wordmark.
+- **`CampTime.FromUtc`** was added so the editor's "last edited" time shows in camp time.
+- **The editor's "Start from a preset" select defaults to Classic.** It doesn't try to detect which
+  preset the current look came from.
+- **Migration:** `AddThemeUploads` adds five nullable columns to `Themes` and nothing else. It's
+  applied automatically on startup.
+- **Existing warning removed.** Removing the anonymous-type `defs` array from `SeedThemeAsync` fixed
+  a pre-existing CS8619 warning. The build now has 3 warnings (baseline 4).
+- **Verified against a local Postgres 16 with headless Chromium:**
+  - the shared-row split (two events on the Men's Retreat row, and one extra event on the Mario row
+    where CCN is the owner despite a later `EffDate`) and the CCN palette backfill;
+  - theme edits surviving a restart;
+  - the live preview, the invalid-hex save block, and saved colors and font applying app-wide;
+  - logo and banner upload (nav, login page, and anonymous access to the endpoint, which sends
+    `Cache-Control`); the 3 MB and SVG rejections; logo removal falling back to CCN art;
+  - Apply preset keeping title and subtitle;
+  - duplicating Men's Retreat (sponsors and staff with their images, theme cloned, and later edits
+    not leaking back to the source);
+  - duplicating CCN with activities (7 activities, 0 board spaces, capabilities and schedule item
+    types copied);
+  - the guest-code clash creating nothing;
+  - a fresh Classic event showing a text wordmark and no CCN art, on desktop and at 390px.

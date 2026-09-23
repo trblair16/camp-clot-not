@@ -11,9 +11,18 @@ else
 {
     <span style="font-family:var(--font-display);font-weight:700;font-size:@(Height / 2)px;color:#fff;line-height:1.1;text-align:center;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@ThemeSvc.Active.AppTitle</span>
 }
-<span style="font-family:var(--font-display);font-weight:700;font-size:@(SubtitleSize)px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+@* A new event's subtitle defaults to its name — don't repeat it under the wordmark. *@
+@if (ThemeSvc.NavLogoUrl is not null
+     || !string.Equals(ThemeSvc.Active.AppSubtitle.Trim(), ThemeSvc.Active.AppTitle.Trim(), StringComparison.OrdinalIgnoreCase))
+{
+    <span style="font-family:var(--font-display);font-weight:700;font-size:@(SubtitleSize)px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+}
 
 @code {
     [Parameter] public int Height { get; set; } = 36;
     [Parameter] public int SubtitleSize { get; set; } = 10;
+
+    // Load here rather than relying on the parent: this component's parameters never change,
+    // so it wouldn't re-render when the parent's LoadAsync finishes.
+    protected override async Task OnInitializedAsync() => await ThemeSvc.LoadAsync();
 }
