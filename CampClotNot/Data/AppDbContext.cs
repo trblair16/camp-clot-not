@@ -60,6 +60,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<GuestAttendee> GuestAttendees => Set<GuestAttendee>();
     public DbSet<GuestEventVisit> GuestEventVisits => Set<GuestEventVisit>();
 
+    // Attendance
+    public DbSet<ScheduleItemAttendance> ScheduleItemAttendances => Set<ScheduleItemAttendance>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Non-conventional primary keys
@@ -180,5 +183,42 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(v => v.Event)
             .WithMany()
             .HasForeignKey(v => v.EventId);
+
+        // ScheduleItemAttendance: one row per attendee per tracked item. Owned by exactly one of
+        // GuestAttendeeId / UserId (check constraint). Two FKs point at Users, so every
+        // relationship is configured explicitly to avoid shadow FK properties.
+        modelBuilder.Entity<ScheduleItemAttendance>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_ScheduleItemAttendances_OneAttendee",
+                "(\"GuestAttendeeId\" IS NULL) <> (\"UserId\" IS NULL)"));
+        modelBuilder.Entity<ScheduleItemAttendance>()
+            .HasIndex(a => new { a.ScheduleItemId, a.GuestAttendeeId })
+            .IsUnique();
+        modelBuilder.Entity<ScheduleItemAttendance>()
+            .HasIndex(a => new { a.ScheduleItemId, a.UserId })
+            .IsUnique();
+        modelBuilder.Entity<ScheduleItemAttendance>()
+            .HasOne(a => a.ScheduleItem)
+            .WithMany()
+            .HasForeignKey(a => a.ScheduleItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ScheduleItemAttendance>()
+            .HasOne(a => a.GuestAttendee)
+            .WithMany()
+            .HasForeignKey(a => a.GuestAttendeeId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ScheduleItemAttendance>()
+            .HasOne(a => a.User)
+            .WithMany()
+            .HasForeignKey(a => a.UserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ScheduleItemAttendance>()
+            .HasOne(a => a.CheckedInByUser)
+            .WithMany()
+            .HasForeignKey(a => a.CheckedInByUserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -9,6 +9,7 @@
 @inject IJSRuntime JS
 @inject ActiveEventService ActiveEventSvc
 @inject GuestAccessService GuestSvc
+@inject AttendanceService AttendanceSvc
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -211,6 +212,7 @@
                                             <span style="font-size:11px;color:var(--text-mid);overflow-wrap:break-word;word-break:break-word">@ev.LocationOther</span>
                                         }
                                     </div>
+                                    @if (ShowCheckIn(ev)) { @CheckInControl(ev) }
                                     @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                     {
                                         <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
@@ -284,6 +286,7 @@
                                     <td style="overflow-wrap:break-word;word-break:break-word;min-width:0">
                                         <span style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text-dark)">@ev.Title</span>
                                         @if (dispAct is not null) { <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@dispAct.Name</div> }
+                                        @if (ShowCheckIn(ev)) { @CheckInControl(ev) }
                                         @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                         {
                                             <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
@@ -417,6 +420,11 @@
                 </div>
             }
 
+            @if (ShowCheckIn(md))
+            {
+                <div style="margin-bottom:14px">@CheckInControl(md)</div>
+            }
+
             @if (!string.IsNullOrEmpty(md.Description))
             {
                 <div style="margin-bottom:14px">
@@ -547,6 +555,10 @@
                     <MudTextField @bind-Value="_fLocationOther" Label="Additional Information (optional)" Placeholder="e.g. Gym + Pool deck" Class="mb-3" />
                 </div>
 
+                <div class="full">
+                    <MudCheckBox @bind-Checked="_fTrackAttendance" Label="Track attendance (shows an &quot;I'm here&quot; button)" Class="mb-3" />
+                </div>
+
                 @if (SelectedTypeSystemName == "Presentation")
                 {
                     <div class="full">
@@ -646,6 +658,10 @@
     private Guid _userId;
     private string? _copyingFromTitle;
     private Guid _eventId;
+    private System.Security.Claims.ClaimsPrincipal _user = new();
+    private HashSet<Guid> _myCheckIns = new();
+    private readonly HashSet<Guid> _checkingIn = new();
+    private readonly Dictionary<Guid, string> _checkInMessages = new();
 
     // Form fields
     private string _fTitle = "";
@@ -659,6 +675,7 @@
     private Guid? _fActivityId;
     private string? _fPresenterName;
     private string? _fPresenterBio;
+    private bool _fTrackAttendance;
     private List<AssignmentFormRow> _fAssignments = new();
     private bool _assignmentsExpanded;
 
@@ -675,6 +692,8 @@
         var guestEventId = GuestSvc.GetGuestEventId(authState.User);
         _isGuest = guestEventId.HasValue;
         _eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
+        _user = authState.User;
+        _myCheckIns = await AttendanceSvc.GetMyCheckedInItemIdsAsync(_user, _eventId);
 
         // Run all independent reference-data queries in parallel — each on its own DbContext
         // instance, since DbContext isn't thread-safe for concurrent operations on one instance.
@@ -756,6 +775,7 @@
         _fLocationOther = null;
         _fActivityId    = null;
         _fPresenterName = null; _fPresenterBio = null;
+        _fTrackAttendance = false;
         _fAssignments        = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _showForm            = true;
@@ -775,6 +795,7 @@
         _fActivityId    = ev.ActivityId;
         _fPresenterName = ev.PresenterName;
         _fPresenterBio  = ev.PresenterBio;
+        _fTrackAttendance = ev.TrackAttendance;
         _fAssignments = _groups.Select(g =>
         {
             var existing = ev.ItemGroups.FirstOrDefault(eg => eg.GroupId == g.GroupId);
@@ -807,6 +828,7 @@
         _fActivityId      = ev.ActivityId;
         _fPresenterName   = ev.PresenterName;
         _fPresenterBio    = ev.PresenterBio;
+        _fTrackAttendance = ev.TrackAttendance;
         _fAssignments     = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _showForm = true;
@@ -838,7 +860,8 @@
             null, assignments,
             isPresentation ? _fPresenterName : null,
             isPresentation ? _fPresenterBio  : null,
-            string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim()
+            string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim(),
+            _fTrackAttendance
         );
         await ScheduleSvc.UpsertAsync(dto, _userId);
 
@@ -875,6 +898,58 @@
             "Task"         => "#D35400",
             _              => "#607D8B"
         };
+
+    // ── Self check-in ("I'm here") ──
+
+    private bool ShowCheckIn(ScheduleItem ev) =>
+        ev.TrackAttendance && (_myCheckIns.Contains(ev.ScheduleItemId)
+            || _checkInMessages.ContainsKey(ev.ScheduleItemId)
+            || AttendanceService.IsSelfCheckInOpen(ev, CampTime.Now));
+
+    // stopPropagation keeps a tap on the button from also opening the mobile detail modal.
+    private RenderFragment CheckInControl(ScheduleItem ev) =>
+        @<div style="margin-top:6px" @onclick:stopPropagation="true">
+            @if (_myCheckIns.Contains(ev.ScheduleItemId))
+            {
+                <span style="display:inline-block;font-size:12px;padding:3px 10px;border-radius:5px;background:#27AE60;color:white;border:2px solid var(--border-color);font-family:var(--font-display);font-weight:700">✓ Checked in</span>
+            }
+            else if (_checkInMessages.TryGetValue(ev.ScheduleItemId, out var msg))
+            {
+                <span style="font-size:12px;color:#D12B2B;font-weight:700">@msg</span>
+            }
+            else
+            {
+                <button class="ccn-btn" style="font-size:12px;padding:5px 14px"
+                        disabled="@_checkingIn.Contains(ev.ScheduleItemId)"
+                        @onclick="() => SelfCheckIn(ev.ScheduleItemId)">I'm here</button>
+            }
+        </div>;
+
+    private async Task SelfCheckIn(Guid scheduleItemId)
+    {
+        if (!_checkingIn.Add(scheduleItemId)) return;
+        try
+        {
+            var result = await AttendanceSvc.SelfCheckInAsync(_user, scheduleItemId);
+            switch (result)
+            {
+                case CheckInResult.CheckedIn:
+                case CheckInResult.AlreadyCheckedIn:
+                    _myCheckIns.Add(scheduleItemId);
+                    break;
+                case CheckInResult.OutsideWindow:
+                    _checkInMessages[scheduleItemId] = "Check-in is closed for this item";
+                    break;
+                default:
+                    _checkInMessages[scheduleItemId] = "Check-in isn't available";
+                    break;
+            }
+        }
+        finally
+        {
+            _checkingIn.Remove(scheduleItemId);
+        }
+    }
 
     private class AssignmentFormRow
     {

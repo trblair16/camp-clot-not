@@ -23,7 +23,8 @@ public record ScheduleItemDto(
     List<GroupAssignmentDto> Assignments,
     string? PresenterName = null,
     string? PresenterBio = null,
-    string? LocationOther = null
+    string? LocationOther = null,
+    bool TrackAttendance = false
 );
 
 public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
@@ -113,6 +114,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCac
                 ScheduleItemTypeId = dto.ScheduleItemTypeId,
                 AppliesToAllGroups = dto.AppliesToAllGroups,
                 MaxCapacity        = dto.MaxCapacity,
+                TrackAttendance    = dto.TrackAttendance,
                 PresenterName      = dto.PresenterName,
                 PresenterBio       = dto.PresenterBio,
                 CreatedBy          = userId,
@@ -144,6 +146,7 @@ public class ScheduleService(IDbContextFactory<AppDbContext> factory, IMemoryCac
             existing.ScheduleItemTypeId = dto.ScheduleItemTypeId;
             existing.AppliesToAllGroups = dto.AppliesToAllGroups;
             existing.MaxCapacity        = dto.MaxCapacity;
+            existing.TrackAttendance    = dto.TrackAttendance;
             existing.PresenterName      = dto.PresenterName;
             existing.PresenterBio       = dto.PresenterBio;
             existing.UpdatedAt          = CampTime.Now;
