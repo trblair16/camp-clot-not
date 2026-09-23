@@ -1,7 +1,7 @@
 # Attendance Tracking
 
 **Date:** 2026-09-23
-**Status:** Approved, pending implementation plan
+**Status:** Implemented (2026-09-23). See "Implementation Notes" for deviations.
 **Driver:** Camp Harvest 2026 (mid-October) and future chapter events need a record of who actually
 showed up to which session. This is sub-project 3 of a 4-part roadmap (guest identity → guest push
 notifications → attendance tracking → admin event configurability). Tracked in issue #308.
@@ -132,8 +132,8 @@ Task UndoCheckInAsync(Guid scheduleItemAttendanceId);
 Task<CheckInResult> CheckInWalkInAsync(Guid scheduleItemId, string firstName, string lastName, Guid adminUserId);
 
 // Export
-Task<string> BuildItemCsvAsync(Guid scheduleItemId);
-Task<string> BuildEventCsvAsync(Guid eventId);
+Task<(string FileName, byte[] Content)?> BuildItemCsvAsync(Guid scheduleItemId);
+Task<(string FileName, byte[] Content)?> BuildEventCsvAsync(Guid eventId);
 ```
 
 `RosterEntry` is a record with `Name`, `Kind` (Guest/Staff), `RoleName?`, `GuestAttendeeId?`, `UserId?`,
@@ -210,10 +210,10 @@ The nav gets an "Attendance" link in the Admin dropdown and the mobile admin she
 These are two Admin-only minimal-API endpoints in `Program.cs`, because a file download needs a real
 HTTP response, the same reason `/admin/events/{id}/guest-qr` is an endpoint:
 
-- `GET /admin/attendance/item/{scheduleItemId}.csv`: one row per **roster entry** (checked in or not),
+- `GET /admin/attendance/item/{scheduleItemId}/csv`: one row per **roster entry** (checked in or not),
   so the export doubles as a sign-in sheet.
   Columns: `Last Name, First Name, Type, Checked In, Checked In At, Method, Checked In By`.
-- `GET /admin/attendance/event/{eventId}.csv`: one row per **check-in** across all tracked items.
+- `GET /admin/attendance/event/{eventId}/csv`: one row per **check-in** across all tracked items.
   Columns: `Date, Start, Item, Last Name, First Name, Type, Checked In At, Method, Checked In By`.
 
 Both are `RequireAuthorization(policy => policy.RequireRole("Admin"))` and return
@@ -250,3 +250,21 @@ Verification is `dotnet build` with no new warnings, plus a manual walkthrough:
 - As Admin on `/admin/attendance`: check someone in outside the window, undo it, add a walk-in (who
   then appears on `/admin/guests`), download both CSVs, and open them in Excel or Sheets.
 - Delete a guest on `/admin/guests` who has check-ins. The delete succeeds and their rows are gone.
+
+## Implementation Notes (2026-09-23)
+
+- **CSV routes end in `/csv`, not `.csv`**, and the builders return `(FileName, Content)?`, so the
+  endpoint can set a descriptive download name (`attendance-2026-10-17-opening-session.csv`) and
+  return 404 for an unknown id. The in-page links carry the `download` attribute so Blazor's router
+  doesn't intercept them.
+- **An end time earlier than the start time is treated as crossing midnight** when computing the
+  self check-in window (e.g. an 11 PM to 1 AM campfire).
+- **Migration:** `AddAttendanceTracking`. It adds `TrackAttendance boolean NOT NULL DEFAULT FALSE` to
+  `ScheduleItems` and creates `ScheduleItemAttendances` with the check constraint, two unique indexes,
+  and four FKs (cascade from `ScheduleItems`/`GuestAttendees`, restrict from `Users`). It's applied
+  automatically on startup by `SeedService.SeedAsync()`, so there's no manual prod step.
+- **Verified against a local Postgres 16** with headless Chromium: migration shape, guest self
+  check-in (desktop and mobile, where the tap doesn't open the detail modal), one button only on the
+  open tracked item, the Admin edit form on `/hub/schedule` preserving the flag, roster counts, admin
+  check-in and undo, walk-in, admin check-in outside the window, both CSVs (BOM, `'=` formula
+  escaping, accents), and a guest getting redirected away from the CSV endpoint.
