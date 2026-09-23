@@ -52,9 +52,9 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || _isGuest) return;
+        if (!firstRender) return;
         var state = await AuthState.GetAuthenticationStateAsync();
-        if (state.User.HasClaim("mustChangePassword", "true"))
+        if (!_isGuest && state.User.HasClaim("mustChangePassword", "true"))
             Nav.NavigateTo("/change-password", forceLoad: false);
 
         if (state.User.Identity?.IsAuthenticated == true)
