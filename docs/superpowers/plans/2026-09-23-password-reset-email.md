@@ -52,7 +52,7 @@ The same setup as `2026-09-23-attendance-tracking.md`: `dotnet-sdk-8.0` and `dot
 - [ ] `ForgotPasswordQueue`: a singleton `Channel<ForgotPasswordRequest>`. `ForgotPasswordWorker : BackgroundService` reads it, creates a scope, calls the service, and catches and logs any exception.
 - [ ] `AuthService.SignInAsync(HttpContext, Guid userId)` loads the user with `UserRole` and calls the private `SignInUserAsync(..., mustChangePassword: false, ...)`.
 - [ ] `PublicBaseUrl.From(HttpRequest, IConfiguration)`: uses `App:PublicBaseUrl`, otherwise `X-Forwarded-Proto` (or `Request.Scheme`) plus `://` and `Request.Host`.
-- [ ] Endpoints: `POST /account/forgot-password` enqueues and redirects to `/forgot-password?sent=1`. `POST /account/reset-password` redeems; on `Ok` it signs in and redirects to `/dashboard`, otherwise it redirects back to `/reset-password?token=…&error=…`. Both `.AllowAnonymous()`. Anti-forgery isn't enabled for the existing login form POST, so match that.
+- [ ] Endpoints: `POST /account/forgot-password` enqueues and redirects to `/forgot-password?sent=true`. `POST /account/reset-password` redeems; on `Ok` it signs in and redirects to `/dashboard`, otherwise it redirects back to `/reset-password?token=…&error=…`. Both `.AllowAnonymous()`. Anti-forgery isn't enabled for the existing login form POST, so match that.
 - [ ] Register `AddScoped<PasswordResetService>()`, `AddSingleton<ForgotPasswordQueue>()`, `AddHostedService<ForgotPasswordWorker>()`.
 - [ ] Build. Commit: `feat: Token issue/redeem service, background forgot-password worker, endpoints`
 

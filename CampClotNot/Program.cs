@@ -243,7 +243,7 @@ try
         var email = form["email"].ToString();
         if (!string.IsNullOrWhiteSpace(email))
             queue.Enqueue(new ForgotPasswordRequest(email, PublicBaseUrl.From(ctx.Request, config)));
-        return Results.Redirect("/forgot-password?sent=1");
+        return Results.Redirect("/forgot-password?sent=true");
     }).AllowAnonymous();
 
     app.MapPost("/account/reset-password", async (HttpContext ctx, PasswordResetService resets, AuthService auth) =>

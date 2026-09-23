@@ -1,7 +1,7 @@
 # Password Reset & Invite Emails
 
 **Date:** 2026-09-23
-**Status:** Approved, pending implementation
+**Status:** Implemented (2026-09-23). See "Implementation Notes".
 **Driver:** Staff who forget their password are stuck. Today the only way back in is to ask an Admin
 to type a new temporary password on `/admin/users`, or Tyler editing the database directly. The login
 page's fallback is a `mailto:` link to Tyler. As the platform moves to chapter-scale events (Camp
@@ -136,8 +136,8 @@ line. It uses no theme colors, so it looks the same whichever event is active.
 
 | Route | Kind | Purpose |
 |---|---|---|
-| `/forgot-password` | Razor page, `LoginLayout`, anonymous | An email field, then a POST to `/account/forgot-password`. Shows the generic confirmation when `?sent=1` |
-| `POST /account/forgot-password` | minimal API, anonymous | Enqueues the request and redirects to `/forgot-password?sent=1` |
+| `/forgot-password` | Razor page, `LoginLayout`, anonymous | An email field, then a POST to `/account/forgot-password`. Shows the generic confirmation when `?sent=true` |
+| `POST /account/forgot-password` | minimal API, anonymous | Enqueues the request and redirects to `/forgot-password?sent=true` |
 | `/reset-password?token=…` | Razor page, `LoginLayout`, anonymous | Validates the token on load. If it's invalid or expired, shows "This link has expired or was already used" with a link to request a new one. Otherwise shows the user's first name ("Hi, Vicki"), New and Confirm password fields, and a POST to `/account/reset-password` |
 | `POST /account/reset-password` | minimal API, anonymous | Redeems the token, signs the user in, and redirects to `/dashboard`. On failure it redirects back with `?error=tooshort`, `mismatch`, or `invalid` |
 
@@ -198,3 +198,31 @@ Development or shown to the Admin:
   email isn't forced to change it again.
 - With a Resend key (staging): a real email arrives, the button works, and the plain-text part is
   present.
+
+## Implementation Notes (2026-09-23)
+
+- **`?sent=true`, not `?sent=1`.** Blazor's `[SupplyParameterFromQuery]` can't parse `1` as a `bool`.
+  An early draft crashed the confirmation page.
+- **The invite radio is labelled "Create an invite link"** when email isn't configured, and it defaults
+  to "Set a temporary password" until email is set up, so today's workflow doesn't change until
+  Resend is configured.
+- **An Admin-sent reset or a later self-service reset revokes a pending invite link.** This follows
+  the "only the newest link works" rule. The newest link still lets the invitee set a password.
+- **Email assets live in `Services/Email/`** (`IEmailSender`, `ResendEmailSender`, `EmailTemplates`),
+  so other transactional mail can reuse the sender later.
+- **Migration:** `AddPasswordResetTokens`. It adds one table, two Restrict FKs to `Users`, a unique
+  `TokenHash` index, and a `(UserId, CreatedAt)` index. It's applied automatically on startup.
+- **Verified against a local Postgres 16 with headless Chromium, email unconfigured:**
+  - A known email and an unknown email get the identical response, and only the known one gets a
+    link in the dev log.
+  - On the reset page: the mismatch and too-short errors, a successful reset that signs in and lands
+    on `/dashboard`, reuse showing "Link Expired", the old password rejected, and the new one
+    accepted.
+  - The 4th and 5th requests within an hour are rate-limited. An expired token fails on both the
+    page and the POST. An inactive user gets no link. Only 64-character hex hashes are stored.
+  - Admin invite: the copy-link modal appears, and the invitee sets a password and lands on the
+    dashboard without a forced change. Admin "Create Link" twice leaves only the newest link working.
+- **The live Resend send is untested here.** This sandbox's network policy blocks `api.resend.com`
+  (HTTP 403 at the proxy). The failure path was exercised: the error was logged, the request didn't
+  crash, and Admin flows fall back to the copyable link. The first real send has to be verified on
+  staging.
