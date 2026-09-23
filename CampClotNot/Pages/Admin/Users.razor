@@ -4,6 +4,12 @@
 @inject GroupService GroupSvc
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject PasswordResetService Resets
+@inject IEmailSender Email
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthState
+@inject IJSRuntime JS
+@inject IConfiguration Config
 @using CampClotNot.Data.Entities
 
 <PageTitle>Manage Users — Camp Clot Not</PageTitle>
@@ -59,6 +65,28 @@
             </div>
 
             <div style="margin-bottom:14px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Password</div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:4px">
+                    <input type="radio" name="usr-pw-mode" checked="@_form.SendInvite" @onchange="() => _form.SendInvite = true" />
+                    @(Email.IsConfigured ? "Email an invite link" : "Create an invite link")
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;cursor:pointer">
+                    <input type="radio" name="usr-pw-mode" checked="@(!_form.SendInvite)" @onchange="() => _form.SendInvite = false" />
+                    Set a temporary password
+                </label>
+                @if (_form.SendInvite)
+                {
+                    <div style="font-size:11px;color:var(--text-light);margin-top:4px">
+                        @(Email.IsConfigured
+                            ? "They'll get an email to choose their own password (link valid 7 days)."
+                            : "Email isn't set up yet — you'll get a link to send them yourself (valid 7 days).")
+                    </div>
+                }
+            </div>
+
+            @if (!_form.SendInvite)
+            {
+            <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Temporary Password</div>
                 <div style="position:relative">
                     <input type="@(_showCreatePw ? "text" : "password")" @bind="_form.Password" placeholder="••••••••"
@@ -69,6 +97,7 @@
                     </button>
                 </div>
             </div>
+            }
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Role</div>
@@ -306,7 +335,28 @@
         <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:12px;box-shadow:6px 6px 0 var(--border-color);padding:24px;width:100%;max-width:400px;animation:popIn .2s ease"
              @onclick:stopPropagation>
             <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 18px">Reset Password</h3>
-            <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">@_resetting?.FirstName @_resetting?.LastName</p>
+            <p style="font-size:13px;color:var(--text-light);margin:0 0 16px">@_resetting?.FirstName @_resetting?.LastName · @_resetting?.Email</p>
+
+            <div style="background:var(--bg-base);border:2px solid var(--border-color);border-radius:8px;padding:12px;margin-bottom:16px">
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">@(Email.IsConfigured ? "Email a reset link" : "Create a reset link")</div>
+                <div style="font-size:12px;color:var(--text-mid);margin-bottom:8px">They choose their own password. The link works once and expires in 24 hours.</div>
+                <button class="ccn-btn" style="font-size:12px;padding:6px 12px" disabled="@_linkBusy" @onclick="SendResetLinkAsync">
+                    @(_linkBusy ? "Sending…" : Email.IsConfigured ? "Email Reset Link" : "Create Link")
+                </button>
+                @if (_resetLinkStatus is not null)
+                {
+                    <div style="font-size:12px;font-weight:700;margin-top:8px;color:var(--text-dark)">@_resetLinkStatus</div>
+                }
+                @if (_resetLink is not null)
+                {
+                    <div style="display:flex;gap:6px;margin-top:8px">
+                        <input readonly value="@_resetLink" style="flex:1;min-width:0;padding:6px 8px;font-size:11px;font-family:monospace;border:2px solid var(--border-color);border-radius:6px;background:var(--panel-bg)" />
+                        <button class="ccn-btn" style="font-size:11px;padding:4px 10px;flex-shrink:0" @onclick="() => CopyAsync(_resetLink)">Copy</button>
+                    </div>
+                }
+            </div>
+
+            <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px;margin-bottom:10px">Or set a temporary password</div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">New Password</div>
@@ -345,6 +395,26 @@
     </div>
 }
 
+@* ── Invite link modal (email not configured or send failed) ── *@
+@if (_inviteLink is not null)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease"
+         @onclick="() => _inviteLink = null">
+        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:12px;box-shadow:6px 6px 0 var(--border-color);padding:24px;width:100%;max-width:440px;animation:popIn .2s ease"
+             @onclick:stopPropagation>
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 10px">Send this invite link</h3>
+            <p style="font-size:13px;color:var(--text-mid);margin:0 0 12px">@_inviteNote</p>
+            <div style="display:flex;gap:6px;margin-bottom:16px">
+                <input readonly value="@_inviteLink" style="flex:1;min-width:0;padding:6px 8px;font-size:11px;font-family:monospace;border:2px solid var(--border-color);border-radius:6px;background:var(--bg-base)" />
+                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;flex-shrink:0" @onclick="() => CopyAsync(_inviteLink)">Copy</button>
+            </div>
+            <div style="display:flex;justify-content:flex-end">
+                <button class="ccn-btn" @onclick="() => _inviteLink = null">Done</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<User> _users = new();
     private List<Group> _groups = new();
@@ -362,6 +432,11 @@
     private string _resetPassword = "";
     private string _resetConfirm = "";
     private string? _resetError;
+    private bool _linkBusy;
+    private string? _resetLinkStatus;
+    private string? _resetLink;
+    private string? _inviteLink;
+    private string _inviteNote = "";
 
     private bool _showCreatePw;
     private bool _showResetPw;
@@ -417,20 +492,89 @@
     {
         _groups = await GroupSvc.GetAllAsync();
         _users  = await AuthSvc.GetAllUsersAsync();
+        _form = NewForm();
         _loading = false;
     }
 
-    private void CloseCreateOverlay() { _mobileFormOpen = false; _form = new(); }
+    // Invite by default once email is configured; before that, keep today's temporary-password flow.
+    private UserForm NewForm() => new() { SendInvite = Email.IsConfigured };
+
+    private void CloseCreateOverlay() { _mobileFormOpen = false; _form = NewForm(); }
+
+    private string BaseUrl => PublicBaseUrl.From(Nav.BaseUri, Config);
+
+    private async Task<Guid> CurrentAdminIdAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        return Guid.TryParse(state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : Guid.Empty;
+    }
 
     private async Task CreateAsync()
     {
-        if (string.IsNullOrWhiteSpace(_form.Email) || string.IsNullOrWhiteSpace(_form.Password)) return;
+        if (string.IsNullOrWhiteSpace(_form.Email)) return;
+        if (!_form.SendInvite && string.IsNullOrWhiteSpace(_form.Password)) return;
         var groupId = _form.Role == Role.Volunteer ? _form.GroupId : null;
-        await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role, groupId);
-        Snackbar.Add($"Account created for {_form.FirstName} {_form.LastName}.", Severity.Success);
+        var name = $"{_form.FirstName} {_form.LastName}".Trim();
+
+        if (_form.SendInvite)
+        {
+            // The invitee sets their own password from the link; this one is never shown or used.
+            var user = await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email,
+                PasswordResetService.RandomPassword(), _form.Role, groupId, mustChangePassword: false);
+            var result = await Resets.SendInviteAsync(user.UserId, await CurrentAdminIdAsync(), BaseUrl);
+            if (result.Emailed)
+                Snackbar.Add($"Account created. Invite emailed to {user.Email}.", Severity.Success);
+            else
+            {
+                _inviteNote = Email.IsConfigured
+                    ? $"Account created for {name}, but the invite email couldn't be sent. Send them this link (valid 7 days):"
+                    : $"Account created for {name}. Email isn't set up yet, so send them this link yourself (valid 7 days):";
+                _inviteLink = result.Link;
+            }
+        }
+        else
+        {
+            await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role, groupId);
+            Snackbar.Add($"Account created for {name}.", Severity.Success);
+        }
+
         _mobileFormOpen = false;
-        _form = new();
+        _form = NewForm();
         _users = await AuthSvc.GetAllUsersAsync();
+    }
+
+    private async Task SendResetLinkAsync()
+    {
+        if (_resetting is null) return;
+        _linkBusy = true;
+        var result = await Resets.SendAdminResetAsync(_resetting.UserId, await CurrentAdminIdAsync(), BaseUrl);
+        _linkBusy = false;
+        if (result.Emailed)
+        {
+            _resetLinkStatus = $"✓ Sent to {_resetting.Email}.";
+            _resetLink = null;
+        }
+        else
+        {
+            _resetLinkStatus = Email.IsConfigured
+                ? "The email couldn't be sent. Send them this link instead:"
+                : "Email isn't set up yet. Send them this link yourself:";
+            _resetLink = result.Link;
+        }
+    }
+
+    private async Task CopyAsync(string? text)
+    {
+        if (text is null) return;
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            Snackbar.Add("Link copied.", Severity.Info);
+        }
+        catch (JSException)
+        {
+            Snackbar.Add("Couldn't copy — select the link and copy it manually.", Severity.Warning);
+        }
     }
 
     private void OpenEditDialog(User u)
@@ -476,6 +620,8 @@
         _resetError = null;
         _showResetPw = false;
         _showResetConfirm = false;
+        _resetLinkStatus = null;
+        _resetLink = null;
         _resetOpen = true;
     }
 
@@ -523,6 +669,7 @@
         public string Password { get; set; } = "";
         public Role Role { get; set; } = Role.Staff;
         public Guid? GroupId { get; set; }
+        public bool SendInvite { get; set; }
     }
 
     private class EditUserForm
