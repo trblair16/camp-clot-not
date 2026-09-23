@@ -2,6 +2,7 @@ using CampClotNot.Data;
 using CampClotNot.Hubs;
 using CampClotNot.Repositories;
 using CampClotNot.Services;
+using CampClotNot.Services.Email;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
@@ -83,6 +84,14 @@ try
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
     builder.Services.AddScoped<AttendanceService>();
+    builder.Services.AddScoped<PasswordResetService>();
+    builder.Services.AddSingleton<ForgotPasswordQueue>();
+    builder.Services.AddHostedService<ForgotPasswordWorker>();
+    builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>(c =>
+    {
+        c.BaseAddress = new Uri("https://api.resend.com/");
+        c.Timeout = TimeSpan.FromSeconds(15);
+    });
     builder.Services.AddScoped<ThemeAdminService>();
     builder.Services.AddScoped<EventSetupService>();
     builder.Services.AddScoped<AuthService>();
@@ -225,6 +234,39 @@ try
         await auth.ChangePasswordAsync(userId, newPw, ctx);
         return Results.Redirect("/dashboard");
     }).RequireAuthorization();
+
+    // Forgot password — always the same response; the lookup and email happen in the background
+    // (ForgotPasswordWorker) so neither the page nor its timing reveals whether an account exists.
+    app.MapPost("/account/forgot-password", async (HttpContext ctx, ForgotPasswordQueue queue, IConfiguration config) =>
+    {
+        var form  = await ctx.Request.ReadFormAsync();
+        var email = form["email"].ToString();
+        if (!string.IsNullOrWhiteSpace(email))
+            queue.Enqueue(new ForgotPasswordRequest(email, PublicBaseUrl.From(ctx.Request, config)));
+        return Results.Redirect("/forgot-password?sent=1");
+    }).AllowAnonymous();
+
+    app.MapPost("/account/reset-password", async (HttpContext ctx, PasswordResetService resets, AuthService auth) =>
+    {
+        var form    = await ctx.Request.ReadFormAsync();
+        var token   = form["token"].ToString();
+        var newPw   = form["newPassword"].ToString();
+        var confirm = form["confirmPassword"].ToString();
+        var back    = $"/reset-password?token={Uri.EscapeDataString(token)}";
+
+        if (newPw != confirm)
+            return Results.Redirect(back + "&error=mismatch");
+
+        var (result, userId) = await resets.RedeemAsync(token, newPw);
+        switch (result)
+        {
+            case RedeemResult.TooShort: return Results.Redirect(back + "&error=tooshort");
+            case RedeemResult.Invalid:  return Results.Redirect("/reset-password?error=invalid");
+        }
+
+        await auth.SignInAsync(ctx, userId!.Value);
+        return Results.Redirect("/dashboard");
+    }).AllowAnonymous();
 
     app.MapGet("/logout", async (HttpContext ctx) =>
     {
