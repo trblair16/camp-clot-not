@@ -137,6 +137,12 @@
                 </select>
             </div>
 
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;font-size:13px;font-weight:700;color:var(--text-dark)">
+                <input type="checkbox" checked="@_fTrackAttendance" @onchange="() => _fTrackAttendance = !_fTrackAttendance" />
+                Track attendance
+                <span style="font-weight:600;font-size:12px;color:var(--text-light)">— shows an "I'm here" button</span>
+            </label>
+
             @* ── Group Assignments ── *@
             <div style="border:2px solid #E8E0CC;border-radius:8px;margin-bottom:16px;overflow:hidden">
                 <button type="button"
@@ -243,6 +249,10 @@
                                     </div>
                                     <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark);line-height:1.2;margin-bottom:6px">
                                         @ev.Title
+                                        @if (ev.TrackAttendance)
+                                        {
+                                            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#E8E0CC;border:1px solid #9E8C70;color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">📋 Attendance</span>
+                                        }
                                     </div>
                                     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                                         <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:var(--font-display);font-weight:700">
@@ -304,6 +314,10 @@
                                     </td>
                                     <td style="padding:8px 14px;font-size:13px">
                                         @ev.Title
+                                        @if (ev.TrackAttendance)
+                                        {
+                                            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#E8E0CC;border:1px solid #9E8C70;color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">📋 Attendance</span>
+                                        }
                                         @if (!string.IsNullOrEmpty(ev.Description))
                                         {
                                             <div class="admin-sched-desc" style="font-size:11px;color:var(--text-light)">@ev.Description</div>
@@ -395,6 +409,7 @@
     private string? _fDesc;
     private string? _fPresenterName;
     private string? _fPresenterBio;
+    private bool _fTrackAttendance;
     private List<AssignmentFormRow> _fAssignments = new();
     private bool _assignmentsExpanded;
     private string _error = "";
@@ -462,6 +477,7 @@
         _fActivityId    = ev.ActivityId;
         _fPresenterName = ev.PresenterName;
         _fPresenterBio  = ev.PresenterBio;
+        _fTrackAttendance = ev.TrackAttendance;
         _fAssignments = _groups.Select(g =>
         {
             var existing = ev.ItemGroups.FirstOrDefault(eg => eg.GroupId == g.GroupId);
@@ -494,6 +510,7 @@
         _fActivityId      = ev.ActivityId;
         _fPresenterName   = ev.PresenterName;
         _fPresenterBio    = ev.PresenterBio;
+        _fTrackAttendance = ev.TrackAttendance;
         _fAssignments     = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _error = "";
@@ -514,6 +531,7 @@
         _fActivityId         = null;
         _fPresenterName      = null;
         _fPresenterBio       = null;
+        _fTrackAttendance    = false;
         _fAssignments        = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _error               = "";
@@ -551,7 +569,8 @@
             null, assignments,
             isPresentation ? _fPresenterName : null,
             isPresentation ? _fPresenterBio  : null,
-            string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim()
+            string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim(),
+            _fTrackAttendance
         );
         var isCopy = !string.IsNullOrEmpty(_copyingFromTitle);
         await ScheduleSvc.UpsertAsync(dto, _userId);

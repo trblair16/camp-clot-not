@@ -547,6 +547,10 @@
                     <MudTextField @bind-Value="_fLocationOther" Label="Additional Information (optional)" Placeholder="e.g. Gym + Pool deck" Class="mb-3" />
                 </div>
 
+                <div class="full">
+                    <MudCheckBox @bind-Checked="_fTrackAttendance" Label="Track attendance (shows an &quot;I'm here&quot; button)" Class="mb-3" />
+                </div>
+
                 @if (SelectedTypeSystemName == "Presentation")
                 {
                     <div class="full">
@@ -659,6 +663,7 @@
     private Guid? _fActivityId;
     private string? _fPresenterName;
     private string? _fPresenterBio;
+    private bool _fTrackAttendance;
     private List<AssignmentFormRow> _fAssignments = new();
     private bool _assignmentsExpanded;
 
@@ -756,6 +761,7 @@
         _fLocationOther = null;
         _fActivityId    = null;
         _fPresenterName = null; _fPresenterBio = null;
+        _fTrackAttendance = false;
         _fAssignments        = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _showForm            = true;
@@ -775,6 +781,7 @@
         _fActivityId    = ev.ActivityId;
         _fPresenterName = ev.PresenterName;
         _fPresenterBio  = ev.PresenterBio;
+        _fTrackAttendance = ev.TrackAttendance;
         _fAssignments = _groups.Select(g =>
         {
             var existing = ev.ItemGroups.FirstOrDefault(eg => eg.GroupId == g.GroupId);
@@ -807,6 +814,7 @@
         _fActivityId      = ev.ActivityId;
         _fPresenterName   = ev.PresenterName;
         _fPresenterBio    = ev.PresenterBio;
+        _fTrackAttendance = ev.TrackAttendance;
         _fAssignments     = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _showForm = true;
@@ -838,7 +846,8 @@
             null, assignments,
             isPresentation ? _fPresenterName : null,
             isPresentation ? _fPresenterBio  : null,
-            string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim()
+            string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim(),
+            _fTrackAttendance
         );
         await ScheduleSvc.UpsertAsync(dto, _userId);
 
