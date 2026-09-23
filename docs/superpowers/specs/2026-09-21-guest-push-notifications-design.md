@@ -162,5 +162,5 @@ Three deviations from the design above, all found while implementing:
    instead of storing a row that no send method would ever target.
 
 Migration: `AddGuestPushSubscription` (adds nullable `GuestAttendeeId uuid` to `PushSubscriptions`).
-Migrations are not auto-applied at startup, so run it against prod before deploying.
+Applied automatically on startup by `SeedService.SeedAsync()` (`db.Database.MigrateAsync()`) — no manual prod step.
 
