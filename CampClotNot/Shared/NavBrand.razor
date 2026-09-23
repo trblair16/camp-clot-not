@@ -1,0 +1,19 @@
+@inject ThemeService ThemeSvc
+
+@* Nav badge logo + subtitle. Renders into the caller's flex column (no wrapper) so the
+   guest nav can keep its "Hi, name!" line underneath. With no logo, the app title is
+   shown as a text wordmark instead of falling back to another event's artwork. *@
+@if (ThemeSvc.NavLogoUrl is { } logo)
+{
+    <img src="@logo" alt="@ThemeSvc.Active.AppTitle" style="height:@(Height)px;width:auto;max-width:220px;object-fit:contain" />
+}
+else
+{
+    <span style="font-family:var(--font-display);font-weight:700;font-size:@(Height / 2)px;color:#fff;line-height:1.1;text-align:center;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@ThemeSvc.Active.AppTitle</span>
+}
+<span style="font-family:var(--font-display);font-weight:700;font-size:@(SubtitleSize)px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+
+@code {
+    [Parameter] public int Height { get; set; } = 36;
+    [Parameter] public int SubtitleSize { get; set; } = 10;
+}
