@@ -38,6 +38,16 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         await SignInUserAsync(httpContext, user, false, false, null);
     }
 
+    /// Signs in after a successful email reset/invite (the password was just set by the user,
+    /// so no forced change).
+    public async Task SignInAsync(HttpContext httpContext, Guid userId)
+    {
+        var all = await users.GetAllAsync();
+        var user = all.FirstOrDefault(u => u.UserId == userId)
+            ?? throw new InvalidOperationException($"User {userId} not found.");
+        await SignInUserAsync(httpContext, user, false, false, null);
+    }
+
     public async Task LogoutAsync(HttpContext httpContext) =>
         await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 

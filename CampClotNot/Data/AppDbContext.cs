@@ -62,6 +62,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // Attendance
     public DbSet<ScheduleItemAttendance> ScheduleItemAttendances => Set<ScheduleItemAttendance>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -183,6 +184,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(v => v.Event)
             .WithMany()
             .HasForeignKey(v => v.EventId);
+
+        // PasswordResetToken: two FKs point at Users, so both are configured explicitly.
+        // Users are deactivated, never deleted, hence Restrict.
+        modelBuilder.Entity<PasswordResetToken>()
+            .HasIndex(t => t.TokenHash)
+            .IsUnique();
+        modelBuilder.Entity<PasswordResetToken>()
+            .HasIndex(t => new { t.UserId, t.CreatedAt });
+        modelBuilder.Entity<PasswordResetToken>()
+            .HasOne(t => t.User)
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PasswordResetToken>()
+            .HasOne(t => t.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(t => t.CreatedByUserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ScheduleItemAttendance: one row per attendee per tracked item. Owned by exactly one of
         // GuestAttendeeId / UserId (check constraint). Two FKs point at Users, so every
