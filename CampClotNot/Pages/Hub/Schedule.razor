@@ -200,6 +200,7 @@
                                         <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@displayActivity.Name</div>
                                     }
                                     @BreakoutLine(ev)
+                                    @CheckInStatus(ev)
                                     <div class="sched-inline-meta">
                                         <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:var(--font-display);font-weight:700;display:inline-block">@DisplayItemTypeBadge(ev.ScheduleItemType, displayActivity)</span>
                                         @if (displayLocation is not null)
@@ -289,6 +290,7 @@
                                         <span style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text-dark)">@ev.Title</span>
                                         @if (dispAct is not null) { <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@dispAct.Name</div> }
                                         @BreakoutLine(ev)
+                                        @CheckInStatus(ev)
                                         @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                         {
                                             <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
@@ -325,7 +327,7 @@
                                     <td>
                                         @if (dispLoc?.ImageContentType is not null)
                                         {
-                                            <img src="/location-image/@dispLoc.LocationId" style="max-width:44px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--border-color);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' @onclick:stopPropagation="true" />
+                                            <img src="/location-image/@dispLoc.LocationId" style="width:44px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--border-color);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' @onclick:stopPropagation="true" />
                                         }
                                     </td>
                                     <td style="color:var(--text-mid);font-size:13px">@(string.IsNullOrEmpty(ev.LocationOther) ? "—" : ev.LocationOther)</td>
@@ -406,9 +408,10 @@
                     @if (mdLocation.ImageContentType is not null)
                     {
                         <div style="margin-top:10px">
+                            @* Cropped to a banner here; tap for the whole photo (tall images lose their top/bottom). *@
                             <img src="/location-image/@mdLocation.LocationId"
-                                 style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;border:var(--panel-border);box-shadow:3px 3px 0 var(--border-color)"
-                                 alt="@mdLocation.Name" />
+                                 style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;border:var(--panel-border);box-shadow:3px 3px 0 var(--border-color);cursor:zoom-in;display:block"
+                                 alt="@mdLocation.Name" @onclick='() => _lightboxSrc = $"/location-image/{mdLocation.LocationId}"' />
                         </div>
                     }
                 </div>
@@ -1110,6 +1113,23 @@
         && (_myCheckIns.Contains(ev.ScheduleItemId)
             || _checkInMessages.ContainsKey(ev.ScheduleItemId)
             || AttendanceService.IsSelfCheckInOpen(ev, CampTime.Now));
+
+    // At-a-glance status on the day list for tracked items that apply to me (breakout options: only
+    // my own). Green once checked in; red once check-in has opened and I haven't. Nothing before
+    // the window opens, so the day's later items aren't all flagged red.
+    private RenderFragment CheckInStatus(ScheduleItem ev) => __builder =>
+    {
+        if (!ev.TrackAttendance) return;
+        if (ev.ParentScheduleItemId is { } slotId && _myRegs.GetValueOrDefault(slotId) != ev.ScheduleItemId) return;
+        if (_myCheckIns.Contains(ev.ScheduleItemId))
+        {
+            <div style="margin-top:4px"><span style="font-size:11px;padding:1px 8px;border-radius:4px;background:#27AE60;color:white;border:2px solid var(--border-color);font-family:var(--font-display);font-weight:700;white-space:nowrap">✓ Checked in</span></div>
+        }
+        else if (CampTime.Now >= AttendanceService.CheckInWindow(ev).Opens)
+        {
+            <div style="margin-top:4px"><span style="font-size:11px;padding:1px 8px;border-radius:4px;background:#D12B2B;color:white;border:2px solid var(--border-color);font-family:var(--font-display);font-weight:700;white-space:nowrap">Not checked in</span></div>
+        }
+    };
 
     // Shown only in the item detail modal (tap a row), which keeps the day list at-a-glance.
     private RenderFragment CheckInControl(ScheduleItem ev) =>

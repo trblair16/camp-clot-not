@@ -472,6 +472,13 @@ warnings, plus a walkthrough on local Postgres 16 with headless Chromium:
   The button, the "✓ Checked in" chip, and the QR-only hint no longer appear on the schedule rows.
   Tapping a row opens the modal on mobile as before. Desktop table rows now open it too, and the
   Edit/Copy/Del, Groups, and location-image controls stop the click from reaching the row.
+- **Check-in status on the day list** (Tyler, 2026-09-26): tracked items that apply to the viewer
+  show a green "✓ Checked in" badge, or a red "Not checked in" badge once the window has opened.
+  Nothing shows before the window opens. Breakout options only show it to the person signed up.
+- **Location photo in the detail modal** stays a 200px-tall cropped banner. Tapping it opens the full
+  photo in the lightbox, because tall photos lose their top and bottom in the banner. The desktop
+  table thumbnail now has a fixed width, so portrait photos crop the same way instead of shrinking
+  to a sliver.
 - **`returnUrl` is also carried through `/change-password`,** so a staff member whose first sign-in
   is from a QR scan (temporary password) still lands back on the check-in.
 - **Page files:** `Pages/Admin/EventStaffAdmin.razor` (to avoid clashing with the `EventStaff`
