@@ -479,6 +479,16 @@ warnings, plus a walkthrough on local Postgres 16 with headless Chromium:
   photo in the lightbox, because tall photos lose their top and bottom in the banner. The desktop
   table thumbnail now has a fixed width, so portrait photos crop the same way instead of shrinking
   to a sliver.
+- **`/admin/event-staff` became `/admin/team`** (Tyler, 2026-09-26, after a workflow review) so that
+  staffing an event takes one page. "+ Add person" either adds an existing account or invites a new
+  person (creating the account, adding them to the team, and emailing an invite or showing a copyable
+  link). Each row has role, group, and an **In Hub directory** toggle that creates or removes their
+  linked `StaffMember` card. An empty team offers "Copy the team from…", "Add everyone who has an
+  account", or adding people one at a time. Nav: People → Team, Groups, Guests, Attendance,
+  Staff Directory (was "Staff"), Accounts (was "Users"). The old URL still routes to Team.
+- **Groups are scoped to the active event.** `GroupService.GetAllAsync` returned every event's groups
+  (leaderboard, transactions, board, admin), and `/admin/groups` created new groups under the first
+  existing group's event. The CCN group seed is insert-only now (pitfall #19).
 - **`returnUrl` is also carried through `/change-password`,** so a staff member whose first sign-in
   is from a QR scan (temporary password) still lands back on the check-in.
 - **Page files:** `Pages/Admin/EventStaffAdmin.razor` (to avoid clashing with the `EventStaff`

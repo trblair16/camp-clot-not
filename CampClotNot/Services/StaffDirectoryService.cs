@@ -88,7 +88,7 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory, IMem
             .ToListAsync();
     }
 
-    public async Task ImportUserAsync(Guid campEventId, Guid userId)
+    public async Task ImportUserAsync(Guid campEventId, Guid userId, string? roleTitle = null)
     {
         using var db = factory.CreateDbContext();
         var user = await db.Users.Include(u => u.UserRole)
@@ -101,13 +101,24 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory, IMem
             StaffMemberId = Guid.NewGuid(),
             CampEventId   = campEventId,
             DisplayName   = $"{user.FirstName} {user.LastName}".Trim(),
-            RoleTitle     = user.UserRole.SystemName,
+            RoleTitle     = roleTitle ?? user.UserRole.SystemName,
             Email         = user.Email,
             AvatarEmoji   = "👤",
             IsVisible     = true,
             SortOrder     = 0,
             LinkedUserId  = userId
         });
+        await db.SaveChangesAsync();
+        InvalidateEvent(campEventId);
+    }
+
+    /// <summary>Removes the directory card(s) linked to this user at the event (the Team page's toggle).</summary>
+    public async Task RemoveLinkedAsync(Guid campEventId, Guid userId)
+    {
+        using var db = factory.CreateDbContext();
+        var cards = await db.StaffMembers.Where(m => m.CampEventId == campEventId && m.LinkedUserId == userId).ToListAsync();
+        if (cards.Count == 0) return;
+        db.StaffMembers.RemoveRange(cards);
         await db.SaveChangesAsync();
         InvalidateEvent(campEventId);
     }

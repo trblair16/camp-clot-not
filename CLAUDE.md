@@ -570,7 +570,7 @@ Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-.
 | `CampClotNot/Services/EventStaffService.cs` | Per-event staff list (`EventStaff`) |
 | `CampClotNot/Services/ScheduleVisibility.cs` | Which items a person sees given breakout picks (shared by `/hub/schedule` and the Dashboard) |
 | `CampClotNot/Pages/CheckIn.razor` | `/checkin/{code}`, the landing page for a session's QR code |
-| `CampClotNot/Pages/Admin/Breakouts.razor` / `EventStaffAdmin.razor` | `/admin/breakouts` / `/admin/event-staff` |
+| `CampClotNot/Pages/Admin/Breakouts.razor` / `Team.razor` | `/admin/breakouts` / `/admin/team` (the one page for staffing an event: add or invite people, role and group at this event, Hub directory toggle; `/admin/event-staff` still routes here) |
 | `CampClotNot/Services/PushNotificationService.cs` | Web Push (VAPID) to guest subscriptions (singleton) |
 | `CampClotNot/Services/PasswordResetService.cs` | Reset/invite tokens, `ForgotPasswordQueue` + background worker, `PublicBaseUrl` |
 | `CampClotNot/Services/Email/` | `IEmailSender`, `ResendEmailSender` (HTTPS API), `EmailTemplates` |

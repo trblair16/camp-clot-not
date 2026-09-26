@@ -1,0 +1,474 @@
+@page "/admin/team"
+@page "/admin/event-staff"
+@attribute [Authorize(Roles = "Admin")]
+@inject EventStaffService EventStaffSvc
+@inject StaffDirectoryService DirectorySvc
+@inject ActiveEventService ActiveEventSvc
+@inject AuthService AuthSvc
+@inject PasswordResetService Resets
+@inject IEmailSender Email
+@inject AuthenticationStateProvider Auth
+@inject NavigationManager Nav
+@inject IConfiguration Config
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+@* The one page an Admin needs to staff an event: add existing accounts or invite new people,
+   set their role and group at this event, and put them in the Hub staff directory. Accounts
+   (/admin/users) and the Staff Directory (/admin/staff) are there for the less common jobs. *@
+
+<PageTitle>Team — Camp Clot Not</PageTitle>
+
+<div style="padding: 0 16px 100px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+        <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0"><img src="/img/icons/people.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Team@(_event is not null ? $" — {_event.Name}" : "")</h2>
+        @if (_event is not null && _staff.Any())
+        {
+            <button class="ccn-btn" style="background:var(--color-primary)" @onclick="OpenAdd">+ Add person</button>
+        }
+    </div>
+    @if (_event is not null)
+    {
+        <p style="font-size:13px;color:var(--text-mid);margin:0 0 18px;max-width:760px">
+            Everyone working <strong>@_event.Name</strong> — staff, volunteers, medical. Add people here, pick their role and group for this event,
+            and tick <strong>In Hub directory</strong> for anyone guests should see on the Staff page.
+        </p>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (_event is null)
+    {
+        <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No active event. Mark one active on <a href="/admin/events">Events</a>.</p>
+    }
+    else if (!_staff.Any())
+    {
+        @* Empty team: the three ways to fill it, front and center. *@
+        <div class="ccn-panel" style="padding:20px;max-width:640px;box-shadow:4px 4px 0 var(--border-color)">
+            <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:4px">Nobody is on this team yet</div>
+            <div style="font-size:13px;color:var(--text-mid);margin-bottom:16px">Pick whichever is quickest:</div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+                @if (_otherEvents.Any(e => e.TeamSize > 0))
+                {
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <select @bind="_copyFromId" style="@SelectStyle;flex:1;min-width:200px">
+                            <option value="">Copy the team from…</option>
+                            @foreach (var (ev, size) in _otherEvents.Where(e => e.TeamSize > 0))
+                            {
+                                <option value="@ev.EventId">@ev.Name (@size)</option>
+                            }
+                        </select>
+                        <button class="ccn-btn" disabled="@(string.IsNullOrEmpty(_copyFromId) || _busy)" @onclick="CopyFromAsync">Copy</button>
+                    </div>
+                }
+                <div><button class="ccn-btn" disabled="@_busy" @onclick="AddAllAsync">Add everyone who has an account (@_accountCount)</button></div>
+                <div><button class="ccn-btn" style="background:var(--color-primary)" @onclick="OpenAdd">+ Add people one at a time</button></div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+            <input type="text" @bind="_search" @bind:event="oninput" placeholder="Search name or email…"
+                   style="flex:1;min-width:160px;@SelectStyle;padding:8px 12px" />
+            <select @bind="_roleFilter" style="@SelectStyle;padding:8px 12px">
+                <option value="">All roles</option>
+                @foreach (var r in _roles)
+                {
+                    <option value="@r.UserRoleId">@r.Name</option>
+                }
+            </select>
+            <span style="font-size:12px;font-weight:700;color:var(--text-mid)">@Filtered.Count() of @_staff.Count</span>
+        </div>
+
+        <div style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow-x:auto;background:var(--panel-bg)">
+            <table style="width:100%;border-collapse:collapse;min-width:620px">
+                <thead>
+                    <tr style="background:var(--black)">
+                        <th style="@Th">Name</th>
+                        <th style="@Th">Role at this event</th>
+                        @if (_groups.Any()) { <th style="@Th">Group</th> }
+                        <th style="@Th" title="Shows a card for them on the Hub's Staff page">In Hub directory</th>
+                        <th style="padding:10px 14px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Filtered)
+                    {
+                        var row = s;
+                        var inDir = _inDirectory.Contains(row.UserId);
+                        <tr style="border-bottom:2px solid #E8E0CC">
+                            <td style="padding:9px 14px">
+                                <div style="font-size:13px;font-weight:700">@row.User.FirstName @row.User.LastName</div>
+                                <div style="font-size:11px;color:var(--text-mid);overflow-wrap:anywhere">@row.User.Email</div>
+                            </td>
+                            <td style="padding:8px 14px">
+                                <select value="@row.UserRoleId" @onchange="e => ChangeRoleAsync(row, e.Value?.ToString())" style="@SelectStyle">
+                                    @foreach (var r in _roles)
+                                    {
+                                        <option value="@r.UserRoleId">@r.Name</option>
+                                    }
+                                </select>
+                            </td>
+                            @if (_groups.Any())
+                            {
+                                <td style="padding:8px 14px">
+                                    <select value="@(row.GroupId?.ToString() ?? "")" @onchange="e => ChangeGroupAsync(row, e.Value?.ToString())" style="@SelectStyle">
+                                        <option value="">— None —</option>
+                                        @foreach (var g in _groups)
+                                        {
+                                            <option value="@g.GroupId">@g.Name</option>
+                                        }
+                                    </select>
+                                </td>
+                            }
+                            <td style="padding:8px 14px">
+                                <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer">
+                                    <input type="checkbox" checked="@inDir" disabled="@_busy" @onchange="() => ToggleDirectoryAsync(row, !inDir)" />
+                                    @(inDir ? "Shown" : "Hidden")
+                                </label>
+                            </td>
+                            <td style="padding:8px 10px;text-align:right">
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" disabled="@_busy" @onclick="() => RemoveAsync(row)">Remove</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center">
+            <button class="ccn-btn" style="font-size:12px;padding:6px 12px;background:transparent" disabled="@_busy" @onclick="AddAllAsync">Add everyone who has an account</button>
+            @if (_otherEvents.Any(e => e.TeamSize > 0))
+            {
+                <select @bind="_copyFromId" style="@SelectStyle">
+                    <option value="">Copy people from another event…</option>
+                    @foreach (var (ev, size) in _otherEvents.Where(e => e.TeamSize > 0))
+                    {
+                        <option value="@ev.EventId">@ev.Name (@size)</option>
+                    }
+                </select>
+                <button class="ccn-btn" style="font-size:12px;padding:6px 12px;background:transparent" disabled="@(string.IsNullOrEmpty(_copyFromId) || _busy)" @onclick="CopyFromAsync">Copy</button>
+            }
+        </div>
+    }
+
+    @if (_event is not null)
+    {
+        <div style="font-size:12px;color:var(--text-light);margin-top:22px;max-width:760px">
+            Less common jobs: reset a password or deactivate someone on <a href="/admin/users" style="color:var(--black);font-weight:700">Accounts</a>.
+            Add photos, phone numbers, or people without an account to the Hub directory on <a href="/admin/staff" style="color:var(--black);font-weight:700">Staff Directory</a>.
+            The role here is only a label for this event — what someone can do in the app comes from their account.
+        </div>
+    }
+</div>
+
+@if (_addOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:1300;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease"
+         @onclick="CloseAdd">
+        <div class="ccn-panel" style="width:min(480px,100%);max-height:85vh;display:flex;flex-direction:column;padding:20px;animation:popIn .25s ease;box-shadow:8px 8px 0 var(--black)"
+             @onclick:stopPropagation="true">
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 12px">Add to @_event?.Name</h3>
+
+            @if (_inviteLink is not null)
+            {
+                <div style="font-size:13px;margin-bottom:8px">@_inviteNote</div>
+                <div style="font-family:monospace;font-size:12px;overflow-wrap:anywhere;background:var(--bg-base);border:2px solid var(--border-color);border-radius:6px;padding:8px;margin-bottom:10px">@_inviteLink</div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                    <button class="ccn-btn" style="background:transparent" @onclick="CopyInviteAsync">Copy link</button>
+                    <button class="ccn-btn" @onclick="() => { _inviteLink = null; _tab = AddTab.New; }">Add another</button>
+                    <button class="ccn-btn" @onclick="CloseAdd">Done</button>
+                </div>
+            }
+            else
+            {
+                <div style="display:flex;border:var(--panel-border);border-radius:7px;overflow:hidden;margin-bottom:12px">
+                    <button style="@TabStyle(_tab == AddTab.Existing)" @onclick="() => _tab = AddTab.Existing">Has an account</button>
+                    <button style="@TabStyle(_tab == AddTab.New)" @onclick="() => _tab = AddTab.New">New person</button>
+                </div>
+
+                @if (_tab == AddTab.Existing)
+                {
+                    <input type="text" @bind="_addSearch" @bind:event="oninput" placeholder="Search accounts…"
+                           style="@SelectStyle;width:100%;padding:9px 12px;box-sizing:border-box;margin-bottom:10px" />
+                    <div style="overflow-y:auto;flex:1;min-height:0">
+                        @if (!AddableFiltered.Any())
+                        {
+                            <p style="font-size:13px;color:var(--text-light);font-weight:700">
+                                @(_addable.Any() ? "No one matches." : "Everyone with an account is already on this team.")
+                                Use <strong>New person</strong> to invite someone.
+                            </p>
+                        }
+                        @foreach (var u in AddableFiltered)
+                        {
+                            var user = u;
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:2px solid #E8E0CC">
+                                <div style="min-width:0">
+                                    <div style="font-weight:700;font-size:14px">@user.FirstName @user.LastName</div>
+                                    <div style="font-size:11px;color:var(--text-mid)">@user.UserRole.Name · @user.Email</div>
+                                </div>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 12px;flex-shrink:0" disabled="@_busy" @onclick="() => AddExistingAsync(user)">Add</button>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="font-size:12px;color:var(--text-mid);margin-bottom:12px">Creates their account, adds them to this team, and @(Email.IsConfigured ? "emails them an invite link to set a password." : "gives you an invite link to send them (email isn't set up yet).")</div>
+                    <div style="display:flex;gap:10px;margin-bottom:10px">
+                        <input type="text" @bind="_nFirst" placeholder="First name" style="@SelectStyle;flex:1;min-width:0;padding:9px 12px" />
+                        <input type="text" @bind="_nLast" placeholder="Last name" style="@SelectStyle;flex:1;min-width:0;padding:9px 12px" />
+                    </div>
+                    <input type="email" @bind="_nEmail" placeholder="Email" style="@SelectStyle;width:100%;padding:9px 12px;box-sizing:border-box;margin-bottom:10px" />
+                    <select @bind="_nRole" style="@SelectStyle;width:100%;padding:9px 12px;margin-bottom:6px">
+                        <option value="@Role.Volunteer">Volunteer</option>
+                        <option value="@Role.Staff">Staff</option>
+                        <option value="@Role.MedicalStaff">Medical Staff</option>
+                        <option value="@Role.Admin">Admin</option>
+                    </select>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin:6px 0 12px;cursor:pointer">
+                        <input type="checkbox" checked="@_nDirectory" @onchange="() => _nDirectory = !_nDirectory" /> Show in Hub directory
+                    </label>
+                    @if (_addError is not null)
+                    {
+                        <div style="color:#D12B2B;font-size:13px;font-weight:700;margin-bottom:10px">@_addError</div>
+                    }
+                    <div style="display:flex;justify-content:flex-end">
+                        <button class="ccn-btn" style="background:var(--color-primary)" disabled="@_busy" @onclick="InviteAsync">Add &amp; invite</button>
+                    </div>
+                }
+
+                <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                    <button class="ccn-btn" style="background:transparent" @onclick="CloseAdd">Close</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private enum AddTab { Existing, New }
+
+    private const string SelectStyle = "padding:6px 10px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;cursor:pointer";
+    private const string Th = "padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left";
+
+    private static string TabStyle(bool active) =>
+        $"flex:1;padding:8px;border:none;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:13px;background:{(active ? "var(--black)" : "var(--panel-bg)")};color:{(active ? "white" : "var(--text-dark)")}";
+
+    private Event? _event;
+    private Guid _adminId;
+    private List<EventStaff> _staff = [];
+    private List<UserRole> _roles = [];
+    private List<Group> _groups = [];
+    private List<User> _addable = [];
+    private HashSet<Guid> _inDirectory = [];
+    private List<(Event Event, int TeamSize)> _otherEvents = [];
+    private int _accountCount;
+    private bool _loading = true;
+    private bool _busy;
+    private string _search = "";
+    private string _roleFilter = "";
+    private string _copyFromId = "";
+
+    private bool _addOpen;
+    private AddTab _tab = AddTab.Existing;
+    private string _addSearch = "";
+    private string _nFirst = "", _nLast = "", _nEmail = "";
+    private Role _nRole = Role.Volunteer;
+    private bool _nDirectory = true;
+    private string? _addError;
+    private string? _inviteLink;
+    private string _inviteNote = "";
+
+    private IEnumerable<EventStaff> Filtered => _staff
+        .Where(s => string.IsNullOrWhiteSpace(_search)
+            || $"{s.User.FirstName} {s.User.LastName}".Contains(_search, StringComparison.OrdinalIgnoreCase)
+            || s.User.Email.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .Where(s => string.IsNullOrEmpty(_roleFilter) || s.UserRoleId.ToString() == _roleFilter);
+
+    private IEnumerable<User> AddableFiltered => _addable
+        .Where(u => string.IsNullOrWhiteSpace(_addSearch)
+            || $"{u.FirstName} {u.LastName}".Contains(_addSearch, StringComparison.OrdinalIgnoreCase)
+            || u.Email.Contains(_addSearch, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await Auth.GetAuthenticationStateAsync();
+        Guid.TryParse(state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _adminId);
+        _event = await ActiveEventSvc.GetActiveEventAsync();
+        if (_event is not null)
+        {
+            _roles  = await EventStaffSvc.GetRolesAsync();
+            _groups = await EventStaffSvc.GetGroupsAsync(_event.EventId);
+            await ReloadAsync();
+        }
+        _loading = false;
+    }
+
+    private async Task ReloadAsync()
+    {
+        _staff        = await EventStaffSvc.GetForEventAsync(_event!.EventId);
+        _inDirectory  = await EventStaffSvc.GetDirectoryUserIdsAsync(_event.EventId);
+        _addable      = await EventStaffSvc.GetAddableUsersAsync(_event.EventId);
+        _otherEvents  = await EventStaffSvc.GetOtherEventsAsync(_event.EventId);
+        _accountCount = _addable.Count;
+    }
+
+    private string? RoleName(Guid roleId) => _roles.FirstOrDefault(r => r.UserRoleId == roleId)?.Name;
+
+    private void OpenAdd()
+    {
+        _addSearch = "";
+        _addError = null;
+        _inviteLink = null;
+        _tab = _addable.Any() ? AddTab.Existing : AddTab.New;
+        _addOpen = true;
+    }
+
+    private void CloseAdd() => _addOpen = false;
+
+    private async Task AddExistingAsync(User u)
+    {
+        _busy = true;
+        try
+        {
+            await EventStaffSvc.AddAsync(_event!.EventId, u.UserId, u.UserRoleId);
+            await ReloadAsync();
+            Snackbar.Add($"{u.FirstName} {u.LastName} added.", Severity.Success);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task InviteAsync()
+    {
+        _addError = null;
+        if (string.IsNullOrWhiteSpace(_nFirst) || string.IsNullOrWhiteSpace(_nLast) || string.IsNullOrWhiteSpace(_nEmail))
+        {
+            _addError = "First name, last name, and email are all needed.";
+            return;
+        }
+        if (await EventStaffSvc.FindUserByEmailAsync(_nEmail) is { } existing)
+        {
+            _addError = existing.IsActive
+                ? $"{existing.FirstName} {existing.LastName} already has an account with that email — find them under \"Has an account\"."
+                : $"That email belongs to a deactivated account ({existing.FirstName} {existing.LastName}). Reactivate it on Accounts first.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            // The invitee sets their own password from the link; this one is never shown or used.
+            var user = await AuthSvc.CreateUserAsync(_nFirst.Trim(), _nLast.Trim(), _nEmail.Trim(),
+                PasswordResetService.RandomPassword(), _nRole, mustChangePassword: false);
+            await EventStaffSvc.AddAsync(_event!.EventId, user.UserId, user.UserRoleId);
+            if (_nDirectory)
+                await DirectorySvc.ImportUserAsync(_event.EventId, user.UserId, RoleName(user.UserRoleId));
+
+            var result = await Resets.SendInviteAsync(user.UserId, _adminId, PublicBaseUrl.From(Nav.BaseUri, Config));
+            var name = $"{user.FirstName} {user.LastName}";
+            if (result.Emailed)
+            {
+                Snackbar.Add($"{name} added and invited ({user.Email}).", Severity.Success);
+                _nFirst = _nLast = _nEmail = "";
+            }
+            else
+            {
+                _inviteNote = Email.IsConfigured
+                    ? $"{name} is on the team, but the invite email couldn't be sent. Send them this link (valid 7 days):"
+                    : $"{name} is on the team. Email isn't set up yet, so send them this link yourself (valid 7 days):";
+                _inviteLink = result.Link;
+                _nFirst = _nLast = _nEmail = "";
+            }
+            await ReloadAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task CopyInviteAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _inviteLink);
+            Snackbar.Add("Link copied.", Severity.Info);
+        }
+        catch (JSException)
+        {
+            Snackbar.Add("Couldn't copy — select the link and copy it manually.", Severity.Warning);
+        }
+    }
+
+    private async Task AddAllAsync()
+    {
+        _busy = true;
+        try
+        {
+            var added = await EventStaffSvc.AddAllActiveUsersAsync(_event!.EventId);
+            await ReloadAsync();
+            Snackbar.Add(added == 0 ? "Everyone with an account is already on the team." : $"Added {added} {(added == 1 ? "person" : "people")}.", Severity.Success);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task CopyFromAsync()
+    {
+        if (!Guid.TryParse(_copyFromId, out var sourceId)) return;
+        _busy = true;
+        try
+        {
+            var added = await EventStaffSvc.CopyFromEventAsync(sourceId, _event!.EventId);
+            _copyFromId = "";
+            await ReloadAsync();
+            Snackbar.Add(added == 0 ? "Everyone from that event is already on this team." : $"Added {added} {(added == 1 ? "person" : "people")}. Groups weren't copied — set them here if this event uses groups.", Severity.Success);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ChangeRoleAsync(EventStaff s, string? value)
+    {
+        if (!Guid.TryParse(value, out var roleId)) return;
+        await EventStaffSvc.UpdateAsync(s.EventStaffId, roleId, s.GroupId);
+        await ReloadAsync();
+    }
+
+    private async Task ChangeGroupAsync(EventStaff s, string? value)
+    {
+        Guid? groupId = Guid.TryParse(value, out var gid) ? gid : null;
+        await EventStaffSvc.UpdateAsync(s.EventStaffId, s.UserRoleId, groupId);
+        await ReloadAsync();
+    }
+
+    private async Task ToggleDirectoryAsync(EventStaff s, bool show)
+    {
+        var name = $"{s.User.FirstName} {s.User.LastName}";
+        if (!show && !await JS.InvokeAsync<bool>("confirm", $"Take {name} off the Hub staff directory? Any photo or phone number added to their card is deleted too.")) return;
+        _busy = true;
+        try
+        {
+            if (show) await DirectorySvc.ImportUserAsync(_event!.EventId, s.UserId, s.UserRole.Name);
+            else      await DirectorySvc.RemoveLinkedAsync(_event!.EventId, s.UserId);
+            await ReloadAsync();
+            Snackbar.Add(show ? $"{name} is now in the Hub directory. Add a photo or phone on Staff Directory." : $"{name} removed from the Hub directory.", Severity.Info);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task RemoveAsync(EventStaff s)
+    {
+        var name = $"{s.User.FirstName} {s.User.LastName}";
+        var extra = _inDirectory.Contains(s.UserId) ? " Their Hub directory card is removed too." : "";
+        if (!await JS.InvokeAsync<bool>("confirm", $"Remove {name} from the {_event!.Name} team?{extra} Their account, check-ins, and sign-ups are kept.")) return;
+        _busy = true;
+        try
+        {
+            await EventStaffSvc.RemoveAsync(s.EventStaffId);
+            await DirectorySvc.RemoveLinkedAsync(_event.EventId, s.UserId);
+            await ReloadAsync();
+            Snackbar.Add($"{name} removed.", Severity.Info);
+        }
+        finally { _busy = false; }
+    }
+}

@@ -112,6 +112,62 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory)
         return missing.Count;
     }
 
+    /// <summary>
+    /// Adds the active people from another event's team (with the role they had there, no group —
+    /// groups belong to one event). People already on this team are left alone. Returns how many were added.
+    /// </summary>
+    public async Task<int> CopyFromEventAsync(Guid sourceEventId, Guid eventId)
+    {
+        using var db = factory.CreateDbContext();
+        var source = await db.EventStaff
+            .Where(s => s.EventId == sourceEventId && s.User.IsActive
+                && !db.EventStaff.Any(t => t.EventId == eventId && t.UserId == s.UserId))
+            .Select(s => new { s.UserId, s.UserRoleId })
+            .ToListAsync();
+        foreach (var s in source)
+            db.EventStaff.Add(new EventStaff
+            {
+                EventStaffId = Guid.NewGuid(),
+                EventId      = eventId,
+                UserId       = s.UserId,
+                UserRoleId   = s.UserRoleId,
+                AddedAt      = CampTime.Now
+            });
+        await db.SaveChangesAsync();
+        return source.Count;
+    }
+
+    /// <summary>Other events with how many active people are on each team, for "Copy team from…".</summary>
+    public async Task<List<(Event Event, int TeamSize)>> GetOtherEventsAsync(Guid eventId)
+    {
+        using var db = factory.CreateDbContext();
+        var rows = await db.Events.AsNoTracking()
+            .Where(e => e.EventId != eventId)
+            .OrderByDescending(e => e.EffDate)
+            .Select(e => new { Event = e, Size = db.EventStaff.Count(s => s.EventId == e.EventId && s.User.IsActive) })
+            .ToListAsync();
+        return rows.Select(r => (r.Event, r.Size)).ToList();
+    }
+
+    /// <summary>Any account (active or not) with this email, so "invite" doesn't create a duplicate.</summary>
+    public async Task<User?> FindUserByEmailAsync(string email)
+    {
+        using var db = factory.CreateDbContext();
+        var normalized = email.Trim().ToLowerInvariant();
+        return await db.Users.AsNoTracking().Include(u => u.UserRole).FirstOrDefaultAsync(u => u.Email == normalized);
+    }
+
+    /// <summary>Team members who have a Hub staff-directory card at this event.</summary>
+    public async Task<HashSet<Guid>> GetDirectoryUserIdsAsync(Guid eventId)
+    {
+        using var db = factory.CreateDbContext();
+        var ids = await db.StaffMembers
+            .Where(m => m.CampEventId == eventId && m.LinkedUserId != null)
+            .Select(m => m.LinkedUserId!.Value)
+            .ToListAsync();
+        return ids.ToHashSet();
+    }
+
     /// <summary>Changes the role label and group. The group must belong to the same event.</summary>
     public async Task UpdateAsync(Guid eventStaffId, Guid userRoleId, Guid? groupId)
     {
