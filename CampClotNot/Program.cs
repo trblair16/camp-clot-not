@@ -205,12 +205,13 @@ try
                 expiresUtc = DateTimeOffset.UtcNow.AddDays(7);
         }
 
-        var result = await auth.LoginAsync(ctx, email, password, rememberMe, expiresUtc);
+        var result    = await auth.LoginAsync(ctx, email, password, rememberMe, expiresUtc);
+        var returnUrl = LocalReturnUrl(form["returnUrl"]);
         return result switch
         {
             LoginResult.MustChangePassword => Results.Redirect("/change-password"),
-            LoginResult.Success            => Results.Redirect("/dashboard"),
-            _                              => Results.Redirect("/login?error=true")
+            LoginResult.Success            => Results.Redirect(returnUrl ?? "/dashboard"),
+            _                              => Results.Redirect("/login?error=true" + (returnUrl is null ? "" : $"&returnUrl={Uri.EscapeDataString(returnUrl)}"))
         };
     });
 
@@ -288,15 +289,17 @@ try
         var lastName  = form["lastName"].ToString();
 
         var ev = await guestSvc.ValidateCodeAsync(code);
-        if (ev is null) return Results.Redirect("/join?error=true");
+        // Keep the return URL across a failed attempt (e.g. a check-in QR scan → join → typo).
+        var back = LocalReturnUrl(form["returnUrl"]) is { } r ? $"&returnUrl={Uri.EscapeDataString(r)}" : "";
+        if (ev is null) return Results.Redirect("/join?error=true" + back);
 
         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
-            return Results.Redirect("/join?error=name");
+            return Results.Redirect("/join?error=name" + back);
 
         var guest = await guestSvc.GetOrCreateGuestAsync(firstName, lastName);
         await guestSvc.RecordVisitAsync(guest.GuestAttendeeId, ev.EventId);
         await guestSvc.SignInGuestAsync(ctx, ev, guest);
-        return Results.Redirect("/hub/schedule");
+        return Results.Redirect(LocalReturnUrl(form["returnUrl"]) ?? "/hub/schedule");
     }).AllowAnonymous();
 
     // Serve sponsor logos stored as bytea in the database
@@ -353,6 +356,17 @@ try
         // requires typing the code shown on the flyer, by design.
         var joinUrl = $"{req.Scheme}://{req.Host}/join";
         var png = guestSvc.GenerateJoinQrPng(joinUrl);
+        return Results.File(png, "image/png");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+    // Check-in QR for a tracked item. Creates the item's code on first use. The URL points at
+    // /checkin/{code} (a random code, not the item id, so QR-only items can't be reached by id).
+    app.MapGet("/admin/attendance/item/{id:guid}/qr.png", async (Guid id, HttpRequest req, IConfiguration config,
+        AttendanceService attendance, GuestAccessService guestSvc) =>
+    {
+        var code = await attendance.EnsureCheckInCodeAsync(id);
+        if (code is null) return Results.NotFound();
+        var png = guestSvc.GenerateJoinQrPng($"{PublicBaseUrl.From(req, config)}/checkin/{code}");
         return Results.File(png, "image/png");
     }).RequireAuthorization(policy => policy.RequireRole("Admin"));
 
@@ -441,6 +455,13 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Only same-site paths are allowed as a post-sign-in redirect ("/checkin/ABC"), never "//evil.com"
+// or "/\evil.com", which browsers treat as another host.
+static string? LocalReturnUrl(string? url) =>
+    !string.IsNullOrEmpty(url) && url.StartsWith('/') && !url.StartsWith("//") && !url.StartsWith("/\\")
+        ? url
+        : null;
 
 // Railway injects a postgres:// URI — convert to Npgsql connection string format
 static string ConvertPostgresUri(string uri)

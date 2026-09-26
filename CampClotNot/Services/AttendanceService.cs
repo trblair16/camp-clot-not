@@ -211,7 +211,8 @@ public class AttendanceService(
         using var db = factory.CreateDbContext();
         return await db.ScheduleItems.AsNoTracking()
             .Where(i => i.CampEventId == eventId && i.TrackAttendance)
-            .OrderBy(i => i.CampDay).ThenBy(i => i.StartTime)
+            .Include(i => i.ParentScheduleItem)
+            .OrderBy(i => i.CampDay).ThenBy(i => i.StartTime).ThenBy(i => i.Title)
             .ToListAsync();
     }
 

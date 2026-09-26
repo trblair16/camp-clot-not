@@ -1,6 +1,9 @@
 @page "/admin/attendance"
 @attribute [Authorize(Roles = "Admin")]
 @inject AttendanceService AttendanceSvc
+@inject RegistrationService RegistrationSvc
+@inject NavigationManager Nav
+@inject IConfiguration Config
 @inject ActiveEventService ActiveEventSvc
 @inject AuthenticationStateProvider Auth
 @inject ISnackbar Snackbar
@@ -111,10 +114,14 @@
                         var it = item;
                         <button class="att-item-row @(it.ScheduleItemId == _selectedItemId ? "selected" : "")" @onclick="() => SelectItem(it.ScheduleItemId)">
                             <div style="min-width:0">
-                                <div style="font-size:11px;color:var(--text-light);font-weight:700">@TimeRange(it)</div>
+                                <div style="font-size:11px;color:var(--text-light);font-weight:700">
+                                    @TimeRange(it)
+                                    @if (it.ParentScheduleItem is not null) { <span> · 🔀 @it.ParentScheduleItem.Title</span> }
+                                    @if (it.SelfCheckInMode == SelfCheckInMode.QrOnly) { <span> · 📷 QR only</span> }
+                                </div>
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text-dark);overflow-wrap:break-word">@it.Title</div>
                             </div>
-                            <span class="att-pill">@_counts.GetValueOrDefault(it.ScheduleItemId)</span>
+                            <span class="att-pill">@_counts.GetValueOrDefault(it.ScheduleItemId)@(it.ParentScheduleItemId is not null ? $" / {_regCounts.GetValueOrDefault(it.ScheduleItemId)}" : "")</span>
                         </button>
                     }
                 }
@@ -131,12 +138,24 @@
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text-dark)">@sel.Title</div>
                                 <div style="font-size:12px;color:var(--text-light);font-weight:700">@sel.CampDay.ToString("dddd, MMM d") · @TimeRange(sel)</div>
                                 <div style="font-size:13px;margin-top:6px;color:var(--text-mid)">
-                                    <strong style="color:var(--text-dark)">@checkedIn.Count checked in</strong>
+                                    @if (sel.ParentScheduleItemId is not null)
+                                    {
+                                        <strong style="color:var(--text-dark)">@checkedIn.Count(r => r.IsRegistered == true) of @_roster.Count(r => r.IsRegistered == true) checked in</strong>
+                                    }
+                                    else
+                                    {
+                                        <strong style="color:var(--text-dark)">@checkedIn.Count checked in</strong>
+                                    }
                                     · @checkedIn.Count(r => r.IsGuest) guests · @checkedIn.Count(r => !r.IsGuest) staff
                                 </div>
+                                @if (sel.ParentScheduleItem is not null)
+                                {
+                                    <div style="font-size:12px;color:var(--text-light);margin-top:2px">🔀 Option in @sel.ParentScheduleItem.Title — only people signed up can check in. <a href="/admin/breakouts" style="color:var(--black);font-weight:700">Manage sign-ups →</a></div>
+                                }
                             </div>
                             <div style="display:flex;gap:6px;flex-wrap:wrap">
                                 <button class="ccn-btn" style="font-size:12px;padding:6px 12px;background:transparent" @onclick="RefreshAsync">↻ Refresh</button>
+                                <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="OpenQrAsync">📷 QR code</button>
                                 <a class="ccn-btn" href="/admin/attendance/item/@sel.ScheduleItemId/csv" download
                                    style="font-size:12px;padding:6px 12px;text-decoration:none">⬇ CSV</a>
                             </div>
@@ -173,7 +192,13 @@
                                     {
                                         var entry = r;
                                         <tr style="border-bottom:2px solid #E8E0CC">
-                                            <td style="padding:10px 14px;font-size:13px;font-weight:700">@entry.LastName, @entry.FirstName</td>
+                                            <td style="padding:10px 14px;font-size:13px;font-weight:700">
+                                                @entry.LastName, @entry.FirstName
+                                                @if (entry.IsRegistered == false)
+                                                {
+                                                    <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEE2E2;border:1px solid #D12B2B;color:#C0392B;font-weight:700;margin-left:4px">not signed up</span>
+                                                }
+                                            </td>
                                             <td style="padding:10px 14px">
                                                 <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@(entry.IsGuest ? "#16A085" : "#566573");color:white;font-family:var(--font-display);font-weight:700;white-space:nowrap">@entry.TypeLabel</span>
                                             </td>
@@ -183,7 +208,7 @@
                                                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                                                         <span style="font-size:12px;font-weight:700;color:#1E7F46">
                                                             ✓ @entry.CheckedInAt?.ToString("h:mm tt")
-                                                            <span style="color:var(--text-light);font-weight:600">· @(entry.Method == AttendanceMethod.Self ? "Self" : $"by {entry.CheckedInByName ?? "Admin"}")</span>
+                                                            <span style="color:var(--text-light);font-weight:600">· @MethodLabel(entry)</span>
                                                         </span>
                                                         <button class="ccn-btn" style="font-size:11px;padding:3px 10px;background:transparent;color:#D12B2B;border-color:#D12B2B"
                                                                 disabled="@_busy" @onclick="() => UndoAsync(entry)">Undo</button>
@@ -223,7 +248,9 @@
          @onclick="CloseWalkIn">
         <div class="ccn-panel" style="padding:20px;width:100%;max-width:400px;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease" @onclick:stopPropagation>
             <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:4px">Add a walk-in</div>
-            <div style="font-size:12px;color:var(--text-light);margin-bottom:16px">Checks them in to <strong>@SelectedItem?.Title</strong>. If they've joined before under the same name, it uses their existing guest record.</div>
+            <div style="font-size:12px;color:var(--text-light);margin-bottom:16px">
+                @(SelectedItem?.ParentScheduleItemId is not null ? "Signs them up for and checks them in to" : "Checks them in to") <strong>@SelectedItem?.Title</strong>. If they've joined before under the same name, it uses their existing guest record.
+            </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">First Name</div>
@@ -249,8 +276,81 @@
     </div>
 }
 
+@if (_qrOpen && SelectedItem is { } qrItem)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:150;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease"
+         @onclick="() => _qrOpen = false">
+        <div class="ccn-panel" style="padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease;text-align:center" @onclick:stopPropagation>
+            <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:2px">@qrItem.Title</div>
+            <div style="font-size:12px;color:var(--text-light);font-weight:700;margin-bottom:12px">@qrItem.CampDay.ToString("dddd, MMM d") · @TimeRange(qrItem)</div>
+            @if (_qrCode is not null)
+            {
+                <img src="/admin/attendance/item/@qrItem.ScheduleItemId/qr.png?c=@_qrCode" alt="Check-in QR code"
+                     style="width:min(300px,100%);height:auto;border:var(--panel-border);border-radius:8px;background:white" />
+                <div style="font-size:12px;color:var(--text-mid);margin:10px 0 4px;overflow-wrap:anywhere;font-family:monospace">@CheckInUrl</div>
+                <div style="font-size:11px;color:var(--text-light);margin-bottom:14px">
+                    Scanning checks people in from 30 minutes before the start until the end.
+                    @if (qrItem.SelfCheckInMode == SelfCheckInMode.QrOnly) { <span>This item is QR only.</span> }
+                </div>
+            }
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                <a class="ccn-btn" href="/admin/attendance/item/@qrItem.ScheduleItemId/qr" target="_blank" style="text-decoration:none">🖨 Print</a>
+                <button class="ccn-btn" style="background:transparent" @onclick="CopyQrLinkAsync">Copy link</button>
+                <button class="ccn-btn" style="background:transparent;color:#D12B2B;border-color:#D12B2B" disabled="@_busy" @onclick="RegenerateQrAsync">Regenerate</button>
+                <button class="ccn-btn" style="background:transparent" @onclick="() => _qrOpen = false">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private enum RosterFilter { All, In, Out }
+
+    private bool _qrOpen;
+    private string? _qrCode;
+    private Dictionary<Guid, int> _regCounts = new();
+
+    private string CheckInUrl => $"{PublicBaseUrl.From(Nav.BaseUri, Config)}/checkin/{_qrCode}";
+
+    private static string MethodLabel(RosterEntry e) => e.Method switch
+    {
+        AttendanceMethod.Self => "Self",
+        AttendanceMethod.Qr   => "QR",
+        _                     => $"by {e.CheckedInByName ?? "Admin"}"
+    };
+
+    private async Task OpenQrAsync()
+    {
+        if (_selectedItemId is not { } id) return;
+        _qrCode = await AttendanceSvc.EnsureCheckInCodeAsync(id);
+        _qrOpen = true;
+    }
+
+    private async Task RegenerateQrAsync()
+    {
+        if (_selectedItemId is not { } id || _busy) return;
+        if (!await JS.InvokeAsync<bool>("confirm", "Make a new QR code? The current one (including any printed copies) will stop working.")) return;
+        _busy = true;
+        try
+        {
+            _qrCode = await AttendanceSvc.RegenerateCheckInCodeAsync(id);
+            Snackbar.Add("New QR code made. Reprint it.", Severity.Info);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task CopyQrLinkAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", CheckInUrl);
+            Snackbar.Add("Link copied.", Severity.Info);
+        }
+        catch (JSException)
+        {
+            Snackbar.Add("Couldn't copy — select the link and copy it manually.", Severity.Warning);
+        }
+    }
 
     private bool _loading = true;
     private bool _busy;
@@ -287,6 +387,7 @@
         {
             _trackedItems = await AttendanceSvc.GetTrackedItemsAsync(_event.EventId);
             _counts       = await AttendanceSvc.GetCountsAsync(_event.EventId);
+            _regCounts    = await RegistrationSvc.GetOptionCountsAsync(_event.EventId);
 
             // Same default-day rule as /hub/schedule: before → first day, during → today, after → last day.
             var today = CampTime.Today;
@@ -332,6 +433,7 @@
     {
         if (_event is null) return;
         _counts = await AttendanceSvc.GetCountsAsync(_event.EventId);
+        _regCounts = await RegistrationSvc.GetOptionCountsAsync(_event.EventId);
         if (_selectedItemId is { } id)
             _roster = await AttendanceSvc.GetRosterAsync(id);
     }
