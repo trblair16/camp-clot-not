@@ -446,13 +446,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
                     TokenAssetPath = def.Logo,
                 });
             }
-            else
-            {
-                existing.Name           = def.Name;
-                existing.ShortName      = def.ShortName;
-                existing.Color          = def.Color;
-                existing.TokenAssetPath = def.Logo;
-            }
+            // Insert-only: /admin/groups can edit these, so a restart must not overwrite them (pitfall #19).
         }
 
         await db.SaveChangesAsync();
