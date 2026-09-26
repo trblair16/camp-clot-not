@@ -388,7 +388,7 @@
                         <tbody>
                             @foreach (var ev in VisibleEvents)
                             {
-                                <tr style="border-bottom:2px solid #E8E0CC;@(ev.ParentScheduleItemId is not null ? "background:#FBF8F1" : "")">
+                                <tr style="border-bottom:2px solid var(--divider);@(ev.ParentScheduleItemId is not null ? "background:var(--surface-muted)" : "")">
                                     <td style="padding:8px 14px;font-size:13px;font-weight:700;white-space:nowrap">@ev.CampDay.ToString("ddd M/d")</td>
                                     <td style="padding:8px 14px;font-size:12px;color:var(--text-mid);white-space:nowrap">
                                         @ev.StartTime.ToString("h:mm tt")
@@ -518,7 +518,7 @@
                             <span style="color:var(--text-light)">(untick to put the text in Additional Info instead)</span></span>
                     </label>
                 }
-                <div style="overflow:auto;flex:1;min-height:0;border:2px solid #E8E0CC;border-radius:8px">
+                <div style="overflow:auto;flex:1;min-height:0;border:2px solid var(--divider);border-radius:8px">
                     <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:720px">
                         <thead>
                             <tr style="background:var(--black);color:white;position:sticky;top:0">
@@ -534,7 +534,7 @@
                         <tbody>
                             @foreach (var r in _importRows)
                             {
-                                <tr style="border-bottom:1px solid #E8E0CC;background:@(r.Errors.Any() ? "#FFF5F5" : r.Duplicate ? "#F4F4F4" : r.Warnings.Any() ? "#FFFBEA" : "transparent")">
+                                <tr style="border-bottom:1px solid var(--divider);background:@(r.Errors.Any() ? "#FFF5F5" : r.Duplicate ? "#F4F4F4" : r.Warnings.Any() ? "#FFFBEA" : "transparent")">
                                     <td style="padding:5px 8px;color:var(--text-light)">@r.RowNumber</td>
                                     <td style="padding:5px 8px;white-space:nowrap">@(r.Day?.ToString("ddd M/d") ?? "—")</td>
                                     <td style="padding:5px 8px;white-space:nowrap">@(r.Start?.ToString("h:mm tt") ?? "—")@(r.End is { } e ? $" – {e:h:mm tt}" : "")</td>
@@ -602,10 +602,10 @@
                 </select>
                 @if (_copyPreview is { } pv)
                 {
-                    <div style="border:2px solid #E8E0CC;border-radius:8px;overflow:hidden;margin-bottom:12px">
+                    <div style="border:2px solid var(--divider);border-radius:8px;overflow:hidden;margin-bottom:12px">
                         @foreach (var d in pv.Days)
                         {
-                            <div style="display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border-bottom:1px solid #E8E0CC;font-size:13px;@(d.TargetDay is null ? "color:var(--text-light)" : "")">
+                            <div style="display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border-bottom:1px solid var(--divider);font-size:13px;@(d.TargetDay is null ? "color:var(--text-light)" : "")">
                                 <span>@d.SourceDay.ToString("ddd MMM d") → <strong>@(d.TargetDay?.ToString("ddd MMM d") ?? "no matching day (skipped)")</strong></span>
                                 <span>@(d.Items - d.Duplicates) item@(d.Items - d.Duplicates == 1 ? "" : "s")@(d.Duplicates > 0 ? $" · {d.Duplicates} already here" : "")</span>
                             </div>
@@ -802,7 +802,7 @@
     {
         if (ev.IsBreakoutSlot)
         {
-            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FFF3C4;border:1px solid #C9A227;color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">🔀 Breakout@(ev.AllowSelfSignup ? "" : " · assigned")</span>
+            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--highlight-soft);border:1px solid var(--highlight-edge);color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">🔀 Breakout@(ev.AllowSelfSignup ? "" : " · assigned")</span>
         }
         else if (ev.ParentScheduleItemId is not null)
         {

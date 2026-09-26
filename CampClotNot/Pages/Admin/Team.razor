@@ -110,7 +110,7 @@
                         @foreach (var s in Filtered)
                         {
                             var row = s;
-                            <tr style="border-bottom:2px solid #E8E0CC">
+                            <tr style="border-bottom:2px solid var(--divider)">
                                 <td style="padding:8px 14px">
                                     <div style="display:flex;align-items:center;gap:10px">
                                         @Avatar(row.User, 36)
@@ -257,7 +257,7 @@
                         @foreach (var u in AddableFiltered)
                         {
                             var user = u;
-                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:2px solid #E8E0CC">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:2px solid var(--divider)">
                                 <div style="display:flex;align-items:center;gap:10px;min-width:0">
                                     @Avatar(user, 32)
                                     <div style="min-width:0">
@@ -356,7 +356,7 @@
                     }
                     else
                     {
-                        <div style="width:96px;height:96px;display:flex;align-items:center;justify-content:center;font-size:44px;border-radius:8px;border:var(--panel-border);background:#F5F0E4;flex-shrink:0">@(string.IsNullOrWhiteSpace(_edit.Emoji) ? "👤" : _edit.Emoji)</div>
+                        <div style="width:96px;height:96px;display:flex;align-items:center;justify-content:center;font-size:44px;border-radius:8px;border:var(--panel-border);background:var(--surface-muted);flex-shrink:0">@(string.IsNullOrWhiteSpace(_edit.Emoji) ? "👤" : _edit.Emoji)</div>
                     }
                     <div style="flex:1;min-width:180px">
                         <InputFile OnChange="OnPhotoSelected" accept="image/*" style="font-size:12px;margin-bottom:6px" />
@@ -420,7 +420,7 @@
         }
         else
         {
-            <div style="width:@(size)px;height:@(size)px;display:flex;align-items:center;justify-content:center;font-size:@(size / 2)px;border-radius:6px;border:2px solid var(--border-color);background:#F5F0E4;flex-shrink:0">@u.AvatarEmoji</div>
+            <div style="width:@(size)px;height:@(size)px;display:flex;align-items:center;justify-content:center;font-size:@(size / 2)px;border-radius:6px;border:2px solid var(--border-color);background:var(--surface-muted);flex-shrink:0">@u.AvatarEmoji</div>
         }
     };
 

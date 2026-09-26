@@ -29,7 +29,7 @@
     .bo-day-tab .tab-date { font-size: 18px; color: var(--text-dark); line-height: 1; }
     .bo-day-tab .tab-count { font-size: 9px; color: var(--text-light); }
     .bo-panel { background: var(--panel-bg); border: var(--panel-border); border-radius: 10px; box-shadow: 4px 4px 0 var(--border-color); }
-    .bo-slot-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; border: none; border-bottom: 2px solid #E8E0CC; background: transparent; cursor: pointer; }
+    .bo-slot-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; border: none; border-bottom: 2px solid var(--divider); background: transparent; cursor: pointer; }
     .bo-slot-btn:last-child { border-bottom: none; }
     .bo-slot-btn.selected { background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); }
     .bo-option-card { display: block; width: 100%; font: inherit; text-align: left; padding: 12px; border: var(--panel-border); border-radius: 8px; background: var(--panel-bg); box-shadow: 3px 3px 0 var(--border-color); cursor: pointer; }
@@ -124,7 +124,7 @@
                                 <button class="bo-option-card" @onclick="() => SelectOption(opt.Option.ScheduleItemId)">
                                     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
                                         <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark)">@opt.Option.Title</div>
-                                        <span class="bo-pill" style="background:@(opt.IsOver ? "#FEE2E2" : opt.IsFull ? "#FFF3C4" : "#E8F4EA")">@opt.Registered@(opt.Option.MaxCapacity is { } c ? $" / {c}" : "")</span>
+                                        <span class="bo-pill" style="background:@(opt.IsOver ? "#FEE2E2" : opt.IsFull ? "var(--highlight-soft)" : "#E8F4EA")">@opt.Registered@(opt.Option.MaxCapacity is { } c ? $" / {c}" : "")</span>
                                     </div>
                                     <div style="font-size:11px;color:var(--text-mid);margin-top:4px">@TimeRange(opt.Option)@(opt.Option.Location is not null ? $" · {opt.Option.Location.Name}" : "")</div>
                                     @if (opt.IsOver) { <div style="font-size:11px;color:#C0392B;font-weight:700;margin-top:4px">Over capacity</div> }
@@ -166,11 +166,11 @@
                                     Select all shown
                                 </label>
                             </div>
-                            <div style="max-height:420px;overflow-y:auto;border:2px solid #E8E0CC;border-radius:8px">
+                            <div style="max-height:420px;overflow-y:auto;border:2px solid var(--divider);border-radius:8px">
                                 @foreach (var p in FilteredUnassigned)
                                 {
                                     var person = p;
-                                    <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #E8E0CC">
+                                    <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--divider)">
                                         <input type="checkbox" checked="@_checked.Contains(Key(person))" @onchange="() => ToggleChecked(person)" />
                                         <div style="flex:1;min-width:0;font-size:13px;font-weight:700">@person.LastName, @person.FirstName</div>
                                         <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:@(person.IsGuest ? "#16A085" : "#566573");color:white;font-family:var(--font-display);font-weight:700">@person.TypeLabel</span>
@@ -235,7 +235,7 @@
                                             @foreach (var r in _regs.OrderBy(r => r.Person.LastName, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Person.FirstName, StringComparer.OrdinalIgnoreCase))
                                             {
                                                 var reg = r;
-                                                <tr style="border-bottom:2px solid #E8E0CC;@(reg.OverCapacity ? "background:#FFF5F5" : "")">
+                                                <tr style="border-bottom:2px solid var(--divider);@(reg.OverCapacity ? "background:#FFF5F5" : "")">
                                                     <td style="padding:8px 12px;font-size:13px">
                                                         <strong>@reg.Person.LastName, @reg.Person.FirstName</strong>
                                                         <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:@(reg.Person.IsGuest ? "#16A085" : "#566573");color:white;font-family:var(--font-display);font-weight:700;margin-left:4px">@reg.Person.TypeLabel</span>
@@ -309,7 +309,7 @@
                                     @foreach (var p in AddCandidates.Take(20))
                                     {
                                         var person = p;
-                                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 0;border-bottom:1px solid #E8E0CC">
+                                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 0;border-bottom:1px solid var(--divider)">
                                             <span style="font-size:12px;font-weight:700">@person.FullName <span style="font-weight:600;color:var(--text-light)">· @person.TypeLabel</span></span>
                                             <button class="ccn-btn" style="font-size:11px;padding:3px 10px" disabled="@_busy" @onclick="() => AddOneAsync(person)">Add</button>
                                         </div>

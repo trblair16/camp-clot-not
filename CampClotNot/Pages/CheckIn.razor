@@ -17,18 +17,18 @@
 
     @if (_loading)
     {
-        <div style="font-family:'Fredoka One',cursive;font-size:18px">Checking you in…</div>
+        <div style="font-family:var(--font-display);font-size:18px">Checking you in…</div>
     }
     else if (_item is null)
     {
         <div style="font-size:40px;line-height:1">🤔</div>
-        <div style="font-family:'Fredoka One',cursive;font-size:20px;margin:8px 0">This check-in code isn't valid</div>
+        <div style="font-family:var(--font-display);font-size:20px;margin:8px 0">This check-in code isn't valid</div>
         <div style="font-size:13px;color:var(--text-mid)">It may have been replaced with a new one. Ask a staff member for the current QR code.</div>
     }
     else
     {
         <div style="font-size:12px;font-weight:700;color:var(--text-light)">@_item.CampEvent.Name</div>
-        <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--black);margin:2px 0 2px;line-height:1.2">@_item.Title</div>
+        <div style="font-family:var(--font-display);font-size:22px;color:var(--black);margin:2px 0 2px;line-height:1.2">@_item.Title</div>
         <div style="font-size:13px;color:var(--text-mid);font-weight:700;margin-bottom:16px">@_item.CampDay.ToString("dddd, MMM d") · @TimeRange(_item)</div>
 
         @if (!_signedIn)
@@ -46,7 +46,7 @@
                 case CheckInResult.CheckedIn:
                 case CheckInResult.AlreadyCheckedIn:
                     <div style="width:84px;height:84px;margin:0 auto 10px;border-radius:50%;background:#27AE60;border:3px solid var(--black);box-shadow:4px 4px 0 var(--black);display:flex;align-items:center;justify-content:center;font-size:44px;color:white;animation:popIn .3s ease">✓</div>
-                    <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#1E7F46">You're checked in!</div>
+                    <div style="font-family:var(--font-display);font-size:22px;color:#1E7F46">You're checked in!</div>
                     @if (_checkedInAt is { } at)
                     {
                         <div style="font-size:13px;color:var(--text-mid);margin-top:4px">at @at.ToString("h:mm tt")</div>
@@ -55,7 +55,7 @@
                 case CheckInResult.OutsideWindow:
                     var (opens, closes) = AttendanceService.CheckInWindow(_item);
                     <div style="font-size:36px;line-height:1">⏰</div>
-                    <div style="font-family:'Fredoka One',cursive;font-size:18px;margin:6px 0">
+                    <div style="font-family:var(--font-display);font-size:18px;margin:6px 0">
                         @(CampTime.Now < opens ? $"Check-in opens at {opens:h:mm tt}" : $"Check-in closed at {closes:h:mm tt}")
                     </div>
                     @if (CampTime.Now < opens && DateOnly.FromDateTime(opens) != CampTime.Today)
@@ -73,7 +73,7 @@
                     break;
                 case CheckInResult.NotRegistered:
                     <div style="font-size:36px;line-height:1">🔀</div>
-                    <div style="font-family:'Fredoka One',cursive;font-size:18px;margin:6px 0">You're not signed up for this session</div>
+                    <div style="font-family:var(--font-display);font-size:18px;margin:6px 0">You're not signed up for this session</div>
                     <div style="font-size:13px;color:var(--text-mid)">Check your schedule for the session you picked, or ask an Admin to move you.</div>
                     break;
                 case CheckInResult.NotAllowed:
@@ -81,7 +81,7 @@
                     <a class="ccn-btn" href="@JoinUrl" style="text-decoration:none">Join</a>
                     break;
                 default:
-                    <div style="font-family:'Fredoka One',cursive;font-size:18px;margin:6px 0">Check-in isn't open for this item</div>
+                    <div style="font-family:var(--font-display);font-size:18px;margin:6px 0">Check-in isn't open for this item</div>
                     break;
             }
             <div style="margin-top:18px">

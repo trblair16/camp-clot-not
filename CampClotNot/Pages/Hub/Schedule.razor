@@ -1218,7 +1218,7 @@
             {
                 var n = _allEvents.Count(o => o.ParentScheduleItemId == ev.ScheduleItemId);
                 <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap" @onclick:stopPropagation="true">
-                    <span style="font-size:11px;padding:1px 8px;border-radius:4px;background:#FFF3C4;border:1px solid #C9A227;font-family:var(--font-display);font-weight:700">🔀 Breakout · @n option@(n == 1 ? "" : "s")@(ev.AllowSelfSignup ? "" : " · assigned")</span>
+                    <span style="font-size:11px;padding:1px 8px;border-radius:4px;background:var(--highlight-soft);border:1px solid var(--highlight-edge);font-family:var(--font-display);font-weight:700">🔀 Breakout · @n option@(n == 1 ? "" : "s")@(ev.AllowSelfSignup ? "" : " · assigned")</span>
                     <a href="/admin/breakouts" style="font-size:11px;font-weight:700;color:var(--black)">Manage →</a>
                 </div>
             }

@@ -8,6 +8,11 @@
 
     :root {
         @((MarkupString)ThemeSvc.Active.CssVariables)
+        /* Derived from the theme so they suit every preset (≈ the old cream shades on Mario). */
+        --divider: color-mix(in srgb, var(--text-light) 24%, var(--panel-bg));
+        --surface-muted: color-mix(in srgb, var(--text-light) 10%, var(--panel-bg));
+        --highlight-soft: color-mix(in srgb, var(--color-primary) 22%, var(--panel-bg));
+        --highlight-edge: color-mix(in srgb, var(--color-primary) 70%, var(--text-dark));
     }
 
     *, *::before, *::after { box-sizing: border-box; }
