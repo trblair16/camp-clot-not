@@ -468,6 +468,10 @@ warnings, plus a walkthrough on local Postgres 16 with headless Chromium:
   slot, they're moved, because the Admin at the door is placing them in this room.
 - **`/hub/schedule`** only shows "I'm here" on an option to the person signed up for it. Admins see every
   option, but tapping one they aren't in would only fail.
+- **"I'm here" moved into the item detail modal** (Tyler, 2026-09-26) to keep the day list at-a-glance.
+  The button, the "✓ Checked in" chip, and the QR-only hint no longer appear on the schedule rows.
+  Tapping a row opens the modal on mobile as before. Desktop table rows now open it too, and the
+  Edit/Copy/Del, Groups, and location-image controls stop the click from reaching the row.
 - **`returnUrl` is also carried through `/change-password`,** so a staff member whose first sign-in
   is from a QR scan (temporary password) still lands back on the check-in.
 - **Page files:** `Pages/Admin/EventStaffAdmin.razor` (to avoid clashing with the `EventStaff`

@@ -102,6 +102,7 @@
             text-align: center;
             white-space: nowrap;
         }
+        .sched-tbl tbody tr:hover td { background: rgba(26,26,26,.04); }
         .sched-tbl tbody td { padding: 10px 10px; vertical-align: middle; border-bottom: 3px solid #3a3a3a; text-align: center; overflow: hidden; }
         .sched-tbl tbody tr:last-child td { border-bottom: none; }
         .sched-group-row td { padding: 0; background: #F5F0E4; border-top: 2px solid #C8BBAA; border-bottom: 3px solid #3a3a3a; overflow: hidden; }
@@ -189,7 +190,7 @@
                             ? $"{ev.StartTime:h:mm tt} – {ev.EndTime.Value:h:mm tt}"
                             : ev.StartTime.ToString("h:mm tt");
 
-                        <div class="sched-item-wrap" @onclick="() => _mobileDetailItem = ev">
+                        <div class="sched-item-wrap" @onclick="() => _detailItem = ev">
                             <div class="sched-row">
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:12px;color:var(--text-mid);padding-top:2px">@timeStr</div>
                                 <div style="min-width:0">
@@ -214,7 +215,6 @@
                                             <span style="font-size:11px;color:var(--text-mid);overflow-wrap:break-word;word-break:break-word">@ev.LocationOther</span>
                                         }
                                     </div>
-                                    @if (ShowCheckIn(ev)) { @CheckInControl(ev) }
                                     @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                     {
                                         <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
@@ -283,13 +283,12 @@
                                     ? $"{ev.StartTime:h:mm tt} – {ev.EndTime.Value:h:mm tt}"
                                     : ev.StartTime.ToString("h:mm tt");
 
-                                <tr>
+                                <tr style="cursor:pointer" @onclick="() => _detailItem = ev">
                                     <td style="font-family:var(--font-display);font-weight:700;font-size:12px;color:var(--text-mid);white-space:nowrap">@tStr</td>
                                     <td style="overflow-wrap:break-word;word-break:break-word;min-width:0">
                                         <span style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text-dark)">@ev.Title</span>
                                         @if (dispAct is not null) { <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@dispAct.Name</div> }
                                         @BreakoutLine(ev)
-                                        @if (ShowCheckIn(ev)) { @CheckInControl(ev) }
                                         @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                         {
                                             <div style="font-size:13px;margin-top:4px;color:var(--text-mid)">🎤 @ev.PresenterName</div>
@@ -306,7 +305,7 @@
                                             var evForGroups = ev;
                                             <div style="margin-top:6px">
                                                 <button style="font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-display);font-weight:700;background:none;border:none;padding:0;text-decoration:underline"
-                                                        @onclick="() => _groupDetailItem = evForGroups">👥 Groups (@ev.ItemGroups.Count)</button>
+                                                        @onclick="() => _groupDetailItem = evForGroups" @onclick:stopPropagation="true">👥 Groups (@ev.ItemGroups.Count)</button>
                                             </div>
                                         }
                                     </td>
@@ -326,13 +325,13 @@
                                     <td>
                                         @if (dispLoc?.ImageContentType is not null)
                                         {
-                                            <img src="/location-image/@dispLoc.LocationId" style="max-width:44px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--border-color);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' />
+                                            <img src="/location-image/@dispLoc.LocationId" style="max-width:44px;height:32px;object-fit:cover;border-radius:4px;border:2px solid var(--border-color);cursor:zoom-in;display:block;margin:0 auto" alt="@dispLoc.Name" @onclick='() => _lightboxSrc = $"/location-image/{dispLoc.LocationId}"' @onclick:stopPropagation="true" />
                                         }
                                     </td>
                                     <td style="color:var(--text-mid);font-size:13px">@(string.IsNullOrEmpty(ev.LocationOther) ? "—" : ev.LocationOther)</td>
                                     @if (_canEdit)
                                     {
-                                        <td style="white-space:nowrap;padding-right:4px">
+                                        <td style="white-space:nowrap;padding-right:4px" @onclick:stopPropagation="true">
                                             <div style="display:flex;gap:4px;justify-content:flex-end">
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px" @onclick="() => OpenEditForm(ev)">Edit</button>
                                                 <button class="ccn-btn" style="font-size:11px;padding:4px 8px;background:#117A65;color:white" @onclick="() => OpenCopyForm(ev)">Copy</button>
@@ -367,9 +366,9 @@
     </div>
 }
 
-@if (_mobileDetailItem is not null)
+@if (_detailItem is not null)
 {
-    var md = _mobileDetailItem;
+    var md = _detailItem;
     var mdAssignment = _userGroupId.HasValue
         ? md.ItemGroups.FirstOrDefault(eg => eg.GroupId == _userGroupId.Value)
         : null;
@@ -380,7 +379,7 @@
         : md.StartTime.ToString("h:mm tt");
 
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:150;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease"
-         @onclick="() => _mobileDetailItem = null">
+         @onclick="() => _detailItem = null">
         <div class="ccn-panel" style="padding:20px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;box-shadow:8px 8px 0 var(--border-color);animation:popIn .25s ease" @onclick:stopPropagation>
 
             <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
@@ -392,7 +391,7 @@
                     }
                 </div>
                 <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-light);line-height:1;padding:0 0 0 12px"
-                        @onclick="() => _mobileDetailItem = null">✕</button>
+                        @onclick="() => _detailItem = null">✕</button>
             </div>
 
             <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px">
@@ -773,7 +772,7 @@
     private bool _isGuest;
     private bool _showForm;
     private string? _lightboxSrc;
-    private ScheduleItem? _mobileDetailItem;
+    private ScheduleItem? _detailItem;
     private ScheduleItem? _groupDetailItem;
     private Guid? _userGroupId;
     private Event? _campEvent;
@@ -1112,7 +1111,7 @@
             || _checkInMessages.ContainsKey(ev.ScheduleItemId)
             || AttendanceService.IsSelfCheckInOpen(ev, CampTime.Now));
 
-    // stopPropagation keeps a tap on the button from also opening the mobile detail modal.
+    // Shown only in the item detail modal (tap a row), which keeps the day list at-a-glance.
     private RenderFragment CheckInControl(ScheduleItem ev) =>
         @<div style="margin-top:6px" @onclick:stopPropagation="true">
             @if (_myCheckIns.Contains(ev.ScheduleItemId))
@@ -1224,7 +1223,7 @@
         _pickerSlot = slot;
         _pickerChoice = null;
         _pickerMessage = null;
-        _mobileDetailItem = null;
+        _detailItem = null;
     }
 
     private void ClosePicker() { _pickerSlot = null; _pickerChoice = null; _pickerMessage = null; }
