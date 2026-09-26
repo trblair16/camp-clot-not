@@ -24,7 +24,7 @@ The app is now a multi-event HBDA platform ("HBDA Events"). CCN 2026 (June 19–
 | #310 / #312 | `/admin/theme` editor (presets, colors, logo/banner upload, **one `Theme` row per event**) and "Copy setup from…" event duplication | `2026-09-23-admin-event-configurability-design.md` |
 | #125 / #313 | Forgot password, Admin "Email reset link", and invite emails via Resend (`Services/Email/`) | `2026-09-23-password-reset-email-design.md` |
 
-**In progress:** #311, breakout slots, session sign-ups, and per-event staff. Branch: `feature/311-breakout-slots-session-signups`.
+**In progress:** #311, breakout slots, session sign-ups, per-event staff, and per-session QR check-in. It's implemented on `claude/guest-attendance-extend-djwotf` and awaiting a PR into `dev`. Spec: `2026-09-26-breakout-slots-session-signups-design.md`.
 
 **Before Camp Harvest:** finish #311, verify on staging (including a real Resend email once `Email__*` is set), open a `dev` → `main` release PR and tag it, smoke test production, and set up the Camp Harvest event (theme, logo, guest code).
 
@@ -361,7 +361,7 @@ Admin → Event Designer
 
 *Status:*
 - ✅ Attendance (#308, shipped as `ScheduleItemAttendance`, not `EventAttendance`)
-- 🚧 Session sign-ups, as breakout slots plus `ScheduleItemRegistration` (#311)
+- 🚧 Session sign-ups, as breakout slots plus `ScheduleItemRegistration`, and QR check-in per item (#311, implemented, PR pending)
 - ⬜ End-of-event reporting beyond attendance CSV
 
 - **Session signups**: limited-capacity breakout sessions; `SessionSignup` entity FK to either `UserId` (staff) or `GuestAttendeeId` (named guest); capacity counts; roster view for facilitators
@@ -503,12 +503,13 @@ Groups 5 & 6 removed from seed. SeedGroupsAsync upserts by ID and purges stale e
 | Competition | `CurrencyType`, `Group`, `Transaction`, `BoardSpace`, `GroupBoardPos`, `ScriptedBlockHit`, `ScriptedMiniGame` |
 | Awards | `AwardType`, `CamperAward` |
 | Auth/RBAC | `UserRole`, `Authority`, `UserRoleAuthorityLink`, `UserAuthorityLink`, `User` |
-| Hub (Camp Info) | `Location`, `InfoPage`, `StaffMember`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor`, `CampDocument` |
-| Guests | `GuestAttendee`, `GuestEventVisit`, `PushSubscription`, `ScheduleItemAttendance` |
+| Hub (Camp Info) | `Location`, `InfoPage`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor`, `CampDocument` |
+| Guests | `GuestAttendee`, `GuestEventVisit`, `PushSubscription`, `ScheduleItemAttendance`, `ScheduleItemRegistration` |
+| Per-event staff | `EventStaff` (a person on one event's team: role label, group, Hub directory title/visibility/order). A person is a `User` row (contact details and photo entered once; `CanSignIn` false for listed-only people). The old per-event `StaffMember` directory cards were merged into this (#311). |
 | Auth extras | `PasswordResetToken` (SHA-256 hashed, single-use) |
 | Games (post-camp) | `BowserScript` |
 
-**Event-scoped vs global:** `Location` and `InfoPage` are **global** (no `EventId`) and shared by every event. Groups, activities, sponsors, staff directory cards, documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` isn't event-scoped yet (#311 adds per-event staff).
+**Event-scoped vs global:** `Location` and `InfoPage` are **global** (no `EventId`) and shared by every event. Groups, activities, sponsors, team members (`EventStaff`), documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` itself is global. Who is staff at an event is `EventStaff` (#311), and that's what rosters, bulk sign-up, and "all staff" use. Its role is a label only: permissions still come from `User.UserRoleId`.
 
 **Column convention:** `Name` + `Description` + `SystemName` on all reference/catalog tables.
 
@@ -564,7 +565,14 @@ Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-.
 | `CampClotNot/Services/CapabilityService.cs` | Per-event feature flags (`Feature` enum) for nav and page gating |
 | `CampClotNot/Services/EventSetupService.cs` | Create an event (+ theme + copied rows) in one `SaveChanges`; `EventCopyOptions` is where #311's per-event staff copy flag goes |
 | `CampClotNot/Services/GuestAccessService.cs` | Guest join, `GuestAttendee` lookup/creation, guest claims (`GuestClaimTypes`) |
-| `CampClotNot/Services/AttendanceService.cs` | Self/Admin check-in, roster, CSV export |
+| `CampClotNot/Services/AttendanceService.cs` | Self/Admin/QR check-in, check-in codes, roster, CSV export |
+| `CampClotNot/Services/RegistrationService.cs` | Breakout sign-ups: self sign-up (row-locked capacity), admin assign/move/remove, unassigned list |
+| `CampClotNot/Services/EventStaffService.cs` | Per-event staff list (`EventStaff`) |
+| `CampClotNot/Services/ScheduleVisibility.cs` | Which items a person sees given breakout picks (shared by `/hub/schedule` and the Dashboard) |
+| `CampClotNot/Services/ScheduleImportService.cs` | Schedule setup: lenient time/day parsing, .xlsx template (ClosedXML), spreadsheet/paste import with preview, copy a past event's schedule |
+| `CampClotNot/Pages/CheckIn.razor` | `/checkin/{code}`, the landing page for a session's QR code |
+| `CampClotNot/Pages/Admin/Breakouts.razor` / `Team.razor` | `/admin/breakouts` / `/admin/team`: the one page for staffing an event and its Hub staff directory. Add from past events or someone new (with or without sign-in), role and group at this event, edit contact details and photo, directory title and order. `/admin/event-staff` and `/admin/staff` route here |
+| `CampClotNot/Services/StaffDirectoryService.cs` | Hub staff directory cards (team rows with `ShowInDirectory`), order, cache |
 | `CampClotNot/Services/PushNotificationService.cs` | Web Push (VAPID) to guest subscriptions (singleton) |
 | `CampClotNot/Services/PasswordResetService.cs` | Reset/invite tokens, `ForgotPasswordQueue` + background worker, `PublicBaseUrl` |
 | `CampClotNot/Services/Email/` | `IEmailSender`, `ResendEmailSender` (HTTPS API), `EmailTemplates` |

@@ -84,6 +84,9 @@ try
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
     builder.Services.AddScoped<AttendanceService>();
+    builder.Services.AddScoped<EventStaffService>();
+    builder.Services.AddScoped<RegistrationService>();
+    builder.Services.AddScoped<ScheduleImportService>();
     builder.Services.AddScoped<PasswordResetService>();
     builder.Services.AddSingleton<ForgotPasswordQueue>();
     builder.Services.AddHostedService<ForgotPasswordWorker>();
@@ -203,12 +206,13 @@ try
                 expiresUtc = DateTimeOffset.UtcNow.AddDays(7);
         }
 
-        var result = await auth.LoginAsync(ctx, email, password, rememberMe, expiresUtc);
+        var result    = await auth.LoginAsync(ctx, email, password, rememberMe, expiresUtc);
+        var returnUrl = LocalReturnUrl(form["returnUrl"]);
         return result switch
         {
-            LoginResult.MustChangePassword => Results.Redirect("/change-password"),
-            LoginResult.Success            => Results.Redirect("/dashboard"),
-            _                              => Results.Redirect("/login?error=true")
+            LoginResult.MustChangePassword => Results.Redirect("/change-password" + (returnUrl is null ? "" : $"?returnUrl={Uri.EscapeDataString(returnUrl)}")),
+            LoginResult.Success            => Results.Redirect(returnUrl ?? "/dashboard"),
+            _                              => Results.Redirect("/login?error=true" + (returnUrl is null ? "" : $"&returnUrl={Uri.EscapeDataString(returnUrl)}"))
         };
     });
 
@@ -217,22 +221,24 @@ try
         if (ctx.User.Identity?.IsAuthenticated != true)
             return Results.Redirect("/login");
 
-        var form    = await ctx.Request.ReadFormAsync();
-        var newPw   = form["newPassword"].ToString();
-        var confirm = form["confirmPassword"].ToString();
+        var form      = await ctx.Request.ReadFormAsync();
+        var newPw     = form["newPassword"].ToString();
+        var confirm   = form["confirmPassword"].ToString();
+        var returnUrl = LocalReturnUrl(form["returnUrl"]);
+        var keep      = returnUrl is null ? "" : $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
 
         if (string.IsNullOrWhiteSpace(newPw) || newPw.Length < 8)
-            return Results.Redirect("/change-password?error=tooshort");
+            return Results.Redirect("/change-password?error=tooshort" + keep);
 
         if (newPw != confirm)
-            return Results.Redirect("/change-password?error=mismatch");
+            return Results.Redirect("/change-password?error=mismatch" + keep);
 
         var userIdStr = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (!Guid.TryParse(userIdStr, out var userId))
             return Results.Redirect("/login");
 
         await auth.ChangePasswordAsync(userId, newPw, ctx);
-        return Results.Redirect("/dashboard");
+        return Results.Redirect(returnUrl ?? "/dashboard");
     }).RequireAuthorization();
 
     // Forgot password — always the same response; the lookup and email happen in the background
@@ -286,15 +292,17 @@ try
         var lastName  = form["lastName"].ToString();
 
         var ev = await guestSvc.ValidateCodeAsync(code);
-        if (ev is null) return Results.Redirect("/join?error=true");
+        // Keep the return URL across a failed attempt (e.g. a check-in QR scan → join → typo).
+        var back = LocalReturnUrl(form["returnUrl"]) is { } r ? $"&returnUrl={Uri.EscapeDataString(r)}" : "";
+        if (ev is null) return Results.Redirect("/join?error=true" + back);
 
         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
-            return Results.Redirect("/join?error=name");
+            return Results.Redirect("/join?error=name" + back);
 
         var guest = await guestSvc.GetOrCreateGuestAsync(firstName, lastName);
         await guestSvc.RecordVisitAsync(guest.GuestAttendeeId, ev.EventId);
         await guestSvc.SignInGuestAsync(ctx, ev, guest);
-        return Results.Redirect("/hub/schedule");
+        return Results.Redirect(LocalReturnUrl(form["returnUrl"]) ?? "/hub/schedule");
     }).AllowAnonymous();
 
     // Serve sponsor logos stored as bytea in the database
@@ -305,13 +313,26 @@ try
         return Results.File(s.LogoData, s.LogoContentType ?? "image/jpeg");
     });
 
+    // Staff directory photos, by person (UserId). Only served for people shown in some event's
+    // Hub directory, since the route is anonymous (the Hub page is also used by guests).
     app.MapGet("/staff-photo/{id:guid}", async (Guid id, IDbContextFactory<AppDbContext> factory) =>
     {
         using var db = factory.CreateDbContext();
-        var member = await db.StaffMembers.FindAsync(id);
-        if (member?.PhotoData is null) return Results.NotFound();
-        return Results.File(member.PhotoData, member.PhotoContentType ?? "image/jpeg");
+        var photo = await db.Users.AsNoTracking()
+            .Where(u => u.UserId == id && u.PhotoData != null && db.EventStaff.Any(s => s.UserId == id && s.ShowInDirectory))
+            .Select(u => new { u.PhotoData, u.PhotoContentType })
+            .FirstOrDefaultAsync();
+        return photo is null ? Results.NotFound() : Results.File(photo.PhotoData!, photo.PhotoContentType ?? "image/jpeg");
     }).AllowAnonymous();
+
+    // Any person's photo, for the Team page's editor (Admins only).
+    app.MapGet("/admin/person-photo/{id:guid}", async (Guid id, IDbContextFactory<AppDbContext> factory) =>
+    {
+        using var db = factory.CreateDbContext();
+        var photo = await db.Users.AsNoTracking().Where(u => u.UserId == id && u.PhotoData != null)
+            .Select(u => new { u.PhotoData, u.PhotoContentType }).FirstOrDefaultAsync();
+        return photo is null ? Results.NotFound() : Results.File(photo.PhotoData!, photo.PhotoContentType ?? "image/jpeg");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
 
     app.MapGet("/location-image/{id:guid}", async (Guid id, IDbContextFactory<AppDbContext> factory) =>
     {
@@ -352,6 +373,27 @@ try
         var joinUrl = $"{req.Scheme}://{req.Host}/join";
         var png = guestSvc.GenerateJoinQrPng(joinUrl);
         return Results.File(png, "image/png");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+    // Check-in QR for a tracked item. Creates the item's code on first use. The URL points at
+    // /checkin/{code} (a random code, not the item id, so QR-only items can't be reached by id).
+    app.MapGet("/admin/attendance/item/{id:guid}/qr.png", async (Guid id, HttpRequest req, IConfiguration config,
+        AttendanceService attendance, GuestAccessService guestSvc) =>
+    {
+        var code = await attendance.EnsureCheckInCodeAsync(id);
+        if (code is null) return Results.NotFound();
+        var png = guestSvc.GenerateJoinQrPng($"{PublicBaseUrl.From(req, config)}/checkin/{code}");
+        return Results.File(png, "image/png");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+    // Schedule spreadsheet template for the active event (dropdowns for its days, types, locations).
+    app.MapGet("/admin/schedule/template.xlsx", async (ActiveEventService activeEvents, ScheduleImportService imports) =>
+    {
+        var ev = await activeEvents.GetActiveEventAsync();
+        var file = ev is null ? null : await imports.BuildTemplateAsync(ev.EventId);
+        return file is { } f
+            ? Results.File(f.Content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", f.FileName)
+            : Results.NotFound();
     }).RequireAuthorization(policy => policy.RequireRole("Admin"));
 
     // Attendance CSV downloads — file responses need a real HTTP endpoint, not a Blazor circuit.
@@ -439,6 +481,13 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Only same-site paths are allowed as a post-sign-in redirect ("/checkin/ABC"), never "//evil.com"
+// or "/\evil.com", which browsers treat as another host.
+static string? LocalReturnUrl(string? url) =>
+    !string.IsNullOrEmpty(url) && url.StartsWith('/') && !url.StartsWith("//") && !url.StartsWith("/\\")
+        ? url
+        : null;
 
 // Railway injects a postgres:// URI — convert to Npgsql connection string format
 static string ConvertPostgresUri(string uri)

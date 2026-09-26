@@ -64,6 +64,20 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
     private static string Normalize(string s) =>
         Regex.Replace(s.Trim(), @"\s+", " ").ToLowerInvariant();
 
+    /// <summary>
+    /// Who is acting: a guest (GuestAttendeeId claim) or a staff user (NameIdentifier). A legacy
+    /// guest cookie from before named guest identity (#304) has neither and gets (null, null).
+    /// </summary>
+    public (Guid? GuestId, Guid? UserId) ResolveAttendee(ClaimsPrincipal user)
+    {
+        var guestId = GetGuestAttendeeId(user);
+        if (guestId.HasValue) return (guestId, null);
+        if (GetGuestEventId(user).HasValue) return (null, null);
+        return Guid.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var uid)
+            ? (null, uid)
+            : (null, null);
+    }
+
     public async Task<GuestAttendee> GetOrCreateGuestAsync(string firstName, string lastName)
     {
         var normFirst = Normalize(firstName);

@@ -45,7 +45,7 @@ public class PasswordResetService(
         if (normalized.Length == 0) return;
 
         using var db = factory.CreateDbContext();
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == normalized && u.IsActive);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == normalized && u.IsActive && u.CanSignIn);
         if (user is null) return;
 
         var since = DateTime.UtcNow.AddHours(-1);
@@ -123,7 +123,7 @@ public class PasswordResetService(
         var now = DateTime.UtcNow;
         return await db.PasswordResetTokens
             .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.TokenHash == hash && t.UsedAt == null && t.ExpiresAt > now && t.User.IsActive);
+            .FirstOrDefaultAsync(t => t.TokenHash == hash && t.UsedAt == null && t.ExpiresAt > now && t.User.IsActive && t.User.CanSignIn);
     }
 
     // Revokes the user's other unused links so only the newest one works.

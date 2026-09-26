@@ -1,177 +1,55 @@
 using CampClotNot.Data;
-using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
+/// <summary>One card on the Hub staff page. Photo bytes are served separately by /staff-photo/{UserId}.</summary>
+public record DirectoryCard(
+    Guid UserId, string Name, string? Title, string? Phone, string? Email,
+    bool HasPhoto, string? PhotoObjectPosition, string AvatarEmoji);
+
+/// <summary>
+/// The Hub staff directory: the event's team members marked "show in Hub directory", in card
+/// order. Contact details and photo come from the person (entered once, reused every event);
+/// the title and order are per event.
+/// </summary>
 public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory, IMemoryCache cache)
 {
-    private static string AllKey(Guid eventId)     => $"staff.all.{eventId}";
-    private static string VisibleKey(Guid eventId) => $"staff.vis.{eventId}";
+    private static string Key(Guid eventId) => $"staff.dir.{eventId}";
 
-    public async Task<List<StaffMember>> GetVisibleAsync(Guid campEventId)
+    public async Task<List<DirectoryCard>> GetVisibleAsync(Guid eventId)
     {
-        return await cache.GetOrCreateAsync(VisibleKey(campEventId), async entry =>
+        return await cache.GetOrCreateAsync(Key(eventId), async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
             using var db = factory.CreateDbContext();
-            return await db.StaffMembers
-                .Where(s => s.CampEventId == campEventId && s.IsVisible)
-                .OrderBy(s => s.SortOrder)
-                .Select(s => new StaffMember
-                {
-                    StaffMemberId       = s.StaffMemberId,
-                    CampEventId         = s.CampEventId,
-                    DisplayName         = s.DisplayName,
-                    RoleTitle           = s.RoleTitle,
-                    Phone               = s.Phone,
-                    Email               = s.Email,
-                    PhotoContentType    = s.PhotoContentType,
-                    PhotoObjectPosition = s.PhotoObjectPosition,
-                    AvatarEmoji         = s.AvatarEmoji,
-                    IsVisible           = s.IsVisible,
-                    SortOrder           = s.SortOrder,
-                    LinkedUserId        = s.LinkedUserId
-                    // PhotoData excluded — served on demand via /staff-photo/{id}
-                })
+            return await db.EventStaff.AsNoTracking()
+                .Where(s => s.EventId == eventId && s.ShowInDirectory && s.User.IsActive)
+                .OrderBy(s => s.SortOrder).ThenBy(s => s.User.LastName).ThenBy(s => s.User.FirstName)
+                .Select(s => new DirectoryCard(
+                    s.UserId,
+                    (s.User.FirstName + " " + s.User.LastName).Trim(),
+                    s.Title,
+                    s.User.Phone,
+                    s.User.Email == "" ? null : s.User.Email,
+                    s.User.PhotoContentType != null,
+                    s.User.PhotoObjectPosition,
+                    s.User.AvatarEmoji))
                 .ToListAsync();
         }) ?? [];
     }
 
-    public async Task<List<StaffMember>> GetAllAsync(Guid campEventId)
-    {
-        return await cache.GetOrCreateAsync(AllKey(campEventId), async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
-            using var db = factory.CreateDbContext();
-            return await db.StaffMembers
-                .Where(s => s.CampEventId == campEventId)
-                .OrderBy(s => s.SortOrder)
-                .Select(s => new StaffMember
-                {
-                    StaffMemberId       = s.StaffMemberId,
-                    CampEventId         = s.CampEventId,
-                    DisplayName         = s.DisplayName,
-                    RoleTitle           = s.RoleTitle,
-                    Phone               = s.Phone,
-                    Email               = s.Email,
-                    PhotoContentType    = s.PhotoContentType,
-                    PhotoObjectPosition = s.PhotoObjectPosition,
-                    AvatarEmoji         = s.AvatarEmoji,
-                    IsVisible           = s.IsVisible,
-                    SortOrder           = s.SortOrder,
-                    LinkedUserId        = s.LinkedUserId
-                    // PhotoData excluded — served on demand via /staff-photo/{id}
-                })
-                .ToListAsync();
-        }) ?? [];
-    }
-
-    public async Task<List<User>> GetEligibleUsersAsync(Guid campEventId)
+    /// <summary>Saves the directory order for the event (people not listed keep their position).</summary>
+    public async Task ReorderAsync(Guid eventId, IReadOnlyList<Guid> userIdsInOrder)
     {
         using var db = factory.CreateDbContext();
-        var linkedIds = await db.StaffMembers
-            .Where(s => s.CampEventId == campEventId && s.LinkedUserId != null)
-            .Select(s => s.LinkedUserId!.Value)
-            .ToListAsync();
-
-        return await db.Users
-            .Include(u => u.UserRole)
-            .Where(u => u.IsActive
-                && (u.UserRole.SystemName == nameof(Role.Admin)
-                    || u.UserRole.SystemName == nameof(Role.Staff)
-                    || u.UserRole.SystemName == nameof(Role.Volunteer))
-                && !linkedIds.Contains(u.UserId))
-            .OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
-            .ToListAsync();
-    }
-
-    public async Task ImportUserAsync(Guid campEventId, Guid userId)
-    {
-        using var db = factory.CreateDbContext();
-        var user = await db.Users.Include(u => u.UserRole)
-            .FirstOrDefaultAsync(u => u.UserId == userId);
-        if (user is null) return;
-        if (await db.StaffMembers.AnyAsync(s => s.CampEventId == campEventId && s.LinkedUserId == userId))
-            return;
-        db.StaffMembers.Add(new StaffMember
-        {
-            StaffMemberId = Guid.NewGuid(),
-            CampEventId   = campEventId,
-            DisplayName   = $"{user.FirstName} {user.LastName}".Trim(),
-            RoleTitle     = user.UserRole.SystemName,
-            Email         = user.Email,
-            AvatarEmoji   = "👤",
-            IsVisible     = true,
-            SortOrder     = 0,
-            LinkedUserId  = userId
-        });
+        var rows = await db.EventStaff.Where(s => s.EventId == eventId && userIdsInOrder.Contains(s.UserId)).ToListAsync();
+        for (var i = 0; i < userIdsInOrder.Count; i++)
+            if (rows.FirstOrDefault(r => r.UserId == userIdsInOrder[i]) is { } r) r.SortOrder = i;
         await db.SaveChangesAsync();
-        InvalidateEvent(campEventId);
+        Invalidate(eventId);
     }
 
-    public async Task UpsertAsync(StaffMember member)
-    {
-        using var db = factory.CreateDbContext();
-        var existing = await db.StaffMembers.FindAsync(member.StaffMemberId);
-        if (existing is null)
-        {
-            if (member.StaffMemberId == Guid.Empty)
-                member.StaffMemberId = Guid.NewGuid();
-            db.StaffMembers.Add(member);
-        }
-        else
-        {
-            existing.DisplayName  = member.DisplayName;
-            existing.RoleTitle    = member.RoleTitle;
-            existing.Phone        = member.Phone;
-            existing.Email        = member.Email;
-            existing.AvatarEmoji  = member.AvatarEmoji;
-            existing.IsVisible    = member.IsVisible;
-            existing.SortOrder    = member.SortOrder;
-            existing.LinkedUserId = member.LinkedUserId;
-            if (member.PhotoData is not null)
-            {
-                existing.PhotoData        = member.PhotoData;
-                existing.PhotoContentType = member.PhotoContentType;
-            }
-            existing.PhotoObjectPosition = member.PhotoObjectPosition;
-        }
-        await db.SaveChangesAsync();
-        InvalidateEvent(member.CampEventId);
-    }
-
-    public async Task DeleteAsync(Guid staffMemberId)
-    {
-        using var db = factory.CreateDbContext();
-        var member = await db.StaffMembers.FindAsync(staffMemberId);
-        if (member is null) return;
-        var eventId = member.CampEventId;
-        db.StaffMembers.Remove(member);
-        await db.SaveChangesAsync();
-        InvalidateEvent(eventId);
-    }
-
-    public async Task ReorderAsync(List<Guid> orderedIds)
-    {
-        using var db = factory.CreateDbContext();
-        var members = await db.StaffMembers
-            .Where(s => orderedIds.Contains(s.StaffMemberId))
-            .ToListAsync();
-        for (int i = 0; i < orderedIds.Count; i++)
-        {
-            var m = members.FirstOrDefault(x => x.StaffMemberId == orderedIds[i]);
-            if (m is not null) m.SortOrder = i;
-        }
-        await db.SaveChangesAsync();
-        if (members.Count > 0)
-            InvalidateEvent(members[0].CampEventId);
-    }
-
-    private void InvalidateEvent(Guid campEventId)
-    {
-        cache.Remove(AllKey(campEventId));
-        cache.Remove(VisibleKey(campEventId));
-    }
+    public void Invalidate(Guid eventId) => cache.Remove(Key(eventId));
 }

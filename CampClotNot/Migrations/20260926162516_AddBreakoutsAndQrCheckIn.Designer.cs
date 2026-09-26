@@ -3,6 +3,7 @@ using System;
 using CampClotNot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CampClotNot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926162516_AddBreakoutsAndQrCheckIn")]
+    partial class AddBreakoutsAndQrCheckIn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -483,15 +486,6 @@ namespace CampClotNot.Migrations
 
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("ShowInDirectory")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("text");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -1210,6 +1204,60 @@ namespace CampClotNot.Migrations
                     b.ToTable("Sponsors");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.StaffMember", b =>
+                {
+                    b.Property<Guid>("StaffMemberId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AvatarEmoji")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CampEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("LinkedUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhotoContentType")
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("PhotoData")
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("PhotoObjectPosition")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoleTitle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("StaffMemberId");
+
+                    b.HasIndex("CampEventId");
+
+                    b.HasIndex("LinkedUserId");
+
+                    b.ToTable("StaffMembers");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.Theme", b =>
                 {
                     b.Property<Guid>("ThemeId")
@@ -1302,13 +1350,6 @@ namespace CampClotNot.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("AvatarEmoji")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("CanSignIn")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1329,18 +1370,6 @@ namespace CampClotNot.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PhotoContentType")
-                        .HasColumnType("text");
-
-                    b.Property<byte[]>("PhotoData")
-                        .HasColumnType("bytea");
-
-                    b.Property<string>("PhotoObjectPosition")
                         .HasColumnType("text");
 
                     b.Property<Guid>("UserRoleId")
@@ -1930,6 +1959,23 @@ namespace CampClotNot.Migrations
                         .IsRequired();
 
                     b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.StaffMember", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.Event", "CampEvent")
+                        .WithMany()
+                        .HasForeignKey("CampEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.User", "LinkedUser")
+                        .WithMany()
+                        .HasForeignKey("LinkedUserId");
+
+                    b.Navigation("CampEvent");
+
+                    b.Navigation("LinkedUser");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.Transaction", b =>

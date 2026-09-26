@@ -1,0 +1,575 @@
+@page "/admin/breakouts"
+@attribute [Authorize(Roles = "Admin")]
+@inject RegistrationService RegistrationSvc
+@inject EventStaffService EventStaffSvc
+@inject ActiveEventService ActiveEventSvc
+@inject AuthenticationStateProvider Auth
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+@* The people side of breakouts: who is in which option. Slots and options themselves are
+   created on /admin/schedule. *@
+
+<PageTitle>Breakouts — Camp Clot Not</PageTitle>
+
+<style>
+    .bo-day-tabs {
+        display: flex; overflow-x: auto; scrollbar-width: none;
+        border: var(--panel-border); border-radius: 10px; background: var(--panel-bg);
+        box-shadow: 4px 4px 0 var(--border-color); margin-bottom: 16px;
+    }
+    .bo-day-tabs::-webkit-scrollbar { display: none; }
+    .bo-day-tab {
+        flex: 1 0 auto; min-width: 64px; padding: 10px 8px; border: none; border-bottom: 4px solid transparent;
+        background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px;
+        font-family: var(--font-display); font-weight: 700;
+    }
+    .bo-day-tab.active { border-bottom-color: var(--border-color); background: var(--bg-base); }
+    .bo-day-tab .tab-dow  { font-size: 11px; color: var(--text-light); text-transform: uppercase; }
+    .bo-day-tab .tab-date { font-size: 18px; color: var(--text-dark); line-height: 1; }
+    .bo-day-tab .tab-count { font-size: 9px; color: var(--text-light); }
+    .bo-panel { background: var(--panel-bg); border: var(--panel-border); border-radius: 10px; box-shadow: 4px 4px 0 var(--border-color); }
+    .bo-slot-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; border: none; border-bottom: 2px solid #E8E0CC; background: transparent; cursor: pointer; }
+    .bo-slot-btn:last-child { border-bottom: none; }
+    .bo-slot-btn.selected { background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); }
+    .bo-option-card { display: block; width: 100%; font: inherit; text-align: left; padding: 12px; border: var(--panel-border); border-radius: 8px; background: var(--panel-bg); box-shadow: 3px 3px 0 var(--border-color); cursor: pointer; }
+    .bo-option-card:hover { background: var(--bg-base); }
+    .bo-pill { font-family: var(--font-display); font-weight: 700; font-size: 12px; padding: 2px 10px; border-radius: 50px; border: 2px solid var(--border-color); white-space: nowrap; }
+    .bo-input { padding: 8px 12px; background: var(--bg-base); border: var(--panel-border); border-radius: 7px; font-size: 13px; font-family: 'Nunito', sans-serif; font-weight: 600; color: var(--text-dark); box-shadow: 2px 2px 0 var(--border-color); outline: none; box-sizing: border-box; }
+    .bo-label { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin-bottom: 6px; }
+</style>
+
+<div style="padding: 0 16px 100px">
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 6px">🔀 Breakouts</h2>
+    <p style="font-size:13px;color:var(--text-mid);margin:0 0 18px">
+        Who's in which session. Create slots and their options on <a href="/admin/schedule" style="color:var(--black);font-weight:700">Schedule</a>
+        (Breakout → "This is a breakout slot", then items with "Option in: …").
+    </p>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (_event is null)
+    {
+        <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No active event found.</p>
+    }
+    else
+    {
+        <div class="bo-day-tabs">
+            @foreach (var day in AllDays())
+            {
+                var count = _slots.Count(s => s.Slot.CampDay == day);
+                <button class="bo-day-tab @(day == _selectedDay ? "active" : "")" @onclick="() => SelectDay(day)">
+                    <span class="tab-dow">@day.ToString("ddd")</span>
+                    <span class="tab-date">@day.Day</span>
+                    <span class="tab-count">@(count == 0 ? "—" : $"{count} slot{(count == 1 ? "" : "s")}")</span>
+                </button>
+            }
+        </div>
+
+        <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+            @* ── Slots for the day ── *@
+            <div class="bo-panel" style="flex:0 0 280px;min-width:240px;overflow:hidden">
+                <div style="padding:12px 14px;border-bottom:2px solid var(--border-color);font-family:var(--font-display);font-weight:700;font-size:14px">Breakout slots</div>
+                @{ var daySlots = _slots.Where(s => s.Slot.CampDay == _selectedDay).ToList(); }
+                @if (!daySlots.Any())
+                {
+                    <p style="font-size:13px;color:var(--text-mid);margin:0;padding:14px">No breakout slots on this day.</p>
+                }
+                @foreach (var s in daySlots)
+                {
+                    var slot = s;
+                    <button class="bo-slot-btn @(slot.Slot.ScheduleItemId == _selectedSlotId ? "selected" : "")" @onclick="() => SelectSlot(slot.Slot.ScheduleItemId)">
+                        <div style="font-size:11px;color:var(--text-light);font-weight:700">@TimeRange(slot.Slot)</div>
+                        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text-dark)">@slot.Slot.Title</div>
+                        <div style="font-size:11px;color:var(--text-mid);margin-top:2px">
+                            @slot.Options.Count option@(slot.Options.Count == 1 ? "" : "s") ·
+                            <span style="color:@(slot.Unassigned > 0 ? "#C0392B" : "#1E7F46");font-weight:700">@slot.Unassigned unassigned</span>
+                        </div>
+                    </button>
+                }
+            </div>
+
+            <div style="flex:1;min-width:280px">
+                @if (SelectedSlot is { } sel && SelectedOption is null)
+                {
+                    @* ── Slot view ── *@
+                    <div class="bo-panel" style="padding:14px 16px;margin-bottom:14px">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+                            <div>
+                                <div style="font-family:var(--font-display);font-weight:700;font-size:18px">@sel.Slot.Title</div>
+                                <div style="font-size:12px;color:var(--text-light);font-weight:700">@sel.Slot.CampDay.ToString("dddd, MMM d") · @TimeRange(sel.Slot)</div>
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                                <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer">
+                                    <input type="checkbox" checked="@sel.Slot.AllowSelfSignup" @onchange="() => ToggleSelfSignupAsync(sel.Slot)" />
+                                    Allow self sign-up
+                                </label>
+                                <button class="ccn-btn" style="font-size:12px;padding:6px 12px;background:transparent" @onclick="ReloadAsync">↻ Refresh</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!sel.Options.Any())
+                    {
+                        <p style="font-size:13px;color:var(--text-mid)">This slot has no options yet. On <a href="/admin/schedule">Schedule</a>, add items with Breakout → "Option in: @sel.Slot.Title".</p>
+                    }
+                    else
+                    {
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+                            @foreach (var o in sel.Options)
+                            {
+                                var opt = o;
+                                <button class="bo-option-card" @onclick="() => SelectOption(opt.Option.ScheduleItemId)">
+                                    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+                                        <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark)">@opt.Option.Title</div>
+                                        <span class="bo-pill" style="background:@(opt.IsOver ? "#FEE2E2" : opt.IsFull ? "#FFF3C4" : "#E8F4EA")">@opt.Registered@(opt.Option.MaxCapacity is { } c ? $" / {c}" : "")</span>
+                                    </div>
+                                    <div style="font-size:11px;color:var(--text-mid);margin-top:4px">@TimeRange(opt.Option)@(opt.Option.Location is not null ? $" · {opt.Option.Location.Name}" : "")</div>
+                                    @if (opt.IsOver) { <div style="font-size:11px;color:#C0392B;font-weight:700;margin-top:4px">Over capacity</div> }
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    @* ── Unassigned ── *@
+                    <div class="bo-panel" style="padding:14px 16px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+                            <div style="font-family:var(--font-display);font-weight:700;font-size:16px">Unassigned (@_unassigned.Count)</div>
+                            @if (_unassigned.Any() && sel.Options.Any())
+                            {
+                                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                                    <select class="bo-input" @bind="_bulkTargetId">
+                                        <option value="">Assign selected to…</option>
+                                        @foreach (var o in sel.Options)
+                                        {
+                                            <option value="@o.Option.ScheduleItemId">@o.Option.Title (@o.Registered@(o.Option.MaxCapacity is { } c ? $"/{c}" : ""))</option>
+                                        }
+                                    </select>
+                                    <button class="ccn-btn" style="font-size:12px;padding:6px 12px" disabled="@(_busy || !_checked.Any() || string.IsNullOrEmpty(_bulkTargetId))" @onclick="AssignCheckedAsync">Assign @_checked.Count</button>
+                                </div>
+                            }
+                        </div>
+                        <div style="font-size:12px;color:var(--text-light);margin-bottom:10px">Guests who joined the event and staff at this event who aren't in any option of this slot yet.</div>
+
+                        @if (!_unassigned.Any())
+                        {
+                            <p style="font-size:13px;color:#1E7F46;font-weight:700;margin:0">Everyone expected is in a session. 🎉</p>
+                        }
+                        else
+                        {
+                            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+                                <input type="search" class="bo-input" style="flex:1;min-width:160px" placeholder="Search…" @bind="_unassignedSearch" @bind:event="oninput" />
+                                <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer">
+                                    <input type="checkbox" checked="@(FilteredUnassigned.Any() && FilteredUnassigned.All(p => _checked.Contains(Key(p))))" @onchange="ToggleAllUnassigned" />
+                                    Select all shown
+                                </label>
+                            </div>
+                            <div style="max-height:420px;overflow-y:auto;border:2px solid #E8E0CC;border-radius:8px">
+                                @foreach (var p in FilteredUnassigned)
+                                {
+                                    var person = p;
+                                    <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #E8E0CC">
+                                        <input type="checkbox" checked="@_checked.Contains(Key(person))" @onchange="() => ToggleChecked(person)" />
+                                        <div style="flex:1;min-width:0;font-size:13px;font-weight:700">@person.LastName, @person.FirstName</div>
+                                        <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:@(person.IsGuest ? "#16A085" : "#566573");color:white;font-family:var(--font-display);font-weight:700">@person.TypeLabel</span>
+                                        @if (sel.Options.Any())
+                                        {
+                                            <select class="bo-input" style="padding:4px 8px;font-size:12px;max-width:160px" value="" @onchange="e => QuickAssignAsync(person, e.Value?.ToString())">
+                                                <option value="">Assign to…</option>
+                                                @foreach (var o in sel.Options)
+                                                {
+                                                    <option value="@o.Option.ScheduleItemId">@o.Option.Title@(o.IsFull ? " (full)" : "")</option>
+                                                }
+                                            </select>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else if (SelectedOption is { } opt && SelectedSlot is { } parent)
+                {
+                    @* ── Option view ── *@
+                    <button class="ccn-btn" style="font-size:12px;padding:5px 12px;background:transparent;margin-bottom:10px" @onclick="() => SelectOption(null)">← @parent.Slot.Title</button>
+                    <div class="bo-panel" style="padding:14px 16px;margin-bottom:14px">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+                            <div>
+                                <div style="font-family:var(--font-display);font-weight:700;font-size:18px">@opt.Option.Title</div>
+                                <div style="font-size:12px;color:var(--text-light);font-weight:700">@TimeRange(opt.Option)@(opt.Option.Location is not null ? $" · {opt.Option.Location.Name}" : "")</div>
+                                <div style="font-size:13px;margin-top:6px">
+                                    <strong>@opt.Registered signed up</strong>@(opt.Option.MaxCapacity is { } c ? $" of {c} spots" : " · no capacity limit")
+                                    @if (opt.IsOver) { <span style="color:#C0392B;font-weight:700"> · over capacity</span> }
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                @if (opt.Option.TrackAttendance)
+                                {
+                                    <a class="ccn-btn" href="/admin/attendance" style="font-size:12px;padding:6px 12px;text-decoration:none;background:transparent">Attendance →</a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+                        @* Sign-up list *@
+                        <div style="flex:1;min-width:280px">
+                            @if (!_regs.Any())
+                            {
+                                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">Nobody is signed up yet.</p>
+                            }
+                            else
+                            {
+                                <div style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow-x:auto;background:var(--panel-bg)">
+                                    <table style="width:100%;border-collapse:collapse;min-width:460px">
+                                        <thead>
+                                            <tr style="background:var(--black)">
+                                                <th style="padding:9px 12px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Name</th>
+                                                <th style="padding:9px 12px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Signed up</th>
+                                                <th style="padding:9px 12px"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var r in _regs.OrderBy(r => r.Person.LastName, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Person.FirstName, StringComparer.OrdinalIgnoreCase))
+                                            {
+                                                var reg = r;
+                                                <tr style="border-bottom:2px solid #E8E0CC;@(reg.OverCapacity ? "background:#FFF5F5" : "")">
+                                                    <td style="padding:8px 12px;font-size:13px">
+                                                        <strong>@reg.Person.LastName, @reg.Person.FirstName</strong>
+                                                        <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:@(reg.Person.IsGuest ? "#16A085" : "#566573");color:white;font-family:var(--font-display);font-weight:700;margin-left:4px">@reg.Person.TypeLabel</span>
+                                                        @if (reg.OverCapacity) { <span style="font-size:10px;color:#C0392B;font-weight:700;margin-left:4px">over capacity</span> }
+                                                        @if (reg.CheckedIn) { <span style="font-size:10px;color:#1E7F46;font-weight:700;margin-left:4px">✓ checked in</span> }
+                                                    </td>
+                                                    <td style="padding:8px 12px;font-size:11px;color:var(--text-mid)">
+                                                        @reg.RegisteredAt.ToString("MMM d h:mm tt") · @(reg.Method == AttendanceMethod.Self ? "self" : $"by {reg.RegisteredByName ?? "Admin"}")
+                                                    </td>
+                                                    <td style="padding:6px 10px">
+                                                        <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap">
+                                                            @if (parent.Options.Count > 1)
+                                                            {
+                                                                <select class="bo-input" style="padding:4px 8px;font-size:12px;max-width:150px" value="" @onchange="e => MoveAsync(reg, e.Value?.ToString())">
+                                                                    <option value="">Move to…</option>
+                                                                    @foreach (var o in parent.Options.Where(o => o.Option.ScheduleItemId != opt.Option.ScheduleItemId))
+                                                                    {
+                                                                        <option value="@o.Option.ScheduleItemId">@o.Option.Title@(o.IsFull ? " (full)" : "")</option>
+                                                                    }
+                                                                </select>
+                                                            }
+                                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" disabled="@_busy" @onclick="() => RemoveAsync(reg)">Remove</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+
+                        @* Bulk add *@
+                        <div class="bo-panel" style="flex:0 0 280px;min-width:240px;padding:14px 16px">
+                            <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:4px">Add people</div>
+                            <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">Anyone already in another option of this slot is skipped. Admins can go past capacity.</div>
+
+                            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+                                <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(true, false), "No guests have joined this event yet.")'>Add all guests</button>
+                                <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(false, true), "The staff list for this event is empty.")'>Add all staff</button>
+                            </div>
+
+                            <div class="bo-label">By role</div>
+                            @foreach (var role in _roles)
+                            {
+                                var rid = role.UserRoleId;
+                                <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:3px">
+                                    <input type="checkbox" checked="@_roleIds.Contains(rid)" @onchange="() => Toggle(_roleIds, rid)" /> @role.Name
+                                </label>
+                            }
+                            @if (_groups.Any())
+                            {
+                                <div class="bo-label" style="margin-top:10px">By group</div>
+                                @foreach (var g in _groups)
+                                {
+                                    var gid = g.GroupId;
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:3px">
+                                        <input type="checkbox" checked="@_groupIds.Contains(gid)" @onchange="() => Toggle(_groupIds, gid)" />
+                                        <span style="color:@g.Color;font-weight:800">@g.Name</span>
+                                    </label>
+                                }
+                            }
+                            <button class="ccn-btn" style="font-size:12px;padding:6px 10px;margin:8px 0 16px;width:100%" disabled="@(_busy || (!_roleIds.Any() && !_groupIds.Any()))"
+                                    @onclick='() => BulkAsync(new BulkFilter(false, false, _roleIds, _groupIds), "Nobody at this event has those roles or groups.")'>Add selected</button>
+
+                            <div class="bo-label">Search and add</div>
+                            <input type="search" class="bo-input" style="width:100%;margin-bottom:6px" placeholder="Name…" @bind="_addSearch" @bind:event="oninput" />
+                            @if (!string.IsNullOrWhiteSpace(_addSearch))
+                            {
+                                <div style="max-height:200px;overflow-y:auto;margin-bottom:14px">
+                                    @foreach (var p in AddCandidates.Take(20))
+                                    {
+                                        var person = p;
+                                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 0;border-bottom:1px solid #E8E0CC">
+                                            <span style="font-size:12px;font-weight:700">@person.FullName <span style="font-weight:600;color:var(--text-light)">· @person.TypeLabel</span></span>
+                                            <button class="ccn-btn" style="font-size:11px;padding:3px 10px" disabled="@_busy" @onclick="() => AddOneAsync(person)">Add</button>
+                                        </div>
+                                    }
+                                    @if (!AddCandidates.Any()) { <div style="font-size:12px;color:var(--text-light)">No one matches (or they're already in this slot).</div> }
+                                </div>
+                            }
+                            else
+                            {
+                                <div style="margin-bottom:14px"></div>
+                            }
+
+                            @{ var copySources = _slots.Where(s => s.Slot.ScheduleItemId != parent.Slot.ScheduleItemId).SelectMany(s => s.Options.Select(o => (s, o))).ToList(); }
+                            @if (copySources.Any())
+                            {
+                                <div class="bo-label">Copy list from</div>
+                                <select class="bo-input" style="width:100%" value="" @onchange="e => CopyFromAsync(e.Value?.ToString())">
+                                    <option value="">Another slot's option…</option>
+                                    @foreach (var (s, o) in copySources)
+                                    {
+                                        <option value="@o.Option.ScheduleItemId">@s.Slot.CampDay.ToString("ddd") · @s.Slot.Title → @o.Option.Title (@o.Registered)</option>
+                                    }
+                                </select>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (_slots.Any(s => s.Slot.CampDay == _selectedDay))
+                {
+                    <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">Pick a slot.</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private Event? _event;
+    private Guid _adminUserId;
+    private List<SlotSummary> _slots = [];
+    private DateOnly? _selectedDay;
+    private Guid? _selectedSlotId;
+    private Guid? _selectedOptionId;
+
+    private List<PersonEntry> _expected = [];
+    private List<PersonEntry> _unassigned = [];
+    private List<RegistrationEntry> _regs = [];
+    private List<UserRole> _roles = [];
+    private List<Group> _groups = [];
+
+    private readonly HashSet<string> _checked = [];
+    private string _unassignedSearch = "";
+    private string _bulkTargetId = "";
+    private string _addSearch = "";
+    private readonly HashSet<Guid> _roleIds = [];
+    private readonly HashSet<Guid> _groupIds = [];
+
+    private SlotSummary? SelectedSlot => _slots.FirstOrDefault(s => s.Slot.ScheduleItemId == _selectedSlotId);
+    private OptionSummary? SelectedOption => SelectedSlot?.Options.FirstOrDefault(o => o.Option.ScheduleItemId == _selectedOptionId);
+
+    private IEnumerable<PersonEntry> FilteredUnassigned => _unassigned
+        .Where(p => string.IsNullOrWhiteSpace(_unassignedSearch) || p.FullName.Contains(_unassignedSearch.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    // Search-and-add only offers people not already in any option of this slot.
+    private IEnumerable<PersonEntry> AddCandidates => _unassigned
+        .Where(p => p.FullName.Contains(_addSearch.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private static string Key(PersonEntry p) => p.IsGuest ? $"g:{p.GuestAttendeeId}" : $"u:{p.UserId}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await Auth.GetAuthenticationStateAsync();
+        Guid.TryParse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _adminUserId);
+
+        _event = await ActiveEventSvc.GetActiveEventAsync();
+        if (_event is not null)
+        {
+            _roles  = await EventStaffSvc.GetRolesAsync();
+            _groups = await EventStaffSvc.GetGroupsAsync(_event.EventId);
+            _slots  = await RegistrationSvc.GetSlotsAsync(_event.EventId);
+
+            // Default day: the first day with a slot on or after today, else the first day with any slot.
+            var slotDays = _slots.Select(s => (DateOnly?)s.Slot.CampDay).ToList();   // already in day order
+            _selectedDay = slotDays.FirstOrDefault(d => d >= CampTime.Today) ?? slotDays.FirstOrDefault() ?? _event.EffDate;
+            if (_slots.FirstOrDefault(s => s.Slot.CampDay == _selectedDay) is { } first)
+                await SelectSlot(first.Slot.ScheduleItemId);
+        }
+        _loading = false;
+    }
+
+    private IEnumerable<DateOnly> AllDays()
+    {
+        if (_event is null) yield break;
+        for (var d = _event.EffDate; d <= _event.ExpDate; d = d.AddDays(1))
+            yield return d;
+    }
+
+    private async Task SelectDay(DateOnly day)
+    {
+        _selectedDay = day;
+        _selectedSlotId = null;
+        _selectedOptionId = null;
+        if (_slots.FirstOrDefault(s => s.Slot.CampDay == day) is { } first)
+            await SelectSlot(first.Slot.ScheduleItemId);
+    }
+
+    private async Task SelectSlot(Guid slotId)
+    {
+        _selectedSlotId = slotId;
+        _selectedOptionId = null;
+        _checked.Clear();
+        _unassignedSearch = "";
+        _bulkTargetId = "";
+        _unassigned = await RegistrationSvc.GetUnassignedAsync(slotId);
+    }
+
+    private async Task SelectOption(Guid? optionId)
+    {
+        _selectedOptionId = optionId;
+        _addSearch = "";
+        _roleIds.Clear();
+        _groupIds.Clear();
+        if (optionId is { } id)
+        {
+            _regs = await RegistrationSvc.GetOptionRegistrationsAsync(id);
+            _unassigned = await RegistrationSvc.GetUnassignedAsync(_selectedSlotId!.Value);
+        }
+        else if (_selectedSlotId is { } slotId)
+        {
+            await SelectSlot(slotId);
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_event is null) return;
+        _slots = await RegistrationSvc.GetSlotsAsync(_event.EventId);
+        if (_selectedSlotId is { } slotId)
+        {
+            _unassigned = await RegistrationSvc.GetUnassignedAsync(slotId);
+            _checked.IntersectWith(_unassigned.Select(Key));
+        }
+        if (_selectedOptionId is { } optionId)
+            _regs = await RegistrationSvc.GetOptionRegistrationsAsync(optionId);
+    }
+
+    private void ToggleChecked(PersonEntry p)
+    {
+        if (!_checked.Add(Key(p))) _checked.Remove(Key(p));
+    }
+
+    private void ToggleAllUnassigned()
+    {
+        var shown = FilteredUnassigned.Select(Key).ToList();
+        if (shown.All(_checked.Contains)) _checked.ExceptWith(shown);
+        else _checked.UnionWith(shown);
+    }
+
+    private static void Toggle(HashSet<Guid> set, Guid id)
+    {
+        if (!set.Add(id)) set.Remove(id);
+    }
+
+    private async Task AssignAsync(Guid optionId, IEnumerable<PersonEntry> people)
+    {
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            var result = await RegistrationSvc.AdminAssignAsync(optionId, people.Select(p => p.Ref).ToList(), _adminUserId);
+            Snackbar.Add(result.Skipped == 0
+                    ? $"Added {result.Added}."
+                    : $"Added {result.Added} · skipped {result.Skipped} already in this slot.",
+                result.Added > 0 ? Severity.Success : Severity.Info);
+            await ReloadAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task AssignCheckedAsync()
+    {
+        if (!Guid.TryParse(_bulkTargetId, out var optionId)) return;
+        var people = _unassigned.Where(p => _checked.Contains(Key(p))).ToList();
+        await AssignAsync(optionId, people);
+        _checked.Clear();
+    }
+
+    private async Task QuickAssignAsync(PersonEntry person, string? optionValue)
+    {
+        if (Guid.TryParse(optionValue, out var optionId))
+            await AssignAsync(optionId, [person]);
+    }
+
+    private async Task BulkAsync(BulkFilter filter, string emptyMessage)
+    {
+        if (_event is null || _selectedOptionId is not { } optionId) return;
+        var people = RegistrationService.ApplyFilter(await RegistrationSvc.GetExpectedPeopleAsync(_event.EventId), filter).ToList();
+        if (people.Count == 0)
+        {
+            Snackbar.Add(emptyMessage, Severity.Info);
+            return;
+        }
+        await AssignAsync(optionId, people);
+    }
+
+    private async Task AddOneAsync(PersonEntry person)
+    {
+        if (_selectedOptionId is { } optionId)
+            await AssignAsync(optionId, [person]);
+    }
+
+    private async Task CopyFromAsync(string? sourceValue)
+    {
+        if (!Guid.TryParse(sourceValue, out var sourceId) || _selectedOptionId is not { } optionId) return;
+        var people = (await RegistrationSvc.GetOptionRegistrationsAsync(sourceId)).Select(r => r.Person).ToList();
+        await AssignAsync(optionId, people);
+    }
+
+    private async Task MoveAsync(RegistrationEntry reg, string? toValue)
+    {
+        if (!Guid.TryParse(toValue, out var toId) || _busy) return;
+        var extra = reg.CheckedIn ? " Their check-in here will be removed." : "";
+        if (!await JS.InvokeAsync<bool>("confirm", $"Move {reg.Person.FullName}?{extra}")) { StateHasChanged(); return; }
+        _busy = true;
+        try
+        {
+            await RegistrationSvc.MoveAsync(reg.RegistrationId, toId, _adminUserId);
+            Snackbar.Add($"{reg.Person.FullName} moved.", Severity.Success);
+            await ReloadAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task RemoveAsync(RegistrationEntry reg)
+    {
+        if (_busy) return;
+        var extra = reg.CheckedIn ? " Their check-in will be removed too." : "";
+        if (!await JS.InvokeAsync<bool>("confirm", $"Remove {reg.Person.FullName} from this session?{extra}")) return;
+        _busy = true;
+        try
+        {
+            await RegistrationSvc.RemoveAsync(reg.RegistrationId);
+            await ReloadAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ToggleSelfSignupAsync(ScheduleItem slot)
+    {
+        await RegistrationSvc.SetSelfSignupAsync(slot.ScheduleItemId, !slot.AllowSelfSignup);
+        await ReloadAsync();
+        Snackbar.Add(SelectedSlot?.Slot.AllowSelfSignup == true ? "Self sign-up is on." : "Self sign-up is off — people see \"Your session will be assigned\".", Severity.Info);
+    }
+
+    private static string TimeRange(ScheduleItem i) =>
+        i.EndTime.HasValue ? $"{i.StartTime:h:mm tt} – {i.EndTime.Value:h:mm tt}" : i.StartTime.ToString("h:mm tt");
+}

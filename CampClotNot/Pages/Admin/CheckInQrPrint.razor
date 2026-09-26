@@ -1,0 +1,70 @@
+@page "/admin/attendance/item/{Id:guid}/qr"
+@layout PrintLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject AttendanceService AttendanceSvc
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
+@inject IConfiguration Config
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Check-in QR — @(_item?.Title ?? "Not found")</PageTitle>
+
+<style>
+    .qr-page {
+        max-width: 700px; margin: 0 auto; padding: 40px 24px; text-align: center;
+        font-family: 'Nunito', sans-serif; color: #1A1A1A;
+    }
+    .qr-page .qr-title { font-family: 'Fredoka One', cursive; font-size: 36px; margin: 6px 0 4px; line-height: 1.15; }
+    .qr-page .qr-img { width: 420px; max-width: 90%; height: auto; margin: 24px auto 12px; display: block; }
+    .qr-print-btn { margin-top: 24px; }
+    @@media print {
+        .qr-print-btn { display: none; }
+        .qr-page { padding: 20px 0; }
+        @@page { size: letter; margin: 0.5in; }
+    }
+</style>
+
+<div class="qr-page">
+    @if (_item is null)
+    {
+        <p>That schedule item doesn't exist.</p>
+    }
+    else
+    {
+        <div style="font-size:16px;font-weight:700;color:#5C5347">@_item.CampEvent.Name</div>
+        <div class="qr-title">@_item.Title</div>
+        <div style="font-size:18px;font-weight:700">@_item.CampDay.ToString("dddd, MMMM d") · @TimeRange(_item)</div>
+        @if (_item.Location is not null)
+        {
+            <div style="font-size:16px;margin-top:4px">📍 @_item.Location.Name</div>
+        }
+        <img class="qr-img" src="/admin/attendance/item/@_item.ScheduleItemId/qr.png?c=@_code" alt="Check-in QR code" />
+        <div style="font-family:'Fredoka One',cursive;font-size:30px">Scan to check in</div>
+        <div style="font-size:14px;color:#5C5347;margin-top:10px">Camera not scanning? Go to</div>
+        <div style="font-size:16px;font-weight:700;font-family:monospace;overflow-wrap:anywhere">@_url</div>
+        <button class="ccn-btn qr-print-btn" onclick="window.print()">🖨 Print</button>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ScheduleItem? _item;
+    private string? _code;
+    private string? _url;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _code = await AttendanceSvc.EnsureCheckInCodeAsync(Id);
+        using var db = DbFactory.CreateDbContext();
+        _item = await db.ScheduleItems.AsNoTracking()
+            .Include(i => i.CampEvent)
+            .Include(i => i.Location)
+            .FirstOrDefaultAsync(i => i.ScheduleItemId == Id);
+        if (_item is not null)
+            _url = $"{PublicBaseUrl.From(Nav.BaseUri, Config)}/checkin/{_code}";
+    }
+
+    private static string TimeRange(ScheduleItem i) =>
+        i.EndTime.HasValue ? $"{i.StartTime:h:mm tt} – {i.EndTime.Value:h:mm tt}" : i.StartTime.ToString("h:mm tt");
+}
