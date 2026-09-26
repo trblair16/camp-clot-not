@@ -84,6 +84,7 @@ try
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
     builder.Services.AddScoped<AttendanceService>();
+    builder.Services.AddScoped<EventStaffService>();
     builder.Services.AddScoped<PasswordResetService>();
     builder.Services.AddSingleton<ForgotPasswordQueue>();
     builder.Services.AddHostedService<ForgotPasswordWorker>();

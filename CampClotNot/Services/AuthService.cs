@@ -57,7 +57,6 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         string email,
         string plainPassword,
         Role role,
-        Guid? groupId = null,
         bool mustChangePassword = true)
     {
         var userRole = await users.GetRoleAsync(role)
@@ -72,12 +71,11 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
             Email               = email.ToLowerInvariant(),
             PasswordHash        = BCrypt.Net.BCrypt.HashPassword(plainPassword),
             IsActive            = true,
-            MustChangePassword  = mustChangePassword,
-            GroupId             = groupId
+            MustChangePassword  = mustChangePassword
         });
     }
 
-    public async Task UpdateUserAsync(Guid userId, string firstName, string lastName, string email, Role role, Guid? groupId)
+    public async Task UpdateUserAsync(Guid userId, string firstName, string lastName, string email, Role role)
     {
         var all = await users.GetAllAsync();
         var user = all.FirstOrDefault(u => u.UserId == userId)
@@ -90,7 +88,6 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         user.LastName   = lastName;
         user.Email      = email.ToLowerInvariant();
         user.UserRoleId = userRole.UserRoleId;
-        user.GroupId    = role == Role.Volunteer ? groupId : null;
 
         await users.UpdateAsync(user);
     }

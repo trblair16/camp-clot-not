@@ -1,7 +1,8 @@
 @page "/admin/users"
 @attribute [Authorize(Roles = "Admin")]
 @inject AuthService AuthSvc
-@inject GroupService GroupSvc
+@inject ActiveEventService ActiveEventSvc
+@inject EventStaffService EventStaffSvc
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject PasswordResetService Resets
@@ -111,20 +112,12 @@
                 </select>
             </div>
 
-            @if (_form.Role == Role.Volunteer)
+            @if (_activeEvent is not null)
             {
-                <div style="margin-bottom:14px">
-                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Assigned Group</div>
-                    <select value="@(_form.GroupId?.ToString() ?? "")"
-                            @onchange="e => _form.GroupId = Guid.TryParse(e.Value?.ToString(), out var gid) ? gid : null"
-                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
-                        <option value="">— None —</option>
-                        @foreach (var g in _groups)
-                        {
-                            <option value="@g.GroupId">@g.Name</option>
-                        }
-                    </select>
-                </div>
+                <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;font-size:13px;font-weight:700">
+                    <input type="checkbox" checked="@_form.AddToEventStaff" @onchange="() => _form.AddToEventStaff = !_form.AddToEventStaff" />
+                    Add to @_activeEvent.Name staff
+                </label>
             }
 
             <button class="ccn-btn" style="width:100%;margin-top:4px" @onclick="CreateAsync">Create Account</button>
@@ -173,14 +166,6 @@
                                     }
                                 </div>
                                 <div style="font-size:12px;color:var(--text-mid);overflow-wrap:break-word">@u.Email</div>
-                                @if (u.GroupId.HasValue)
-                                {
-                                    var grpName = _groups.FirstOrDefault(g => g.GroupId == u.GroupId)?.ShortName;
-                                    if (grpName is not null)
-                                    {
-                                        <div style="font-size:11px;color:var(--text-light);margin-top:2px">Group: @grpName</div>
-                                    }
-                                }
                             </div>
                             <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
                                 <button class="ccn-btn" style="font-size:11px;padding:4px 12px" @onclick="() => OpenEditDialog(u)">Edit</button>
@@ -212,7 +197,6 @@
                                         @onclick='() => SetSort("role")'>
                                         Role @SortIndicator("role")
                                     </th>
-                                    <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Group</th>
                                     <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left">Active</th>
                                     <th style="padding:10px 14px;color:white;font-family:var(--font-display);font-weight:700;font-size:12px;text-align:left"></th>
                                 </tr>
@@ -226,7 +210,6 @@
                                         <td style="padding:10px 14px">
                                             <span style="background:var(--black);color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px">@u.UserRole.SystemName</span>
                                         </td>
-                                        <td style="padding:10px 14px;font-size:13px">@(_groups.FirstOrDefault(g => g.GroupId == u.GroupId)?.ShortName ?? "—")</td>
                                         <td style="padding:10px 14px;font-size:13px">@(u.IsActive ? "✓" : "—")</td>
                                         <td style="padding:8px 10px">
                                             <div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -297,22 +280,6 @@
                     <option value="Admin">Admin</option>
                 </select>
             </div>
-
-            @if (_editForm.Role == Role.Volunteer)
-            {
-                <div style="margin-bottom:14px">
-                    <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Assigned Group</div>
-                    <select value="@(_editForm.GroupId?.ToString() ?? "")"
-                            @onchange="e => _editForm.GroupId = Guid.TryParse(e.Value?.ToString(), out var gid) ? gid : null"
-                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
-                        <option value="">— None —</option>
-                        @foreach (var g in _groups)
-                        {
-                            <option value="@g.GroupId">@g.Name</option>
-                        }
-                    </select>
-                </div>
-            }
 
             @if (_editError is not null)
             {
@@ -417,7 +384,7 @@
 
 @code {
     private List<User> _users = new();
-    private List<Group> _groups = new();
+    private Event? _activeEvent;
     private bool _loading = true;
     private bool _mobileFormOpen;
     private UserForm _form = new();
@@ -490,7 +457,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _groups = await GroupSvc.GetAllAsync();
+        _activeEvent = await ActiveEventSvc.GetActiveEventAsync();
         _users  = await AuthSvc.GetAllUsersAsync();
         _form = NewForm();
         _loading = false;
@@ -513,14 +480,14 @@
     {
         if (string.IsNullOrWhiteSpace(_form.Email)) return;
         if (!_form.SendInvite && string.IsNullOrWhiteSpace(_form.Password)) return;
-        var groupId = _form.Role == Role.Volunteer ? _form.GroupId : null;
         var name = $"{_form.FirstName} {_form.LastName}".Trim();
 
         if (_form.SendInvite)
         {
             // The invitee sets their own password from the link; this one is never shown or used.
             var user = await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email,
-                PasswordResetService.RandomPassword(), _form.Role, groupId, mustChangePassword: false);
+                PasswordResetService.RandomPassword(), _form.Role, mustChangePassword: false);
+            await AddToEventStaffAsync(user);
             var result = await Resets.SendInviteAsync(user.UserId, await CurrentAdminIdAsync(), BaseUrl);
             if (result.Emailed)
                 Snackbar.Add($"Account created. Invite emailed to {user.Email}.", Severity.Success);
@@ -534,13 +501,20 @@
         }
         else
         {
-            await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role, groupId);
+            var user = await AuthSvc.CreateUserAsync(_form.FirstName, _form.LastName, _form.Email, _form.Password, _form.Role);
+            await AddToEventStaffAsync(user);
             Snackbar.Add($"Account created for {name}.", Severity.Success);
         }
 
         _mobileFormOpen = false;
         _form = NewForm();
         _users = await AuthSvc.GetAllUsersAsync();
+    }
+
+    private async Task AddToEventStaffAsync(User user)
+    {
+        if (_form.AddToEventStaff && _activeEvent is not null)
+            await EventStaffSvc.AddAsync(_activeEvent.EventId, user.UserId, user.UserRoleId);
     }
 
     private async Task SendResetLinkAsync()
@@ -585,8 +559,7 @@
             FirstName = u.FirstName,
             LastName  = u.LastName,
             Email     = u.Email,
-            Role      = Enum.TryParse<Role>(u.UserRole.SystemName, out var r) ? r : Role.Staff,
-            GroupId   = u.GroupId
+            Role      = Enum.TryParse<Role>(u.UserRole.SystemName, out var r) ? r : Role.Staff
         };
         _editError = null;
         _editOpen = true;
@@ -605,8 +578,7 @@
             _editError = "First name and email are required.";
             return;
         }
-        var groupId = _editForm.Role == Role.Volunteer ? _editForm.GroupId : null;
-        await AuthSvc.UpdateUserAsync(_editing!.UserId, _editForm.FirstName, _editForm.LastName, _editForm.Email, _editForm.Role, groupId);
+        await AuthSvc.UpdateUserAsync(_editing!.UserId, _editForm.FirstName, _editForm.LastName, _editForm.Email, _editForm.Role);
         Snackbar.Add($"{_editForm.FirstName} {_editForm.LastName} updated.", Severity.Success);
         _users = await AuthSvc.GetAllUsersAsync();
         CloseEditDialog();
@@ -668,8 +640,8 @@
         public string Email { get; set; } = "";
         public string Password { get; set; } = "";
         public Role Role { get; set; } = Role.Staff;
-        public Guid? GroupId { get; set; }
         public bool SendInvite { get; set; }
+        public bool AddToEventStaff { get; set; } = true;
     }
 
     private class EditUserForm
@@ -678,6 +650,5 @@
         public string LastName { get; set; } = "";
         public string Email { get; set; } = "";
         public Role Role { get; set; } = Role.Staff;
-        public Guid? GroupId { get; set; }
     }
 }

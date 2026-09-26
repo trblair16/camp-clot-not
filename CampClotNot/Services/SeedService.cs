@@ -472,15 +472,26 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             return;
         }
 
+        var adminId = Guid.NewGuid();
         db.Users.Add(new User
         {
-            UserId       = Guid.NewGuid(),
+            UserId       = adminId,
             UserRoleId   = Id.RoleAdmin,
             FirstName    = "Camp",
             LastName     = "Admin",
             Email        = email.ToLowerInvariant(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             IsActive     = true
+        });
+        // Fresh databases only (existing ones were backfilled by the AddEventStaff migration):
+        // make the first admin staff at the seeded event so rosters aren't empty.
+        db.EventStaff.Add(new EventStaff
+        {
+            EventStaffId = Guid.NewGuid(),
+            EventId      = Id.EventCcn2026,
+            UserId       = adminId,
+            UserRoleId   = Id.RoleAdmin,
+            AddedAt      = CampTime.Now
         });
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded admin user {Email}.", email);

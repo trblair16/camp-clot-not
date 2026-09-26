@@ -119,7 +119,7 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
     }
 
     /// <summary>
-    /// Everyone who could attend the item — guests who joined its event, all active staff users —
+    /// Everyone who could attend the item — guests who joined its event, the event's active staff —
     /// plus anyone already checked in who wouldn't otherwise be listed (e.g. a since-deactivated user).
     /// </summary>
     public async Task<List<RosterEntry>> GetRosterAsync(Guid scheduleItemId)
@@ -139,10 +139,14 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
             .Where(v => v.EventId == item.CampEventId)
             .Select(v => v.GuestAttendee)
             .ToListAsync();
-        var users = await db.Users.AsNoTracking()
-            .Include(u => u.UserRole)
-            .Where(u => u.IsActive)
+        // Staff = active users on this event's staff list, badged with their role at the event.
+        var staff = await db.EventStaff.AsNoTracking()
+            .Where(st => st.EventId == item.CampEventId && st.User.IsActive)
+            .Include(st => st.User)
+            .Include(st => st.UserRole)
             .ToListAsync();
+        var users = staff.Select(st => st.User).ToList();
+        var eventRoles = staff.ToDictionary(st => st.UserId, st => st.UserRole.Name);
 
         var guestCheckIns = checkIns.Where(a => a.GuestAttendeeId.HasValue).ToDictionary(a => a.GuestAttendeeId!.Value);
         var userCheckIns  = checkIns.Where(a => a.UserId.HasValue).ToDictionary(a => a.UserId!.Value);
@@ -162,7 +166,7 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
         foreach (var u in userMap.Values)
         {
             var a = userCheckIns.GetValueOrDefault(u.UserId);
-            entries.Add(new RosterEntry(u.FirstName, u.LastName, false, u.UserRole?.Name, null, u.UserId,
+            entries.Add(new RosterEntry(u.FirstName, u.LastName, false, eventRoles.GetValueOrDefault(u.UserId) ?? u.UserRole?.Name, null, u.UserId,
                 a?.ScheduleItemAttendanceId, a?.CheckedInAt, a?.Method, a?.CheckedInByUser?.FirstName));
         }
 

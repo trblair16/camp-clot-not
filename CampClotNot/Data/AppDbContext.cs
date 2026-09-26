@@ -41,6 +41,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserRoleAuthorityLink> UserRoleAuthorityLinks => Set<UserRoleAuthorityLink>();
     public DbSet<UserAuthorityLink> UserAuthorityLinks => Set<UserAuthorityLink>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<EventStaff> EventStaff => Set<EventStaff>();
 
     // Hub (Camp Info)
     public DbSet<Location> Locations => Set<Location>();
@@ -240,5 +241,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(a => a.CheckedInByUserId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // EventStaff: one row per user per event. Three navigations point at reference tables
+        // (Event, User, UserRole) plus an optional Group, all configured explicitly.
+        modelBuilder.Entity<EventStaff>()
+            .HasIndex(s => new { s.EventId, s.UserId })
+            .IsUnique();
+        modelBuilder.Entity<EventStaff>()
+            .HasOne(s => s.Event)
+            .WithMany()
+            .HasForeignKey(s => s.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<EventStaff>()
+            .HasOne(s => s.User)
+            .WithMany()
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<EventStaff>()
+            .HasOne(s => s.UserRole)
+            .WithMany()
+            .HasForeignKey(s => s.UserRoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<EventStaff>()
+            .HasOne(s => s.Group)
+            .WithMany()
+            .HasForeignKey(s => s.GroupId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

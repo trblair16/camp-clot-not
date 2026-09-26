@@ -7,7 +7,7 @@ namespace CampClotNot.Services;
 /// Opt-in copies for "Copy setup from…" on /admin/events. Enabled capabilities and
 /// schedule item types are always copied; these are the event-scoped extras.
 /// #311 adds per-event staff assignments here as one more flag + copy step.
-public record EventCopyOptions(bool Sponsors, bool StaffDirectory, bool Activities)
+public record EventCopyOptions(bool Sponsors, bool StaffDirectory, bool Activities, bool EventStaff = false)
 {
     public static readonly EventCopyOptions None = new(false, false, false);
 }
@@ -19,7 +19,7 @@ public record NewEventRequest(
     Guid? CopyFromEventId,
     EventCopyOptions Copy);
 
-public record CopyCounts(int Sponsors, int StaffDirectory, int Activities);
+public record CopyCounts(int Sponsors, int StaffDirectory, int Activities, int EventStaff);
 
 public class EventSetupService(
     IDbContextFactory<AppDbContext> factory,
@@ -32,7 +32,8 @@ public class EventSetupService(
         return new CopyCounts(
             await db.Sponsors.CountAsync(s => s.EventId == sourceEventId),
             await db.StaffMembers.CountAsync(s => s.CampEventId == sourceEventId),
-            await db.Activities.CountAsync(a => a.EventId == sourceEventId));
+            await db.Activities.CountAsync(a => a.EventId == sourceEventId),
+            await db.EventStaff.CountAsync(s => s.EventId == sourceEventId && s.User.IsActive));
     }
 
     /// Creates the event, its own theme row, and every copied row in one SaveChanges, so a
@@ -127,6 +128,24 @@ public class EventSetupService(
                         ActivityId = Guid.NewGuid(), EventId = eventId,
                         ActivityTypeId = a.ActivityTypeId, LocationId = a.LocationId,
                         Name = a.Name, Description = a.Description, ShowInSpinner = a.ShowInSpinner
+                    });
+                }
+            }
+
+            if (req.Copy.EventStaff)
+            {
+                // People and their role at the event. Not groups — groups aren't copied, so the
+                // source event's group ids would point at the wrong event.
+                var staff = await db.EventStaff.AsNoTracking()
+                    .Where(s => s.EventId == src && s.User.IsActive)
+                    .Select(s => new { s.UserId, s.UserRoleId })
+                    .ToListAsync();
+                foreach (var s in staff)
+                {
+                    db.EventStaff.Add(new EventStaff
+                    {
+                        EventStaffId = Guid.NewGuid(), EventId = eventId,
+                        UserId = s.UserId, UserRoleId = s.UserRoleId, AddedAt = CampTime.Now
                     });
                 }
             }

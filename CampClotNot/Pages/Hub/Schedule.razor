@@ -722,9 +722,10 @@
         if (!_isAdminOrStaff && _userId != Guid.Empty)
         {
             using var db = DbFactory.CreateDbContext();
-            _userGroupId = await db.Users
-                .Where(u => u.UserId == _userId)
-                .Select(u => u.GroupId)
+            // Group assignments are per event (EventStaff), since groups belong to one event.
+            _userGroupId = await db.EventStaff
+                .Where(st => st.UserId == _userId && st.EventId == _eventId)
+                .Select(st => st.GroupId)
                 .FirstOrDefaultAsync();
         }
 

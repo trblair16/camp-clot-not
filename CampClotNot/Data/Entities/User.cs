@@ -10,9 +10,7 @@ public class User
     public string PasswordHash { get; set; } = "";
     public bool IsActive { get; set; } = true;
     public bool MustChangePassword { get; set; } = false;
-    public Guid? GroupId { get; set; }
 
     public UserRole UserRole { get; set; } = null!;
-    public Group? Group { get; set; }
     public ICollection<UserAuthorityLink> AuthorityLinks { get; set; } = new List<UserAuthorityLink>();
 }

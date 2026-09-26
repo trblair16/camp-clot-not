@@ -79,6 +79,7 @@ public class StaffDirectoryService(IDbContextFactory<AppDbContext> factory, IMem
         return await db.Users
             .Include(u => u.UserRole)
             .Where(u => u.IsActive
+                && db.EventStaff.Any(st => st.EventId == campEventId && st.UserId == u.UserId)
                 && (u.UserRole.SystemName == nameof(Role.Admin)
                     || u.UserRole.SystemName == nameof(Role.Staff)
                     || u.UserRole.SystemName == nameof(Role.Volunteer))
