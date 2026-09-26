@@ -86,6 +86,7 @@ try
     builder.Services.AddScoped<AttendanceService>();
     builder.Services.AddScoped<EventStaffService>();
     builder.Services.AddScoped<RegistrationService>();
+    builder.Services.AddScoped<ScheduleImportService>();
     builder.Services.AddScoped<PasswordResetService>();
     builder.Services.AddSingleton<ForgotPasswordQueue>();
     builder.Services.AddHostedService<ForgotPasswordWorker>();
@@ -370,6 +371,16 @@ try
         if (code is null) return Results.NotFound();
         var png = guestSvc.GenerateJoinQrPng($"{PublicBaseUrl.From(req, config)}/checkin/{code}");
         return Results.File(png, "image/png");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+    // Schedule spreadsheet template for the active event (dropdowns for its days, types, locations).
+    app.MapGet("/admin/schedule/template.xlsx", async (ActiveEventService activeEvents, ScheduleImportService imports) =>
+    {
+        var ev = await activeEvents.GetActiveEventAsync();
+        var file = ev is null ? null : await imports.BuildTemplateAsync(ev.EventId);
+        return file is { } f
+            ? Results.File(f.Content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", f.FileName)
+            : Results.NotFound();
     }).RequireAuthorization(policy => policy.RequireRole("Admin"));
 
     // Attendance CSV downloads — file responses need a real HTTP endpoint, not a Blazor circuit.

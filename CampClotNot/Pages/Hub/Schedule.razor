@@ -923,7 +923,12 @@
         _editingId      = Guid.Empty;
         _fTitle         = ""; _fDesc = null;
         _fDate     = _selectedDay?.ToDateTime(TimeOnly.MinValue) ?? CampTime.Now.Date;
-        _fStartStr = ""; _fEndStr = "";
+        // Start where the day's latest item ends, so a day's items can be entered back to back.
+        var lastEnd = _selectedDay is { } sd
+            ? _allEvents.Where(e => e.CampDay == sd && e.ParentScheduleItemId is null).Select(e => e.EndTime ?? e.StartTime).DefaultIfEmpty().Max()
+            : default;
+        _fStartStr = lastEnd == default ? "" : lastEnd.ToString("h:mm tt");
+        _fEndStr = "";
         _fTypeId        = _scheduleItemTypes.FirstOrDefault()?.ScheduleItemTypeId ?? Guid.Empty;
         _fLocationId    = null;
         _fLocationOther = null;
@@ -1025,7 +1030,11 @@
     private async Task SaveEvent()
     {
         if (string.IsNullOrWhiteSpace(_fTitle) || _fDate is null || string.IsNullOrWhiteSpace(_fStartStr)) return;
-        if (!DateTime.TryParse(_fStartStr, out var startDt)) return;
+        if (!ScheduleImportService.TryParseTimeRange(_fStartStr, out var startTime, out var rangeEnd))
+        {
+            _formError = "Can't read the start time — try \"9:30 AM\", \"930\", or \"2pm\".";
+            return;
+        }
 
         var assignments = _fAssignments
             .Where(a => a.ActivityId.HasValue || a.LocationId.HasValue || !string.IsNullOrEmpty(a.Note))
@@ -1033,13 +1042,21 @@
             .ToList();
 
         var isPresentation = SelectedTypeSystemName == "Presentation";
-        TimeOnly? end = !string.IsNullOrWhiteSpace(_fEndStr) && DateTime.TryParse(_fEndStr, out var endDt)
-            ? TimeOnly.FromDateTime(endDt) : null;
+        TimeOnly? end = rangeEnd;
+        if (!string.IsNullOrWhiteSpace(_fEndStr))
+        {
+            if (!ScheduleImportService.TryParseTime(_fEndStr, out var parsedEnd))
+            {
+                _formError = "Can't read the end time — try \"10:30 AM\".";
+                return;
+            }
+            end = parsedEnd;
+        }
         var dto = new ScheduleItemDto(
             _editingId,
             _eventId,
             DateOnly.FromDateTime(_fDate.Value),
-            TimeOnly.FromDateTime(startDt),
+            startTime,
             end,
             _fTitle, _fDesc, _fLocationId, _fActivityId, _fTypeId,
             !assignments.Any(),

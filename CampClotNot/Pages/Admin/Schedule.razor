@@ -6,6 +6,7 @@
 @inject MiniGameService MiniGameSvc
 @inject ActiveEventService ActiveEventSvc
 @inject RegistrationService RegistrationSvc
+@inject ScheduleImportService ImportSvc
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject AuthenticationStateProvider Auth
 @inject ISnackbar Snackbar
@@ -64,14 +65,14 @@
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Day</div>
                 <input type="date" value="@_fDateStr" min="@_minDate" max="@_maxDate" disabled="@(_fParentId is not null)"
                        title="@(_fParentId is not null ? "Options are on their slot's day" : null)"
-                       @onchange="e => _fDateStr = e.Value?.ToString() ?? string.Empty"
+                       @onchange="e => OnFormDayChanged(e.Value?.ToString())"
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="display:flex;gap:10px;margin-bottom:14px">
                 <div style="flex:1">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Start</div>
-                    <input type="text" @bind="_fStartStr" placeholder="9:30 AM"
+                    <input type="text" @bind="_fStartStr" placeholder="9:30 AM" title="9:30 AM, 930, 2pm, or a range like 9–10:30 AM"
                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
                 </div>
                 <div style="flex:1">
@@ -179,8 +180,7 @@
 
                 <label style="display:flex;align-items:center;gap:8px;margin-bottom:@(_fTrackAttendance ? "8px" : "14px");cursor:pointer;font-size:13px;font-weight:700;color:var(--text-dark)">
                     <input type="checkbox" checked="@_fTrackAttendance" @onchange="() => _fTrackAttendance = !_fTrackAttendance" />
-                    Track attendance
-                    <span style="font-weight:600;font-size:12px;color:var(--text-light)">— check-in by button or QR code</span>
+                    <span>Track attendance<br /><span style="font-weight:600;font-size:11px;color:var(--text-light)">Check-in by button or QR code</span></span>
                 </label>
                 @if (_fTrackAttendance)
                 {
@@ -278,6 +278,27 @@
 
         @* ── Table ── *@
         <div style="flex:1;min-width:300px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+                <a class="ccn-btn" href="/admin/schedule/template.xlsx" download style="font-size:12px;padding:6px 12px;text-decoration:none;background:transparent" title="An Excel file with dropdowns for this event's days, types, and locations">⬇ Spreadsheet template</a>
+                <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="OpenImport">⬆ Import spreadsheet</button>
+                <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="OpenCopyFrom">⧉ Copy from another event</button>
+            </div>
+
+            @if (_eventDays.Any())
+            {
+                <div style="display:flex;overflow-x:auto;border:var(--panel-border);border-radius:10px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--border-color);margin-bottom:12px">
+                    <button style="@DayTabStyle(_dayFilter is null)" @onclick="() => SelectDayFilter(null)">All<div style="font-size:9px;color:var(--text-light)">@_events.Count</div></button>
+                    @foreach (var d in _eventDays)
+                    {
+                        var day = d;
+                        <button style="@DayTabStyle(_dayFilter == day)" @onclick="() => SelectDayFilter(day)">
+                            @day.ToString("ddd M/d")
+                            <div style="font-size:9px;color:var(--text-light)">@_events.Count(e => e.CampDay == day)</div>
+                        </button>
+                    }
+                </div>
+            }
+
             <button class="ccn-btn admin-sched-add-mobile" @onclick="() => _mobileFormOpen = true">+ Add Event</button>
 
             @if (_loading)
@@ -286,13 +307,23 @@
             }
             else if (!_events.Any())
             {
-                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No events yet. Add the first one →</p>
+                <div class="ccn-panel" style="padding:18px;box-shadow:4px 4px 0 var(--border-color)">
+                    <div style="font-family:var(--font-display);font-weight:700;font-size:16px;margin-bottom:6px">No schedule yet</div>
+                    <div style="font-size:13px;color:var(--text-mid)">
+                        Fastest ways to get started: <strong>Copy from another event</strong> (last year's schedule, moved to this event's dates),
+                        or download the <strong>spreadsheet template</strong>, fill it in, and <strong>Import</strong> it. You can also add items one at a time with the form.
+                    </div>
+                </div>
+            }
+            else if (!VisibleEvents.Any())
+            {
+                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">Nothing on this day yet. Add the first one with the form.</p>
             }
             else
             {
                 @* ── Mobile card list ── *@
                 <div class="admin-sched-cards">
-                    @foreach (var ev in OrderedEvents)
+                    @foreach (var ev in VisibleEvents)
                     {
                         <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px;@(ev.ParentScheduleItemId is not null ? "margin-left:22px;border-left-width:6px" : "")">
                             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
@@ -355,7 +386,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var ev in OrderedEvents)
+                            @foreach (var ev in VisibleEvents)
                             {
                                 <tr style="border-bottom:2px solid #E8E0CC;@(ev.ParentScheduleItemId is not null ? "background:#FBF8F1" : "")">
                                     <td style="padding:8px 14px;font-size:13px;font-weight:700;white-space:nowrap">@ev.CampDay.ToString("ddd M/d")</td>
@@ -443,6 +474,159 @@
     </div>
 }
 
+@if (_importOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:1300;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease"
+         @onclick="CloseImport">
+        <div class="ccn-panel" style="width:min(960px,100%);max-height:90vh;display:flex;flex-direction:column;padding:20px;animation:popIn .25s ease;box-shadow:8px 8px 0 var(--black)"
+             @onclick:stopPropagation="true">
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 6px">Import a spreadsheet</h3>
+            @if (_importRows is null)
+            {
+                <div style="font-size:13px;color:var(--text-mid);margin-bottom:14px">
+                    Use the <a href="/admin/schedule/template.xlsx" download style="color:var(--black);font-weight:700">spreadsheet template</a> (it has dropdowns for this event's days, types, and locations),
+                    or any sheet with columns like <em>Day, Start, End, Title, Type, Location</em>. Nothing is saved until you check the preview.
+                </div>
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Upload the file (.xlsx or .csv)</div>
+                <InputFile OnChange="OnImportFile" accept=".xlsx,.csv" style="font-size:13px;margin-bottom:16px" />
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">…or paste rows copied from Excel, Google Sheets, or a Word table</div>
+                <textarea @bind="_importPaste" @bind:event="oninput" rows="7" placeholder="Day&#9;Start&#9;End&#9;Title&#9;Type&#9;Location"
+                          style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:12px;font-family:monospace;resize:vertical"></textarea>
+                @if (_importError is not null)
+                {
+                    <div style="color:#D12B2B;font-size:13px;font-weight:700;margin-top:8px">@_importError</div>
+                }
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                    <button class="ccn-btn" style="background:transparent" @onclick="CloseImport">Cancel</button>
+                    <button class="ccn-btn" disabled="@(_busy || string.IsNullOrWhiteSpace(_importPaste))" @onclick="PreviewPasteAsync">Preview</button>
+                </div>
+            }
+            else
+            {
+                var ready = _importRows.Count(r => r.CanImport);
+                var newLocs = _importRows.Where(r => r.CanImport && r.NewLocationName is not null).Select(r => r.NewLocationName!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                <div style="font-size:13px;margin-bottom:10px">
+                    <strong>@ready ready to add</strong>
+                    @if (_importRows.Count(r => r.Duplicate) is var dup && dup > 0) { <span> · @dup already on the schedule (skipped)</span> }
+                    @if (_importRows.Count(r => r.Errors.Any()) is var bad && bad > 0) { <span style="color:#C0392B;font-weight:700"> · @bad with problems (skipped)</span> }
+                </div>
+                @if (newLocs.Any())
+                {
+                    <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:10px;cursor:pointer">
+                        <input type="checkbox" checked="@_createLocations" @onchange="() => _createLocations = !_createLocations" style="margin-top:3px" />
+                        <span>Create @newLocs.Count new location@(newLocs.Count == 1 ? "" : "s"): <strong>@string.Join(", ", newLocs)</strong>
+                            <span style="color:var(--text-light)">(untick to put the text in Additional Info instead)</span></span>
+                    </label>
+                }
+                <div style="overflow:auto;flex:1;min-height:0;border:2px solid #E8E0CC;border-radius:8px">
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:720px">
+                        <thead>
+                            <tr style="background:var(--black);color:white;position:sticky;top:0">
+                                <th style="padding:6px 8px;text-align:left">Row</th>
+                                <th style="padding:6px 8px;text-align:left">Day</th>
+                                <th style="padding:6px 8px;text-align:left">Time</th>
+                                <th style="padding:6px 8px;text-align:left">Title</th>
+                                <th style="padding:6px 8px;text-align:left">Type</th>
+                                <th style="padding:6px 8px;text-align:left">Location</th>
+                                <th style="padding:6px 8px;text-align:left">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in _importRows)
+                            {
+                                <tr style="border-bottom:1px solid #E8E0CC;background:@(r.Errors.Any() ? "#FFF5F5" : r.Duplicate ? "#F4F4F4" : r.Warnings.Any() ? "#FFFBEA" : "transparent")">
+                                    <td style="padding:5px 8px;color:var(--text-light)">@r.RowNumber</td>
+                                    <td style="padding:5px 8px;white-space:nowrap">@(r.Day?.ToString("ddd M/d") ?? "—")</td>
+                                    <td style="padding:5px 8px;white-space:nowrap">@(r.Start?.ToString("h:mm tt") ?? "—")@(r.End is { } e ? $" – {e:h:mm tt}" : "")</td>
+                                    <td style="padding:5px 8px;font-weight:700">@r.Title</td>
+                                    <td style="padding:5px 8px">@r.Type?.Name</td>
+                                    <td style="padding:5px 8px">@(r.Location?.Name ?? r.NewLocationName)@(r.LocationOther is not null ? $" · {r.LocationOther}" : "")</td>
+                                    <td style="padding:5px 8px">
+                                        @if (r.Errors.Any()) { <span style="color:#C0392B;font-weight:700">✗ @string.Join("; ", r.Errors)</span> }
+                                        else if (r.Duplicate) { <span style="color:var(--text-light)">Already on the schedule</span> }
+                                        else if (r.Warnings.Any()) { <span style="color:#8A6D00">⚠ @string.Join("; ", r.Warnings)</span> }
+                                        else { <span style="color:#1E7F46;font-weight:700">✓</span> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                    <button class="ccn-btn" style="background:transparent" @onclick="() => _importRows = null">← Back</button>
+                    <button class="ccn-btn" style="background:var(--color-primary)" disabled="@(_busy || ready == 0)" @onclick="CommitImportAsync">Add @ready item@(ready == 1 ? "" : "s")</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (_copyOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:1300;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease"
+         @onclick="() => _copyOpen = false">
+        <div class="ccn-panel" style="width:min(560px,100%);max-height:90vh;overflow-y:auto;padding:20px;animation:popIn .25s ease;box-shadow:8px 8px 0 var(--black)"
+             @onclick:stopPropagation="true">
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 6px">Copy a schedule from another event</h3>
+            <div style="font-size:13px;color:var(--text-mid);margin-bottom:12px">
+                Day 1 of that event becomes day 1 here, and so on. Breakout sessions, attendance settings, and locations come along.
+                Items already on this schedule (same day, time, and title) are skipped.
+            </div>
+            @if (!_copySources.Any())
+            {
+                <p style="font-size:13px;color:var(--text-light);font-weight:700">No other event has a schedule yet.</p>
+            }
+            else
+            {
+                <select value="@(_copySourceId?.ToString() ?? "")" @onchange="OnCopySourceChanged"
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;box-shadow:2px 2px 0 var(--border-color);margin-bottom:12px">
+                    <option value="">Pick an event…</option>
+                    @if (_copySources.Any(x => x.SameKind))
+                    {
+                        <optgroup label="Same kind of event">
+                            @foreach (var x in _copySources.Where(x => x.SameKind))
+                            {
+                                <option value="@x.Event.EventId">@x.Event.Name (@x.Event.EffDate.ToString("MMM yyyy") · @x.Items items)</option>
+                            }
+                        </optgroup>
+                    }
+                    @if (_copySources.Any(x => !x.SameKind))
+                    {
+                        <optgroup label="Other events">
+                            @foreach (var x in _copySources.Where(x => !x.SameKind))
+                            {
+                                <option value="@x.Event.EventId">@x.Event.Name (@x.Event.EffDate.ToString("MMM yyyy") · @x.Items items)</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+                @if (_copyPreview is { } pv)
+                {
+                    <div style="border:2px solid #E8E0CC;border-radius:8px;overflow:hidden;margin-bottom:12px">
+                        @foreach (var d in pv.Days)
+                        {
+                            <div style="display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border-bottom:1px solid #E8E0CC;font-size:13px;@(d.TargetDay is null ? "color:var(--text-light)" : "")">
+                                <span>@d.SourceDay.ToString("ddd MMM d") → <strong>@(d.TargetDay?.ToString("ddd MMM d") ?? "no matching day (skipped)")</strong></span>
+                                <span>@(d.Items - d.Duplicates) item@(d.Items - d.Duplicates == 1 ? "" : "s")@(d.Duplicates > 0 ? $" · {d.Duplicates} already here" : "")</span>
+                            </div>
+                        }
+                    </div>
+                    @if (pv.SkippedDays > 0)
+                    {
+                        <div style="font-size:12px;color:#8A6D00;margin-bottom:10px">⚠ @pv.Source.Name is longer than this event, so @pv.SkippedDays day@(pv.SkippedDays == 1 ? "" : "s") won't be copied.</div>
+                    }
+                }
+            }
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button class="ccn-btn" style="background:transparent" @onclick="() => _copyOpen = false">Cancel</button>
+                <button class="ccn-btn" style="background:var(--color-primary)" disabled="@(_busy || _copyPreview is null || _copyPreview.ToCopy == 0)" @onclick="CommitCopyAsync">
+                    Copy @(_copyPreview?.ToCopy ?? 0) item@(_copyPreview?.ToCopy == 1 ? "" : "s")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<ScheduleItem> _events = new();
     private List<ScheduleItemType> _scheduleItemTypes = new();
@@ -472,6 +656,142 @@
     private Guid? _fParentId;
     private int? _fCapacity;
     private Dictionary<Guid, int> _optionCounts = new();
+
+    // Day tabs: which day the table (and a new item's default day) is on. null = All.
+    private DateOnly? _dayFilter;
+    private List<DateOnly> _eventDays = new();
+    private bool _busy;
+
+    private IEnumerable<ScheduleItem> VisibleEvents =>
+        _dayFilter is { } d ? OrderedEvents.Where(e => e.CampDay == d) : OrderedEvents;
+
+    private static string DayTabStyle(bool active) =>
+        $"flex:1 0 auto;min-width:64px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:1px;border:none;border-bottom:4px solid {(active ? "var(--border-color)" : "transparent")};background:{(active ? "var(--bg-base)" : "transparent")};cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:12px";
+
+    // The "next open slot" on a day: where that day's latest item ends (or starts, if it has no end).
+    private string NextSlot(DateOnly day)
+    {
+        var last = _events.Where(e => e.CampDay == day && e.ParentScheduleItemId is null)
+            .Select(e => e.EndTime ?? e.StartTime).DefaultIfEmpty().Max();
+        return last == default ? "" : last.ToString("h:mm tt");
+    }
+
+    private void SelectDayFilter(DateOnly? day)
+    {
+        _dayFilter = day;
+        // A fresh (not editing, not copying) form follows the tab being viewed.
+        if (day is { } d && _editingId == Guid.Empty && string.IsNullOrEmpty(_copyingFromTitle) && _fParentId is null)
+        {
+            _fDateStr = d.ToString("yyyy-MM-dd");
+            _fStartStr = NextSlot(d);
+            _fEndStr = "";
+        }
+    }
+
+    private void OnFormDayChanged(string? value)
+    {
+        _fDateStr = value ?? string.Empty;
+        if (_editingId == Guid.Empty && DateOnly.TryParseExact(_fDateStr, "yyyy-MM-dd", out var d) && string.IsNullOrWhiteSpace(_fStartStr))
+            _fStartStr = NextSlot(d);
+    }
+
+    // ── Import ──
+    private bool _importOpen;
+    private string _importPaste = "";
+    private string? _importError;
+    private List<ImportRow>? _importRows;
+    private bool _createLocations = true;
+
+    private void OpenImport()
+    {
+        _importOpen = true; _importRows = null; _importPaste = ""; _importError = null; _createLocations = true;
+    }
+
+    private void CloseImport() => _importOpen = false;
+
+    private async Task OnImportFile(InputFileChangeEventArgs e)
+    {
+        _importError = null;
+        try
+        {
+            using var ms = new MemoryStream();
+            await e.File.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
+            ms.Position = 0;
+            var table = e.File.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+                ? ScheduleImportService.ReadDelimited(System.Text.Encoding.UTF8.GetString(ms.ToArray()))
+                : ScheduleImportService.ReadXlsx(ms);
+            await PreviewAsync(table);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or ArgumentException or InvalidOperationException)
+        {
+            _importError = "Couldn't read that file. Save it as .xlsx or .csv and try again, or paste the rows instead.";
+        }
+    }
+
+    private Task PreviewPasteAsync() => PreviewAsync(ScheduleImportService.ReadDelimited(_importPaste));
+
+    private async Task PreviewAsync(List<string[]> table)
+    {
+        _busy = true;
+        try
+        {
+            var rows = await ImportSvc.ParseAsync(_eventId, table);
+            if (rows.Count == 0) { _importError = "No rows found."; return; }
+            _importRows = rows;
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task CommitImportAsync()
+    {
+        if (_importRows is null) return;
+        _busy = true;
+        try
+        {
+            var added = await ImportSvc.ImportAsync(_eventId, _importRows, _createLocations, _userId);
+            _importOpen = false;
+            _locations = await LocationSvc.GetAllAsync();
+            _scheduleItemTypes = await ScheduleItemTypeSvc.GetForEventAsync(_eventId);
+            await Reload();
+            Snackbar.Add($"Added {added} item{(added == 1 ? "" : "s")} to the schedule.", Severity.Success);
+        }
+        finally { _busy = false; }
+    }
+
+    // ── Copy from another event ──
+    private bool _copyOpen;
+    private List<(Event Event, bool SameKind, int Items)> _copySources = new();
+    private Guid? _copySourceId;
+    private CopyPreview? _copyPreview;
+
+    private async Task OpenCopyFrom()
+    {
+        _copySources = await ImportSvc.GetCopySourcesAsync(_eventId);
+        _copySourceId = null;
+        _copyPreview = null;
+        _copyOpen = true;
+    }
+
+    private async Task OnCopySourceChanged(ChangeEventArgs e)
+    {
+        _copySourceId = Guid.TryParse(e.Value?.ToString(), out var id) ? id : null;
+        _copyPreview = _copySourceId is { } src ? await ImportSvc.PreviewCopyAsync(src, _eventId) : null;
+    }
+
+    private async Task CommitCopyAsync()
+    {
+        if (_copySourceId is not { } src) return;
+        _busy = true;
+        try
+        {
+            var added = await ImportSvc.CopyAsync(src, _eventId, _userId);
+            _copyOpen = false;
+            _scheduleItemTypes = await ScheduleItemTypeSvc.GetForEventAsync(_eventId);
+            await Reload();
+            Snackbar.Add($"Copied {added} item{(added == 1 ? "" : "s")}. Check times and locations for anything that changed this year.", Severity.Success);
+        }
+        finally { _busy = false; }
+    }
 
     private string BreakoutValue => _fIsSlot ? "slot" : _fParentId?.ToString() ?? "";
 
@@ -532,6 +852,8 @@
         var campEvent = await ActiveEventSvc.GetActiveEventAsync();
         if (campEvent is not null)
         {
+            _eventDays = Enumerable.Range(0, campEvent.ExpDate.DayNumber - campEvent.EffDate.DayNumber + 1)
+                .Select(i => campEvent.EffDate.AddDays(i)).ToList();
             _minDate  = campEvent.EffDate.ToString("yyyy-MM-dd");
             _maxDate  = campEvent.ExpDate.ToString("yyyy-MM-dd");
             _fDateStr = _minDate;
@@ -633,8 +955,8 @@
         _editingId           = Guid.Empty;
         _fTitle              = "";
         _fDesc               = null;
-        _fDateStr  = _minDate;
-        _fStartStr = "";
+        _fDateStr  = (_dayFilter?.ToString("yyyy-MM-dd")) ?? _minDate;
+        _fStartStr = _dayFilter is { } df ? NextSlot(df) : "";
         _fEndStr   = "";
         _fTypeId             = _scheduleItemTypes.FirstOrDefault()?.ScheduleItemTypeId ?? Guid.Empty;
         _fLocationId         = null;
@@ -664,10 +986,13 @@
         if (string.IsNullOrWhiteSpace(_fStartStr)) { _error = "Start time is required."; return; }
         if (_fTypeId == Guid.Empty)                { _error = "Type is required."; return; }
         if (!DateOnly.TryParseExact(_fDateStr, "yyyy-MM-dd", out var day)) { _error = "Invalid date."; return; }
-        if (!DateTime.TryParse(_fStartStr, out var startDt)) { _error = "Invalid start time — try \"9:30 AM\"."; return; }
-        var start = TimeOnly.FromDateTime(startDt);
-        TimeOnly? end = string.IsNullOrWhiteSpace(_fEndStr) ? null
-            : DateTime.TryParse(_fEndStr, out var endDt) ? TimeOnly.FromDateTime(endDt) : null;
+        if (!ScheduleImportService.TryParseTimeRange(_fStartStr, out var start, out var rangeEnd)) { _error = "Can't read the start time — try \"9:30 AM\", \"930\", or \"2pm\"."; return; }
+        TimeOnly? end = rangeEnd;
+        if (!string.IsNullOrWhiteSpace(_fEndStr))
+        {
+            if (!ScheduleImportService.TryParseTime(_fEndStr, out var e)) { _error = "Can't read the end time — try \"10:30 AM\"."; return; }
+            end = e;
+        }
 
         var assignments = _fAssignments
             .Where(a => a.ActivityId.HasValue || a.LocationId.HasValue || !string.IsNullOrEmpty(a.Note))
@@ -703,8 +1028,18 @@
             return;
         }
         Snackbar.Add(isCopy ? $"Copied as {_fTitle.Trim()}." : _editingId == Guid.Empty ? $"{_fTitle} added." : $"{_fTitle} updated.", Severity.Success);
+        var wasAdd = _editingId == Guid.Empty && !isCopy;
+        var keepType = _fTypeId;
         CancelEdit();
         await Reload();
+        // Entering a day's items one after another: stay on that day with the same type, and
+        // start the next item where this one ended.
+        if (wasAdd)
+        {
+            _fDateStr  = day.ToString("yyyy-MM-dd");
+            _fTypeId   = keepType;
+            _fStartStr = NextSlot(day);
+        }
     }
 
     private async Task DeleteAsync(ScheduleItem ev)
