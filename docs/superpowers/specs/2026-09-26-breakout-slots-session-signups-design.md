@@ -1,7 +1,8 @@
-# Breakout Slots, Session Sign-ups, and Per-Event Staff
+# Breakout Slots, Session Sign-ups, Per-Event Staff, and QR Check-in
 
 **Date:** 2026-09-26
-**Status:** Draft, awaiting Tyler's review before the plan is written.
+**Status:** Approved by Tyler 2026-09-26 (QR check-in added the same day). Implementing on
+`claude/guest-attendance-extend-djwotf`.
 **Driver:** Camp Harvest 2026 (mid-October) runs parallel breakout sessions. Attendance tracking
 (#308 / PR #309) assumes everyone could attend every tracked item, and it lists every active `User`
 as staff at every event. Tracked in issue #311, a follow-up to #308, scheduled after #310 (event
@@ -51,6 +52,17 @@ These were settled with Tyler on 2026-09-26, answering the questions the issue l
 | Admin UI for staff | A new **`/admin/event-staff`** page scoped to the active event. |
 | Duplication (#310) | A new **"Staff"** copy option, on by default. It copies user and role but not group, because groups aren't copied. |
 | Backfill | Every **active** user becomes staff at **every existing event** with their current role. Their group moves to the event the group belongs to. |
+
+Added the same day, after Tyler confirmed that general sessions and meetings (not just breakouts)
+need attendance. #308's per-item "Track attendance" toggle already covers them. What was missing is
+a QR code at the door:
+
+| Question | Decision |
+|---|---|
+| QR check-in | **Yes, one static, printable QR per tracked item.** Scanning it checks you in to that item. |
+| Time window | **The same window as the button**: 30 minutes before the start until the end. |
+| Button vs QR | **A per-item choice**: "Button + QR" (the default) or "QR only". |
+| Breakouts vs attendance | Breakouts add **sign-up before the session** (choose one of several parallel sessions, capacity, expected list, no-shows). Attendance on any item works without them. |
 
 ## Part 1: Per-Event Staff
 
@@ -321,6 +333,71 @@ This is the people side of breakouts. Slot and option CRUD stays in `/admin/sche
 - Attendance for options still lives on `/admin/attendance`. From the option view, a **"View
   attendance →"** link goes there when the option is tracked.
 
+## Part 4: QR Check-in
+
+### Data
+
+`ScheduleItem` gains two columns:
+
+```csharp
+public string? CheckInCode { get; set; }              // random token in the QR URL; unique; created on first "Show QR"
+public SelfCheckInMode SelfCheckInMode { get; set; }  // ButtonAndQr = 0 (default) | QrOnly = 1
+```
+
+`AttendanceMethod` gains `Qr = 2`, so the roster reads "9:42 AM · QR".
+
+- **The QR carries a random code, not the `ScheduleItemId`.** Item ids reach the browser in various
+  places, and a "QR only" item must not be checkable by anyone who guesses or sees its id. The code
+  is 10 characters from an unambiguous alphabet (no 0/O/1/I), with a unique index (NULLs allowed).
+- An Admin can **regenerate** the code, for example if a photo of the QR is going around. The
+  printed copy then stops working.
+- "Copy to new day" doesn't copy the code. The copy gets its own code the first time its QR is shown.
+
+### Scan flow: `/checkin/{code}`
+
+It's a Blazor page with `[AllowAnonymous]` and `LoginLayout` (a centered card, no nav).
+
+1. **Unknown code** shows "This check-in code isn't valid."
+2. **Not signed in** shows the item title and time and two buttons: **"I'm a guest"** →
+   `/join?returnUrl=/checkin/{code}` and **"Staff sign in"** → `/login?returnUrl=/checkin/{code}`.
+   The existing forms post a hidden `returnUrl`, and the endpoints redirect there after sign-in
+   instead of `/hub/schedule` / `/dashboard`. Only local paths are accepted: `/` but not `//` or
+   `/\`. A guest who hasn't joined still has to type the event code, which keeps #298's rule
+   that the join QR isn't a substitute for the code.
+3. **Signed in** calls `AttendanceService.QrCheckInAsync(user, code)`, which uses the same rules as
+   `SelfCheckInAsync` (tracked, guest event match, breakout registration, window) and records
+   `Method = Qr`. The page shows a big green "✓ You're checked in to {title}" (or "✓ Already checked
+   in at 9:42 AM"), with a link to the schedule. Failures show a plain message:
+   - Outside the window: "Check-in for {title} opens at 1:30 PM" or "…closed at 3:00 PM".
+   - A guest signed in to a different event: "This session is part of {event}", with a "Join
+     {event}" link (`/join?returnUrl=…`).
+   - Not registered for a breakout option: "You're not signed up for this session."
+   - Not tracked any more: "Check-in isn't open for this item."
+
+The check-in runs in `OnInitializedAsync`, which Blazor Server calls twice (prerender, then the
+interactive circuit). The insert is idempotent, so the second call returns `AlreadyCheckedIn` and
+the page shows success either way.
+
+### "QR only" items on `/hub/schedule`
+
+The "I'm here" button isn't shown. Inside the window, the row shows a small hint instead: "📷 Scan
+the QR code at the session to check in". `SelfCheckInAsync` (the button path) returns
+`NotAllowed` for QR-only items, so the button path can't be used directly.
+
+### Admin
+
+- **`/admin/schedule` form:** under "Track attendance", a **Check-in** select with "Button + QR"
+  and "QR only". The same field goes on the Admin edit form on `/hub/schedule`.
+- **`/admin/attendance` roster header:** a **"📷 QR code"** button opens a modal
+  (`fadeIn`/`popIn`) with the QR image, the check-in URL, **Print** (opens the print page),
+  and **Regenerate** (with a `confirm`).
+- **Print page `/admin/attendance/item/{id}/qr`:** Admin-only and uses `PrintLayout`. It shows the
+  event name, item title, day and time, a large QR, "Scan to check in", and the short URL
+  underneath for anyone whose camera won't scan. It's sized for one letter-size page.
+- **The QR PNG is `GET /admin/attendance/item/{id}/qr.png`,** Admin-only. It creates the code if
+  missing and reuses `GuestAccessService.GenerateJoinQrPng(url)` with the public base URL
+  (`PublicBaseUrl.From`).
+
 ## Explicitly Out of Scope
 
 - Waitlists and self-service switching between options (both are in the issue's "later" list).
@@ -329,10 +406,12 @@ This is the people side of breakouts. Slot and option CRUD stays in `/admin/sche
 - Sign-up deadlines (see the open questions below), notifications about assignments, and
   SignalR-live counts (the admin pages have Refresh, as `/admin/attendance` does).
 - Nested slots, and options on a different day from their slot.
+- Rotating or expiring QR codes. The QR is static, and the time window plus Regenerate are the protection.
+- Sign-up lists on ordinary (non-breakout) items. Attendance on those needs no sign-up.
 
-## Open Questions for Review
+## Defaults Taken
 
-These are defaults I picked. Each is a small change if you'd rather go the other way.
+None of these were contested in review. Each is a small change if it needs to go the other way.
 
 1. **Do Staff-role users see every option on `/hub/schedule`?** The issue says only Admins do, so
    Staff get the participant view. That differs from group-specific items, which Staff see in full
@@ -364,3 +443,8 @@ warnings, plus a walkthrough on local Postgres 16 with headless Chromium:
   past capacity (it gets flagged). Moving someone who's checked in removes the check-in. Bulk add by
   role and "copy list from" report the skipped count. The option CSV includes no-shows.
 - Deleting a slot removes its options, registrations, and check-ins.
+- **QR:** open the QR modal and print page. Scan while signed out as a guest, join with the code and
+  land checked in. Scan as staff while signed out, sign in and land checked in. Scan again and see
+  "Already checked in". Scan outside the window and see the opens/closed message. A guest from
+  another event gets the "part of {event}" message. On a QR-only item, the hub shows the hint and no
+  button. After Regenerate, the old URL shows "isn't valid". The roster shows "· QR".
