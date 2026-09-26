@@ -4,11 +4,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CampClotNot.Services;
 
+/// <summary>A person's details, entered once and reused on every event's team and directory.</summary>
+public record PersonDetails(string FirstName, string LastName, string? Email, string? Phone, string AvatarEmoji = "👤");
+
 /// <summary>
-/// Who is staff at which event. "All staff" on rosters, bulk sign-up, and the unassigned list
-/// means the active users with a row here for that event.
+/// An event's team (<see cref="EventStaff"/>) and the people on it. "All staff" on rosters, bulk
+/// sign-up, and the unassigned list means the active people with a row here for that event. A
+/// person is a <see cref="User"/> row; <see cref="User.CanSignIn"/> is false for people who are
+/// only listed (a nurse line, a guest speaker). Admins never see the word "person" — the Team page
+/// talks about team members and "Can sign in".
 /// </summary>
-public class EventStaffService(IDbContextFactory<AppDbContext> factory)
+public class EventStaffService(IDbContextFactory<AppDbContext> factory, StaffDirectoryService directory)
 {
     /// <summary>Active users on the event's staff, sorted by last then first name.</summary>
     public async Task<List<EventStaff>> GetForEventAsync(Guid eventId)
@@ -62,8 +68,8 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory)
         return await db.EventStaff.AnyAsync(s => s.UserId == userId && s.EventId == eventId);
     }
 
-    /// <summary>Adds the user (role defaults to their global role). A no-op if they're already listed.</summary>
-    public async Task AddAsync(Guid eventId, Guid userId, Guid? userRoleId = null)
+    /// <summary>Adds the person (role defaults to their account role). A no-op if they're already on the team.</summary>
+    public async Task AddAsync(Guid eventId, Guid userId, Guid? userRoleId = null, bool showInDirectory = false, string? title = null)
     {
         using var db = factory.CreateDbContext();
         if (await db.EventStaff.AnyAsync(s => s.EventId == eventId && s.UserId == userId)) return;
@@ -72,11 +78,14 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory)
             ?? await db.Users.Where(u => u.UserId == userId).Select(u => u.UserRoleId).FirstAsync();
         db.EventStaff.Add(new EventStaff
         {
-            EventStaffId = Guid.NewGuid(),
-            EventId      = eventId,
-            UserId       = userId,
-            UserRoleId   = roleId,
-            AddedAt      = CampTime.Now
+            EventStaffId    = Guid.NewGuid(),
+            EventId         = eventId,
+            UserId          = userId,
+            UserRoleId      = roleId,
+            Title           = string.IsNullOrWhiteSpace(title) ? null : title.Trim(),
+            ShowInDirectory = showInDirectory,
+            SortOrder       = await NextSortOrderAsync(db, eventId),
+            AddedAt         = CampTime.Now
         });
         try
         {
@@ -89,7 +98,11 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory)
             using var db2 = factory.CreateDbContext();
             if (!await db2.EventStaff.AnyAsync(s => s.EventId == eventId && s.UserId == userId)) throw;
         }
+        if (showInDirectory) directory.Invalidate(eventId);
     }
+
+    private static async Task<int> NextSortOrderAsync(AppDbContext db, Guid eventId) =>
+        (await db.EventStaff.Where(s => s.EventId == eventId).MaxAsync(s => (int?)s.SortOrder) ?? -1) + 1;
 
     /// <summary>Adds every active user not yet on the event's staff. Returns how many were added.</summary>
     public async Task<int> AddAllActiveUsersAsync(Guid eventId)
@@ -113,8 +126,9 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory)
     }
 
     /// <summary>
-    /// Adds the active people from another event's team (with the role they had there, no group —
-    /// groups belong to one event). People already on this team are left alone. Returns how many were added.
+    /// Adds the active people from another event's team with the role, title, directory setting,
+    /// and card order they had there — but no group, since groups belong to one event. People
+    /// already on this team are left alone. Returns how many were added.
     /// </summary>
     public async Task<int> CopyFromEventAsync(Guid sourceEventId, Guid eventId)
     {
@@ -122,18 +136,23 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory)
         var source = await db.EventStaff
             .Where(s => s.EventId == sourceEventId && s.User.IsActive
                 && !db.EventStaff.Any(t => t.EventId == eventId && t.UserId == s.UserId))
-            .Select(s => new { s.UserId, s.UserRoleId })
+            .Select(s => new { s.UserId, s.UserRoleId, s.Title, s.ShowInDirectory, s.SortOrder })
             .ToListAsync();
+        var offset = await NextSortOrderAsync(db, eventId);
         foreach (var s in source)
             db.EventStaff.Add(new EventStaff
             {
-                EventStaffId = Guid.NewGuid(),
-                EventId      = eventId,
-                UserId       = s.UserId,
-                UserRoleId   = s.UserRoleId,
-                AddedAt      = CampTime.Now
+                EventStaffId    = Guid.NewGuid(),
+                EventId         = eventId,
+                UserId          = s.UserId,
+                UserRoleId      = s.UserRoleId,
+                Title           = s.Title,
+                ShowInDirectory = s.ShowInDirectory,
+                SortOrder       = offset + s.SortOrder,
+                AddedAt         = CampTime.Now
             });
         await db.SaveChangesAsync();
+        directory.Invalidate(eventId);
         return source.Count;
     }
 
@@ -149,23 +168,104 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory)
         return rows.Select(r => (r.Event, r.Size)).ToList();
     }
 
-    /// <summary>Any account (active or not) with this email, so "invite" doesn't create a duplicate.</summary>
-    public async Task<User?> FindUserByEmailAsync(string email)
+    /// <summary>Anyone (active or not) with this email, so adding someone doesn't create a duplicate.</summary>
+    public async Task<User?> FindUserByEmailAsync(string email, Guid? exceptUserId = null)
     {
-        using var db = factory.CreateDbContext();
         var normalized = email.Trim().ToLowerInvariant();
-        return await db.Users.AsNoTracking().Include(u => u.UserRole).FirstOrDefaultAsync(u => u.Email == normalized);
+        if (normalized.Length == 0) return null;
+        using var db = factory.CreateDbContext();
+        return await db.Users.AsNoTracking().Include(u => u.UserRole)
+            .FirstOrDefaultAsync(u => u.Email == normalized && u.UserId != exceptUserId);
     }
 
-    /// <summary>Team members who have a Hub staff-directory card at this event.</summary>
-    public async Task<HashSet<Guid>> GetDirectoryUserIdsAsync(Guid eventId)
+    // ── People (entered once, reused on every event) ─────────────────────────
+
+    /// <summary>
+    /// Creates someone who is only on teams/directories and can't sign in. (People who can sign in
+    /// are created through AuthService and then invited.)
+    /// </summary>
+    public async Task<User> CreateListedPersonAsync(PersonDetails d, Guid userRoleId)
     {
         using var db = factory.CreateDbContext();
-        var ids = await db.StaffMembers
-            .Where(m => m.CampEventId == eventId && m.LinkedUserId != null)
-            .Select(m => m.LinkedUserId!.Value)
-            .ToListAsync();
-        return ids.ToHashSet();
+        var user = new User
+        {
+            UserId       = Guid.NewGuid(),
+            UserRoleId   = userRoleId,
+            FirstName    = d.FirstName.Trim(),
+            LastName     = d.LastName.Trim(),
+            Email        = (d.Email ?? "").Trim().ToLowerInvariant(),
+            Phone        = string.IsNullOrWhiteSpace(d.Phone) ? null : d.Phone.Trim(),
+            AvatarEmoji  = string.IsNullOrWhiteSpace(d.AvatarEmoji) ? "👤" : d.AvatarEmoji.Trim(),
+            PasswordHash = "",
+            CanSignIn    = false,
+            IsActive     = true
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return user;
+    }
+
+    /// <summary>Updates name, email, phone, and emoji. Shows everywhere they're listed.</summary>
+    public async Task UpdatePersonAsync(Guid userId, PersonDetails d)
+    {
+        using var db = factory.CreateDbContext();
+        var user = await db.Users.FirstAsync(u => u.UserId == userId);
+        user.FirstName   = d.FirstName.Trim();
+        user.LastName    = d.LastName.Trim();
+        user.Email       = (d.Email ?? "").Trim().ToLowerInvariant();
+        user.Phone       = string.IsNullOrWhiteSpace(d.Phone) ? null : d.Phone.Trim();
+        user.AvatarEmoji = string.IsNullOrWhiteSpace(d.AvatarEmoji) ? "👤" : d.AvatarEmoji.Trim();
+        await db.SaveChangesAsync();
+        await InvalidateDirectoriesAsync(db, userId);
+    }
+
+    /// <summary>Sets (or, with null data, removes) the photo, and its crop position.</summary>
+    public async Task SetPhotoAsync(Guid userId, byte[]? data, string? contentType, string? objectPosition, bool keepExisting)
+    {
+        using var db = factory.CreateDbContext();
+        var user = await db.Users.FirstAsync(u => u.UserId == userId);
+        if (!keepExisting)
+        {
+            user.PhotoData        = data;
+            user.PhotoContentType = data is null ? null : contentType;
+        }
+        user.PhotoObjectPosition = user.PhotoData is null ? null : objectPosition;
+        await db.SaveChangesAsync();
+        await InvalidateDirectoriesAsync(db, userId);
+    }
+
+    /// <summary>
+    /// Turns sign-in on or off. Turning it off keeps their password but login, forgot-password,
+    /// and reset links refuse them. Turning it on for someone who never had a password needs an
+    /// invite link (the caller sends it).
+    /// </summary>
+    public async Task SetCanSignInAsync(Guid userId, bool canSignIn)
+    {
+        using var db = factory.CreateDbContext();
+        var user = await db.Users.FirstAsync(u => u.UserId == userId);
+        user.CanSignIn = canSignIn;
+        await db.SaveChangesAsync();
+    }
+
+    // Name/phone/photo changes show on every event's directory the person is in.
+    private async Task InvalidateDirectoriesAsync(AppDbContext db, Guid userId)
+    {
+        foreach (var eventId in await db.EventStaff.Where(s => s.UserId == userId).Select(s => s.EventId).ToListAsync())
+            directory.Invalidate(eventId);
+    }
+
+    /// <summary>The title on their directory card at this event, and whether the card is shown.</summary>
+    public async Task UpdateDirectoryAsync(Guid eventStaffId, string? title, bool showInDirectory)
+    {
+        using var db = factory.CreateDbContext();
+        var row = await db.EventStaff.FindAsync(eventStaffId)
+            ?? throw new InvalidOperationException("That team member no longer exists.");
+        if (showInDirectory && !row.ShowInDirectory)
+            row.SortOrder = await NextSortOrderAsync(db, row.EventId);   // newly shown cards go last
+        row.Title           = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
+        row.ShowInDirectory = showInDirectory;
+        await db.SaveChangesAsync();
+        directory.Invalidate(row.EventId);
     }
 
     /// <summary>Changes the role label and group. The group must belong to the same event.</summary>
@@ -189,5 +289,6 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory)
         if (row is null) return;
         db.EventStaff.Remove(row);
         await db.SaveChangesAsync();
+        directory.Invalidate(row.EventId);
     }
 }

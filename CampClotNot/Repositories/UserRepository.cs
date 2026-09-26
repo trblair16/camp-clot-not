@@ -11,7 +11,7 @@ public class UserRepository(IDbContextFactory<AppDbContext> factory) : IUserRepo
         using var db = factory.CreateDbContext();
         return await db.Users
             .Include(u => u.UserRole)
-            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant() && u.IsActive);
+            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant() && u.IsActive && u.CanSignIn);
     }
 
     public async Task<List<User>> GetAllAsync()

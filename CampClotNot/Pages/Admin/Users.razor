@@ -31,8 +31,8 @@
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/key.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Accounts</h2>
     <p style="font-size:13px;color:var(--text-mid);margin:-12px 0 18px;max-width:760px">
-        Sign-in accounts for staff and volunteers: passwords, deactivation, and what someone can do in the app.
-        To put people on an event, use <a href="/admin/team" style="color:var(--black);font-weight:700">Team</a> — it can create accounts too.
+        Everyone who can sign in to the app, across all events: passwords, deactivation, and what someone can do in the app.
+        To put people on an event (or add someone who only needs to be listed, like a speaker), use <a href="/admin/team" style="color:var(--black);font-weight:700">Team</a>.
     </p>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
@@ -462,7 +462,7 @@
     protected override async Task OnInitializedAsync()
     {
         _activeEvent = await ActiveEventSvc.GetActiveEventAsync();
-        _users  = await AuthSvc.GetAllUsersAsync();
+        _users  = (await AuthSvc.GetAllUsersAsync()).Where(u => u.CanSignIn).ToList();
         _form = NewForm();
         _loading = false;
     }
@@ -512,7 +512,7 @@
 
         _mobileFormOpen = false;
         _form = NewForm();
-        _users = await AuthSvc.GetAllUsersAsync();
+        _users = (await AuthSvc.GetAllUsersAsync()).Where(u => u.CanSignIn).ToList();
     }
 
     private async Task AddToEventStaffAsync(User user)
@@ -584,7 +584,7 @@
         }
         await AuthSvc.UpdateUserAsync(_editing!.UserId, _editForm.FirstName, _editForm.LastName, _editForm.Email, _editForm.Role);
         Snackbar.Add($"{_editForm.FirstName} {_editForm.LastName} updated.", Severity.Success);
-        _users = await AuthSvc.GetAllUsersAsync();
+        _users = (await AuthSvc.GetAllUsersAsync()).Where(u => u.CanSignIn).ToList();
         CloseEditDialog();
     }
 
@@ -633,7 +633,7 @@
             yesText: "Deactivate", cancelText: "Cancel");
         if (result != true) return;
         await AuthSvc.DeactivateUserAsync(u.UserId);
-        _users = await AuthSvc.GetAllUsersAsync();
+        _users = (await AuthSvc.GetAllUsersAsync()).Where(u => u.CanSignIn).ToList();
         Snackbar.Add($"{u.FirstName} {u.LastName} deactivated.", Severity.Info);
     }
 

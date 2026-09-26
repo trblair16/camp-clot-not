@@ -7,9 +7,9 @@ namespace CampClotNot.Services;
 /// Opt-in copies for "Copy setup from…" on /admin/events. Enabled capabilities and
 /// schedule item types are always copied; these are the event-scoped extras.
 /// #311 adds per-event staff assignments here as one more flag + copy step.
-public record EventCopyOptions(bool Sponsors, bool StaffDirectory, bool Activities, bool EventStaff = false)
+public record EventCopyOptions(bool Sponsors, bool Activities, bool EventStaff = false)
 {
-    public static readonly EventCopyOptions None = new(false, false, false);
+    public static readonly EventCopyOptions None = new(false, false);
 }
 
 public record NewEventRequest(
@@ -19,7 +19,7 @@ public record NewEventRequest(
     Guid? CopyFromEventId,
     EventCopyOptions Copy);
 
-public record CopyCounts(int Sponsors, int StaffDirectory, int Activities, int EventStaff);
+public record CopyCounts(int Sponsors, int Activities, int EventStaff);
 
 public class EventSetupService(
     IDbContextFactory<AppDbContext> factory,
@@ -31,7 +31,6 @@ public class EventSetupService(
         using var db = factory.CreateDbContext();
         return new CopyCounts(
             await db.Sponsors.CountAsync(s => s.EventId == sourceEventId),
-            await db.StaffMembers.CountAsync(s => s.CampEventId == sourceEventId),
             await db.Activities.CountAsync(a => a.EventId == sourceEventId),
             await db.EventStaff.CountAsync(s => s.EventId == sourceEventId && s.User.IsActive));
     }
@@ -104,20 +103,6 @@ public class EventSetupService(
                 }
             }
 
-            if (req.Copy.StaffDirectory)
-            {
-                foreach (var m in await db.StaffMembers.AsNoTracking().Where(m => m.CampEventId == src).ToListAsync())
-                {
-                    db.StaffMembers.Add(new StaffMember
-                    {
-                        StaffMemberId = Guid.NewGuid(), CampEventId = eventId,
-                        DisplayName = m.DisplayName, RoleTitle = m.RoleTitle, Phone = m.Phone, Email = m.Email,
-                        PhotoData = m.PhotoData, PhotoContentType = m.PhotoContentType, PhotoObjectPosition = m.PhotoObjectPosition,
-                        AvatarEmoji = m.AvatarEmoji, IsVisible = m.IsVisible, SortOrder = m.SortOrder, LinkedUserId = m.LinkedUserId
-                    });
-                }
-            }
-
             if (req.Copy.Activities)
             {
                 // Activities only — board spaces and scripted games are the old event's game setup.
@@ -138,14 +123,15 @@ public class EventSetupService(
                 // source event's group ids would point at the wrong event.
                 var staff = await db.EventStaff.AsNoTracking()
                     .Where(s => s.EventId == src && s.User.IsActive)
-                    .Select(s => new { s.UserId, s.UserRoleId })
+                    .Select(s => new { s.UserId, s.UserRoleId, s.Title, s.ShowInDirectory, s.SortOrder })
                     .ToListAsync();
                 foreach (var s in staff)
                 {
                     db.EventStaff.Add(new EventStaff
                     {
                         EventStaffId = Guid.NewGuid(), EventId = eventId,
-                        UserId = s.UserId, UserRoleId = s.UserRoleId, AddedAt = CampTime.Now
+                        UserId = s.UserId, UserRoleId = s.UserRoleId, AddedAt = CampTime.Now,
+                        Title = s.Title, ShowInDirectory = s.ShowInDirectory, SortOrder = s.SortOrder
                     });
                 }
             }

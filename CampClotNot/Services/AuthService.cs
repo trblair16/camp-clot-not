@@ -20,7 +20,9 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         DateTimeOffset? expiresUtc = null)
     {
         var user = await users.GetByEmailAsync(email);
-        if (user is null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        // People who are only listed on a team (CanSignIn false) have no password to check.
+        if (user is null || !user.IsActive || !user.CanSignIn || string.IsNullOrEmpty(user.PasswordHash)
+            || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             return LoginResult.Failed;
 
         await SignInUserAsync(httpContext, user, user.MustChangePassword, rememberMe, expiresUtc);

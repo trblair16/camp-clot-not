@@ -16,4 +16,9 @@ public class EventStaff
     public Guid? GroupId { get; set; }      // must belong to EventId (service-enforced)
     public Group? Group { get; set; }
     public DateTime AddedAt { get; set; }
+
+    // Hub staff directory at this event: shown or not, the title on their card, and card order.
+    public string? Title { get; set; }
+    public bool ShowInDirectory { get; set; }
+    public int SortOrder { get; set; }
 }

@@ -46,7 +46,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     // Hub (Camp Info)
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<InfoPage> InfoPages => Set<InfoPage>();
-    public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<ScheduleItem> ScheduleItems => Set<ScheduleItem>();
     public DbSet<ScheduleItemGroup> ScheduleItemGroups => Set<ScheduleItemGroup>();

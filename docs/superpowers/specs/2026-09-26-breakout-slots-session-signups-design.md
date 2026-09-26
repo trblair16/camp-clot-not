@@ -489,6 +489,34 @@ warnings, plus a walkthrough on local Postgres 16 with headless Chromium:
 - **Groups are scoped to the active event.** `GroupService.GetAllAsync` returned every event's groups
   (leaderboard, transactions, board, admin), and `/admin/groups` created new groups under the first
   existing group's event. The CCN group seed is insert-only now (pitfall #19).
+- **The staff directory merged into the team** (Tyler, 2026-09-26). Keeping `StaffMember` directory
+  cards separate from `EventStaff` meant re-entering the same photo and phone for every event and
+  keeping two records in sync. Now:
+  - A person is a `User` row. It gains `Phone`, `PhotoData`/`PhotoContentType`/`PhotoObjectPosition`,
+    and `AvatarEmoji`, entered once and reused on every event. It also gains **`CanSignIn`**: false
+    for people who are only listed (a nurse line, a speaker). Login, forgot-password, and reset links
+    all refuse them, and a person without sign-in has an empty `PasswordHash`.
+  - `EventStaff` gains the per-event directory fields: `Title`, `ShowInDirectory`, and `SortOrder`.
+  - `StaffMember` and `/admin/staff` are gone. `/admin/staff` routes to **Team**, which now has an
+    Edit dialog (contact details, photo with crop sliders, the title on their card, Show in Hub
+    directory, and Can sign in, which sends an invite when turned on) and a **Hub directory order**
+    tab (drag or arrows). `/hub/staff` reads from `StaffDirectoryService` (team rows with
+    `ShowInDirectory`). `/staff-photo/{userId}` only serves photos of people shown in some
+    directory, and `/admin/person-photo/{userId}` is the Admin-only preview.
+  - "Person" is only a data-model term. The UI says team member, "From past events" / "Someone new",
+    and "Can sign in to the app".
+  - Event duplication's "Staff directory" option is gone, because the "Team" copy brings titles,
+    directory settings, and order.
+  - **Migration `MergeStaffDirectoryIntoTeam`:**
+    - Linked cards move their photo, phone, and emoji onto the person (preferring a card with a
+      photo), and their title, visibility, and order onto that event's team row (created if missing).
+    - Unlinked cards become people without sign-in, one per distinct name (case- and
+      space-insensitive), each on the teams of the events where they had a card.
+    - Every existing account keeps `CanSignIn = true`.
+    - Down rebuilds cards from the team rows shown in the directory. It's best effort: people without
+      sign-in stay as users.
+    - Verified on Postgres, including a person with cards at two events and "Nurse Line" /
+      "nurse line " merging into one person.
 - **`returnUrl` is also carried through `/change-password`,** so a staff member whose first sign-in
   is from a QR scan (temporary password) still lands back on the check-in.
 - **Page files:** `Pages/Admin/EventStaffAdmin.razor` (to avoid clashing with the `EventStaff`

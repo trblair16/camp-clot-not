@@ -503,13 +503,13 @@ Groups 5 & 6 removed from seed. SeedGroupsAsync upserts by ID and purges stale e
 | Competition | `CurrencyType`, `Group`, `Transaction`, `BoardSpace`, `GroupBoardPos`, `ScriptedBlockHit`, `ScriptedMiniGame` |
 | Awards | `AwardType`, `CamperAward` |
 | Auth/RBAC | `UserRole`, `Authority`, `UserRoleAuthorityLink`, `UserAuthorityLink`, `User` |
-| Hub (Camp Info) | `Location`, `InfoPage`, `StaffMember`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor`, `CampDocument` |
+| Hub (Camp Info) | `Location`, `InfoPage`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor`, `CampDocument` |
 | Guests | `GuestAttendee`, `GuestEventVisit`, `PushSubscription`, `ScheduleItemAttendance`, `ScheduleItemRegistration` |
-| Per-event staff | `EventStaff` (user + role label + group at one event; replaces `User.GroupId`) |
+| Per-event staff | `EventStaff` (a person on one event's team: role label, group, Hub directory title/visibility/order). A person is a `User` row (contact details and photo entered once; `CanSignIn` false for listed-only people). The old per-event `StaffMember` directory cards were merged into this (#311). |
 | Auth extras | `PasswordResetToken` (SHA-256 hashed, single-use) |
 | Games (post-camp) | `BowserScript` |
 
-**Event-scoped vs global:** `Location` and `InfoPage` are **global** (no `EventId`) and shared by every event. Groups, activities, sponsors, staff directory cards, documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` itself is global. Who is staff at an event is `EventStaff` (#311), and that's what rosters, bulk sign-up, and "all staff" use. Its role is a label only: permissions still come from `User.UserRoleId`.
+**Event-scoped vs global:** `Location` and `InfoPage` are **global** (no `EventId`) and shared by every event. Groups, activities, sponsors, team members (`EventStaff`), documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` itself is global. Who is staff at an event is `EventStaff` (#311), and that's what rosters, bulk sign-up, and "all staff" use. Its role is a label only: permissions still come from `User.UserRoleId`.
 
 **Column convention:** `Name` + `Description` + `SystemName` on all reference/catalog tables.
 
@@ -571,7 +571,8 @@ Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-.
 | `CampClotNot/Services/ScheduleVisibility.cs` | Which items a person sees given breakout picks (shared by `/hub/schedule` and the Dashboard) |
 | `CampClotNot/Services/ScheduleImportService.cs` | Schedule setup: lenient time/day parsing, .xlsx template (ClosedXML), spreadsheet/paste import with preview, copy a past event's schedule |
 | `CampClotNot/Pages/CheckIn.razor` | `/checkin/{code}`, the landing page for a session's QR code |
-| `CampClotNot/Pages/Admin/Breakouts.razor` / `Team.razor` | `/admin/breakouts` / `/admin/team` (the one page for staffing an event: add or invite people, role and group at this event, Hub directory toggle; `/admin/event-staff` still routes here) |
+| `CampClotNot/Pages/Admin/Breakouts.razor` / `Team.razor` | `/admin/breakouts` / `/admin/team`: the one page for staffing an event and its Hub staff directory. Add from past events or someone new (with or without sign-in), role and group at this event, edit contact details and photo, directory title and order. `/admin/event-staff` and `/admin/staff` route here |
+| `CampClotNot/Services/StaffDirectoryService.cs` | Hub staff directory cards (team rows with `ShowInDirectory`), order, cache |
 | `CampClotNot/Services/PushNotificationService.cs` | Web Push (VAPID) to guest subscriptions (singleton) |
 | `CampClotNot/Services/PasswordResetService.cs` | Reset/invite tokens, `ForgotPasswordQueue` + background worker, `PublicBaseUrl` |
 | `CampClotNot/Services/Email/` | `IEmailSender`, `ResendEmailSender` (HTTPS API), `EmailTemplates` |

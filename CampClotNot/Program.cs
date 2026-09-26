@@ -313,13 +313,26 @@ try
         return Results.File(s.LogoData, s.LogoContentType ?? "image/jpeg");
     });
 
+    // Staff directory photos, by person (UserId). Only served for people shown in some event's
+    // Hub directory, since the route is anonymous (the Hub page is also used by guests).
     app.MapGet("/staff-photo/{id:guid}", async (Guid id, IDbContextFactory<AppDbContext> factory) =>
     {
         using var db = factory.CreateDbContext();
-        var member = await db.StaffMembers.FindAsync(id);
-        if (member?.PhotoData is null) return Results.NotFound();
-        return Results.File(member.PhotoData, member.PhotoContentType ?? "image/jpeg");
+        var photo = await db.Users.AsNoTracking()
+            .Where(u => u.UserId == id && u.PhotoData != null && db.EventStaff.Any(s => s.UserId == id && s.ShowInDirectory))
+            .Select(u => new { u.PhotoData, u.PhotoContentType })
+            .FirstOrDefaultAsync();
+        return photo is null ? Results.NotFound() : Results.File(photo.PhotoData!, photo.PhotoContentType ?? "image/jpeg");
     }).AllowAnonymous();
+
+    // Any person's photo, for the Team page's editor (Admins only).
+    app.MapGet("/admin/person-photo/{id:guid}", async (Guid id, IDbContextFactory<AppDbContext> factory) =>
+    {
+        using var db = factory.CreateDbContext();
+        var photo = await db.Users.AsNoTracking().Where(u => u.UserId == id && u.PhotoData != null)
+            .Select(u => new { u.PhotoData, u.PhotoContentType }).FirstOrDefaultAsync();
+        return photo is null ? Results.NotFound() : Results.File(photo.PhotoData!, photo.PhotoContentType ?? "image/jpeg");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
 
     app.MapGet("/location-image/{id:guid}", async (Guid id, IDbContextFactory<AppDbContext> factory) =>
     {
