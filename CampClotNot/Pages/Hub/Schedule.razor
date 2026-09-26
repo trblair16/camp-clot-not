@@ -10,6 +10,7 @@
 @inject ActiveEventService ActiveEventSvc
 @inject GuestAccessService GuestSvc
 @inject AttendanceService AttendanceSvc
+@inject RegistrationService RegistrationSvc
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -197,6 +198,7 @@
                                     {
                                         <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@displayActivity.Name</div>
                                     }
+                                    @BreakoutLine(ev)
                                     <div class="sched-inline-meta">
                                         <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:@ItemTypeBadgeColor(ev.ScheduleItemType?.BadgeColor, ev.ScheduleItemType?.SystemName);color:white;font-family:var(--font-display);font-weight:700;display:inline-block">@DisplayItemTypeBadge(ev.ScheduleItemType, displayActivity)</span>
                                         @if (displayLocation is not null)
@@ -286,6 +288,7 @@
                                     <td style="overflow-wrap:break-word;word-break:break-word;min-width:0">
                                         <span style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text-dark)">@ev.Title</span>
                                         @if (dispAct is not null) { <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">@dispAct.Name</div> }
+                                        @BreakoutLine(ev)
                                         @if (ShowCheckIn(ev)) { @CheckInControl(ev) }
                                         @if (ev.ScheduleItemType?.SystemName == "Presentation" && ev.PresenterName is not null)
                                         {
@@ -420,6 +423,11 @@
                 </div>
             }
 
+            @if (md.IsBreakoutSlot || md.ParentScheduleItemId is not null)
+            {
+                <div style="margin-bottom:14px">@BreakoutLine(md)</div>
+            }
+
             @if (ShowCheckIn(md))
             {
                 <div style="margin-bottom:14px">@CheckInControl(md)</div>
@@ -508,6 +516,82 @@
     </div>
 }
 
+@if (_pickerSlot is not null)
+{
+    var slot = _pickerSlot;
+    var options = _allEvents.Where(o => o.ParentScheduleItemId == slot.ScheduleItemId)
+        .OrderBy(o => o.StartTime).ThenBy(o => o.Title).ToList();
+    <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:160;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease"
+         @onclick="ClosePicker">
+        <div class="ccn-panel" style="padding:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;box-shadow:8px 8px 0 var(--border-color);animation:popIn .25s ease" @onclick:stopPropagation>
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+                <div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text-dark)">@slot.Title</div>
+                <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-light);line-height:1;padding:0 0 0 12px" @onclick="ClosePicker">✕</button>
+            </div>
+            <div style="font-size:12px;color:var(--text-mid);margin-bottom:14px">@slot.CampDay.ToString("dddd, MMM d") · Choose one session.</div>
+
+            @if (_pickerMessage is not null)
+            {
+                <div style="background:#FEE2E2;border:2px solid #E83030;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:#C0392B">@_pickerMessage</div>
+            }
+
+            @if (_pickerChoice is { } choice)
+            {
+                <div style="border:var(--panel-border);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--bg-base)">
+                    <div style="font-family:var(--font-display);font-weight:700;font-size:15px">@choice.Title</div>
+                    <div style="font-size:12px;color:var(--text-mid);margin-top:2px">@TimeRange(choice)@(choice.Location is not null ? $" · {choice.Location.Name}" : "")</div>
+                </div>
+                <div style="font-size:13px;color:var(--text-mid);margin-bottom:14px">You can't change this later — ask an Admin if you need to switch.</div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                    <button class="ccn-btn" style="background:transparent" @onclick="() => _pickerChoice = null">Back</button>
+                    <button class="ccn-btn" style="background:var(--color-primary)" disabled="@_signingUp" @onclick="ConfirmSignUp">Sign me up</button>
+                </div>
+            }
+            else if (!options.Any())
+            {
+                <p style="font-size:13px;color:var(--text-light);font-weight:700">No sessions have been added yet. Check back later.</p>
+            }
+            else
+            {
+                @foreach (var o in options)
+                {
+                    var taken = _optionCounts.GetValueOrDefault(o.ScheduleItemId);
+                    var full = o.MaxCapacity is { } cap && taken >= cap;
+                    var opt = o;
+                    <div style="border:var(--panel-border);border-radius:8px;padding:12px;margin-bottom:10px;background:@(full ? "#EEE" : "var(--panel-bg)");box-shadow:3px 3px 0 var(--border-color);opacity:@(full ? ".7" : "1")">
+                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+                            <div style="min-width:0">
+                                <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark)">@o.Title</div>
+                                <div style="font-size:12px;color:var(--text-mid);margin-top:2px">@TimeRange(o)</div>
+                                @if (o.Location is not null)
+                                {
+                                    <div style="margin-top:4px"><span style="font-size:11px;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@o.Location.Name</span></div>
+                                }
+                                @if (!string.IsNullOrEmpty(o.PresenterName)) { <div style="font-size:12px;color:var(--text-mid);margin-top:4px">🎤 @o.PresenterName</div> }
+                                @if (!string.IsNullOrEmpty(o.Description)) { <div style="font-size:12px;color:var(--text-light);margin-top:4px">@o.Description</div> }
+                            </div>
+                            <div style="flex-shrink:0;text-align:right">
+                                @if (full)
+                                {
+                                    <span style="font-size:12px;padding:3px 10px;border-radius:5px;background:#9E9E9E;color:white;font-family:var(--font-display);font-weight:700">Full</span>
+                                }
+                                else
+                                {
+                                    <button class="ccn-btn" style="font-size:12px;padding:5px 14px" @onclick="() => { _pickerChoice = opt; _pickerMessage = null; }">Pick</button>
+                                    @if (o.MaxCapacity is { } c)
+                                    {
+                                        <div style="font-size:11px;color:var(--text-mid);margin-top:4px;font-weight:700">@(c - taken) spot@(c - taken == 1 ? "" : "s") left</div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
 @if (_showForm)
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease" @onmousedown="CloseForm">
@@ -555,9 +639,50 @@
                     <MudTextField @bind-Value="_fLocationOther" Label="Additional Information (optional)" Placeholder="e.g. Gym + Pool deck" Class="mb-3" />
                 </div>
 
-                <div class="full">
-                    <MudCheckBox @bind-Checked="_fTrackAttendance" Label="Track attendance (shows an &quot;I'm here&quot; button)" Class="mb-3" />
+                <div class="full" style="margin-bottom:12px">
+                    <label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:4px">Breakout</label>
+                    <select value="@(_fIsSlot ? "slot" : _fParentId?.ToString() ?? "")"
+                            @onchange="e => OnBreakoutChanged(e.Value?.ToString())"
+                            style="width:100%;padding:8px 10px;border:2px solid var(--border-color);border-radius:6px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--bg-base)">
+                        <option value="">None — a regular item</option>
+                        <option value="slot">This is a breakout slot (people pick one option)</option>
+                        @foreach (var sl in _allEvents.Where(x => x.IsBreakoutSlot && x.ScheduleItemId != _editingId))
+                        {
+                            <option value="@sl.ScheduleItemId">Option in: @sl.Title (@sl.CampDay.ToString("ddd M/d") @sl.StartTime.ToString("h:mm tt"))</option>
+                        }
+                    </select>
+                    @if (_fIsSlot)
+                    {
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;font-weight:700;cursor:pointer">
+                            <input type="checkbox" checked="@_fAllowSelfSignup" @onchange="() => _fAllowSelfSignup = !_fAllowSelfSignup" /> Allow self sign-up
+                        </label>
+                    }
+                    else if (_fParentId is not null)
+                    {
+                        <label style="font-size:12px;color:var(--text-light);display:block;margin:8px 0 4px">Capacity (blank = unlimited)</label>
+                        <input type="number" min="1" value="@_fCapacity"
+                               @onchange="e => _fCapacity = int.TryParse(e.Value?.ToString(), out var c) && c > 0 ? c : null"
+                               style="width:100%;padding:8px 10px;border:2px solid var(--border-color);border-radius:6px;font-size:14px;background:var(--bg-base);box-sizing:border-box" />
+                    }
                 </div>
+
+                @if (!_fIsSlot)
+                {
+                    <div class="full" style="margin-bottom:12px">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;cursor:pointer">
+                            <input type="checkbox" checked="@_fTrackAttendance" @onchange="() => _fTrackAttendance = !_fTrackAttendance" /> Track attendance (button or QR code)
+                        </label>
+                        @if (_fTrackAttendance)
+                        {
+                            <select value="@_fCheckInMode.ToString()"
+                                    @onchange="e => _fCheckInMode = Enum.TryParse<SelfCheckInMode>(e.Value?.ToString(), out var m) ? m : SelfCheckInMode.ButtonAndQr"
+                                    style="width:100%;margin-top:6px;padding:8px 10px;border:2px solid var(--border-color);border-radius:6px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--bg-base)">
+                                <option value="@SelfCheckInMode.ButtonAndQr">"I'm here" button + QR code</option>
+                                <option value="@SelfCheckInMode.QrOnly">QR code only (must be in the room)</option>
+                            </select>
+                        }
+                    </div>
+                }
 
                 @if (SelectedTypeSystemName == "Presentation")
                 {
@@ -629,6 +754,10 @@
                 }
             </div>
 
+            @if (_formError is not null)
+            {
+                <div style="color:#D12B2B;font-size:13px;font-weight:700;margin-bottom:10px">@_formError</div>
+            }
             <div style="display:flex;gap:8px;justify-content:flex-end">
                 <button class="ccn-btn" style="background:transparent;border-color:var(--text-dark);color:var(--text-dark)" @onclick="CloseForm">Cancel</button>
                 <button class="ccn-btn" @onclick="SaveEvent">Save</button>
@@ -676,7 +805,22 @@
     private string? _fPresenterName;
     private string? _fPresenterBio;
     private bool _fTrackAttendance;
+    private SelfCheckInMode _fCheckInMode;
+    private bool _fIsSlot;
+    private bool _fAllowSelfSignup = true;
+    private Guid? _fParentId;
+    private int? _fCapacity;
+    private string? _formError;
     private List<AssignmentFormRow> _fAssignments = new();
+
+    // Breakouts
+    private List<ScheduleItem> _allEvents = new();
+    private Dictionary<Guid, Guid> _myRegs = new();      // slot id → my option id
+    private Dictionary<Guid, int> _optionCounts = new();
+    private ScheduleItem? _pickerSlot;
+    private ScheduleItem? _pickerChoice;
+    private string? _pickerMessage;
+    private bool _signingUp;
     private bool _assignmentsExpanded;
 
     private string? SelectedTypeSystemName =>
@@ -694,6 +838,7 @@
         _eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
         _user = authState.User;
         _myCheckIns = await AttendanceSvc.GetMyCheckedInItemIdsAsync(_user, _eventId);
+        _myRegs = await RegistrationSvc.GetMyRegistrationsAsync(_user, _eventId);
 
         // Run all independent reference-data queries in parallel — each on its own DbContext
         // instance, since DbContext isn't thread-safe for concurrent operations on one instance.
@@ -746,14 +891,20 @@
     private async Task LoadEvents()
     {
         var events = await ScheduleSvc.GetByEventAsync(_eventId);
+        _allEvents = events;
+        _optionCounts = await RegistrationSvc.GetOptionCountsAsync(_eventId);
 
         if (!_isAdminOrStaff && !_userGroupId.HasValue)
             events = events.Where(e => e.AppliesToAllGroups).ToList();
 
+        // Breakouts: Admins see every option under its slot; everyone else sees their pick (or
+        // the slot placeholder) and never the options they didn't choose.
+        events = ScheduleVisibility.Apply(events, _canEdit, _myRegs);
+
         _eventsByDay = events
             .GroupBy(e => e.CampDay)
             .OrderBy(g => g.Key)
-            .ToDictionary(g => g.Key, g => g.OrderBy(e => e.StartTime).ToList());
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         _loading = false;
     }
@@ -777,6 +928,9 @@
         _fActivityId    = null;
         _fPresenterName = null; _fPresenterBio = null;
         _fTrackAttendance = false;
+        _fCheckInMode     = SelfCheckInMode.ButtonAndQr;
+        _fIsSlot = false; _fAllowSelfSignup = true; _fParentId = null; _fCapacity = null;
+        _formError = null;
         _fAssignments        = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _showForm            = true;
@@ -797,6 +951,7 @@
         _fPresenterName = ev.PresenterName;
         _fPresenterBio  = ev.PresenterBio;
         _fTrackAttendance = ev.TrackAttendance;
+        SetBreakoutFields(ev);
         _fAssignments = _groups.Select(g =>
         {
             var existing = ev.ItemGroups.FirstOrDefault(eg => eg.GroupId == g.GroupId);
@@ -830,12 +985,40 @@
         _fPresenterName   = ev.PresenterName;
         _fPresenterBio    = ev.PresenterBio;
         _fTrackAttendance = ev.TrackAttendance;
+        SetBreakoutFields(ev);
+        // Copying an option makes another option in the same slot, so it stays on the slot's day.
+        if (_fParentId is not null) _fDate = ev.CampDay.ToDateTime(TimeOnly.MinValue);
         _fAssignments     = _groups.Select(g => new AssignmentFormRow { GroupId = g.GroupId }).ToList();
         _assignmentsExpanded = false;
         _showForm = true;
     }
 
     private void CloseForm() { _showForm = false; _copyingFromTitle = null; }
+
+    private void SetBreakoutFields(ScheduleItem ev)
+    {
+        _fCheckInMode     = ev.SelfCheckInMode;
+        _fIsSlot          = ev.IsBreakoutSlot;
+        _fAllowSelfSignup = ev.AllowSelfSignup;
+        _fParentId        = ev.ParentScheduleItemId;
+        _fCapacity        = ev.MaxCapacity;
+        _formError        = null;
+    }
+
+    private void OnBreakoutChanged(string? value)
+    {
+        _fIsSlot = value == "slot";
+        _fParentId = Guid.TryParse(value, out var id) ? id : null;
+        if (_fParentId is { } pid && _allEvents.FirstOrDefault(e => e.ScheduleItemId == pid) is { } slot)
+        {
+            _fDate = slot.CampDay.ToDateTime(TimeOnly.MinValue);
+            if (_editingId == Guid.Empty || string.IsNullOrWhiteSpace(_fStartStr))
+            {
+                _fStartStr = slot.StartTime.ToString("h:mm tt");
+                _fEndStr   = slot.EndTime?.ToString("h:mm tt") ?? "";
+            }
+        }
+    }
 
     private async Task SaveEvent()
     {
@@ -858,13 +1041,25 @@
             end,
             _fTitle, _fDesc, _fLocationId, _fActivityId, _fTypeId,
             !assignments.Any(),
-            null, assignments,
+            _fParentId is not null ? _fCapacity : null, assignments,
             isPresentation ? _fPresenterName : null,
             isPresentation ? _fPresenterBio  : null,
             string.IsNullOrWhiteSpace(_fLocationOther) ? null : _fLocationOther.Trim(),
-            _fTrackAttendance
+            !_fIsSlot && _fTrackAttendance,
+            _fCheckInMode,
+            _fIsSlot,
+            _fAllowSelfSignup,
+            _fIsSlot ? null : _fParentId
         );
-        await ScheduleSvc.UpsertAsync(dto, _userId);
+        try
+        {
+            await ScheduleSvc.UpsertAsync(dto, _userId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _formError = ex.Message;
+            return;
+        }
 
         _selectedDay = DateOnly.FromDateTime(_fDate.Value);
         _showForm = false;
@@ -874,7 +1069,14 @@
 
     private async Task DeleteEvent(Guid id)
     {
-        if (!await JS.InvokeAsync<bool>("confirm", "Delete this schedule item?")) return;
+        var message = "Delete this schedule item?";
+        if (_allEvents.FirstOrDefault(e => e.ScheduleItemId == id) is { IsBreakoutSlot: true } slot)
+        {
+            var (options, signUps) = await ScheduleSvc.GetSlotDeleteImpactAsync(id);
+            if (options > 0)
+                message = $"Delete the breakout slot \"{slot.Title}\"? This also deletes its {options} option{(options == 1 ? "" : "s")}, {signUps} sign-up{(signUps == 1 ? "" : "s")}, and their check-ins.";
+        }
+        if (!await JS.InvokeAsync<bool>("confirm", message)) return;
         await ScheduleSvc.DeleteAsync(id);
         await LoadEvents();
     }
@@ -918,6 +1120,10 @@
             {
                 <span style="font-size:12px;color:#D12B2B;font-weight:700">@msg</span>
             }
+            else if (ev.SelfCheckInMode == SelfCheckInMode.QrOnly)
+            {
+                <span style="font-size:12px;color:var(--text-mid);font-weight:700">📷 Scan the QR code at the session to check in</span>
+            }
             else
             {
                 <button class="ccn-btn" style="font-size:12px;padding:5px 14px"
@@ -941,6 +1147,12 @@
                 case CheckInResult.OutsideWindow:
                     _checkInMessages[scheduleItemId] = "Check-in is closed for this item";
                     break;
+                case CheckInResult.NotRegistered:
+                    _checkInMessages[scheduleItemId] = "You're not signed up for this session";
+                    break;
+                case CheckInResult.QrOnly:
+                    _checkInMessages[scheduleItemId] = "Scan the QR code at the session to check in";
+                    break;
                 default:
                     _checkInMessages[scheduleItemId] = "Check-in isn't available";
                     break;
@@ -949,6 +1161,104 @@
         finally
         {
             _checkingIn.Remove(scheduleItemId);
+        }
+    }
+
+    // ── Breakouts ──
+
+    private static string TimeRange(ScheduleItem ev) => ev.EndTime.HasValue
+        ? $"{ev.StartTime:h:mm tt} – {ev.EndTime.Value:h:mm tt}"
+        : ev.StartTime.ToString("h:mm tt");
+
+    // stopPropagation keeps the "Choose" tap from also opening the mobile detail modal.
+    private RenderFragment BreakoutLine(ScheduleItem ev) => __builder =>
+    {
+        if (ev.IsBreakoutSlot)
+        {
+            if (_canEdit)
+            {
+                var n = _allEvents.Count(o => o.ParentScheduleItemId == ev.ScheduleItemId);
+                <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap" @onclick:stopPropagation="true">
+                    <span style="font-size:11px;padding:1px 8px;border-radius:4px;background:#FFF3C4;border:1px solid #C9A227;font-family:var(--font-display);font-weight:700">🔀 Breakout · @n option@(n == 1 ? "" : "s")@(ev.AllowSelfSignup ? "" : " · assigned")</span>
+                    <a href="/admin/breakouts" style="font-size:11px;font-weight:700;color:var(--black)">Manage →</a>
+                </div>
+            }
+            else if (ev.AllowSelfSignup)
+            {
+                <div style="margin-top:6px" @onclick:stopPropagation="true">
+                    <button class="ccn-btn" style="font-size:12px;padding:5px 14px;background:var(--color-primary)" @onclick="() => OpenPicker(ev)">🔀 Choose your session</button>
+                </div>
+            }
+            else
+            {
+                <div style="margin-top:4px;font-size:12px;color:var(--text-mid);font-weight:700">🔀 Your session will be assigned</div>
+            }
+        }
+        else if (ev.ParentScheduleItemId is { } slotId)
+        {
+            if (_canEdit)
+            {
+                var slotTitle = _allEvents.FirstOrDefault(s => s.ScheduleItemId == slotId)?.Title;
+                var n = _optionCounts.GetValueOrDefault(ev.ScheduleItemId);
+                var over = ev.MaxCapacity is { } c && n > c;
+                <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                    <span style="font-size:11px;color:var(--text-light)">↳ Option in @slotTitle</span>
+                    <span style="font-size:11px;padding:1px 6px;border-radius:4px;background:@(over ? "#FEE2E2" : "#E8F4EA");border:1px solid @(over ? "#D12B2B" : "#27AE60");font-family:var(--font-display);font-weight:700">👥 @n@(ev.MaxCapacity is { } cap ? $" / {cap}" : "")</span>
+                </div>
+            }
+            else
+            {
+                <div style="margin-top:4px">
+                    <span style="font-size:11px;padding:1px 8px;border-radius:4px;background:#E8F4EA;border:1px solid #27AE60;font-family:var(--font-display);font-weight:700">✓ Your session</span>
+                </div>
+            }
+        }
+    };
+
+    private async Task OpenPicker(ScheduleItem slot)
+    {
+        _optionCounts = await RegistrationSvc.GetOptionCountsAsync(_eventId);
+        _pickerSlot = slot;
+        _pickerChoice = null;
+        _pickerMessage = null;
+        _mobileDetailItem = null;
+    }
+
+    private void ClosePicker() { _pickerSlot = null; _pickerChoice = null; _pickerMessage = null; }
+
+    private async Task ConfirmSignUp()
+    {
+        if (_pickerChoice is null || _signingUp) return;
+        _signingUp = true;
+        try
+        {
+            var result = await RegistrationSvc.SelfSignUpAsync(_user, _pickerChoice.ScheduleItemId);
+            switch (result)
+            {
+                case SignUpResult.SignedUp:
+                case SignUpResult.AlreadyInSlot:
+                    _myRegs = await RegistrationSvc.GetMyRegistrationsAsync(_user, _eventId);
+                    ClosePicker();
+                    await LoadEvents();
+                    break;
+                case SignUpResult.Full:
+                    _optionCounts = await RegistrationSvc.GetOptionCountsAsync(_eventId);
+                    _pickerChoice = null;
+                    _pickerMessage = "Sorry — that session just filled up. Pick another.";
+                    break;
+                case SignUpResult.SelfSignupClosed:
+                    _pickerChoice = null;
+                    _pickerMessage = "Sign-up for this slot is closed. An Admin will assign you.";
+                    break;
+                default:
+                    _pickerChoice = null;
+                    _pickerMessage = "You can't sign up for this session.";
+                    break;
+            }
+        }
+        finally
+        {
+            _signingUp = false;
         }
     }
 

@@ -8,6 +8,8 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject ThemeService ThemeSvc
 @inject CapabilityService CapSvc
+@inject RegistrationService RegistrationSvc
+@inject AuthenticationStateProvider Auth
 
 <PageTitle>Home — Camp Clot Not</PageTitle>
 
@@ -202,7 +204,7 @@ else
                         <span style="font-size:11px;color:var(--text-light);white-space:nowrap;min-width:58px;font-weight:700">
                             @ev.StartTime.ToString("h:mm tt")
                         </span>
-                        <span style="font-size:13px;font-weight:700;color:var(--black)">@ev.Title</span>
+                        <span style="font-size:13px;font-weight:700;color:var(--black)">@ev.Title@(ev.IsBreakoutSlot ? " 🔀" : "")</span>
                     </div>
                 }
                 @if (_todayEvents.Count > 5)
@@ -275,7 +277,12 @@ else
         {
             _scheduleDay = today;
         }
-        _todayEvents = await ScheduleSvc.GetForDayAsync(eventId, _scheduleDay);
+        // Same breakout visibility as /hub/schedule: Admins see every option, everyone else sees
+        // their pick (or the slot placeholder).
+        var user = (await Auth.GetAuthenticationStateAsync()).User;
+        var myRegs = await RegistrationSvc.GetMyRegistrationsAsync(user, eventId);
+        _todayEvents = ScheduleVisibility.Apply(
+            await ScheduleSvc.GetForDayAsync(eventId, _scheduleDay), user.IsInRole("Admin"), myRegs);
 
         var feed = await AnnouncementSvc.GetFeedAsync(eventId);
         _latestAnnouncement = feed.FirstOrDefault();
