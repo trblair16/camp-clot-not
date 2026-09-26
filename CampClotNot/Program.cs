@@ -85,6 +85,7 @@ try
     builder.Services.AddScoped<GuestAccessService>();
     builder.Services.AddScoped<AttendanceService>();
     builder.Services.AddScoped<EventStaffService>();
+    builder.Services.AddScoped<RegistrationService>();
     builder.Services.AddScoped<PasswordResetService>();
     builder.Services.AddSingleton<ForgotPasswordQueue>();
     builder.Services.AddHostedService<ForgotPasswordWorker>();

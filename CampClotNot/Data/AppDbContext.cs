@@ -63,6 +63,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // Attendance
     public DbSet<ScheduleItemAttendance> ScheduleItemAttendances => Set<ScheduleItemAttendance>();
+    public DbSet<ScheduleItemRegistration> ScheduleItemRegistrations => Set<ScheduleItemRegistration>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -106,6 +107,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(e => e.Activity)
             .WithMany()
             .HasForeignKey(e => e.ActivityId);
+        // Breakout options → slot. Deleting a slot deletes its options (and, by cascade, their
+        // sign-ups and check-ins).
+        modelBuilder.Entity<ScheduleItem>()
+            .HasOne(e => e.ParentScheduleItem)
+            .WithMany(e => e.Options)
+            .HasForeignKey(e => e.ParentScheduleItemId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
+        // QR check-in code (nullable — Postgres allows multiple NULLs under a unique index)
+        modelBuilder.Entity<ScheduleItem>()
+            .HasIndex(e => e.CheckInCode)
+            .IsUnique();
 
         // ScheduleItemGroup: composite PK
         modelBuilder.Entity<ScheduleItemGroup>()
@@ -268,5 +281,47 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(s => s.GroupId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // ScheduleItemRegistration: same ownership rule as attendance, plus one option per person
+        // per slot via the denormalized SlotScheduleItemId. Two navigations point at ScheduleItems
+        // and two at Users, so all are configured explicitly.
+        modelBuilder.Entity<ScheduleItemRegistration>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_ScheduleItemRegistrations_OneAttendee",
+                "(\"GuestAttendeeId\" IS NULL) <> (\"UserId\" IS NULL)"));
+        modelBuilder.Entity<ScheduleItemRegistration>()
+            .HasIndex(r => new { r.SlotScheduleItemId, r.GuestAttendeeId })
+            .IsUnique();
+        modelBuilder.Entity<ScheduleItemRegistration>()
+            .HasIndex(r => new { r.SlotScheduleItemId, r.UserId })
+            .IsUnique();
+        modelBuilder.Entity<ScheduleItemRegistration>()
+            .HasOne(r => r.ScheduleItem)
+            .WithMany()
+            .HasForeignKey(r => r.ScheduleItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ScheduleItemRegistration>()
+            .HasOne(r => r.SlotScheduleItem)
+            .WithMany()
+            .HasForeignKey(r => r.SlotScheduleItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ScheduleItemRegistration>()
+            .HasOne(r => r.GuestAttendee)
+            .WithMany()
+            .HasForeignKey(r => r.GuestAttendeeId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ScheduleItemRegistration>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ScheduleItemRegistration>()
+            .HasOne(r => r.RegisteredByUser)
+            .WithMany()
+            .HasForeignKey(r => r.RegisteredByUserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
