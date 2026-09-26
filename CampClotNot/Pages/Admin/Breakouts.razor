@@ -32,7 +32,7 @@
     .bo-slot-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; border: none; border-bottom: 2px solid #E8E0CC; background: transparent; cursor: pointer; }
     .bo-slot-btn:last-child { border-bottom: none; }
     .bo-slot-btn.selected { background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); }
-    .bo-option-card { text-align: left; padding: 12px; border: var(--panel-border); border-radius: 8px; background: var(--panel-bg); box-shadow: 3px 3px 0 var(--border-color); cursor: pointer; }
+    .bo-option-card { display: block; width: 100%; font: inherit; text-align: left; padding: 12px; border: var(--panel-border); border-radius: 8px; background: var(--panel-bg); box-shadow: 3px 3px 0 var(--border-color); cursor: pointer; }
     .bo-option-card:hover { background: var(--bg-base); }
     .bo-pill { font-family: var(--font-display); font-weight: 700; font-size: 12px; padding: 2px 10px; border-radius: 50px; border: 2px solid var(--border-color); white-space: nowrap; }
     .bo-input { padding: 8px 12px; background: var(--bg-base); border: var(--panel-border); border-radius: 7px; font-size: 13px; font-family: 'Nunito', sans-serif; font-weight: 600; color: var(--text-dark); box-shadow: 2px 2px 0 var(--border-color); outline: none; box-sizing: border-box; }
@@ -274,8 +274,8 @@
                             <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">Anyone already in another option of this slot is skipped. Admins can go past capacity.</div>
 
                             <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-                                <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(true, false), "guests")'>Add all guests</button>
-                                <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(false, true), "staff")'>Add all staff</button>
+                                <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(true, false), "No guests have joined this event yet.")'>Add all guests</button>
+                                <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(false, true), "The staff list for this event is empty.")'>Add all staff</button>
                             </div>
 
                             <div class="bo-label">By role</div>
@@ -299,7 +299,7 @@
                                 }
                             }
                             <button class="ccn-btn" style="font-size:12px;padding:6px 10px;margin:8px 0 16px;width:100%" disabled="@(_busy || (!_roleIds.Any() && !_groupIds.Any()))"
-                                    @onclick='() => BulkAsync(new BulkFilter(false, false, _roleIds, _groupIds), "selected")'>Add selected</button>
+                                    @onclick='() => BulkAsync(new BulkFilter(false, false, _roleIds, _groupIds), "Nobody at this event has those roles or groups.")'>Add selected</button>
 
                             <div class="bo-label">Search and add</div>
                             <input type="search" class="bo-input" style="width:100%;margin-bottom:6px" placeholder="Name…" @bind="_addSearch" @bind:event="oninput" />
@@ -505,13 +505,13 @@
             await AssignAsync(optionId, [person]);
     }
 
-    private async Task BulkAsync(BulkFilter filter, string what)
+    private async Task BulkAsync(BulkFilter filter, string emptyMessage)
     {
         if (_event is null || _selectedOptionId is not { } optionId) return;
         var people = RegistrationService.ApplyFilter(await RegistrationSvc.GetExpectedPeopleAsync(_event.EventId), filter).ToList();
         if (people.Count == 0)
         {
-            Snackbar.Add($"No {what} to add.", Severity.Info);
+            Snackbar.Add(emptyMessage, Severity.Info);
             return;
         }
         await AssignAsync(optionId, people);

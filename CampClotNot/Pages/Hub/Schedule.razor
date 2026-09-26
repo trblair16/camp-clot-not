@@ -1104,8 +1104,11 @@
 
     // ── Self check-in ("I'm here") ──
 
+    // Breakout options only offer check-in to the people signed up for them.
     private bool ShowCheckIn(ScheduleItem ev) =>
-        ev.TrackAttendance && (_myCheckIns.Contains(ev.ScheduleItemId)
+        ev.TrackAttendance
+        && (ev.ParentScheduleItemId is not { } slotId || _myRegs.GetValueOrDefault(slotId) == ev.ScheduleItemId)
+        && (_myCheckIns.Contains(ev.ScheduleItemId)
             || _checkInMessages.ContainsKey(ev.ScheduleItemId)
             || AttendanceService.IsSelfCheckInOpen(ev, CampTime.Now));
 

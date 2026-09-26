@@ -1,8 +1,8 @@
 # Breakout Slots, Session Sign-ups, Per-Event Staff, and QR Check-in
 
 **Date:** 2026-09-26
-**Status:** Approved by Tyler 2026-09-26 (QR check-in added the same day). Implementing on
-`claude/guest-attendance-extend-djwotf`.
+**Status:** Implemented (2026-09-26) on `claude/guest-attendance-extend-djwotf`. See "Implementation Notes"
+for deviations.
 **Driver:** Camp Harvest 2026 (mid-October) runs parallel breakout sessions. Attendance tracking
 (#308 / PR #309) assumes everyone could attend every tracked item, and it lists every active `User`
 as staff at every event. Tracked in issue #311, a follow-up to #308, scheduled after #310 (event
@@ -448,3 +448,46 @@ warnings, plus a walkthrough on local Postgres 16 with headless Chromium:
   "Already checked in". Scan outside the window and see the opens/closed message. A guest from
   another event gets the "part of {event}" message. On a QR-only item, the hub shows the hint and no
   button. After Regenerate, the old URL shows "isn't valid". The roster shows "· QR".
+
+## Implementation Notes (2026-09-26)
+
+- **Migrations:** `AddEventStaff` creates `EventStaff`, runs the backfill SQL, and then drops `Users.GroupId`.
+  Its `Down` copies groups back onto `Users` before dropping the table. `AddBreakoutsAndQrCheckIn` adds
+  the five `ScheduleItems` columns (`AllowSelfSignup` defaults to `true` in the database too) and
+  `ScheduleItemRegistrations`. Both run automatically on startup. Verified against Postgres 16: the
+  backfill skips inactive users, puts a Volunteer's group only on its own event, and Down/Up round-trips.
+- **`CheckInResult`** gained `WrongEvent` (a guest from another event, previously `NotAllowed`),
+  `NotRegistered` (a breakout option they didn't sign up for), and `QrOnly` (the button on a QR-only item).
+  `QrCheckInAsync` returns a `QrCheckInOutcome` with the item, event name, and check-in time for the
+  result page.
+- **Copying an option** keeps it in the same slot, locked to the slot's day, since the common case is
+  "Workshop A → Workshop B". To copy it to another day as a regular item, pick "None" in Breakout.
+  This replaces the spec's "keep the parent only if the day matches" rule.
+- **Moving a slot to another day** moves its options with it.
+- **Walk-ins on an option** are signed up to it. If they were already in another option of the same
+  slot, they're moved, because the Admin at the door is placing them in this room.
+- **`/hub/schedule`** only shows "I'm here" on an option to the person signed up for it. Admins see every
+  option, but tapping one they aren't in would only fail.
+- **`returnUrl` is also carried through `/change-password`,** so a staff member whose first sign-in
+  is from a QR scan (temporary password) still lands back on the check-in.
+- **Page files:** `Pages/Admin/EventStaffAdmin.razor` (to avoid clashing with the `EventStaff`
+  entity), `Pages/Admin/Breakouts.razor`, `Pages/CheckIn.razor`, and `Pages/Admin/CheckInQrPrint.razor`.
+  Nav: "Event Staff" is under People, and "🔀 Breakouts" is under Schedule.
+- **Verified with headless Chromium** against a fresh database:
+  - Admin: create a user with "Add to event staff". Create a slot and an option from the form, with the
+    day locked and times prefilled.
+  - Guests: the placeholder, then picker, confirm, and pick (the other options stay hidden). The
+    capacity-1 option shows Full to the next guest. "I'm here" on an option doesn't open the detail
+    modal. QR-only items show the hint. Assigned-only slots show "will be assigned" until an Admin
+    assigns, then the option.
+  - QR: signed out → join → checked in, and signed out → staff login → change password → checked in.
+    Also rescan, not signed up, outside the window ("opens at 7:30 PM"), wrong event, bad code, the
+    roster showing "· QR", the print page, and regenerate invalidating the old code.
+  - Breakouts page: multi-select assign past capacity (flagged), move a checked-in person (the
+    check-in is removed), bulk add guests, staff, and roles with skip counts, and the option CSV with
+    `Registered` and no-shows.
+  - Cascades: deleting a guest removes their sign-ups. Deleting a slot removes its options, sign-ups,
+    and check-ins.
+  - The hub Admin edit form preserves the breakout fields. Duplicating an event copies event staff
+    (role, no group).
+

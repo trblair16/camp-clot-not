@@ -209,7 +209,7 @@ try
         var returnUrl = LocalReturnUrl(form["returnUrl"]);
         return result switch
         {
-            LoginResult.MustChangePassword => Results.Redirect("/change-password"),
+            LoginResult.MustChangePassword => Results.Redirect("/change-password" + (returnUrl is null ? "" : $"?returnUrl={Uri.EscapeDataString(returnUrl)}")),
             LoginResult.Success            => Results.Redirect(returnUrl ?? "/dashboard"),
             _                              => Results.Redirect("/login?error=true" + (returnUrl is null ? "" : $"&returnUrl={Uri.EscapeDataString(returnUrl)}"))
         };
@@ -220,22 +220,24 @@ try
         if (ctx.User.Identity?.IsAuthenticated != true)
             return Results.Redirect("/login");
 
-        var form    = await ctx.Request.ReadFormAsync();
-        var newPw   = form["newPassword"].ToString();
-        var confirm = form["confirmPassword"].ToString();
+        var form      = await ctx.Request.ReadFormAsync();
+        var newPw     = form["newPassword"].ToString();
+        var confirm   = form["confirmPassword"].ToString();
+        var returnUrl = LocalReturnUrl(form["returnUrl"]);
+        var keep      = returnUrl is null ? "" : $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
 
         if (string.IsNullOrWhiteSpace(newPw) || newPw.Length < 8)
-            return Results.Redirect("/change-password?error=tooshort");
+            return Results.Redirect("/change-password?error=tooshort" + keep);
 
         if (newPw != confirm)
-            return Results.Redirect("/change-password?error=mismatch");
+            return Results.Redirect("/change-password?error=mismatch" + keep);
 
         var userIdStr = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (!Guid.TryParse(userIdStr, out var userId))
             return Results.Redirect("/login");
 
         await auth.ChangePasswordAsync(userId, newPw, ctx);
-        return Results.Redirect("/dashboard");
+        return Results.Redirect(returnUrl ?? "/dashboard");
     }).RequireAuthorization();
 
     // Forgot password — always the same response; the lookup and email happen in the background

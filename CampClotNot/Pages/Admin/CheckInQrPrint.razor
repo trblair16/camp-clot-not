@@ -14,7 +14,7 @@
         max-width: 700px; margin: 0 auto; padding: 40px 24px; text-align: center;
         font-family: 'Nunito', sans-serif; color: #1A1A1A;
     }
-    .qr-page h1 { font-family: 'Fredoka One', cursive; font-size: 36px; margin: 6px 0 4px; line-height: 1.15; }
+    .qr-page .qr-title { font-family: 'Fredoka One', cursive; font-size: 36px; margin: 6px 0 4px; line-height: 1.15; }
     .qr-page .qr-img { width: 420px; max-width: 90%; height: auto; margin: 24px auto 12px; display: block; }
     .qr-print-btn { margin-top: 24px; }
     @@media print {
@@ -32,7 +32,7 @@
     else
     {
         <div style="font-size:16px;font-weight:700;color:#5C5347">@_item.CampEvent.Name</div>
-        <h1>@_item.Title</h1>
+        <div class="qr-title">@_item.Title</div>
         <div style="font-size:18px;font-weight:700">@_item.CampDay.ToString("dddd, MMMM d") · @TimeRange(_item)</div>
         @if (_item.Location is not null)
         {
