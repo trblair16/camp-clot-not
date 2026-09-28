@@ -22,6 +22,16 @@ public class ScheduleItem
     public bool AppliesToAllGroups { get; set; } = true;
     public int? MaxCapacity { get; set; }
     public bool TrackAttendance { get; set; }
+    public SelfCheckInMode SelfCheckInMode { get; set; }
+    public string? CheckInCode { get; set; }          // random token in the check-in QR URL; created on first use
+
+    // Breakouts: a slot is a placeholder item; its options are ordinary items pointing back at it.
+    // One level only — a slot has no parent and an option is never itself a slot.
+    public bool IsBreakoutSlot { get; set; }
+    public bool AllowSelfSignup { get; set; } = true;  // only meaningful on a slot
+    public Guid? ParentScheduleItemId { get; set; }
+    public ScheduleItem? ParentScheduleItem { get; set; }
+    public List<ScheduleItem> Options { get; set; } = new();
     public Guid CreatedBy { get; set; }
     public User CreatedByUser { get; set; } = null!;
     public DateTime UpdatedAt { get; set; }

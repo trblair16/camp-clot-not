@@ -1,5 +1,6 @@
 @page "/admin/groups"
 @attribute [Authorize(Roles = "Admin")]
+@inject ActiveEventService ActiveEventSvc
 @inject GroupService GroupSvc
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -227,11 +228,13 @@
     {
         if (string.IsNullOrWhiteSpace(_form.Name)) return;
 
-        var defaultEventId = _groups.FirstOrDefault()?.EventId ?? new Guid("00000009-0009-0009-0009-000000000001");
+        // New groups belong to the active event (the one every admin page is editing).
+        var activeEvent = await ActiveEventSvc.GetActiveEventAsync();
+        if (activeEvent is null) { Snackbar.Add("No active event — mark one active on Events first.", Severity.Warning); return; }
 
         if (_editing is null)
         {
-            await GroupSvc.CreateAsync(_form.Name, _form.ShortName, _form.Color, defaultEventId, _form.LogoDataUrl);
+            await GroupSvc.CreateAsync(_form.Name, _form.ShortName, _form.Color, activeEvent.EventId, _form.LogoDataUrl);
             Snackbar.Add("Group added.", Severity.Success);
         }
         else

@@ -12,6 +12,14 @@ public class GroupRepository(IDbContextFactory<AppDbContext> factory) : IGroupRe
         return await db.Groups.AsNoTracking().Include(g => g.BoardPos).ToListAsync();
     }
 
+    public async Task<List<Group>> GetForEventAsync(Guid eventId)
+    {
+        using var db = factory.CreateDbContext();
+        return await db.Groups.AsNoTracking().Include(g => g.BoardPos)
+            .Where(g => g.EventId == eventId)
+            .ToListAsync();
+    }
+
     public async Task<Group?> GetByIdAsync(Guid groupId)
     {
         using var db = factory.CreateDbContext();

@@ -7,7 +7,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CampClotNot.Services;
 
-public enum CheckInResult { CheckedIn, AlreadyCheckedIn, NotTracked, OutsideWindow, NotAllowed }
+public enum CheckInResult
+{
+    CheckedIn, AlreadyCheckedIn, NotTracked, OutsideWindow, NotAllowed,
+    WrongEvent,      // a guest signed in to a different event
+    NotRegistered,   // a breakout option the person isn't signed up for
+    QrOnly           // the item only accepts QR check-in, not the "I'm here" button
+}
+
+/// <summary>Result of a QR scan, with the item (when the code was valid) for the result page.</summary>
+public record QrCheckInOutcome(CheckInResult Result, ScheduleItem? Item, string? EventName, DateTime? CheckedInAt);
 
 public record RosterEntry(
     string FirstName,
@@ -19,14 +28,19 @@ public record RosterEntry(
     Guid? AttendanceId,
     DateTime? CheckedInAt,
     AttendanceMethod? Method,
-    string? CheckedInByName)
+    string? CheckedInByName,
+    bool? IsRegistered = null)   // breakout options only: signed up for this option
 {
     public bool IsCheckedIn => AttendanceId.HasValue;
     public string FullName => $"{FirstName} {LastName}";
     public string TypeLabel => IsGuest ? "Guest" : RoleName ?? "Staff";
 }
 
-public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAccessService guestSvc)
+public class AttendanceService(
+    IDbContextFactory<AppDbContext> factory,
+    GuestAccessService guestSvc,
+    ScheduleService scheduleSvc,
+    RegistrationService registrationSvc)
 {
     public static readonly TimeSpan OpensBefore     = TimeSpan.FromMinutes(30);
     public static readonly TimeSpan DefaultDuration = TimeSpan.FromHours(2);
@@ -38,24 +52,11 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
     public static bool IsSelfCheckInOpen(ScheduleItem item, DateTime campNow)
     {
         if (!item.TrackAttendance) return false;
-        var start = item.CampDay.ToDateTime(item.StartTime);
-        var end = item.EndTime is { } e
-            ? item.CampDay.ToDateTime(e).AddDays(e < item.StartTime ? 1 : 0)
-            : start + DefaultDuration;
-        return campNow >= start - OpensBefore && campNow <= end;
+        var (opens, closes) = CheckInWindow(item);
+        return campNow >= opens && campNow <= closes;
     }
 
-    // Guest cookies carry GuestAttendeeId; staff cookies carry NameIdentifier. A legacy guest cookie
-    // from before named guest identity (#304) has neither and can't check in.
-    private (Guid? GuestId, Guid? UserId) ResolveAttendee(ClaimsPrincipal user)
-    {
-        var guestId = guestSvc.GetGuestAttendeeId(user);
-        if (guestId.HasValue) return (guestId, null);
-        if (guestSvc.GetGuestEventId(user).HasValue) return (null, null);
-        return Guid.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var uid)
-            ? (null, uid)
-            : (null, null);
-    }
+    private (Guid? GuestId, Guid? UserId) ResolveAttendee(ClaimsPrincipal user) => guestSvc.ResolveAttendee(user);
 
     private static IQueryable<ScheduleItemAttendance> ForAttendee(
         IQueryable<ScheduleItemAttendance> q, Guid? guestId, Guid? userId) =>
@@ -78,23 +79,129 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
         return ids.ToHashSet();
     }
 
+    /// <summary>The "I'm here" button. QR-only items refuse it.</summary>
     public async Task<CheckInResult> SelfCheckInAsync(ClaimsPrincipal user, Guid scheduleItemId)
     {
-        var (guestId, userId) = ResolveAttendee(user);
-        if (guestId is null && userId is null) return CheckInResult.NotAllowed;
-
         using var db = factory.CreateDbContext();
         var item = await db.ScheduleItems.AsNoTracking()
             .FirstOrDefaultAsync(i => i.ScheduleItemId == scheduleItemId);
+        if (item is not null && item.SelfCheckInMode == SelfCheckInMode.QrOnly) return CheckInResult.QrOnly;
+        return await CheckInAsSelfAsync(user, item, AttendanceMethod.Self);
+    }
+
+    /// <summary>A scan of an item's check-in QR code. Same rules as the button, recorded as QR.</summary>
+    public async Task<QrCheckInOutcome> QrCheckInAsync(ClaimsPrincipal user, string code)
+    {
+        var item = await GetByCheckInCodeAsync(code);
+        if (item is null) return new QrCheckInOutcome(CheckInResult.NotTracked, null, null, null);
+
+        var result = await CheckInAsSelfAsync(user, item, AttendanceMethod.Qr);
+        DateTime? at = null;
+        if (result is CheckInResult.CheckedIn or CheckInResult.AlreadyCheckedIn)
+        {
+            var (guestId, userId) = ResolveAttendee(user);
+            using var db = factory.CreateDbContext();
+            at = await ForAttendee(db.ScheduleItemAttendances, guestId, userId)
+                .Where(a => a.ScheduleItemId == item.ScheduleItemId)
+                .Select(a => (DateTime?)a.CheckedInAt)
+                .FirstOrDefaultAsync();
+        }
+        return new QrCheckInOutcome(result, item, item.CampEvent.Name, at);
+    }
+
+    /// <summary>The item a QR code points at (with its event), or null for an unknown code.</summary>
+    public async Task<ScheduleItem?> GetByCheckInCodeAsync(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return null;
+        using var db = factory.CreateDbContext();
+        return await db.ScheduleItems.AsNoTracking()
+            .Include(i => i.CampEvent)
+            .Include(i => i.Location)
+            .FirstOrDefaultAsync(i => i.CheckInCode == code.Trim().ToUpperInvariant());
+    }
+
+    // Shared rules for the button and the QR: tracked, the guest's own event, a sign-up for
+    // breakout options, and the time window.
+    private async Task<CheckInResult> CheckInAsSelfAsync(ClaimsPrincipal user, ScheduleItem? item, AttendanceMethod method)
+    {
+        var (guestId, userId) = ResolveAttendee(user);
+        if (guestId is null && userId is null) return CheckInResult.NotAllowed;
         if (item is null || !item.TrackAttendance) return CheckInResult.NotTracked;
 
-        // Guests are scoped to the event they joined; staff users aren't event-scoped.
+        // Guests are scoped to the event they joined. Staff users can check in to any event's
+        // tracked items (they appear on its roster via the "anyone checked in" rule).
         if (guestId.HasValue && item.CampEventId != guestSvc.GetGuestEventId(user))
-            return CheckInResult.NotAllowed;
+            return CheckInResult.WrongEvent;
+
+        if (item.ParentScheduleItemId.HasValue)
+        {
+            using var db = factory.CreateDbContext();
+            var q = db.ScheduleItemRegistrations.Where(r => r.ScheduleItemId == item.ScheduleItemId);
+            var registered = guestId.HasValue
+                ? await q.AnyAsync(r => r.GuestAttendeeId == guestId)
+                : await q.AnyAsync(r => r.UserId == userId);
+            if (!registered) return CheckInResult.NotRegistered;
+        }
 
         if (!IsSelfCheckInOpen(item, CampTime.Now)) return CheckInResult.OutsideWindow;
 
-        return await InsertAsync(scheduleItemId, guestId, userId, AttendanceMethod.Self, null);
+        return await InsertAsync(item.ScheduleItemId, guestId, userId, method, null);
+    }
+
+    /// <summary>When the self check-in window opens and closes for an item, in camp time.</summary>
+    public static (DateTime Opens, DateTime Closes) CheckInWindow(ScheduleItem item)
+    {
+        var start = item.CampDay.ToDateTime(item.StartTime);
+        var end = item.EndTime is { } e
+            ? item.CampDay.ToDateTime(e).AddDays(e < item.StartTime ? 1 : 0)
+            : start + DefaultDuration;
+        return (start - OpensBefore, end);
+    }
+
+    // ── QR codes ─────────────────────────────────────────────────────────────
+
+    // No 0/O/1/I/L, so a code read aloud or typed from the printout is unambiguous.
+    private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+    /// <summary>The item's check-in code, creating one the first time its QR is shown.</summary>
+    public async Task<string?> EnsureCheckInCodeAsync(Guid scheduleItemId)
+    {
+        using var db = factory.CreateDbContext();
+        var item = await db.ScheduleItems.FirstOrDefaultAsync(i => i.ScheduleItemId == scheduleItemId);
+        if (item is null) return null;
+        if (item.CheckInCode is not null) return item.CheckInCode;
+        return await SetNewCodeAsync(db, item);
+    }
+
+    /// <summary>Replaces the code, so the old QR (and any photo of it) stops working.</summary>
+    public async Task<string?> RegenerateCheckInCodeAsync(Guid scheduleItemId)
+    {
+        using var db = factory.CreateDbContext();
+        var item = await db.ScheduleItems.FirstOrDefaultAsync(i => i.ScheduleItemId == scheduleItemId);
+        return item is null ? null : await SetNewCodeAsync(db, item);
+    }
+
+    private async Task<string> SetNewCodeAsync(AppDbContext db, ScheduleItem item)
+    {
+        // 31^10 codes — a collision is vanishingly rare, but the unique index is the backstop.
+        for (var attempt = 0; ; attempt++)
+        {
+            item.CheckInCode = string.Create(10, 0, (span, _) =>
+            {
+                for (var i = 0; i < span.Length; i++)
+                    span[i] = CodeAlphabet[System.Security.Cryptography.RandomNumberGenerator.GetInt32(CodeAlphabet.Length)];
+            });
+            try
+            {
+                await db.SaveChangesAsync();
+                scheduleSvc.Invalidate(item.CampEventId, item.CampDay);
+                return item.CheckInCode;
+            }
+            catch (DbUpdateException) when (attempt < 3)
+            {
+                // Collided with another item's code — try a new one.
+            }
+        }
     }
 
     // ── Admin ────────────────────────────────────────────────────────────────
@@ -104,7 +211,8 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
         using var db = factory.CreateDbContext();
         return await db.ScheduleItems.AsNoTracking()
             .Where(i => i.CampEventId == eventId && i.TrackAttendance)
-            .OrderBy(i => i.CampDay).ThenBy(i => i.StartTime)
+            .Include(i => i.ParentScheduleItem)
+            .OrderBy(i => i.CampDay).ThenBy(i => i.StartTime).ThenBy(i => i.Title)
             .ToListAsync();
     }
 
@@ -119,7 +227,7 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
     }
 
     /// <summary>
-    /// Everyone who could attend the item — guests who joined its event, all active staff users —
+    /// Everyone who could attend the item — guests who joined its event, the event's active staff —
     /// plus anyone already checked in who wouldn't otherwise be listed (e.g. a since-deactivated user).
     /// </summary>
     public async Task<List<RosterEntry>> GetRosterAsync(Guid scheduleItemId)
@@ -135,14 +243,40 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
             .Include(a => a.User).ThenInclude(u => u!.UserRole)
             .Include(a => a.CheckedInByUser)
             .ToListAsync();
-        var guests = await db.GuestEventVisits.AsNoTracking()
-            .Where(v => v.EventId == item.CampEventId)
-            .Select(v => v.GuestAttendee)
+        // Staff are badged with their role at the event.
+        var staff = await db.EventStaff.AsNoTracking()
+            .Where(st => st.EventId == item.CampEventId)
+            .Include(st => st.User)
+            .Include(st => st.UserRole)
             .ToListAsync();
-        var users = await db.Users.AsNoTracking()
-            .Include(u => u.UserRole)
-            .Where(u => u.IsActive)
-            .ToListAsync();
+        var eventRoles = staff.ToDictionary(st => st.UserId, st => st.UserRole.Name);
+
+        // Breakout options: the expected list is the people signed up for this option.
+        // Everything else: guests who joined the event plus the event's active staff.
+        var isOption = item.ParentScheduleItemId.HasValue;
+        List<GuestAttendee> guests;
+        List<User> users;
+        HashSet<Guid> regGuests = [], regUsers = [];
+        if (isOption)
+        {
+            var regs = await db.ScheduleItemRegistrations.AsNoTracking()
+                .Where(r => r.ScheduleItemId == scheduleItemId)
+                .Include(r => r.GuestAttendee)
+                .Include(r => r.User).ThenInclude(u => u!.UserRole)
+                .ToListAsync();
+            guests = regs.Where(r => r.GuestAttendee is not null).Select(r => r.GuestAttendee!).ToList();
+            users  = regs.Where(r => r.User is not null).Select(r => r.User!).ToList();
+            regGuests = guests.Select(g => g.GuestAttendeeId).ToHashSet();
+            regUsers  = users.Select(u => u.UserId).ToHashSet();
+        }
+        else
+        {
+            guests = await db.GuestEventVisits.AsNoTracking()
+                .Where(v => v.EventId == item.CampEventId)
+                .Select(v => v.GuestAttendee)
+                .ToListAsync();
+            users = staff.Where(st => st.User.IsActive).Select(st => st.User).ToList();
+        }
 
         var guestCheckIns = checkIns.Where(a => a.GuestAttendeeId.HasValue).ToDictionary(a => a.GuestAttendeeId!.Value);
         var userCheckIns  = checkIns.Where(a => a.UserId.HasValue).ToDictionary(a => a.UserId!.Value);
@@ -157,13 +291,15 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
         {
             var a = guestCheckIns.GetValueOrDefault(g.GuestAttendeeId);
             entries.Add(new RosterEntry(g.FirstName, g.LastName, true, null, g.GuestAttendeeId, null,
-                a?.ScheduleItemAttendanceId, a?.CheckedInAt, a?.Method, a?.CheckedInByUser?.FirstName));
+                a?.ScheduleItemAttendanceId, a?.CheckedInAt, a?.Method, a?.CheckedInByUser?.FirstName,
+                isOption ? regGuests.Contains(g.GuestAttendeeId) : null));
         }
         foreach (var u in userMap.Values)
         {
             var a = userCheckIns.GetValueOrDefault(u.UserId);
-            entries.Add(new RosterEntry(u.FirstName, u.LastName, false, u.UserRole?.Name, null, u.UserId,
-                a?.ScheduleItemAttendanceId, a?.CheckedInAt, a?.Method, a?.CheckedInByUser?.FirstName));
+            entries.Add(new RosterEntry(u.FirstName, u.LastName, false, eventRoles.GetValueOrDefault(u.UserId) ?? u.UserRole?.Name, null, u.UserId,
+                a?.ScheduleItemAttendanceId, a?.CheckedInAt, a?.Method, a?.CheckedInByUser?.FirstName,
+                isOption ? regUsers.Contains(u.UserId) : null));
         }
 
         return entries
@@ -199,6 +335,19 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
 
         var guest = await guestSvc.GetOrCreateGuestAsync(firstName, lastName);
         await guestSvc.RecordVisitAsync(guest.GuestAttendeeId, item.CampEventId);
+
+        // A breakout option's roster is its sign-up list, so a walk-in is signed up too. If
+        // they were down for another option of the slot, the Admin is placing them here instead.
+        if (item.ParentScheduleItemId is { } slotId)
+        {
+            var existing = await db.ScheduleItemRegistrations.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.SlotScheduleItemId == slotId && r.GuestAttendeeId == guest.GuestAttendeeId);
+            if (existing is null)
+                await registrationSvc.AdminAssignAsync(scheduleItemId, [new AttendeeRef(guest.GuestAttendeeId, null)], adminUserId);
+            else if (existing.ScheduleItemId != scheduleItemId)
+                await registrationSvc.MoveAsync(existing.ScheduleItemRegistrationId, scheduleItemId, adminUserId);
+        }
+
         return await InsertAsync(scheduleItemId, guest.GuestAttendeeId, null, AttendanceMethod.Admin, adminUserId);
     }
 
@@ -261,15 +410,24 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, GuestAcc
         if (item is null) return null;
 
         var roster = await GetRosterAsync(scheduleItemId);
+        var isOption = item.ParentScheduleItemId.HasValue;
         var sb = new StringBuilder();
-        sb.AppendLine(Csv("Last Name", "First Name", "Type", "Checked In", "Checked In At", "Method", "Checked In By"));
+        // Breakout options add "Registered", so no-shows (registered, not checked in) stand out.
+        var header = new List<string?> { "Last Name", "First Name", "Type" };
+        if (isOption) header.Add("Registered");
+        header.AddRange(["Checked In", "Checked In At", "Method", "Checked In By"]);
+        sb.AppendLine(Csv([.. header]));
         foreach (var r in roster)
-            sb.AppendLine(Csv(
-                r.LastName, r.FirstName, r.TypeLabel,
+        {
+            var row = new List<string?> { r.LastName, r.FirstName, r.TypeLabel };
+            if (isOption) row.Add(r.IsRegistered == true ? "Yes" : "No");
+            row.AddRange([
                 r.IsCheckedIn ? "Yes" : "No",
                 r.CheckedInAt?.ToString("yyyy-MM-dd h:mm tt"),
                 r.Method?.ToString(),
-                r.CheckedInByName));
+                r.CheckedInByName]);
+            sb.AppendLine(Csv([.. row]));
+        }
 
         return ($"attendance-{item.CampDay:yyyy-MM-dd}-{Slug(item.Title)}.csv", Utf8WithBom(sb));
     }

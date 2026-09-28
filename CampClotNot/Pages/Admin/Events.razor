@@ -58,7 +58,7 @@
                             <input type="checkbox" checked="@_copySponsors" @onchange="() => _copySponsors = !_copySponsors" /> Sponsors (@_copyCounts.Sponsors)
                         </label>
                         <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer">
-                            <input type="checkbox" checked="@_copyStaff" @onchange="() => _copyStaff = !_copyStaff" /> Staff directory (@_copyCounts.StaffDirectory)
+                            <input type="checkbox" checked="@_copyEventStaff" @onchange="() => _copyEventStaff = !_copyEventStaff" /> Team (@_copyCounts.EventStaff) <span style="font-weight:600;color:var(--text-light)">— people, roles, and Hub directory cards (not groups)</span>
                         </label>
                         <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer">
                             <input type="checkbox" checked="@_copyActivities" @onchange="() => _copyActivities = !_copyActivities" /> Activities (@_copyCounts.Activities)
@@ -275,8 +275,8 @@
     private Guid? _copyFromId;
     private CopyCounts? _copyCounts;
     private bool _copySponsors;
-    private bool _copyStaff;
     private bool _copyActivities;
+    private bool _copyEventStaff = true;
     private bool _fIsActive;
     private string _fGuestCode = "";
     private List<Capability> _allCapabilities = new();
@@ -335,7 +335,8 @@
         _fThemeStart = ThemePresets.Classic.Key;
         _copyFromId = null;
         _copyCounts = null;
-        _copySponsors = _copyStaff = _copyActivities = false;
+        _copySponsors = _copyActivities = false;
+        _copyEventStaff = true;
     }
 
     private async Task AddEventTypeAsync()
@@ -371,7 +372,8 @@
     private async Task SetCopySourceAsync(Guid? sourceId)
     {
         _copyFromId = sourceId;
-        _copySponsors = _copyStaff = _copyActivities = false;
+        _copySponsors = _copyActivities = false;
+        _copyEventStaff = true;
         if (sourceId is { } src)
         {
             _copyCounts = await EventSetup.GetCopyCountsAsync(src);
@@ -423,7 +425,7 @@
                     _fEnabledCapIds,
                     ThemePresetKey: _copyFromId is not null && _fThemeStart == SourceThemeKey ? null : _fThemeStart,
                     CopyFromEventId: _copyFromId,
-                    Copy: new EventCopyOptions(_copySponsors, _copyStaff, _copyActivities)));
+                    Copy: new EventCopyOptions(_copySponsors, _copyActivities, _copyEventStaff)));
             }
             catch (InvalidOperationException ex)
             {
