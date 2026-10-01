@@ -18,12 +18,12 @@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link href="app.css?v=8" rel="stylesheet" />
     @RenderSection("HeadOutlet", required: false)
-    <link rel="manifest" href="/manifest.json?v=2" />
+    <link rel="manifest" href="/manifest.json?v=3" />
     <meta name="theme-color" content="@ThemeSvc.Active.Primary" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="HBDA Events" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png?v=2" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png?v=3" />
 </head>
 <body>
     <div id="app-loading" style="position:fixed;inset:0;z-index:10000;background:var(--bg-base,#F2ECD8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .3s ease">
@@ -31,22 +31,22 @@
         {
             <img src="@heroLogo" alt="" style="width:clamp(100px,22vw,160px);height:auto" />
         }
-        <div style="width:clamp(120px,30vw,200px);height:6px;border-radius:3px;border:2px solid #1A1A1A;overflow:hidden;background:#E8E0CC">
+        <div style="width:clamp(120px,30vw,200px);height:6px;border-radius:3px;border:2px solid @(ThemeSvc.Active.BorderColor);overflow:hidden;background:@(ThemeSvc.Active.BgDot)">
             <div style="width:40%;height:100%;background:@(ThemeSvc.Active.Primary);border-radius:2px;animation:loadSlide 1.2s ease-in-out infinite"></div>
         </div>
-        <div style="font-family:'Fredoka One',cursive;font-size:13px;color:@(ThemeSvc.Active.TextLight)">Loading…</div>
+        <div style="font-family:@(ThemeSvc.Active.HeadingFont);font-size:13px;color:@(ThemeSvc.Active.TextLight)">Loading…</div>
     </div>
     <style>@@keyframes loadSlide{0%{transform:translateX(-100%)}50%{transform:translateX(150%)}100%{transform:translateX(-100%)}}</style>
     <div id="components-reconnect-modal" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;padding-top:env(safe-area-inset-top)">
-        <div id="ccn-banner-show"     style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#F5C800;color:#1A1A1A;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
+        <div id="ccn-banner-show"     style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:@(ThemeSvc.Active.Primary);color:@(ThemeSvc.Active.TextDark);font-family:@(ThemeSvc.Active.HeadingFont);font-size:14px;font-weight:700;border-bottom:3px solid @(ThemeSvc.Active.BorderColor)">
             📶 Reconnecting…
         </div>
-        <div id="ccn-banner-failed"   style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#D12B2B;color:white;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
+        <div id="ccn-banner-failed"   style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#D12B2B;color:white;font-family:@(ThemeSvc.Active.HeadingFont);font-size:14px;font-weight:700;border-bottom:3px solid @(ThemeSvc.Active.BorderColor)">
             <span>Connection lost.</span>
-            <button onclick="location.reload()" style="font-family:'Fredoka One',cursive;font-size:12px;padding:3px 12px;background:rgba(255,255,255,.9);color:#D12B2B;border:2px solid white;border-radius:4px;cursor:pointer">Reload</button>
+            <button onclick="location.reload()" style="font-family:@(ThemeSvc.Active.HeadingFont);font-size:12px;padding:3px 12px;background:rgba(255,255,255,.9);color:#D12B2B;border:2px solid white;border-radius:4px;cursor:pointer">Reload</button>
             <span id="ccn-reload-countdown" style="font-size:12px;opacity:.8"></span>
         </div>
-        <div id="ccn-banner-rejected" style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#D12B2B;color:white;font-family:'Fredoka One',cursive;font-size:14px;font-weight:700;border-bottom:3px solid #1A1A1A">
+        <div id="ccn-banner-rejected" style="display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:#D12B2B;color:white;font-family:@(ThemeSvc.Active.HeadingFont);font-size:14px;font-weight:700;border-bottom:3px solid @(ThemeSvc.Active.BorderColor)">
             Session expired — reloading…
         </div>
     </div>
