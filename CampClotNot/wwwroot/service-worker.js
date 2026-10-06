@@ -2,10 +2,10 @@
 // Pages/_Layout.cshtml, and CACHE_NAME must be bumped whenever it changes. Otherwise installed
 // apps keep serving whatever app.css was current when this worker was installed (#326: v9 was
 // precached before the app shell existed, so bumping the page to v9 served the stale copy).
-const CACHE_NAME = 'ccn-shell-v11';
+const CACHE_NAME = 'ccn-shell-v12';
 const SHELL_ASSETS = [
     '/offline.html',
-    '/app.css?v=10',
+    '/app.css?v=11',
     '/_content/MudBlazor/MudBlazor.min.css',
     '/_content/MudBlazor/MudBlazor.min.js',
     '/icons/icon-192.png?v=3',
