@@ -9,10 +9,10 @@
         var http = HttpCtx.HttpContext;
         if (http is not null && !http.Response.HasStarted)
         {
-            // During prerendering: guests go back to their read-only schedule view,
+            // During prerendering: guests go back to their Dashboard,
             // authenticated staff who lack the role go to dashboard, unauthenticated users go to login.
             if (GuestSvc.GetGuestEventId(http.User).HasValue)
-                http.Response.Redirect("/hub/schedule");
+                http.Response.Redirect("/dashboard");
             else if (http.User.Identity?.IsAuthenticated == true)
                 http.Response.Redirect("/dashboard");
             else
@@ -22,7 +22,7 @@
         {
             var state = await AuthState.GetAuthenticationStateAsync();
             if (GuestSvc.GetGuestEventId(state.User).HasValue)
-                Nav.NavigateTo("/hub/schedule", replace: true);
+                Nav.NavigateTo("/dashboard", replace: true);
             else if (state.User.Identity?.IsAuthenticated == true)
                 Nav.NavigateTo("/dashboard", replace: true);
             else

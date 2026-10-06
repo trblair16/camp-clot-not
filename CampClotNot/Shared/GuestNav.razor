@@ -1,6 +1,7 @@
 @inject NavigationManager Nav
 @inject ThemeService ThemeSvc
 @inject AuthenticationStateProvider Auth
+@implements IDisposable
 
 @* ── MOBILE HEADER ──────────────────────────────────────────────── *@
 <div class="nav-mobile-header">
@@ -24,6 +25,7 @@
     </div>
 
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <a href="/dashboard" class="nav-link" style="@ActiveStyle("/dashboard", "#27AE60")"><img src="/img/icons/home.svg?v=3" class="nav-link-icon" alt="" /> Home</a>
         <a href="/hub/schedule" class="nav-link" style="@ActiveStyle("/hub/schedule", "#2980B9")"><img src="/img/icons/schedule.svg?v=3" class="nav-link-icon" alt="" /> Schedule</a>
         <a href="/hub/announcements" class="nav-link" style="@ActiveStyle("/hub/announcements", "#F5C800")"><img src="/img/icons/announcements.svg?v=3" class="nav-link-icon" alt="" /> Announcements</a>
         <a href="/hub/staff" class="nav-link" style="@ActiveStyle("/hub/staff", "#27AE60")"><img src="/img/icons/person.svg?v=3" class="nav-link-icon" alt="" /> Staff</a>
@@ -33,6 +35,10 @@
 
 @* ── BOTTOM BAR (mobile) ─────────────────────────────────────────── *@
 <div class="nav-bottom-bar">
+    <button class="nav-tab @(IsActive("/dashboard") ? "active" : "")" @onclick='() => Nav.NavigateTo("/dashboard")'>
+        <span class="tab-icon"><img src="/img/icons/home.svg?v=3" alt="" /></span>
+        <span>Home</span>
+    </button>
     <button class="nav-tab @(IsActive("/hub/schedule") ? "active" : "")" @onclick='() => Nav.NavigateTo("/hub/schedule")'>
         <span class="tab-icon"><img src="/img/icons/schedule.svg?v=3" alt="" /></span>
         <span>Schedule</span>
@@ -56,10 +62,17 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // No parameters, so the layout never re-renders this on navigation. Without this, the
+        // re-render after a tab click runs before the URL updates and the highlight lags a click.
+        Nav.LocationChanged += OnLocationChanged;
         await ThemeSvc.LoadAsync();
         var state = await Auth.GetAuthenticationStateAsync();
         _guestFirstName = state.User.Identity?.Name;
     }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 
     private bool IsActive(string href) =>
         ("/" + Nav.ToBaseRelativePath(Nav.Uri)).StartsWith(href, StringComparison.OrdinalIgnoreCase);
