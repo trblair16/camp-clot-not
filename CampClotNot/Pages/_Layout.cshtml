@@ -56,6 +56,15 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
+    <script>
+        // App shell (#326): .app-main is the page's scroller on phones. iOS can still leave the
+        // window itself scrolled after the keyboard closes, which pushes the chrome off — undo it.
+        window.ccnShell = { scrollToTop: () => document.querySelector('.app-main')?.scrollTo(0, 0) };
+        document.addEventListener('focusout', () => setTimeout(() => {
+            if (window.scrollY && document.querySelector('.app-frame') && matchMedia('(max-width: 1023px)').matches)
+                window.scrollTo(0, 0);
+        }, 150));
+    </script>
     <script src="_framework/blazor.server.js" autostart="false"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/board.js?v=3"></script>
