@@ -84,13 +84,14 @@
                             }
                         </div>
                         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                            <InputFile OnChange="e => UploadAsync(e, logo: true)" accept=".png,.jpg,.jpeg,.webp" style="font-size:13px;font-family:'Nunito',sans-serif;max-width:100%" />
+                            <InputFile OnChange="e => UploadAsync(e, logo: true)" accept=".png,.jpg,.jpeg,.webp" disabled="@_uploading" style="font-size:13px;font-family:'Nunito',sans-serif;max-width:100%" />
                             @if (_state.LogoUrl is not null)
                             {
                                 <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => RemoveAsync(logo: true)">Remove</button>
                             }
                         </div>
-                        <div class="thm-hint">Wide, transparent PNG or WebP works best (shown ~42px tall on a dark band). PNG, JPEG, or WebP, up to 2 MB.</div>
+                        @if (_uploading) { <div class="thm-hint">Uploading and resizing…</div> }
+                        <div class="thm-hint">Wide, transparent PNG or WebP works best (shown ~42px tall on a dark band). PNG, JPEG, or WebP, up to 20 MB (resized automatically).</div>
                         @if (!string.IsNullOrEmpty(_logoError)) { <div class="thm-err">@_logoError</div> }
                     </div>
 
@@ -107,13 +108,14 @@
                             }
                         </div>
                         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                            <InputFile OnChange="e => UploadAsync(e, logo: false)" accept=".png,.jpg,.jpeg,.webp" style="font-size:13px;font-family:'Nunito',sans-serif;max-width:100%" />
+                            <InputFile OnChange="e => UploadAsync(e, logo: false)" accept=".png,.jpg,.jpeg,.webp" disabled="@_uploading" style="font-size:13px;font-family:'Nunito',sans-serif;max-width:100%" />
                             @if (_state.BannerUrl is not null)
                             {
                                 <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => RemoveAsync(logo: false)">Remove</button>
                             }
                         </div>
-                        <div class="thm-hint">A flyer or photo for the top of the Dashboard. PNG, JPEG, or WebP, up to 2 MB.</div>
+                        @if (_uploading) { <div class="thm-hint">Uploading and resizing…</div> }
+                        <div class="thm-hint">A flyer or photo for the top of the Dashboard. PNG, JPEG, or WebP, up to 20 MB (resized automatically).</div>
                         @if (!string.IsNullOrEmpty(_bannerError)) { <div class="thm-err">@_bannerError</div> }
                     </div>
                 </div>
@@ -298,6 +300,7 @@
 
     private bool _loading = true;
     private bool _saving;
+    private bool _uploading;
     private bool _savedActive;
     private List<Event> _events = new();
     private Guid _eventId;
@@ -436,19 +439,39 @@
         var check = ThemeAdminService.Validate(file.Size, file.ContentType);
         if (check != ImageUploadResult.Ok)
         {
-            var msg = check == ImageUploadResult.TooLarge ? "File too large — maximum 2 MB." : "Use a PNG, JPEG, or WebP image.";
-            if (logo) _logoError = msg; else _bannerError = msg;
+            SetUploadError(logo, check);
             return;
         }
 
-        using var stream = file.OpenReadStream(maxAllowedSize: ThemeAdminService.MaxImageBytes);
-        using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
-        if (logo) await ThemeAdmin.SetLogoAsync(_state.ThemeId, ms.ToArray(), file.ContentType);
-        else      await ThemeAdmin.SetBannerAsync(_state.ThemeId, ms.ToArray(), file.ContentType);
+        _uploading = true;
+        StateHasChanged();
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: ThemeAdminService.MaxImageBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var data = ms.ToArray();
+            // Decoding and resizing a big image takes a moment; keep it off the circuit's thread.
+            check = await Task.Run(() => logo
+                ? ThemeAdmin.SetLogoAsync(_state.ThemeId, data, file.ContentType)
+                : ThemeAdmin.SetBannerAsync(_state.ThemeId, data, file.ContentType));
+        }
+        finally { _uploading = false; }
+        if (check != ImageUploadResult.Ok) { SetUploadError(logo, check); return; }
 
         await RefreshImagesAsync();
         Snackbar.Add(logo ? "Logo uploaded." : "Banner uploaded.", Severity.Success);
+    }
+
+    private void SetUploadError(bool logo, ImageUploadResult check)
+    {
+        var msg = check switch
+        {
+            ImageUploadResult.TooLarge => "File too large — maximum 20 MB.",
+            ImageUploadResult.Unreadable => "Couldn't read that image — try saving it as a PNG or JPEG.",
+            _ => "Use a PNG, JPEG, or WebP image."
+        };
+        if (logo) _logoError = msg; else _bannerError = msg;
     }
 
     private async Task RemoveAsync(bool logo)

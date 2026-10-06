@@ -6,16 +6,18 @@ namespace CampClotNot.Services;
 public record ThemeEditState(Guid ThemeId, Guid EventId, string EventName, ThemeConfig Config,
     string? LogoUrl, string? BannerUrl, DateTime? UpdatedAt);
 
-public enum ImageUploadResult { Ok, TooLarge, BadType }
+public enum ImageUploadResult { Ok, TooLarge, BadType, Unreadable }
 
 /// Persistence for /admin/theme. Every event owns its Theme row, so edits here only
 /// affect that one event. Viewers pick changes up on their next full page load
 /// (ThemeService resolves the theme once per circuit).
 public class ThemeAdminService(IDbContextFactory<AppDbContext> factory)
 {
-    // The logo renders on every page load, so keep uploads small. No SVG: it's served
-    // same-origin and can carry script.
-    public const long MaxImageBytes = 2 * 1024 * 1024;
+    // Uploads can be big; what's stored is downscaled (ImageShrinker) because the logo
+    // renders on every page load. No SVG: it's served same-origin and can carry script.
+    public const long MaxImageBytes = ImageShrinker.MaxUploadBytes;
+    public const int LogoMaxSide = 1200;    // nav (~42px tall) and the login/Dashboard hero
+    public const int BannerMaxSide = 1800;  // full-width Dashboard flyer
     public static readonly string[] AllowedImageTypes = ["image/png", "image/jpeg", "image/webp"];
 
     public async Task<ThemeEditState?> GetForEventAsync(Guid eventId)
@@ -59,6 +61,9 @@ public class ThemeAdminService(IDbContextFactory<AppDbContext> factory)
     {
         var check = Validate(data.LongLength, contentType);
         if (check != ImageUploadResult.Ok) return check;
+        if (ImageShrinker.Shrink(data, contentType, LogoMaxSide, ImageShrinker.Lossless) is not { } img)
+            return ImageUploadResult.Unreadable;
+        (data, contentType) = (img.Data, img.ContentType);
         using var db = factory.CreateDbContext();
         var theme = await db.Themes.FindAsync(themeId);
         if (theme is null) return ImageUploadResult.Ok;
@@ -86,6 +91,9 @@ public class ThemeAdminService(IDbContextFactory<AppDbContext> factory)
     {
         var check = Validate(data.LongLength, contentType);
         if (check != ImageUploadResult.Ok) return check;
+        if (ImageShrinker.Shrink(data, contentType, BannerMaxSide, ImageShrinker.Lossy) is not { } img)
+            return ImageUploadResult.Unreadable;
+        (data, contentType) = (img.Data, img.ContentType);
         using var db = factory.CreateDbContext();
         var theme = await db.Themes.FindAsync(themeId);
         if (theme is null) return ImageUploadResult.Ok;
