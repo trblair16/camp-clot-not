@@ -225,7 +225,7 @@
         var (data, type) = (ms.ToArray(), file.ContentType);
         if (!isSvg)
         {
-            if (await Task.Run(() => ImageShrinker.Shrink(data, type, LogoMaxSide, ImageShrinker.Lossless)) is not { } img)
+            if (await Task.Run(() => ImageShrinker.Shrink(data, type, LogoMaxSide, WebpMode.Lossless)) is not { } img)
             {
                 Snackbar.Add("Couldn't read that image — try a PNG or JPEG.", Severity.Warning);
                 return;

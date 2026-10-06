@@ -61,7 +61,7 @@ public class ThemeAdminService(IDbContextFactory<AppDbContext> factory)
     {
         var check = Validate(data.LongLength, contentType);
         if (check != ImageUploadResult.Ok) return check;
-        if (ImageShrinker.Shrink(data, contentType, LogoMaxSide, ImageShrinker.Lossless) is not { } img)
+        if (ImageShrinker.Shrink(data, contentType, LogoMaxSide, WebpMode.Lossless) is not { } img)
             return ImageUploadResult.Unreadable;
         (data, contentType) = (img.Data, img.ContentType);
         using var db = factory.CreateDbContext();
@@ -91,7 +91,7 @@ public class ThemeAdminService(IDbContextFactory<AppDbContext> factory)
     {
         var check = Validate(data.LongLength, contentType);
         if (check != ImageUploadResult.Ok) return check;
-        if (ImageShrinker.Shrink(data, contentType, BannerMaxSide, ImageShrinker.Lossy) is not { } img)
+        if (ImageShrinker.Shrink(data, contentType, BannerMaxSide, WebpMode.Lossy) is not { } img)
             return ImageUploadResult.Unreadable;
         (data, contentType) = (img.Data, img.ContentType);
         using var db = factory.CreateDbContext();
