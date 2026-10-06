@@ -78,7 +78,7 @@
                     </div>
                     <div style="flex:1;display:flex;flex-direction:column;gap:6px">
                         <InputFile OnChange="OnLogoSelected" accept="image/*" style="font-size:12px;width:100%" />
-                        <p style="font-size:11px;color:var(--text-light);margin:0">PNG or SVG · max 500 KB</p>
+                        <p style="font-size:11px;color:var(--text-light);margin:0">PNG, JPEG, WebP up to 20 MB (resized automatically) · SVG up to 500 KB</p>
                         @if (_form.LogoDataUrl is not null)
                         {
                             <button class="ccn-btn" style="font-size:11px;padding:3px 10px;background:#D12B2B;color:white" @onclick="RemoveLogo">Remove</button>
@@ -210,17 +210,33 @@
     private async Task OnLogoSelected(InputFileChangeEventArgs e)
     {
         var file = e.File;
-        if (file.Size > 500 * 1024)
+        // Logos are stored as data URLs and inlined into every page that shows the group,
+        // so rasters are shrunk to a small WebP. SVGs are kept as-is, under the old cap.
+        var isSvg = file.ContentType == "image/svg+xml";
+        var max = isSvg ? MaxSvgBytes : ImageShrinker.MaxUploadBytes;
+        if (file.Size > max)
         {
-            Snackbar.Add("Image exceeds 500 KB — please use a smaller file.", Severity.Warning);
+            Snackbar.Add(isSvg ? "SVG exceeds 500 KB — please use a smaller file." : "Image exceeds 20 MB — please use a smaller file.", Severity.Warning);
             return;
         }
-        using var stream = file.OpenReadStream(maxAllowedSize: 500 * 1024);
+        using var stream = file.OpenReadStream(maxAllowedSize: max);
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms);
-        var base64 = Convert.ToBase64String(ms.ToArray());
-        _form.LogoDataUrl = $"data:{file.ContentType};base64,{base64}";
+        var (data, type) = (ms.ToArray(), file.ContentType);
+        if (!isSvg)
+        {
+            if (await Task.Run(() => ImageShrinker.Shrink(data, type, LogoMaxSide, WebpMode.Lossless)) is not { } img)
+            {
+                Snackbar.Add("Couldn't read that image — try a PNG or JPEG.", Severity.Warning);
+                return;
+            }
+            (data, type) = (img.Data, img.ContentType);
+        }
+        _form.LogoDataUrl = $"data:{type};base64,{Convert.ToBase64String(data)}";
     }
+
+    private const long MaxSvgBytes = 500 * 1024;
+    private const int LogoMaxSide = 400;   // shown at 48px; 400 covers the board projector
 
     private void RemoveLogo() => _form.LogoDataUrl = null;
 

@@ -13,8 +13,6 @@
 @inject IConfiguration Config
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
-@using SixLabors.ImageSharp
-@using SixLabors.ImageSharp.Processing
 
 @* The one page an Admin needs to staff an event and run its Hub staff directory. Each team
    member's details (name, contact, photo) are entered once and reused on every event; the role,
@@ -465,6 +463,7 @@
         public bool ShowInDirectory = row.ShowInDirectory;
         public bool CanSignIn = row.User.CanSignIn;
         public byte[]? NewPhoto;
+        public string NewPhotoType = "image/jpeg";
         public bool PhotoRemoved;
         public int PhotoX = 50, PhotoY = 50;
         public string? PhotoError, Error;
@@ -487,7 +486,7 @@
     private string? PhotoPreviewSrc => _edit switch
     {
         null => null,
-        { NewPhoto: { } bytes } => $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}",
+        { NewPhoto: { } bytes } e => $"data:{e.NewPhotoType};base64,{Convert.ToBase64String(bytes)}",
         { PhotoRemoved: true } => null,
         var e when e.Row.User.PhotoContentType is not null => $"/admin/person-photo/{e.Row.UserId}",
         _ => null
@@ -711,25 +710,25 @@
     {
         if (_edit is null) return;
         _edit.PhotoError = null;
-        if (e.File.Size > 10 * 1024 * 1024) { _edit.PhotoError = "That photo is over 10 MB."; return; }
+        if (e.File.Size > ImageShrinker.MaxUploadBytes) { _edit.PhotoError = "That photo is over 20 MB."; return; }
+        ShrunkImage? img = null;
         try
         {
             using var ms = new MemoryStream();
-            await e.File.OpenReadStream(10 * 1024 * 1024).CopyToAsync(ms);
-            using var image = SixLabors.ImageSharp.Image.Load(ms.ToArray());
-            if (image.Width > 400 || image.Height > 400)
-                image.Mutate(x => x.Resize(new ResizeOptions { Mode = SixLabors.ImageSharp.Processing.ResizeMode.Max, Size = new SixLabors.ImageSharp.Size(400, 400) }));
-            using var outMs = new MemoryStream();
-            await image.SaveAsJpegAsync(outMs, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder { Quality = 85 });
-            _edit.NewPhoto = outMs.ToArray();
-            _edit.PhotoRemoved = false;
-            _edit.PhotoX = _edit.PhotoY = 50;
+            await e.File.OpenReadStream(ImageShrinker.MaxUploadBytes).CopyToAsync(ms);
+            var data = ms.ToArray();
+            // Also turns sideways phone photos upright.
+            img = await Task.Run(() => ImageShrinker.Shrink(data, e.File.ContentType, PhotoMaxSide, WebpMode.Lossy));
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            _edit.PhotoError = "Couldn't read that image — try a JPEG or PNG.";
-        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { }
+        if (img is null) { _edit.PhotoError = "Couldn't read that image — try a JPEG or PNG."; return; }
+        _edit.NewPhoto = img.Data;
+        _edit.NewPhotoType = img.ContentType;
+        _edit.PhotoRemoved = false;
+        _edit.PhotoX = _edit.PhotoY = 50;
     }
+
+    private const int PhotoMaxSide = 600;   // Hub cards are ~250px wide; 600 stays sharp on retina screens
 
     private async Task SaveEditAsync()
     {
@@ -749,7 +748,7 @@
         {
             var userId = f.Row.UserId;
             await EventStaffSvc.UpdatePersonAsync(userId, new PersonDetails(f.First, f.Last, f.Email, f.Phone, f.Emoji));
-            await EventStaffSvc.SetPhotoAsync(userId, f.NewPhoto, "image/jpeg", $"{f.PhotoX}% {f.PhotoY}%",
+            await EventStaffSvc.SetPhotoAsync(userId, f.NewPhoto, f.NewPhotoType, $"{f.PhotoX}% {f.PhotoY}%",
                 keepExisting: f.NewPhoto is null && !f.PhotoRemoved);
             await EventStaffSvc.UpdateDirectoryAsync(f.Row.EventStaffId, f.Title, f.ShowInDirectory);
 
