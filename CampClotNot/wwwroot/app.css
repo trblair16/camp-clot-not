@@ -108,14 +108,21 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
         overflow: hidden;
         overscroll-behavior: none;
     }
-    /* Pinned to the screen edges, not height:100%: in the iOS home-screen app (status bar
-       black-translucent + viewport-fit=cover) a percentage/vh height comes up a home-indicator
-       short, leaving a gap under the bottom bar. position:fixed reaches the real bottom. */
     .app-frame {
         position: fixed;
         inset: 0;
         display: flex;
         flex-direction: column;
+    }
+    /* iOS home-screen app (black-translucent status bar + viewport-fit=cover): the page draws
+       from the top of the screen, but innerHeight, height:100% and inset:0 all report the screen
+       minus the status bar (measured on an iPhone: 873 of 932pt), leaving that much cream under
+       the bottom bar. 100lvh is the full screen there. Standalone only: in a Safari tab 100lvh
+       is the toolbar-collapsed height and would hide the bar under Safari's toolbar. */
+    html.pwa-standalone .app-frame {
+        bottom: auto;
+        height: 100vh;
+        height: 100lvh;
     }
     .app-frame > .nav-mobile-header { position: relative; flex-shrink: 0; order: 1; }
     .app-frame > .app-main {
