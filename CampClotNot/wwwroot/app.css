@@ -92,6 +92,19 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     .nav-desktop-header { display: none !important; }
 }
 
+/* Loading splash on phones: a black band where the header will be, cream below, so the iOS
+   status bar (tinted from the top edge at load, #326) comes out black. */
+@media (max-width: 1023px) {
+    #app-loading { background: var(--black, #1A1A1A) !important; }
+    #app-loading::before {
+        content: "";
+        position: absolute;
+        top: 72px; left: 0; right: 0; bottom: 0;
+        background: var(--bg-base, #F2ECD8);
+        z-index: -1;
+    }
+}
+
 /* ── Page content padding: clears the fixed bottom bar in the document-scrolling layout ── */
 .app-content { padding: 20px 18px calc(80px + env(safe-area-inset-bottom)); }
 
@@ -108,12 +121,22 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
         overflow: hidden;
         overscroll-behavior: none;
     }
+    /* Status bar color (#326): the iOS home-screen app ignores theme-color and tints the status
+       bar from whatever touches the top edge as the page loads (fixed elements, else the page
+       background). So everything that can sit there is the header's black: the page and frame
+       backgrounds, the loading splash's top band, and the push/reconnect banners sit below the
+       header. The cream dotted background lives on .app-main instead. */
+    html:has(.app-frame),
+    html:has(.app-frame) body { background: var(--black, #1A1A1A); }
     .app-frame {
         position: fixed;
         inset: 0;
         display: flex;
         flex-direction: column;
+        background: var(--black, #1A1A1A);
     }
+    html:has(.app-frame) .ccn-push-banner { top: 72px !important; padding-top: 10px !important; }
+    html:has(.app-frame) #components-reconnect-modal { top: 72px !important; padding-top: 0 !important; }
     .app-frame > .nav-mobile-header { position: relative; flex-shrink: 0; order: 1; }
     .app-frame > .app-main {
         order: 2;
@@ -123,6 +146,10 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
         overflow-y: auto;
         overscroll-behavior-y: contain;
         -webkit-overflow-scrolling: touch;
+        background-color: var(--bg-base);
+        background-image: var(--bg-dot-image);
+        background-size: 22px 22px;
+        background-attachment: local;   /* dots scroll with the content, as they did on body */
     }
     .app-frame > .nav-bottom-bar { position: relative; flex-shrink: 0; order: 3; }
     /* The bar no longer overlaps content; keep room for the floating action buttons. */
