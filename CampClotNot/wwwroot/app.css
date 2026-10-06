@@ -92,8 +92,13 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     .nav-desktop-header { display: none !important; }
 }
 
+/* Space under the bottom tab bar's icons. The full home-indicator inset (~34px on iPhones)
+   reads as an empty strip, so keep only enough for the labels to clear the indicator line
+   (it sits ~8–13px from the bottom). 0 on devices without an inset. */
+:root { --nav-safe-bottom: max(calc(env(safe-area-inset-bottom) - 18px), 0px); }
+
 /* ── Page content padding: clears the fixed bottom bar in the document-scrolling layout ── */
-.app-content { padding: 20px 18px calc(80px + env(safe-area-inset-bottom)); }
+.app-content { padding: 20px 18px calc(80px + var(--nav-safe-bottom)); }
 
 /* ── App shell (#326, MainLayout's Ui:AppShell) ──────────────────────────────────────────
    iOS PWAs move position:sticky/fixed chrome when the document scrolls: the header drags
@@ -242,8 +247,8 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     background: var(--bg-base);
     border-top: var(--border-width) solid var(--border-color);
     z-index: 40;
-    height: calc(60px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(60px + var(--nav-safe-bottom));
+    padding-bottom: var(--nav-safe-bottom);
     align-items: flex-start;
 }
 .nav-tab {
@@ -285,7 +290,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
 .nav-admin-sheet,
 .nav-game-sheet {
     position: fixed;
-    bottom: calc(60px + env(safe-area-inset-bottom));
+    bottom: calc(60px + var(--nav-safe-bottom));
     left: 0;
     right: 0;
     max-height: calc(70vh - 60px);
