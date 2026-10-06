@@ -22,7 +22,9 @@
     <link href="~/app.css" asp-append-version="true" rel="stylesheet" />
     @RenderSection("HeadOutlet", required: false)
     <link rel="manifest" href="/manifest.json?v=3" />
-    <meta name="theme-color" content="@ThemeSvc.Active.Primary" />
+    @* The status bar's color in the home-screen app (and Android's toolbar). It sits directly above
+       the black header, so it's the header's --black, the same in every theme, not the primary. *@
+    <meta name="theme-color" content="#1A1A1A" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     @* "black", not "black-translucent" (#326): translucent draws the page under the status bar,
        and iOS then reports and paints the page one status bar (59pt) short at the bottom, so the
