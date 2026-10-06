@@ -302,7 +302,7 @@ try
         var guest = await guestSvc.GetOrCreateGuestAsync(firstName, lastName);
         await guestSvc.RecordVisitAsync(guest.GuestAttendeeId, ev.EventId);
         await guestSvc.SignInGuestAsync(ctx, ev, guest);
-        return Results.Redirect(LocalReturnUrl(form["returnUrl"]) ?? "/hub/schedule");
+        return Results.Redirect(LocalReturnUrl(form["returnUrl"]) ?? "/dashboard");
     }).AllowAnonymous();
 
     // Serve sponsor logos stored as bytea in the database
