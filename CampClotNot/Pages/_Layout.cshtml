@@ -15,18 +15,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600&display=swap" rel="stylesheet" /></noscript>
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <link href="app.css?v=9" rel="stylesheet" />
+    <link href="~/_content/MudBlazor/MudBlazor.min.css" asp-append-version="true" rel="stylesheet" />
+    @* asp-append-version adds ?v=<content hash>, so every change to a local CSS/JS file gets a new
+       URL. Static files are served with a 1-year immutable cache header, so never hand-version
+       them or leave the attribute off (#326). *@
+    <link href="~/app.css" asp-append-version="true" rel="stylesheet" />
     @RenderSection("HeadOutlet", required: false)
     <link rel="manifest" href="/manifest.json?v=3" />
     <meta name="theme-color" content="@ThemeSvc.Active.Primary" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    @* "black", not "black-translucent" (#326): translucent draws the page under the status bar,
+       and iOS then reports and paints the page one status bar (59pt) short at the bottom, so the
+       bottom nav can't reach the screen edge. "black" puts the page below a black status bar,
+       which matches the black header. iOS reads this when the app is added to the home screen. *@
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="HBDA Events" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png?v=3" />
-    @* Home-screen app flag for the app shell's frame height (app.css, #326). In <head> so it's
-       set before first paint. *@
-    <script>if (navigator.standalone === true || matchMedia('(display-mode: standalone)').matches) document.documentElement.classList.add('pwa-standalone');</script>
 </head>
 <body>
     <div id="app-loading" style="position:fixed;inset:0;z-index:10000;background:var(--bg-base,#F2ECD8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .3s ease">
@@ -69,10 +73,10 @@
         }, 150));
     </script>
     <script src="_framework/blazor.server.js" autostart="false"></script>
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="js/board.js?v=3"></script>
-    <script src="js/ceremony.js?v=1"></script>
-    <script src="js/install-prompt.js"></script>
+    <script src="~/_content/MudBlazor/MudBlazor.min.js" asp-append-version="true"></script>
+    <script src="~/js/board.js" asp-append-version="true"></script>
+    <script src="~/js/ceremony.js" asp-append-version="true"></script>
+    <script src="~/js/install-prompt.js" asp-append-version="true"></script>
     <script>
         Blazor.start({
             reconnectionOptions: {
@@ -155,6 +159,6 @@ if ('serviceWorker' in navigator) {
                 .catch(function(err) { console.warn('SW registration failed:', err); });
         }
     </script>
-    <script src="/js/push-notifications.js"></script>
+    <script src="~/js/push-notifications.js" asp-append-version="true"></script>
 </body>
 </html>
