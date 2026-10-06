@@ -153,7 +153,12 @@ try
         OnPrepareResponse = ctx =>
         {
             var path = ctx.File.Name;
-            if (path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+            // The browser must always see the current worker, or a new deploy is never noticed.
+            if (path.Equals("service-worker.js", StringComparison.OrdinalIgnoreCase))
+            {
+                ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
+            }
+            else if (path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
             {
                 ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
             }

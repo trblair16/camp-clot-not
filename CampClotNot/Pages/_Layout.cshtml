@@ -15,10 +15,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600&display=swap" rel="stylesheet" /></noscript>
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    @* Keep this version in sync with SHELL_ASSETS in wwwroot/service-worker.js and bump its
-       CACHE_NAME too: the worker serves app.css cache-first (#326). *@
-    <link href="app.css?v=11" rel="stylesheet" />
+    <link href="~/_content/MudBlazor/MudBlazor.min.css" asp-append-version="true" rel="stylesheet" />
+    @* asp-append-version adds ?v=<content hash>, so every change to a local CSS/JS file gets a new
+       URL. Static files are served with a 1-year immutable cache header, so never hand-version
+       them or leave the attribute off (#326). *@
+    <link href="~/app.css" asp-append-version="true" rel="stylesheet" />
     @RenderSection("HeadOutlet", required: false)
     <link rel="manifest" href="/manifest.json?v=3" />
     <meta name="theme-color" content="@ThemeSvc.Active.Primary" />
@@ -72,10 +73,10 @@
         }, 150));
     </script>
     <script src="_framework/blazor.server.js" autostart="false"></script>
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="js/board.js?v=3"></script>
-    <script src="js/ceremony.js?v=1"></script>
-    <script src="js/install-prompt.js"></script>
+    <script src="~/_content/MudBlazor/MudBlazor.min.js" asp-append-version="true"></script>
+    <script src="~/js/board.js" asp-append-version="true"></script>
+    <script src="~/js/ceremony.js" asp-append-version="true"></script>
+    <script src="~/js/install-prompt.js" asp-append-version="true"></script>
     <script>
         Blazor.start({
             reconnectionOptions: {
@@ -158,6 +159,6 @@ if ('serviceWorker' in navigator) {
                 .catch(function(err) { console.warn('SW registration failed:', err); });
         }
     </script>
-    <script src="/js/push-notifications.js"></script>
+    <script src="~/js/push-notifications.js" asp-append-version="true"></script>
 </body>
 </html>

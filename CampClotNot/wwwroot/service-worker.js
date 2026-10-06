@@ -1,17 +1,17 @@
-// Static assets are served cache-first, so the app.css version here MUST match the one in
-// Pages/_Layout.cshtml, and CACHE_NAME must be bumped whenever it changes. Otherwise installed
-// apps keep serving whatever app.css was current when this worker was installed (#326: v9 was
-// precached before the app shell existed, so bumping the page to v9 served the stale copy).
-const CACHE_NAME = 'ccn-shell-v12';
+// Our CSS/JS URLs carry a content hash (asp-append-version in _Layout.cshtml), so a deploy
+// always means new URLs. This worker goes network-first for same-origin files and only falls
+// back to its cache offline, so it can never serve a stale stylesheet (#326). The fetch still
+// goes through the browser's HTTP cache, where those hashed files are immutable, so this costs
+// no extra downloads. Bump CACHE_NAME only to drop old offline copies.
+const CACHE_NAME = 'ccn-shell-v13';
 const SHELL_ASSETS = [
     '/offline.html',
-    '/app.css?v=11',
-    '/_content/MudBlazor/MudBlazor.min.css',
-    '/_content/MudBlazor/MudBlazor.min.js',
     '/icons/icon-192.png?v=3',
     '/icons/icon-512.png?v=3'
 ];
 const SKIP_PREFIXES = ['/livehub', '/account/', '/api/'];
+// Same-origin responses worth keeping for offline use.
+const OFFLINE_COPY = /\.(css|js|png|webp|svg|woff2?)$/i;
 
 self.addEventListener('install', function(event) {
     event.waitUntil(
@@ -48,11 +48,28 @@ self.addEventListener('fetch', function(event) {
         return;
     }
 
+    if (url.origin !== self.location.origin) return;   // fonts etc.: let the browser handle them
+
     event.respondWith(
-        caches.match(event.request).then(function(cached) {
-            return cached || fetch(event.request).catch(function() {
-                return caches.match('/offline.html');
-            });
+        fetch(event.request).then(function(response) {
+            if (response.ok && OFFLINE_COPY.test(url.pathname)) {
+                var copy = response.clone();
+                // Keep one offline copy per file: drop older deploys' versions (other ?v= hashes).
+                caches.open(CACHE_NAME).then(function(cache) {
+                    return cache.keys().then(function(keys) {
+                        return Promise.all(keys.filter(function(k) {
+                            var u = new URL(k.url);
+                            return u.pathname === url.pathname && u.search !== url.search;
+                        }).map(function(k) { return cache.delete(k); }));
+                    }).then(function() { return cache.put(event.request, copy); });
+                });
+            }
+            return response;
+        }).catch(function() {
+            // Offline: this exact URL, else the same file from an older deploy, else the offline page.
+            return caches.match(event.request)
+                .then(function(hit) { return hit || caches.match(event.request, { ignoreSearch: true }); })
+                .then(function(hit) { return hit || caches.match('/offline.html'); });
         })
     );
 });
