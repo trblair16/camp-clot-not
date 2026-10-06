@@ -4,6 +4,8 @@
 @inject AuthenticationStateProvider AuthState
 @inject IJSRuntime JS
 @inject GuestAccessService GuestSvc
+@inject IConfiguration Config
+@implements IDisposable
 
 <ThemeHead />
 <MudThemeProvider IsDarkMode="false" Theme="@BuildMudTheme()" />
@@ -11,6 +13,11 @@
 <MudSnackbarProvider />
 
 <ProjectorOverlay Visible="_showProjector" OnClose="@(() => _showProjector = false)" />
+
+@* App shell (#326): on phones the page itself doesn't scroll — header, .app-main, bottom bar
+   are a fixed-height flex column (app.css), so iOS can't drag the header or shift the bar.
+   Ui:AppShell=false drops the classes and restores the old document-scrolling layout. *@
+<div class="@(_appShell ? "app-frame" : null)">
 
 @if (_isGuest)
 {
@@ -32,19 +39,27 @@ else
     </div>
 }
 
-<div style="padding:20px 18px calc(80px + env(safe-area-inset-bottom))">
-    @Body
+<div class="@(_appShell ? "app-main" : null)">
+    <div class="app-content">
+        @Body
+    </div>
 </div>
 
 <InstallPromptBanner />
+</div>
 
 @code {
     private bool _showProjector;
     private bool _showPushBanner;
     private bool _isGuest;
+    private bool _appShell;
+    private string _path = "";
 
     protected override async Task OnInitializedAsync()
     {
+        _appShell = Config.GetValue("Ui:AppShell", true);
+        _path = new Uri(Nav.Uri).AbsolutePath;
+        Nav.LocationChanged += OnLocationChanged;
         var state = await AuthState.GetAuthenticationStateAsync();
         _isGuest = GuestSvc.GetGuestEventId(state.User).HasValue;
         await ThemeSvc.LoadAsync();
@@ -75,6 +90,18 @@ else
             catch { }
         }
     }
+
+    // Blazor resets the window's scroll on navigation, but in the app shell the window never
+    // scrolls — .app-main does — so a new page would open at the old page's scroll position.
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var path = new Uri(e.Location).AbsolutePath;
+        if (!_appShell || path == _path) return;
+        _path = path;
+        try { await JS.InvokeVoidAsync("ccnShell.scrollToTop"); } catch { }
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 
     private async Task EnablePush()
     {

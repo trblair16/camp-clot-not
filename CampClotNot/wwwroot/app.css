@@ -92,6 +92,42 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     .nav-desktop-header { display: none !important; }
 }
 
+/* ── Page content padding: clears the fixed bottom bar in the document-scrolling layout ── */
+.app-content { padding: 20px 18px calc(80px + env(safe-area-inset-bottom)); }
+
+/* ── App shell (#326, MainLayout's Ui:AppShell) ──────────────────────────────────────────
+   iOS PWAs move position:sticky/fixed chrome when the document scrolls: the header drags
+   down on overscroll and the bottom bar can stick a safe-area height too high. On phones and
+   tablets the document doesn't scroll at all: the header, .app-main (the only scroller) and
+   the bottom bar are a full-height flex column, so the chrome is ordinary flex items. */
+@media (max-width: 1023px) {
+    html:has(.app-frame),
+    html:has(.app-frame) body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+    .app-frame {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .app-frame > .nav-mobile-header { position: relative; flex-shrink: 0; order: 1; }
+    .app-frame > .app-main {
+        order: 2;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+    .app-frame > .nav-bottom-bar { position: relative; flex-shrink: 0; order: 3; }
+    /* The bar no longer overlaps content; keep room for the floating action buttons. */
+    .app-frame > .app-main > .app-content { padding-bottom: 80px; }
+}
+
 .nav-mobile-header {
     width: 100%;
     background: var(--black);

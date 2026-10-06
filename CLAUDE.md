@@ -449,6 +449,9 @@ Themes are owned by a single event (app invariant, not a DB constraint). Creatin
 **21. Native form posts for anything that sets a cookie.**  
 Login, change-password, reset-password, and guest join are HTML `<form method="post">` to minimal-API endpoints in `Program.cs`, because a cookie can't be set from the SignalR circuit. When testing these pages with Playwright, wait ~3s after load before filling inputs: the interactive render replaces the prerendered form and wipes anything typed earlier.
 
+**22. On phones the page doesn't scroll: `.app-main` does (app shell, #326).**  
+Below 1024px, `MainLayout` is a full-height flex column: header, then `.app-main` (the only scroller), then the bottom bar. This stops iOS PWAs from dragging the sticky header on overscroll and from leaving the fixed bottom bar a home-indicator height too high (#153). So `window.scrollY` stays 0 on mobile. Scroll `.app-main` instead (`ccnShell.scrollToTop()`). `MainLayout` resets it on every path change. Don't make the header or bottom bar `sticky`/`fixed` again inside `.app-frame`. `Ui__AppShell=false` restores the old layout if it ever needs reverting.
+
 ---
 
 ## UI Design Direction — Mario Party Reference
@@ -641,6 +644,6 @@ Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-.
 ## Production (Railway)
 
 - **Migrations apply automatically at startup.** There's no manual step when deploying.
-- **Environment variables:** `DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`/`Seed__AdminPassword` (only used when the Users table is empty), `Vapid__PublicKey`/`Vapid__PrivateKey`/`Vapid__Subject`, `Email__ResendApiKey`/`Email__From` (password emails; unset means Admins get copyable links instead), and `App__PublicBaseUrl` (optional, the base for emailed links).
+- **Environment variables:** `DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`/`Seed__AdminPassword` (only used when the Users table is empty), `Vapid__PublicKey`/`Vapid__PrivateKey`/`Vapid__Subject`, `Email__ResendApiKey`/`Email__From` (password emails; unset means Admins get copyable links instead), and `App__PublicBaseUrl` (optional, the base for emailed links), and `Ui__AppShell` (optional; `false` turns off the mobile app-shell layout from #326 and restores whole-page scrolling).
 - **Emergency manual migration** (normally unnecessary): `dotnet ef database update --connection '<public TCP proxy connection string>'` from a machine that can reach Railway's public Postgres proxy (Railway → Postgres → Settings → Public Networking). Use single quotes in PowerShell so `$` in the password isn't expanded.
 - **Locked out of an account:** use "Forgot password?" (once email is configured), or have another Admin use "Email reset link" / "Reset PW" on `/admin/users`.
