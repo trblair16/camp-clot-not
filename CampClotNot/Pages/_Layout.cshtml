@@ -16,7 +16,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600&display=swap" rel="stylesheet" /></noscript>
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <link href="app.css?v=9" rel="stylesheet" />
+    @* Keep this version in sync with SHELL_ASSETS in wwwroot/service-worker.js and bump its
+       CACHE_NAME too: the worker serves app.css cache-first (#326). *@
+    <link href="app.css?v=10" rel="stylesheet" />
     @RenderSection("HeadOutlet", required: false)
     <link rel="manifest" href="/manifest.json?v=3" />
     <meta name="theme-color" content="@ThemeSvc.Active.Primary" />
