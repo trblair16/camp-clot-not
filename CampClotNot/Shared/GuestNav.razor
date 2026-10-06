@@ -1,6 +1,7 @@
 @inject NavigationManager Nav
 @inject ThemeService ThemeSvc
 @inject AuthenticationStateProvider Auth
+@implements IDisposable
 
 @* ── MOBILE HEADER ──────────────────────────────────────────────── *@
 <div class="nav-mobile-header">
@@ -61,10 +62,17 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // No parameters, so the layout never re-renders this on navigation. Without this, the
+        // re-render after a tab click runs before the URL updates and the highlight lags a click.
+        Nav.LocationChanged += OnLocationChanged;
         await ThemeSvc.LoadAsync();
         var state = await Auth.GetAuthenticationStateAsync();
         _guestFirstName = state.User.Identity?.Name;
     }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 
     private bool IsActive(string href) =>
         ("/" + Nav.ToBaseRelativePath(Nav.Uri)).StartsWith(href, StringComparison.OrdinalIgnoreCase);
