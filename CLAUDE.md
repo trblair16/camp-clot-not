@@ -1,7 +1,7 @@
 # Camp Clot Not — Claude Code Briefing
 
 ## What This Is
-A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with bleeding disorders run by HBDA (Alabama chapter). The 2026 theme is Super Mario Party. The platform is being built to run camp scoring/competition for June 20-25, 2026, with a longer-term goal of replacing the chapter's Yapp subscription (~$1,600/year) for all chapter events.
+A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with bleeding disorders run by HBDA (Alabama chapter). The 2026 theme is Super Mario Party. The platform is being built to run camp scoring/competition for June 20-25, 2026, with a longer-term goal of running all chapter events.
 
 **Primary spec:** `REQUIREMENTS.md`  
 **Schema redesign spec:** `docs/superpowers/specs/2026-04-28-schema-redesign.md`
@@ -65,7 +65,7 @@ Tags, dates, and the full v0.1.0 → v1.0.0 build log (the per-version notes tha
 **v1.2.0 — Polish + Deeper v2.0 Prep** (all ⬜)
 
 - Cloudflare Turnstile on login and forgot-password (#315); there's no login rate limit today
-- Audit log — `AuditEntry` table + interceptor on SaveChanges; Vicki can see "Tyler deleted a schedule item at 3pm." Single migration, high ops value before chapter-scale events
+- Audit log — `AuditEntry` table + interceptor on SaveChanges; the event coordinator can see "Tyler deleted a schedule item at 3pm." Single migration, high ops value before chapter-scale events
 - `ScheduleTemplate` + `ScheduleTemplateItem` entity + migration (data layer only, no admin UI yet) — v2.0.0 branch starts with the schema already done and just builds the interface on top
 - Test suite foundation — service-layer unit tests for scoring, auth, and seed. Manual testing only for v1.x; want these in place before v2.0 architectural changes touch everything
 
@@ -73,7 +73,7 @@ Tags, dates, and the full v0.1.0 → v1.0.0 build log (the per-version notes tha
 
 **v2.0.0 — Self-Service Event Management**
 
-*Goal: Vicki can configure and launch a "Men's Retreat" (or any HBDA event) entirely within the admin UI without any developer involvement. No seed changes, no code deploys, no Tyler.*
+*Goal: The event coordinator can configure and launch a "Men's Retreat" (or any HBDA event) entirely within the admin UI without any developer involvement. No seed changes, no code deploys, no Tyler.*
 
 *Status:* mostly ✅ ahead of schedule.
 - ✅ `/admin/events`: create, edit, set active, capability checkboxes, guest code and QR, "Copy setup from…" duplication (#312)
@@ -115,13 +115,13 @@ Admin → Event Designer
   └── Capabilities        /admin/capabilities        (new)
 ```
 
-*This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "Vicki configures events in the UI."
+*This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "the event coordinator configures events in the UI."
 
 ---
 
-**v2.1.0 — Member Access (Yapp Replacement)**
+**v2.1.0 — Member Access**
 
-*Goal: Families and chapter members can access event info on their phones with zero friction — same experience as Yapp, but ours.*
+*Goal: Families and chapter members can access event info on their phones with zero friction, on a platform the chapter owns.*
 
 *Status:* partly ✅.
 - ✅ Event code and QR `/join` (`Event.GuestCode`, PR #298)
@@ -139,7 +139,7 @@ Admin → Event Designer
 | Staff/Admin | Full account | Admin-created (existing) | Everything |
 
 *What ships:*
-- `EventCode` entity + `/join/{code}` route — validates code, issues a `Member` role cookie carrying `EventId` claim scoped to that event; expires at `EventExpDate + 1 day`; Vicki generates one code per event (`HARVEST26`), posts it on a flyer
+- `EventCode` entity + `/join/{code}` route — validates code, issues a `Member` role cookie carrying `EventId` claim scoped to that event; expires at `EventExpDate + 1 day`; the event coordinator generates one code per event (`EVENT26`), posts it on a flyer
 - `GuestAttendee` entity — `Name`, `Email?`, `EventId`, `SessionToken` (ties back to cookie); created on first identity-requiring action with a single low-friction "What's your name?" prompt
 - Member-facing Hub: read-only schedule, announcements, info pages, staff directory with its own layout/nav tier (no admin controls, no transaction log)
 - Push notifications (Web Push + VAPID, `PushSubscription` table, background ASP.NET service) — now that member identity exists; "new announcement" and "schedule change" pushes to both named guests and full members
@@ -160,7 +160,7 @@ Admin → Event Designer
 
 - **Session signups**: limited-capacity breakout sessions; `SessionSignup` entity FK to either `UserId` (staff) or `GuestAttendeeId` (named guest); capacity counts; roster view for facilitators
 - **Attendance tracking**: `EventAttendance` table; check-in flow; admin roster; works across all identity tiers
-- **End-of-event reporting/export**: final score summary, transaction log PDF, incident report bundle, attendance sheets — the "give Vicki the paperwork" feature
+- **End-of-event reporting/export**: final score summary, transaction log PDF, incident report bundle, attendance sheets — the "give the event coordinator the paperwork" feature
 - Awards UI already shipped in v1.1.0; this release adds ceremony projector display
 
 ---
@@ -399,7 +399,7 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 - **Connection string:** `CampClotNot/appsettings.Development.json` (gitignored)
 - **Migrations:** applied automatically at startup by `SeedService.SeedAsync()` → `MigrateAsync()`. `dotnet ef database update` from `CampClotNot/` also works.
 - **Start app:** `dotnet run` from `CampClotNot/` or F5 in Visual Studio
-- **Login (dev):** `tyler@hbda.local` / `DevAdmin1!` (seeded from appsettings.Development.json)
+- **Login (dev):** `tyler@hbda.local` and your local `Seed:AdminPassword` (seeded from appsettings.Development.json)
 - **gh CLI:** `& "$env:LOCALAPPDATA\Programs\gh\gh.exe" <command>` from PowerShell
 
 ## Cloud Agent Sessions (Claude Code on the web)

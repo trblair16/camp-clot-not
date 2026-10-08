@@ -37,7 +37,7 @@ A working React prototype mockup exists in the project files (`ccn-mockup-v2.jsx
 
 | Role | Permissions |
 |---|---|
-| Admin (Tyler / Katelyn / Vicki) | Full access: pre-load board, configure themes, award coins/stars, void any transaction, manage groups, trigger block hit, manage user accounts, pin/urgent announcements, edit info pages, edit staff directory |
+| Admin (Tyler and chapter leads) | Full access: pre-load board, configure themes, award coins/stars, void any transaction, manage groups, trigger block hit, manage user accounts, pin/urgent announcements, edit info pages, edit staff directory |
 | Staff | Award coins and stars to groups, add optional note, view dashboard and board, post normal-priority announcements, view all Hub features. Cannot void others' transactions or access admin config. |
 | Volunteer | Log transactions only. View Hub features. No admin access. GroupId assigned to filter schedule view. |
 
@@ -448,7 +448,7 @@ Railway assigns a dynamic port via the PORT env var. Never hardcode a port. This
 
 **Pre-Camp Dry Run (2-3 weeks before camp) — REQUIRED:**
 - Spin up production with real data
-- Have Katelyn and Amanda log test transactions from their phones
+- Have a couple of staff members log test transactions from their phones
 - Run block hit mechanic on actual projector at full resolution
 - Run mini-game spinner on projector
 - Deliberately drop/restore internet to test SignalR reconnect
@@ -486,8 +486,8 @@ Format: `[MAJOR].[MINOR].[PATCH]`
 | `v1.0.1`, `v1.0.2` … | Hotfixes during/after camp |
 | `v1.1.0` | Post-camp quick wins + architecture prep |
 | `v1.2.0` | Post-camp polish + deeper v2 prep |
-| `v2.0.0` | Self-service Event Designer — Vicki configures events without Tyler |
-| `v2.1.0` | Member access / Yapp replacement — event-code guests, tiered identity |
+| `v2.0.0` | Self-service Event Designer — the event coordinator configures events without Tyler |
+| `v2.1.0` | Member access — event-code guests, tiered identity |
 | `v2.2.0` | Event operations — attendance, signups, score lock, awards UI |
 | `v3.0.0` | Multi-tenant SaaS / native mobile / separate frontend client |
 
@@ -566,7 +566,7 @@ Camp is June 20-25, 2026.
 | ~June 7 | v0.5.0 — Camp Info Hub + PWA ✅ | Hub features (§8.1–8.4), PWA manifest + service worker + install flow (§8.9), Railway production setup |
 | ~May 28 | v0.5.1 — Hub Additions ✅ | Mobile/PWA fixes, Incident Reports (§8.10), Sponsors (§8.11), Info seed cleanup, PrintLayout |
 | ~June 2 | v0.5.2 — Schedule Admin + Sponsor Logos ✅ | Sponsor binary logo upload, `/admin/schedule` CRUD, schedule day tabs, nav restructure, `/` → `/hub/schedule` redirect |
-| ~June 2 | v0.5.3 — Activities Admin ✅ | `/admin/activities` CRUD for MinuteToWinIt activities (Vicki/Amanda configurable) |
+| ~June 2 | v0.5.3 — Activities Admin ✅ | `/admin/activities` CRUD for MinuteToWinIt activities (event admins configurable) |
 | ~June 2 | v0.5.4 — Schedule Save Fix ✅ | Bug fix: EF shadow FK on `ScheduleEvent.CreatedByUser` caused circuit crash on save; explicit `HasForeignKey` + migration |
 | ~June 7 | v0.5.5 — UX Improvements ✅ | Dashboard landing page, incident enhancements, staff photos, Medical Staff role, sponsor improvements, schedule improvements (see §8.14) |
 | ~June 7 | v0.5.6 — Schedule Types + UX Polish ✅ | Table-driven ScheduleItemType, ScheduleEvent→ScheduleItem rename, LocationOther field, tel: E.164 fix, staff photo position, locations lightbox, password visibility, users sort/filter/search, admin nav section headers |
@@ -579,7 +579,7 @@ Camp is June 20-25, 2026.
 | Post-camp | **v1.1.0 — Quick Wins + Arch Prep** | Forgot-password flow, response caching (EF second-level), neo-brutalist transactions table, awards UI, `IActiveEventService` wrapper (decouple `SeedService.Id.EventCcn2026` hardcoding) |
 | Post-camp | **v1.2.0 — Polish + v2 Foundations** | Audit log (who changed what), `ScheduleTemplate` entity + relative-offset items, automated smoke-test suite |
 | Post-camp | **v2.0.0 — Self-Service Event Designer** | Event CRUD in admin UI, event duplication, theme config UI, feature-flag capabilities UI, admin completion checklist; replaces all hardcoded seed-GUID references with runtime active-event lookups |
-| Post-camp | **v2.1.0 — Member Access (Yapp Replacement)** | Event-code guest access (`HARVEST26` style), `GuestAttendee` tiered identity (anonymous → named guest → full member), member-facing Hub read-only views for chapter events (Camp Harvest, Annual Meeting) |
+| Post-camp | **v2.1.0 — Member Access** | Event-code guest access (`EVENT26` style), `GuestAttendee` tiered identity (anonymous → named guest → full member), member-facing Hub read-only views for chapter events (Camp Harvest, Annual Meeting) |
 | Post-camp | **v2.2.0 — Event Operations** | Attendance tracking, schedule-item signup with capacity enforcement, score lock, transaction CSV export, winning-group celebration screen |
 | Future | **v3.0.0 horizon** | Multi-tenant SaaS (multiple chapters), native mobile shell (push notifications, offline-first), or separate React/WASM frontend — only when platform outgrows current Blazor Server architecture |
 
@@ -692,7 +692,7 @@ The 2021 `hbda_tracking` schema tracked individual attendee points across events
 - Score lock — admin action freezing all transactions
 - Winning group celebration screen on projector
 - Final standings screen — clean read-only summary
-- Transaction export — CSV download for Vicki's chapter records
+- Transaction export — CSV download for the chapter's records
 - Archive/reset — preserve history, reset for next year
 
 ---
@@ -803,7 +803,7 @@ Claude Code must use system names for all variables, routes, DB fields, and comp
 
 ---
 
-## Part 8 — Beta Features: Camp Info Hub (Yapp Replacement)
+## Part 8 — Beta Features: Camp Info Hub
 
 **Status:** v0.5.0 shipped. v0.5.1 adds Sponsors and Incident Reports. Hub sub-navigation (Schedule / Announcements / Staff / Sponsors / Info / Incidents[Admin]) under a single **"📋 Hub"** main nav tab.
 
@@ -813,7 +813,7 @@ Claude Code must use system names for all variables, routes, DB fields, and comp
 
 ### 8.1 Schedule / Agenda View
 
-Replaces Yapp's schedule tab. Staff can view and edit the full week's agenda in one place.
+The event schedule. Staff can view and edit the full week's agenda in one place.
 
 **Data model:**
 ```
@@ -829,7 +829,7 @@ ScheduleEventGroup — EventId, GroupId  (bridge; only populated when AppliesToA
 - Any staff role can add, edit, delete events — no approval flow
 - Empty state: "No events scheduled for this day — tap + to add one"
 
-**Admin CRUD:** `/admin/schedule` — Admin-only page for pre-loading the full week's schedule before camp. Vicki/Amanda can configure all events. Form panel + table pattern (matching `/admin/locations`). Group assignment overrides (Activity, Location, Note per group) are collapsible within the form.
+**Admin CRUD:** `/admin/schedule` — Admin-only page for pre-loading the full week's schedule before camp. Event admins can configure all events. Form panel + table pattern (matching `/admin/locations`). Group assignment overrides (Activity, Location, Note per group) are collapsible within the form.
 
 **Scope boundary:** Staff-only. No camper-facing view in beta. No recurring event support.
 
@@ -839,7 +839,7 @@ ScheduleEventGroup — EventId, GroupId  (bridge; only populated when AppliesToA
 
 ### 8.2 Announcements
 
-Replaces Yapp's news/announcements tab. Pull-only in beta — no push notifications (see §9.4 for push roadmap).
+News and announcements. Pull-only in beta — no push notifications (see §9.4 for push roadmap).
 
 **Data model:**
 ```
@@ -864,7 +864,7 @@ Announcement — AnnouncementId, Title, Body (text), Priority (enum: Normal|Urge
 
 ### 8.3 Staff Directory
 
-Replaces Yapp's directory tab.
+The staff directory.
 
 **Data model:**
 ```
@@ -888,7 +888,7 @@ StaffMember — StaffMemberId, DisplayName, RoleTitle (free text), Phone (nullab
 
 ### 8.4 Info Pages (Camp Handbook)
 
-Replaces Yapp's info section — rules, FAQs, policies, packing lists.
+Event info pages — rules, FAQs, policies, packing lists.
 
 **Data model:**
 ```
@@ -1070,7 +1070,7 @@ IncidentReport — ... (existing fields) ...
 
 ### 8.11 Sponsors (v0.5.1 base; enhancements in v0.5.5)
 
-Admin manages a list of event sponsors. All users can view a Sponsors tab in the Hub. Sponsors are prominently featured on the Dashboard landing page (Vicki emphasis).
+Admin manages a list of event sponsors. All users can view a Sponsors tab in the Hub. Sponsors are prominently featured on the Dashboard landing page (chapter request).
 
 **Display page:** `/hub/sponsors` — responsive grid of logo tiles. Each tile: logo (constrained 80px height), sponsor name, **contact name + clickable `tel:` phone link (v0.5.5)** when present. If Website is set, the tile is a link.
 
@@ -1089,7 +1089,7 @@ Sponsor — ... (existing) ..., ContactName (string?), Phone (string?)
 
 ### 8.12 Mini-Game Activities Admin (v0.5.3)
 
-Admin CRUD at `/admin/activities` for MinuteToWinIt activities (e.g. "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay"). Vicki/Amanda can add, rename, and delete activities. Deletion is blocked if the activity is assigned to a `ScriptedMiniGame`. These are the same activities used by the evening spinner and group assignment overrides on schedule events.
+Admin CRUD at `/admin/activities` for MinuteToWinIt activities (e.g. "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay"). Event admins can add, rename, and delete activities. Deletion is blocked if the activity is assigned to a `ScriptedMiniGame`. These are the same activities used by the evening spinner and group assignment overrides on schedule events.
 
 ### 8.14 v0.5.5 Feature Set
 
@@ -1151,7 +1151,7 @@ ScheduleEvent — ... (existing) ..., PresenterName (string?), PresenterBio (str
 
 - `Dashboard.razor` at `/dashboard` — the post-login landing page (replacing `/hub/schedule` as the redirect target from `Index.razor`).
 - Widget layout (neo-brutalist `ccn-panel` sections, Fredoka One headings):
-  1. **Sponsors** (prominent — first widget or largest visual weight; Vicki emphasis): logo tile grid or "View Sponsors" CTA linking to `/hub/sponsors`
+  1. **Sponsors** (prominent — first widget or largest visual weight; chapter request): logo tile grid or "View Sponsors" CTA linking to `/hub/sponsors`
   2. **Today's Schedule**: events for today from `ScheduleService`; time + title; "View Full Schedule" link
   3. **Latest Announcement**: most recent non-archived, non-expired announcement; title + body preview; "View All" link
   4. **Quick Nav**: styled nav cards for Schedule, Game Leaderboard, and other key pages
@@ -1244,8 +1244,6 @@ All form modals use the same visual shell: `rgba(26,26,26,.65)` backdrop with `a
 ## Part 9 — Scale, Infrastructure Strategy & Long-Term Architecture
 
 **Context:** The CCN app was initially scoped for Camp Clot Not staff (~10-15 concurrent users). This section addresses the forward path to chapter-event scale (150-300 concurrent members) and the infrastructure decisions required to get there without compromising quality or requiring an architectural rewrite.
-
-**Cost benchmark:** The chapter currently pays ~$1,600/year for Yapp. The target for this platform is ≤$105/year at chapter scale while delivering comparable or superior functionality with full chapter ownership of the platform and data.
 
 ---
 
@@ -1350,7 +1348,7 @@ With Azure SignalR handling connections, Pro 2GB comfortably handles 300+ concur
 
 ### 9.4 Push Notifications — Implementation Path
 
-Push notifications are the single most impactful Yapp feature not yet in scope. This section captures the implementation path for v1.1 once member identity is ready.
+Push notifications are the most impactful member-facing feature not yet in scope. This section captures the implementation path for v1.1 once member identity is ready.
 
 **Delivery chain:**
 ```
@@ -1409,8 +1407,6 @@ This is a post-camp v1.1 design task. The data model and service layer should be
 | Push notifications | WebPush + FCM + APNs | $0 |
 | Monitoring | Railway logs + /health | $0 |
 | **Total** | | **~$105/year** |
-
-Against $1,600/year Yapp: equivalent or superior functionality at ~6% of the cost, with the chapter retaining full ownership of the platform, data, and roadmap.
 
 ---
 

@@ -96,7 +96,7 @@ event (and stays active) until the wiring is proven out.
 
 ## 2. Capability gating
 
-**Goal:** Vicki can turn off Men's Retreat's game/scoring features from the admin UI;
+**Goal:** The event coordinator can turn off Men's Retreat's game/scoring features from the admin UI;
 hidden features are unreachable, not just hidden from nav.
 
 - Add two missing capabilities to the `Feature` enum + `SeedCapabilitiesAsync`:
@@ -145,7 +145,7 @@ Mario Party's CCN 2026 styling.
 
 ## 4. Extended event management
 
-**Goal:** Reduce setup effort for Vicki/Amanda when standing up a new event.
+**Goal:** Reduce setup effort for event admins when standing up a new event.
 
 - `/admin/events`: add a "Duplicate from…" dropdown, shown when creating a new event.
 - Cloning copies:

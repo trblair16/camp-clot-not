@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-05
 **Status:** Implemented (2026-10-05) on `feature/322-larger-logo-uploads` (#322), merged into `dev` via PR #323.
-**Driver:** Vicki wants to upload bigger images, mainly **staff directory photos** and **sponsor
+**Driver:** The event coordinator wants to upload bigger images, mainly **staff directory photos** and **sponsor
 logos**, both capped at 10 MB. The same treatment covers the event logo and Dashboard banner
 (`/admin/theme`, 2 MB cap) and group logos (`/admin/groups`, 500 KB cap). Those caps were in app
 code, not the database (`bytea` holds up to 1 GB). They were kept low because these images load on

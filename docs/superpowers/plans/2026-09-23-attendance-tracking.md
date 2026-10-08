@@ -13,7 +13,7 @@
 - **Check-in window:** self check-in is allowed from `StartTime - 30 min` until `EndTime`, or `StartTime + 2h` when there's no `EndTime`, measured in camp wall-clock time (`CampTime.Now`). If `EndTime < StartTime`, the item crosses midnight and the end is the next day. Admin check-in ignores the window.
 - **Idempotent inserts.** Two unique indexes, `(ScheduleItemId, GuestAttendeeId)` and `(ScheduleItemId, UserId)`, plus the existing catch-`DbUpdateException`-and-re-query race pattern from `GuestAccessService.RecordVisitAsync`. A duplicate check-in is a success (`AlreadyCheckedIn`), never an error.
 - **Guests can only check in to their own event's items**: `item.CampEventId == GuestAccessService.GetGuestEventId(user)`.
-- **Timestamps use `CampTime.Now`** (camp wall clock), matching `ScheduleItem.UpdatedAt`, because they're compared against `CampDay`/`StartTime` and shown to Vicki.
+- **Timestamps use `CampTime.Now`** (camp wall clock), matching `ScheduleItem.UpdatedAt`, because they're compared against `CampDay`/`StartTime` and shown to the event coordinator.
 - No automated test suite exists for this project. Verification is `dotnet build` with no new warnings, plus the manual walkthrough in the PR description (final task).
 - Never use PowerShell for source file text edits (CLAUDE.md pitfall #1).
 - Always use synchronous `factory.CreateDbContext()` / `DbFactory.CreateDbContext()`, never the async variant (pitfall #14).

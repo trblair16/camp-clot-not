@@ -106,7 +106,7 @@ Each release is an annotated tag on `main`. Tags `v1.0.0` through `v1.1.1` were 
 **v0.5.3 — Done (feature/112, PR #113):**
 - `/admin/activities` (new page): Admin CRUD for MinuteToWinIt activities (Name + Description) — same form panel + table pattern; delete blocked if activity is referenced by a `ScriptedMiniGame`
 - `MiniGameService.UpsertActivityAsync` and `DeleteActivityAsync` added
-- These are the activities Vicki/Amanda can configure: "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay", etc.
+- These are the activities event admins can configure: "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay", etc.
 
 **v0.5.4 — Done (feature/114, PR #115/116):**
 - Bug fix: schedule event save caused Blazor circuit crash (white bar + freeze)
@@ -129,7 +129,7 @@ Each release is an annotated tag on `main`. Tags `v1.0.0` through `v1.1.1` were 
 *Other changes:*
 - Remove Mini Marios group from seed → 3 groups: Blue Shell Bandits, Mushroom Militia, Luma Legends. (Prod DB note: purge will fail if Mini Marios has FK-referenced rows — delete transactions/board positions first.)
 - 12-hour AM/PM time format everywhere in schedule display and admin.
-- Dashboard landing page at `/dashboard`: Sponsors widget (prominent per Vicki), today's schedule, latest announcement, quick nav; `Index.razor` redirects here instead of `/hub/schedule`.
+- Dashboard landing page at `/dashboard`: Sponsors widget (prominent, per chapter request), today's schedule, latest announcement, quick nav; `Index.razor` redirects here instead of `/hub/schedule`.
 
 **Migration:** `AddV055Enhancements` (`20260603051634`) — DONE. Applied to local dev DB. Adds columns to `IncidentReport` (IncidentLocationId FK, IncidentLocationOther, ReportType), `StaffMember` (PhotoData, PhotoContentType), `ScheduleEvent` (PresenterName, PresenterBio), `Sponsor` (ContactName, Phone), `Location` (ImageData, ImageContentType), `Activity` (LocationId FK).
 
@@ -249,7 +249,7 @@ v0.5.7 is the **last v0.5.x release**. With production live and real data being 
 | `v1.0.0-rc.2`, `rc.3` … | Dry run fixes (June ~14-19) |
 | `v1.0.0` | Go-live build — deployed before June 20 camp start |
 | `v1.0.1`, `v1.0.2` … | Hotfixes during/after camp |
-| `v1.1.0` | Next feature cycle (post-camp chapter Yapp replacement work) |
+| `v1.1.0` | Next feature cycle (post-camp chapter-wide event work) |
 
 Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-...`, etc.
 

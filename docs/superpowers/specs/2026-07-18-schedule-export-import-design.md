@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-18
 **Status:** Sketch, not implemented. Faster schedule setup (#317) covers import and copying within one environment. Moving a schedule from staging to prod is still unbuilt.
-**Driver:** With a real staging environment now in place (`dev` → Railway staging), Vicki/Amanda
+**Driver:** With a real staging environment now in place (`dev` → Railway staging), event admins
 could build out a schedule there without touching prod, then need a way to move it over without
 re-entering everything by hand. Raised alongside the existing v1.2.0 `ScheduleTemplate` roadmap
 item, which this should share an engine with rather than duplicate.

@@ -20,7 +20,7 @@ The current navigation is a single horizontal header bar containing the logo, ðŸ
 
 **Responsive dual-nav with CSS media queries** â€” one `AppNav` component renders both a mobile bottom bar and a desktop top bar; CSS shows/hides the appropriate variant at a 768px breakpoint. No JS, no Blazor render-time branching, no flicker.
 
-This gives phone-first volunteers thumb-friendly navigation while preserving a natural top bar for Tyler and Amanda on laptops. Two nav UI patterns, one component, one CSS breakpoint.
+This gives phone-first volunteers thumb-friendly navigation while preserving a natural top bar for admins on laptops. Two nav UI patterns, one component, one CSS breakpoint.
 
 ---
 

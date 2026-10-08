@@ -12,7 +12,7 @@
 
 A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a summer camp for kids with bleeding disorders run by HBDA (Alabama chapter). Theme: Super Mario Party 2026. Camp runs June 20–25, 2026.
 
-Long-term goal: replace the chapter's Yapp subscription (~$1,600/yr) for all chapter events. The camp app is the pilot.
+Long-term goal: run all chapter events on this platform. The camp app is the pilot.
 
 ---
 
@@ -193,7 +193,7 @@ The `GetLatestPinnedAsync()` method on `AnnouncementService` is a stub for the f
 - **DB:** PostgreSQL local, database `hbda_dev`
 - **Migrations:** `dotnet ef database update` from `CampClotNot/`
 - **Run app:** `dotnet run` from `CampClotNot/`
-- **Login:** `tyler@hbda.local` / `DevAdmin1!` (seeded from `appsettings.Development.json`)
+- **Login:** `tyler@hbda.local` and your local `Seed:AdminPassword` (seeded from `appsettings.Development.json`)
 - **gh CLI:** `& "$env:LOCALAPPDATA\Programs\gh\gh.exe" <args>` — PowerShell only, not Bash
 
 ---

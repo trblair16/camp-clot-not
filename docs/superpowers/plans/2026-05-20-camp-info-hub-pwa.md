@@ -1527,7 +1527,7 @@ git commit -m "feat: Hub tab in desktop header and mobile bottom bar"
 cd CampClotNot; dotnet run
 ```
 
-- [ ] **Test as Admin (`tyler@hbda.local` / `DevAdmin1!`)**
+- [ ] **Test as Admin (`tyler@hbda.local` and your local `Seed:AdminPassword`)**
   - Hub tab appears in desktop header and mobile bottom bar
   - `/hub` redirects to `/hub/schedule`
   - Schedule: empty state → Add Event form → event persists after reload → edit/delete work → today auto-expands

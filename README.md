@@ -1,6 +1,6 @@
 # HBDA Events
 
-A Blazor Server web app (installable as a PWA) that runs events for the Hemophilia & Bleeding Disorders of Alabama (HBDA) chapter. It started as the scoring system for **Camp Clot Not (CCN) 2026**, a camp for kids with bleeding disorders with a Super Mario Party theme. It has since grown into a platform for every chapter event, aiming to replace the chapter's Yapp subscription (~$1,600/year).
+A Blazor Server web app (installable as a PWA) that runs events for the Hemophilia & Bleeding Disorders of Alabama (HBDA) chapter. It started as the scoring system for **Camp Clot Not (CCN) 2026**, a camp for kids with bleeding disorders with a Super Mario Party theme. It has since grown into a platform for every chapter event.
 
 **Events run on it:** CCN 2026 (June, `v1.0.x`), Men's Retreat 2026 (July, `v1.1.x`). Next up: Camp Harvest 2026 (October).
 
@@ -88,7 +88,7 @@ Each feature starts with a design spec in `docs/superpowers/specs/` and an imple
      },
      "Seed": {
        "AdminEmail": "tyler@hbda.local",
-       "AdminPassword": "DevAdmin1!"
+       "AdminPassword": "YOUR_DEV_ADMIN_PASSWORD"
      },
      "Vapid": {
        "PublicKey": "<P-256 public key>",

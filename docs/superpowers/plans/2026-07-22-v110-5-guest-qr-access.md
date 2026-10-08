@@ -761,7 +761,7 @@ Expected: app starts without exceptions, `/health` returns `{"status":"ok","db":
 
 - [ ] **Step 2: Set a guest code locally**
 
-Log in as `tyler@hbda.local` / `DevAdmin1!`, go to `/admin/events`, edit an event, set Guest Code to `TESTCODE`, save. Confirm the "Generate QR" link appears and opens a PNG in a new tab that visibly encodes a `/join/TESTCODE` URL (scan it with a phone camera to confirm, or decode it with any QR reader).
+Log in as `tyler@hbda.local` and your local `Seed:AdminPassword`, go to `/admin/events`, edit an event, set Guest Code to `TESTCODE`, save. Confirm the "Generate QR" link appears and opens a PNG in a new tab that visibly encodes a `/join/TESTCODE` URL (scan it with a phone camera to confirm, or decode it with any QR reader).
 
 - [ ] **Step 3: Manual entry flow**
 
@@ -787,7 +787,7 @@ Log in as staff/admin in a separate window. Confirm `/hub/schedule` and `/hub/an
 
 Locally: edit the event again, clear the Guest Code field, save. Confirm `/join/TESTCODE` now redirects to `/join?error=true`.
 
-Then repeat steps 2-7 against `https://web-staging-staging-6852.up.railway.app` using the real Men's Retreat event (`EventId dd37b662-8920-4dc4-8233-22856654b330`) and a real code (e.g. `MENSRETREAT26`) — push the branch to `dev` first so staging picks it up (staging auto-deploys from `dev` on every push).
+Then repeat steps 2-7 against the staging app using a real event and its guest code — push the branch to `dev` first so staging picks it up (staging auto-deploys from `dev` on every push).
 
 - [ ] **Step 9: Final commit if any fixups were needed during verification**
 

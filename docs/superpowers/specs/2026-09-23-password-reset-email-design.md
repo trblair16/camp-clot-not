@@ -138,7 +138,7 @@ line. It uses no theme colors, so it looks the same whichever event is active.
 |---|---|---|
 | `/forgot-password` | Razor page, `LoginLayout`, anonymous | An email field, then a POST to `/account/forgot-password`. Shows the generic confirmation when `?sent=true` |
 | `POST /account/forgot-password` | minimal API, anonymous | Enqueues the request and redirects to `/forgot-password?sent=true` |
-| `/reset-password?token=…` | Razor page, `LoginLayout`, anonymous | Validates the token on load. If it's invalid or expired, shows "This link has expired or was already used" with a link to request a new one. Otherwise shows the user's first name ("Hi, Vicki"), New and Confirm password fields, and a POST to `/account/reset-password` |
+| `/reset-password?token=…` | Razor page, `LoginLayout`, anonymous | Validates the token on load. If it's invalid or expired, shows "This link has expired or was already used" with a link to request a new one. Otherwise shows the user's first name ("Hi, <first name>"), New and Confirm password fields, and a POST to `/account/reset-password` |
 | `POST /account/reset-password` | minimal API, anonymous | Redeems the token, signs the user in, and redirects to `/dashboard`. On failure it redirects back with `?error=tooshort`, `mismatch`, or `invalid` |
 
 The login page's "Forgot your password? Contact Tyler" line becomes a **"Forgot your password?"** link
@@ -165,7 +165,7 @@ to `/forgot-password`.
 |---|---|---|
 | `Email__ResendApiKey` | to actually send | `re_…` |
 | `Email__From` | with the key | `HBDA Events <onboarding@resend.dev>` (staging) / `HBDA Events <no-reply@your-domain>` |
-| `App__PublicBaseUrl` | optional | `https://camp-clot-not-staging.up.railway.app` |
+| `App__PublicBaseUrl` | optional | `https://<your-staging-app>.up.railway.app` |
 
 ## Explicitly Out of Scope
 

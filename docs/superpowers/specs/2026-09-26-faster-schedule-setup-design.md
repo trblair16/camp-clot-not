@@ -2,9 +2,9 @@
 
 **Date:** 2026-09-26
 **Status:** Implemented (2026-09-26) on `claude/guest-attendance-extend-djwotf`, alongside #311, merged into `dev` via PR #317.
-**Driver:** Vicki spends a long time entering each event's schedule. She usually has it in a Word
-doc and retypes it one item at a time on `/admin/schedule`. Tyler asked for three things: a smarter
-form, a spreadsheet format she can fill in and import, and copying the schedule from a previous
+**Driver:** The event coordinator spends a long time entering each event's schedule. They usually have it in a Word
+doc and retype it one item at a time on `/admin/schedule`. Tyler asked for three things: a smarter
+form, a spreadsheet format they can fill in and import, and copying the schedule from a previous
 event of the same kind.
 
 ## Where the time goes today
@@ -39,7 +39,7 @@ event of the same kind.
 
 - Copying one whole day to other days. The per-item Copy stays, and copying a whole event covers
   the recurring case.
-- Parsing a free-form Word document. Vicki pastes a table or fills in the template.
+- Parsing a free-form Word document. The event coordinator pastes a table or fills in the template.
 - Round-tripping to another environment (staging → prod). That's the 2026-07-18 export/import sketch.
 
 ## Testing

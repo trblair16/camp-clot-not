@@ -7,7 +7,7 @@
 
 ## Context
 
-The original scaffold was scoped to Camp Clot Not 2026 only. The board (April 2026) approved extending the platform to replace the chapter's Yapp subscription (~$1,600/year), covering all chapter events. This redesign builds that foundation while keeping v1 delivery focused on CCN camp (June 20-25, 2026).
+The original scaffold was scoped to Camp Clot Not 2026 only. In April 2026 the scope was extended to cover all chapter events. This redesign builds that foundation while keeping v1 delivery focused on CCN camp (June 20-25, 2026).
 
 **Design principle:** Get the schema right now. Build only CCN features for v1. The schema investment is small; the cost of migrating production data later is not.
 
@@ -168,6 +168,6 @@ Post-camp v2: add remaining EventType rows, build feature-gated rendering, add e
 
 ## Open Items
 
-- [ ] Finalize CCN 2026 activity list with Katelyn/Vicki (determines ActivityType seed data)
+- [ ] Finalize CCN 2026 activity list with the camp leads (determines ActivityType seed data)
 - [ ] Final group count (4-6) determines Group seed data
 - [ ] Auth approach: BCrypt/cookie (current scaffold) vs Auth0 — security review pending

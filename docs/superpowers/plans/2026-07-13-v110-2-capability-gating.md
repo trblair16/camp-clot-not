@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let Vicki toggle 5 capabilities on/off per event from `/admin/events`, and make disabled capabilities genuinely unreachable (nav item hidden AND the underlying page blocked, not just hidden from nav) for the active event.
+**Goal:** Let the event coordinator toggle 5 capabilities on/off per event from `/admin/events`, and make disabled capabilities genuinely unreachable (nav item hidden AND the underlying page blocked, not just hidden from nav) for the active event.
 
 **Architecture:** A new `CapabilityService` (mirroring the existing `ScheduleItemTypeService` pattern exactly) provides a cached `IsEnabledAsync(eventId, Feature)` check. Every gated page calls it once in `OnInitializedAsync` and renders a "not available for this event" block instead of its normal content when disabled. `AppNav.razor` uses the same service to hide nav entries. `Admin/Events.razor` gets 5 checkboxes wired to the same underlying `EventCapability` join table.
 
@@ -396,7 +396,7 @@ Find:
     }
 ```
 
-Change to (new events default to all capabilities enabled, matching how CCN 2026 was seeded — Vicki can uncheck what she doesn't want rather than starting from nothing):
+Change to (new events default to all capabilities enabled, matching how CCN 2026 was seeded — the event coordinator can uncheck what they don't want rather than starting from nothing):
 
 ```csharp
     private void ResetForm()

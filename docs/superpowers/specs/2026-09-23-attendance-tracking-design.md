@@ -100,7 +100,7 @@ public enum AttendanceMethod { Self = 0, Admin = 1 }   // Data/Enums.cs, stored 
   - `User` → attendance (both FKs): **Restrict** (EF's default for these). Users are deactivated, never
     hard-deleted, anywhere in the app today.
 - **Why `CampTime.Now` and not `DateTime.UtcNow`:** the check-in window compares against `CampDay` and
-  `StartTime`, which are camp wall-clock values, and the roster and CSV show times to Vicki in camp time.
+  `StartTime`, which are camp wall-clock values, and the roster and CSV show times to the event coordinator in camp time.
   `ScheduleItem.UpdatedAt` already uses `CampTime.Now` for the same reason.
 
 The roadmap sketch in CLAUDE.md said `EventAttendance`. Since the unit is a schedule item, the table is

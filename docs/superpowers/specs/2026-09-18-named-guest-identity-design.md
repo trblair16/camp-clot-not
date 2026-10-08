@@ -3,7 +3,7 @@
 **Date:** 2026-09-18
 **Status:** Implemented (PR #305 into `dev`, 2026-09; ships to `main` in the Camp Harvest release).
 **Driver:** Camp Harvest 2026 is ~1 month out (roughly mid-October). Tyler wants to deliver a
-set of guest-facing and admin-facing improvements to Vicki before then. This is sub-project 1
+set of guest-facing and admin-facing improvements to the event coordinator before then. This is sub-project 1
 of a 4-part roadmap.
 
 ## Context

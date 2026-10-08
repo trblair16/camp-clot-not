@@ -4,7 +4,7 @@
 
 **Goal:** Replace the fully-anonymous Men's Retreat guest cookie with a persistent `GuestAttendee` identity keyed by sanitized first/last name, so a guest can be recognized across repeat visits and across future events — per `docs/superpowers/specs/2026-09-18-named-guest-identity-design.md`.
 
-**Architecture:** Two new entities — `GuestAttendee` (the person, matched by normalized name) and `GuestEventVisit` (a join row recording which events a guest has joined). `GuestAccessService` gains lookup/create/CRUD methods following `SponsorService`'s exact shape. `/join` and `/account/join` capture first/last name alongside the existing event code in one combined form. The guest cookie gains a `GuestAttendeeId` claim and a real display name (replacing the hardcoded `"Guest"` literal). A new `/admin/guests` page (mirroring `/admin/sponsors`) lets Vicki/Amanda view, rename, and delete guest records.
+**Architecture:** Two new entities — `GuestAttendee` (the person, matched by normalized name) and `GuestEventVisit` (a join row recording which events a guest has joined). `GuestAccessService` gains lookup/create/CRUD methods following `SponsorService`'s exact shape. `/join` and `/account/join` capture first/last name alongside the existing event code in one combined form. The guest cookie gains a `GuestAttendeeId` claim and a real display name (replacing the hardcoded `"Guest"` literal). A new `/admin/guests` page (mirroring `/admin/sponsors`) lets event admins view, rename, and delete guest records.
 
 **Tech Stack:** Blazor Server (.NET 8), EF Core/Npgsql, ASP.NET Core cookie auth.
 
