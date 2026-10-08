@@ -1,7 +1,7 @@
 # Schedule Export/Import — Design Sketch
 
 **Date:** 2026-07-18
-**Status:** Sketch for future scoping — not planned for immediate implementation.
+**Status:** Sketch, not implemented. Faster schedule setup (#317) covers import and copying within one environment. Moving a schedule from staging to prod is still unbuilt.
 **Driver:** With a real staging environment now in place (`dev` → Railway staging), Vicki/Amanda
 could build out a schedule there without touching prod, then need a way to move it over without
 re-entering everything by hand. Raised alongside the existing v1.2.0 `ScheduleTemplate` roadmap

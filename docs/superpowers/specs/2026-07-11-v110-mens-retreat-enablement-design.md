@@ -1,7 +1,7 @@
 # v1.1.0 — Men's Retreat Enablement
 
 **Date:** 2026-07-11
-**Status:** Approved, pending implementation plan
+**Status:** Implemented (v1.1.0, PR #299 into `main`, 2026-07-24).
 **Driver:** Men's Retreat 2026 goes live in ~2 weeks. This is the first real second event on the platform.
 
 ## Context

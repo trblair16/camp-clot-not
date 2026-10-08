@@ -1,7 +1,7 @@
 # Navigation Redesign — Design Spec
 **Date:** 2026-05-11  
 **Branch:** feature/94-ui-overhaul  
-**Status:** Approved, pending implementation plan
+**Status:** Implemented (v0.3.1, PR #95). The nav has changed since (admin section headers, guest nav, mobile app shell #326).
 
 ---
 

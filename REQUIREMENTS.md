@@ -1,4 +1,7 @@
 # Camp Clot Not — Super Party 2026
+
+> **Historical document (2026-10-08).** This is the original CCN 2026 requirements spec, written before the platform became multi-event. It's kept for the reasoning behind early decisions (animations, scoring, infrastructure). It isn't kept up to date: the current state and roadmap are in `CLAUDE.md`, and new features are specified in `docs/superpowers/specs/`. Where this file disagrees with those, they win.
+
 ## Software Requirements, Animation/Asset Specification & Architecture Guide
 
 **Prepared by:** Tyler Blair | April 2026 | Updated May 2026  

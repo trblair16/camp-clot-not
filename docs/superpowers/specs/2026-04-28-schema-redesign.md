@@ -1,6 +1,6 @@
 # Schema Redesign — HBDA Chapter Platform
 **Date:** 2026-04-28  
-**Status:** Approved  
+**Status:** Implemented (v0.1.0). Later schema changes are in each feature's spec and in `CLAUDE.md` → Schema.  
 **Scope:** Replaces the original CCN-only scaffold schema with a generalized chapter-platform foundation
 
 ---

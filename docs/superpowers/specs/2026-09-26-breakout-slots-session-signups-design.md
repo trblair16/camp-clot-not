@@ -1,7 +1,7 @@
 # Breakout Slots, Session Sign-ups, Per-Event Staff, and QR Check-in
 
 **Date:** 2026-09-26
-**Status:** Implemented (2026-09-26) on `claude/guest-attendance-extend-djwotf`. See "Implementation Notes"
+**Status:** Implemented (2026-09-26) on `claude/guest-attendance-extend-djwotf`, merged into `dev` via PR #317. See "Implementation Notes"
 for deviations.
 **Driver:** Camp Harvest 2026 (mid-October) runs parallel breakout sessions. Attendance tracking
 (#308 / PR #309) assumes everyone could attend every tracked item, and it lists every active `User`

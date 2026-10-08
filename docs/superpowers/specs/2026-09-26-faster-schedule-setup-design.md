@@ -1,7 +1,7 @@
 # Faster Schedule Setup
 
 **Date:** 2026-09-26
-**Status:** Implemented (2026-09-26) on `claude/guest-attendance-extend-djwotf`, alongside #311.
+**Status:** Implemented (2026-09-26) on `claude/guest-attendance-extend-djwotf`, alongside #311, merged into `dev` via PR #317.
 **Driver:** Vicki spends a long time entering each event's schedule. She usually has it in a Word
 doc and retypes it one item at a time on `/admin/schedule`. Tyler asked for three things: a smarter
 form, a spreadsheet format she can fill in and import, and copying the schedule from a previous

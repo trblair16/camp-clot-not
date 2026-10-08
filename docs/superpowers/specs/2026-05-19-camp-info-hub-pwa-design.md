@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-19  
 **Author:** Tyler Blair (brainstormed with Claude Code)  
-**Status:** Approved — ready for implementation planning  
+**Status:** Implemented (v0.5.0, extended through v0.5.7).  
 **Target:** ~June 7. Hard defer date: June 13. Camp runs June 20-25.  
 **GitHub milestone:** `v0.5.0 — Camp Info Hub`
 

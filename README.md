@@ -1,52 +1,38 @@
-# Camp Clot Not — Score Tracker
+# HBDA Events
 
-A Blazor Server web application for managing group competition scoring at Camp Clot Not (CCN), an annual summer camp for children with bleeding disorders hosted by HBDA (Alabama chapter). The 2026 theme is **Super Mario Party**.
+A Blazor Server web app (installable as a PWA) that runs events for the Hemophilia & Bleeding Disorders of Alabama (HBDA) chapter. It started as the scoring system for **Camp Clot Not (CCN) 2026**, a camp for kids with bleeding disorders with a Super Mario Party theme. It has since grown into a platform for every chapter event, aiming to replace the chapter's Yapp subscription (~$1,600/year).
 
-**Deployed on Railway:** *(link TBD pre-camp)*
+**Events run on it:** CCN 2026 (June, `v1.0.x`), Men's Retreat 2026 (July, `v1.1.x`). Next up: Camp Harvest 2026 (October).
 
----
-
-## Motivation
-
-Camp Clot Not gives kids aged 6–18 with bleeding disorders a camp experience built around their needs and safety. During the week, staff run activities and competitions across cabin groups, tracking coins and stars to announce final standings at closing ceremonies. This platform replaces manual scorekeeping with a real-time, role-secured scoring system designed to run reliably on a staff tablet and project live to a display screen throughout camp week.
-
-Longer term, the platform is intended to replace the chapter's Yapp subscription (~$1,600/year) for all HBDA events — camp is the pilot.
+**Hosting:** Railway (production and a `dev` staging environment).
 
 ---
 
-## Core Features
+## Features
 
-**Released (v0.1.0–v0.2.0):**
-- Real-time leaderboard ranked by stars then coins, live-updating via SignalR
-- Coin and star transaction logging with staff attribution and optional note
-- Transaction audit log — admins can void/reinstate transactions; voided rows visually distinguished
-- Full-screen projector display at `/board/display` for ceremonies, live via SignalR
-- Role-based access — Admin / Staff / Volunteer / Display roles with per-authority RBAC
-- Group management with color picker and team logo upload (stored in PostgreSQL)
-- User management — create, deactivate, reset password for staff accounts
+**Event Hub (staff and guests)**
+- Day-by-day schedule with per-group overrides, presenters, breakout slots, and personal schedules from session picks
+- Announcements with pinning, urgent badges, reactions, and Web Push notifications
+- Info pages (Markdown and role-restricted PDFs), documents, staff directory, sponsors
+- Dashboard: today's schedule, latest news, sponsors
 
-**Released (v0.3.0–v0.3.1):**
-- SVG board game with winding snake path and animated group tokens
-- Pre-scripted block hit — admin triggers via `/admin/games`, animation plays on projector via SignalR
-- Neo-brutalist UI redesign — cream background (`#F2ECD8`), black borders, offset shadows, Fredoka One headings
-- ThemeService CSS variable system — single source of truth for all colors and shadow tokens
+**Guest access**
+- Join with an event code or QR (`/join`), with no account needed
+- Named guests (`GuestAttendee`), push subscriptions, "I'm here" check-in, and session sign-ups
 
-**Released (v0.4.0):**
-- Evening mini-game spinner — pre-scripted by admin, triggered from `/minigames`, revealed on `/minigames/display`
-- Spinner animation: yellow cells cycle → land green + pulse, result revealed via SignalR
-- `/admin/games` — combined game admin with tabs: Board Spaces, Block Hit Scripts, Mini-Game Scripts, Reset
-- Activities nav dropdown with Board Game and Mini-Game links
+**Event operations (admin)**
+- Events: create, set active, capability flags per event, guest code/QR, "Copy setup from…" another event
+- Per-event theme editor: presets, colors, logo/banner upload
+- Schedule setup: smart form, .xlsx template and import, paste import, copy a past event's schedule
+- Team (`/admin/team`): per-event staff and the Hub directory, with listed-only people who can't sign in
+- Breakouts with capacity, attendance roster, walk-ins, per-session QR check-in, CSV export
+- Users and roles (Admin / Staff / Volunteer / MedicalStaff), invite and password-reset emails (Resend)
+- Incident reports with a print view matching the Children's Harbor form
 
-**In Progress (v0.5.0 — Camp Info Hub + PWA):**
-- Camp Info Hub at `/hub` — Staff Directory, Schedule, Announcements tabs
-- Volunteer role — counselors assigned to a specific group, visible on staff directory
-- Location entity — `/admin/locations` for named camp venues with capacity and sort order
-- Schedule with group assignment support and rotation management
-- PWA — `manifest.json`, service worker with offline fallback, installable on tablets
-- Full neo-brutalist restyle of all admin pages (Groups, Users, Locations, Games)
-
-**Planned (v1.0.0):**
-- Camp-ready hardening, final QA, Railway production deploy
+**Camp competition (CCN)**
+- Coins and stars per group (append-only transactions, void/reinstate) with a live leaderboard
+- SVG board game with pre-scripted block hits, evening mini-game spinner, Bowser event, awards
+- Projector display pages updated in real time over SignalR (`/board/display`, `/minigames/display`)
 
 ---
 
@@ -54,47 +40,38 @@ Longer term, the platform is intended to replace the chapter's Yapp subscription
 
 | Layer | Technology |
 |---|---|
-| App framework | Blazor Server (.NET 8) |
-| UI components | MudBlazor 6 |
-| ORM | EF Core 8 + Npgsql |
-| Database | PostgreSQL (Railway) |
-| Real-time | ASP.NET Core SignalR |
-| Auth | BCrypt + ASP.NET Core cookie sessions |
-| Hosting | Railway.app |
+| App framework | Blazor Server (.NET 8), PWA (service worker + manifest) |
+| UI components | MudBlazor 6 plus a custom theme-variable CSS system |
+| ORM / DB | EF Core 8 + Npgsql, PostgreSQL |
+| Real-time | ASP.NET Core SignalR (`LiveHub` at `/livehub`) |
+| Auth | BCrypt + cookie sessions; guest cookies from event codes |
+| Push / email | Web Push (VAPID) via `Lib.Net.Http.WebPush`; Resend HTTPS API |
+| Other | ImageSharp (upload resize), ClosedXML (schedule import), QRCoder, Markdig, Serilog |
+| Hosting | Railway (Docker), migrations applied automatically at startup |
 
 ---
 
-## Workflow / Standards
-
-### Branching
+## Workflow
 
 ```
-main           — stable releases only, tagged at each version
-dev            — integration branch; feature branches merge here first
-feature/N-name — feature branches cut from dev
+main           — production; each release is an annotated tag
+dev            — integration branch and staging; feature branches merge here first
+feature/N-name — cut from dev (N = GitHub issue number; open the issue first)
 ```
 
-**Release flow:** `feature/*` → PR to `dev` → PR to `main` → `git tag vX.Y.Z`
+**Release flow:** `feature/*` → PR to `dev` → PR to `main` → tag `vX.Y.Z`. Release history is in [`docs/RELEASES.md`](docs/RELEASES.md).
 
-### Versioning
+Each feature starts with a design spec in `docs/superpowers/specs/` and an implementation plan in `docs/superpowers/plans/`. PRs carry a manual test checklist.
 
-| Version | Milestone | Status |
-|---|---|---|
-| v0.1.0 | Foundation — auth, RBAC, user/group management, Railway | Released |
-| v0.2.0 | Competition core — leaderboard, transactions, display | Released |
-| v0.3.0 | Board game — SVG board, block hit animation | Released |
-| v0.3.1 | UI Overhaul — neo-brutalist redesign, ThemeService | Released |
-| v0.4.0 | Mini-game spinner — admin scripts, projector display | Released |
-| v0.5.0 | Camp Info Hub — staff directory, schedule, PWA | In Progress |
-| v1.0.0 | Camp-ready | Target June 2026 |
+### Code conventions
 
-### Code Conventions
-
-- `IDbContextFactory<AppDbContext>` throughout — never inject `AppDbContext` directly
-- Append-only transactions — never delete, only void; totals computed from non-voided rows
-- Stable seed IDs in `SeedService.Id` — never use `Guid.NewGuid()` for seed rows
+- `IDbContextFactory<AppDbContext>` throughout, with the synchronous `CreateDbContext()`. Never inject `AppDbContext` directly
+- Append-only transactions: never delete, only void. Totals are computed from non-voided rows
+- Stable seed IDs in `SeedService.Id`. Seed methods are insert-only for anything an admin can edit
+- Anything that sets a cookie (login, password, guest join) is a native form POST to a minimal-API endpoint
 - Enum naming Option C: `Currency`, `AwardKind`, `Role`, `Feature`, `Permission`
-- `nameof()` for all `SystemName` seed values
+
+`CLAUDE.md` lists the full set of pitfalls and architecture notes.
 
 ---
 
@@ -102,8 +79,8 @@ feature/N-name — feature branches cut from dev
 
 **Prerequisites:** .NET 8 SDK, PostgreSQL
 
-1. Clone the repo
-2. Create `CampClotNot/appsettings.Development.json` (gitignored — not committed):
+1. Clone the repo.
+2. Create `CampClotNot/appsettings.Development.json` (gitignored):
    ```json
    {
      "ConnectionStrings": {
@@ -112,24 +89,33 @@ feature/N-name — feature branches cut from dev
      "Seed": {
        "AdminEmail": "tyler@hbda.local",
        "AdminPassword": "DevAdmin1!"
+     },
+     "Vapid": {
+       "PublicKey": "<P-256 public key>",
+       "PrivateKey": "<P-256 private key>"
      }
    }
    ```
-3. Apply migrations: `dotnet ef database update` from `CampClotNot/`
-4. Start: `dotnet run` from `CampClotNot/` or F5 in Visual Studio
-5. Open `https://localhost:63533` and log in with seed credentials
-
-**Mockup preview** (visual reference only): `cd mockup/preview && npm run dev` → `http://localhost:5173`
+   A real VAPID key pair is required. Pages that use the push service fail without one. `Email:ResendApiKey`/`Email:From` are optional; without them, Admins get copyable reset links instead of emails.
+3. Start with `dotnet run` from `CampClotNot/` (or F5 in Visual Studio). Migrations and seed data are applied at startup.
+4. Open `https://localhost:63533` and log in with the seed credentials.
 
 ---
 
-## Testing / Documentation
+## Testing
 
-Automated tests are planned post-v1.0.0 when the feature set stabilizes. All milestones are currently validated by manual testing against the scenarios in each PR's test plan.
+There's no automated test suite yet (planned, see the roadmap in `CLAUDE.md`). CI (`.github/workflows/dotnet-build.yml`) runs a Release build on every push and PR. Each change is validated against the manual test checklist in its PR.
+
+---
+
+## Documentation
 
 | Document | Purpose |
 |---|---|
-| `REQUIREMENTS.md` | Full product spec and feature decisions |
-| `CLAUDE.md` | Architecture constraints and AI pair programming context |
-| `docs/superpowers/specs/2026-04-28-schema-redesign.md` | Schema design rationale |
-| `mockup/ccn-mockup-v2.jsx` | React prototype — primary visual reference for UI |
+| `CLAUDE.md` | Current state, roadmap, architecture, pitfalls, key files, dev/prod setup |
+| `docs/RELEASES.md` | Release tags and the full CCN 2026 build log |
+| `docs/superpowers/specs/` | Design spec for each feature |
+| `docs/superpowers/plans/` | Implementation plan for each feature |
+| `docs/superpowers/handoffs/` | Session handoff notes from the pre-camp build |
+| `REQUIREMENTS.md` | Original CCN 2026 product spec (historical; specs supersede it) |
+| `mockup/ccn-mockup-v2.jsx` | React prototype used as the original visual reference |
