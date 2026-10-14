@@ -1,7 +1,7 @@
 # Schedule Export
 
 **Date:** 2026-10-14
-**Status:** Approved, implementing on `feature/335-schedule-export` (#335).
+**Status:** Implemented (2026-10-14) on `feature/335-schedule-export` (#335). See "Implementation Notes".
 **Driver:** Event admins build a schedule on staging, then need to move it to production. Staging
 and production are separate databases. Faster schedule setup (#317) added a spreadsheet import and
 "Copy from another event", but copying only works inside one database and there's no export.
@@ -60,3 +60,13 @@ Manual, in the running app (no automated suite yet):
 5. Upload a broken or foreign .json. You get a clear message, and nothing is saved.
 6. "Copy from another event" still works as before (same preview, same result).
 7. Export (.xlsx) opens in Excel, with the Breakout column filled. Re-importing it warns on breakout rows.
+
+## Implementation Notes (2026-10-14)
+
+- **Code:** `Services/PortableSchedule.cs` (file model, JSON options, `ReadAsync` validation) and `ScheduleImportService` (`ExportAsync`, `PreviewAsync`, `ApplyAsync`, plus a private `Resolver` and `Plan` that Preview and Apply share so they always agree). `PreviewCopyAsync`/`CopyAsync` are now Export then Preview/Apply, and `CopyPreview` became `SchedulePreview`.
+- **Same database:** location and type IDs are written alongside the names and matched first, so "Copy from another event" resolves exactly as it did before (verified: no new locations, same items).
+- **Copy dialog:** it now lists what didn't match (activities and group overrides left off). The old copy dropped those silently.
+- **Format strictness:** `format` and `version` have no defaults, so a stray JSON file (`{"hello": 1}`) is refused instead of looking like an empty export. Explicit nulls (`"items": null`, `"groups": null`) are normalized rather than crashing.
+- **Day index:** negative indexes are allowed in the file (an item dated before its event's start, left after the event's dates were edited) and are skipped like days past the end.
+- **Import button:** "⬆ Import spreadsheet" is now "⬆ Import", since it takes .json too.
+- **Verified** with two app instances on two separate Postgres databases (the staging → production case), via Playwright: export, import with day shift (Jun → Oct), the duplicate skip, the out-of-range day skip, a case-insensitive location match, new location created once for both an item and a group override, the unticked box putting the name in Additional Info, a second import offering 0 items, five malformed files with clear messages, Copy from another event, and Breakout-column warnings in the spreadsheet import.
