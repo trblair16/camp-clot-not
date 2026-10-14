@@ -1,7 +1,7 @@
 # Schedule Export/Import — Design Sketch
 
 **Date:** 2026-07-18
-**Status:** Sketch, not implemented. Faster schedule setup (#317) covers import and copying within one environment. Moving a schedule from staging to prod is still unbuilt.
+**Status:** Superseded by `2026-10-14-schedule-export-design.md` (#335), which implements the cross-environment half using the "one engine" idea below. Schedule templates as a database entity are still unbuilt.
 **Driver:** With a real staging environment now in place (`dev` → Railway staging), event admins
 could build out a schedule there without touching prod, then need a way to move it over without
 re-entering everything by hand. Raised alongside the existing v1.2.0 `ScheduleTemplate` roadmap
