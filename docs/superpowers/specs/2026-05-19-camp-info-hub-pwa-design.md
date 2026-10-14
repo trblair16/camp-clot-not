@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-19  
 **Author:** Tyler Blair (brainstormed with Claude Code)  
-**Status:** Approved — ready for implementation planning  
+**Status:** Implemented (v0.5.0, extended through v0.5.7).  
 **Target:** ~June 7. Hard defer date: June 13. Camp runs June 20-25.  
 **GitHub milestone:** `v0.5.0 — Camp Info Hub`
 
@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-v0.5.0 adds a Camp Info Hub — a Yapp replacement for staff-facing camp information — and PWA installability. The Hub ships as a single "📋 Hub" nav tab with four internal sub-sections (Schedule, Announcements, Staff Directory, Info Pages). The PWA layer makes the app installable to staff home screens.
+v0.5.0 adds a Camp Info Hub — a home for staff-facing camp information — and PWA installability. The Hub ships as a single "📋 Hub" nav tab with four internal sub-sections (Schedule, Announcements, Staff Directory, Info Pages). The PWA layer makes the app installable to staff home screens.
 
 This is a beta feature (time-permitting, not camp-critical). If not complete by June 13, defer all of v0.5.0 to post-camp v1.1.0.
 

@@ -45,8 +45,8 @@
             </div>
 
             <div style="margin-bottom:14px">
-                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Logo — Upload (JPEG/PNG, max 10 MB)</div>
-                <InputFile OnChange="HandleLogoUpload" accept=".jpg,.jpeg,.png"
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Logo — Upload (JPEG/PNG/WebP, up to 20 MB, resized automatically)</div>
+                <InputFile OnChange="HandleLogoUpload" accept=".jpg,.jpeg,.png,.webp" disabled="@_processing"
                            style="width:100%;font-size:13px;font-family:'Nunito',sans-serif" />
                 @if (!string.IsNullOrWhiteSpace(_uploadError))
                 {
@@ -235,17 +235,32 @@
     {
         _uploadError = "";
         var file = e.File;
-        if (file.Size > 10 * 1024 * 1024)
+        if (file.Size > ImageShrinker.MaxUploadBytes)
         {
-            _uploadError = "File too large — maximum 10 MB.";
+            _uploadError = "File too large — maximum 20 MB.";
             return;
         }
-        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-        using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
-        _fLogoData = ms.ToArray();
-        _fLogoContentType = file.ContentType;
+        _processing = true;
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: ImageShrinker.MaxUploadBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var data = ms.ToArray();
+            // The Dashboard and Hub load every sponsor logo, so store a small copy.
+            if (await Task.Run(() => ImageShrinker.Shrink(data, file.ContentType, LogoMaxSide, WebpMode.Smallest)) is not { } img)
+            {
+                _uploadError = "Couldn't read that image — try saving it as a PNG or JPEG.";
+                return;
+            }
+            _fLogoData = img.Data;
+            _fLogoContentType = img.ContentType;
+        }
+        finally { _processing = false; }
     }
+
+    private const int LogoMaxSide = 800;
+    private bool _processing;
 
     private void StartEdit(Sponsor s)
     {

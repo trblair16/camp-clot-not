@@ -427,7 +427,7 @@ Run from `CampClotNot/`:
 ```
 dotnet run
 ```
-Navigate to `https://localhost:63533` and log in with `tyler@hbda.local` / `DevAdmin1!`.
+Navigate to `https://localhost:63533` and log in with `tyler@hbda.local` and your local `Seed:AdminPassword`.
 
 - [ ] **Step 2: Verify desktop layout (>768px browser window)**
   - Logo image renders in the top-left (not the 🏁 emoji)

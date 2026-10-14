@@ -60,16 +60,26 @@ public class AnnouncementService(IDbContextFactory<AppDbContext> factory, IMemor
         db.Announcements.Add(announcement);
         await db.SaveChangesAsync();
         cache.Remove(FeedKey(eventId));
+        var pushTitle = priority == AnnouncementPriority.Urgent ? $"🚨 {title}" : $"📢 {title}";
+        var pushBody = body.Length > 120 ? body[..117] + "..." : body;
         try
         {
-            var pushTitle = priority == AnnouncementPriority.Urgent ? $"🚨 {title}" : $"📢 {title}";
-            var pushBody = body.Length > 120 ? body[..117] + "..." : body;
             if (targetRoles is not null && targetRoles.Length > 0)
                 await pushService.SendToRolesAsync(targetRoles, pushTitle, pushBody, "/hub/announcements");
             else
                 await pushService.SendToAllAsync(pushTitle, pushBody, "/hub/announcements");
         }
         catch { }
+        // Guests are part of "everyone" — role-targeted pushes (e.g. Medical Staff only) skip them.
+        // Separate try so a guest-push failure can't affect the staff push, and vice versa.
+        if (targetRoles is null || targetRoles.Length == 0)
+        {
+            try
+            {
+                await pushService.SendToGuestsForEventAsync(eventId, pushTitle, pushBody, "/hub/announcements");
+            }
+            catch { }
+        }
         return announcement;
     }
 

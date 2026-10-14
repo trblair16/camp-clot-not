@@ -469,6 +469,50 @@ namespace CampClotNot.Migrations
                     b.ToTable("EventScheduleItemTypes");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.EventStaff", b =>
+                {
+                    b.Property<Guid>("EventStaffId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("ShowInDirectory")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserRoleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("EventStaffId");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserRoleId");
+
+                    b.HasIndex("EventId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("EventStaff");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.EventType", b =>
                 {
                     b.Property<Guid>("EventTypeId")
@@ -540,6 +584,67 @@ namespace CampClotNot.Migrations
                     b.HasKey("GroupId");
 
                     b.ToTable("GroupBoardPositions");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.GuestAttendee", b =>
+                {
+                    b.Property<Guid>("GuestAttendeeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedFirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedLastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("GuestAttendeeId");
+
+                    b.HasIndex("NormalizedFirstName", "NormalizedLastName")
+                        .IsUnique();
+
+                    b.ToTable("GuestAttendees");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.GuestEventVisit", b =>
+                {
+                    b.Property<Guid>("GuestEventVisitId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("FirstJoinedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GuestAttendeeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("GuestEventVisitId");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("GuestAttendeeId", "EventId")
+                        .IsUnique();
+
+                    b.ToTable("GuestEventVisits");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.IncidentReport", b =>
@@ -693,6 +798,46 @@ namespace CampClotNot.Migrations
                     b.ToTable("Locations");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("PasswordResetTokenId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("PasswordResetTokenId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("PasswordResetTokens");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.PushSubscription", b =>
                 {
                     b.Property<Guid>("PushSubscriptionId")
@@ -709,6 +854,9 @@ namespace CampClotNot.Migrations
                     b.Property<string>("Endpoint")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("GuestAttendeeId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("P256dh")
                         .IsRequired()
@@ -731,6 +879,9 @@ namespace CampClotNot.Migrations
                     b.Property<Guid?>("ActivityId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("AllowSelfSignup")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("AppliesToAllGroups")
                         .HasColumnType("boolean");
 
@@ -739,6 +890,9 @@ namespace CampClotNot.Migrations
 
                     b.Property<Guid>("CampEventId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("CheckInCode")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
@@ -749,6 +903,9 @@ namespace CampClotNot.Migrations
                     b.Property<TimeOnly?>("EndTime")
                         .HasColumnType("time without time zone");
 
+                    b.Property<bool>("IsBreakoutSlot")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("LocationId")
                         .HasColumnType("uuid");
 
@@ -757,6 +914,9 @@ namespace CampClotNot.Migrations
 
                     b.Property<int?>("MaxCapacity")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("ParentScheduleItemId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PresenterBio")
                         .HasColumnType("text");
@@ -767,12 +927,18 @@ namespace CampClotNot.Migrations
                     b.Property<Guid>("ScheduleItemTypeId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("SelfCheckInMode")
+                        .HasColumnType("integer");
+
                     b.Property<TimeOnly>("StartTime")
                         .HasColumnType("time without time zone");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("TrackAttendance")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -783,13 +949,62 @@ namespace CampClotNot.Migrations
 
                     b.HasIndex("CampEventId");
 
+                    b.HasIndex("CheckInCode")
+                        .IsUnique();
+
                     b.HasIndex("CreatedBy");
 
                     b.HasIndex("LocationId");
 
+                    b.HasIndex("ParentScheduleItemId");
+
                     b.HasIndex("ScheduleItemTypeId");
 
                     b.ToTable("ScheduleItems");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItemAttendance", b =>
+                {
+                    b.Property<Guid>("ScheduleItemAttendanceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CheckedInAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CheckedInByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("GuestAttendeeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ScheduleItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ScheduleItemAttendanceId");
+
+                    b.HasIndex("CheckedInByUserId");
+
+                    b.HasIndex("GuestAttendeeId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ScheduleItemId", "GuestAttendeeId")
+                        .IsUnique();
+
+                    b.HasIndex("ScheduleItemId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ScheduleItemAttendances", t =>
+                        {
+                            t.HasCheckConstraint("CK_ScheduleItemAttendances_OneAttendee", "(\"GuestAttendeeId\" IS NULL) <> (\"UserId\" IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItemGroup", b =>
@@ -818,6 +1033,55 @@ namespace CampClotNot.Migrations
                     b.HasIndex("LocationId");
 
                     b.ToTable("ScheduleItemGroups");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItemRegistration", b =>
+                {
+                    b.Property<Guid>("ScheduleItemRegistrationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("GuestAttendeeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RegisteredByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ScheduleItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SlotScheduleItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ScheduleItemRegistrationId");
+
+                    b.HasIndex("GuestAttendeeId");
+
+                    b.HasIndex("RegisteredByUserId");
+
+                    b.HasIndex("ScheduleItemId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SlotScheduleItemId", "GuestAttendeeId")
+                        .IsUnique();
+
+                    b.HasIndex("SlotScheduleItemId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ScheduleItemRegistrations", t =>
+                        {
+                            t.HasCheckConstraint("CK_ScheduleItemRegistrations_OneAttendee", "(\"GuestAttendeeId\" IS NULL) <> (\"UserId\" IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItemType", b =>
@@ -946,65 +1210,17 @@ namespace CampClotNot.Migrations
                     b.ToTable("Sponsors");
                 });
 
-            modelBuilder.Entity("CampClotNot.Data.Entities.StaffMember", b =>
-                {
-                    b.Property<Guid>("StaffMemberId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AvatarEmoji")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("CampEventId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsVisible")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("LinkedUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PhotoContentType")
-                        .HasColumnType("text");
-
-                    b.Property<byte[]>("PhotoData")
-                        .HasColumnType("bytea");
-
-                    b.Property<string>("PhotoObjectPosition")
-                        .HasColumnType("text");
-
-                    b.Property<string>("RoleTitle")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
-
-                    b.HasKey("StaffMemberId");
-
-                    b.HasIndex("CampEventId");
-
-                    b.HasIndex("LinkedUserId");
-
-                    b.ToTable("StaffMembers");
-                });
-
             modelBuilder.Entity("CampClotNot.Data.Entities.Theme", b =>
                 {
                     b.Property<Guid>("ThemeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("BannerContentType")
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("BannerData")
+                        .HasColumnType("bytea");
 
                     b.Property<string>("ColorPalette")
                         .HasColumnType("text");
@@ -1019,9 +1235,18 @@ namespace CampClotNot.Migrations
                     b.Property<string>("LogoAssetPath")
                         .HasColumnType("text");
 
+                    b.Property<string>("LogoContentType")
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("LogoData")
+                        .HasColumnType("bytea");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Year")
                         .HasColumnType("integer");
@@ -1077,6 +1302,13 @@ namespace CampClotNot.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AvatarEmoji")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("CanSignIn")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1084,9 +1316,6 @@ namespace CampClotNot.Migrations
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<Guid?>("GroupId")
-                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -1102,12 +1331,22 @@ namespace CampClotNot.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Phone")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhotoContentType")
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("PhotoData")
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("PhotoObjectPosition")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("UserRoleId")
                         .HasColumnType("uuid");
 
                     b.HasKey("UserId");
-
-                    b.HasIndex("GroupId");
 
                     b.HasIndex("UserRoleId");
 
@@ -1374,6 +1613,40 @@ namespace CampClotNot.Migrations
                     b.Navigation("ScheduleItemType");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.EventStaff", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CampClotNot.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.UserRole", "UserRole")
+                        .WithMany()
+                        .HasForeignKey("UserRoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("Group");
+
+                    b.Navigation("User");
+
+                    b.Navigation("UserRole");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.Group", b =>
                 {
                     b.HasOne("CampClotNot.Data.Entities.Event", "Event")
@@ -1394,6 +1667,25 @@ namespace CampClotNot.Migrations
                         .IsRequired();
 
                     b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.GuestEventVisit", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.GuestAttendee", "GuestAttendee")
+                        .WithMany("Visits")
+                        .HasForeignKey("GuestAttendeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("GuestAttendee");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.IncidentReport", b =>
@@ -1424,6 +1716,24 @@ namespace CampClotNot.Migrations
                     b.Navigation("UpdatedBy");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CampClotNot.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItem", b =>
                 {
                     b.HasOne("CampClotNot.Data.Entities.Activity", "Activity")
@@ -1446,6 +1756,11 @@ namespace CampClotNot.Migrations
                         .WithMany()
                         .HasForeignKey("LocationId");
 
+                    b.HasOne("CampClotNot.Data.Entities.ScheduleItem", "ParentScheduleItem")
+                        .WithMany("Options")
+                        .HasForeignKey("ParentScheduleItemId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("CampClotNot.Data.Entities.ScheduleItemType", "ScheduleItemType")
                         .WithMany()
                         .HasForeignKey("ScheduleItemTypeId")
@@ -1460,7 +1775,41 @@ namespace CampClotNot.Migrations
 
                     b.Navigation("Location");
 
+                    b.Navigation("ParentScheduleItem");
+
                     b.Navigation("ScheduleItemType");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItemAttendance", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.User", "CheckedInByUser")
+                        .WithMany()
+                        .HasForeignKey("CheckedInByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CampClotNot.Data.Entities.GuestAttendee", "GuestAttendee")
+                        .WithMany()
+                        .HasForeignKey("GuestAttendeeId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("CampClotNot.Data.Entities.ScheduleItem", "ScheduleItem")
+                        .WithMany()
+                        .HasForeignKey("ScheduleItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CheckedInByUser");
+
+                    b.Navigation("GuestAttendee");
+
+                    b.Navigation("ScheduleItem");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItemGroup", b =>
@@ -1492,6 +1841,46 @@ namespace CampClotNot.Migrations
                     b.Navigation("Location");
 
                     b.Navigation("ScheduleItem");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItemRegistration", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.GuestAttendee", "GuestAttendee")
+                        .WithMany()
+                        .HasForeignKey("GuestAttendeeId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("CampClotNot.Data.Entities.User", "RegisteredByUser")
+                        .WithMany()
+                        .HasForeignKey("RegisteredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CampClotNot.Data.Entities.ScheduleItem", "ScheduleItem")
+                        .WithMany()
+                        .HasForeignKey("ScheduleItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.ScheduleItem", "SlotScheduleItem")
+                        .WithMany()
+                        .HasForeignKey("SlotScheduleItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("GuestAttendee");
+
+                    b.Navigation("RegisteredByUser");
+
+                    b.Navigation("ScheduleItem");
+
+                    b.Navigation("SlotScheduleItem");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.ScriptedBlockHit", b =>
@@ -1543,23 +1932,6 @@ namespace CampClotNot.Migrations
                     b.Navigation("Event");
                 });
 
-            modelBuilder.Entity("CampClotNot.Data.Entities.StaffMember", b =>
-                {
-                    b.HasOne("CampClotNot.Data.Entities.Event", "CampEvent")
-                        .WithMany()
-                        .HasForeignKey("CampEventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CampClotNot.Data.Entities.User", "LinkedUser")
-                        .WithMany()
-                        .HasForeignKey("LinkedUserId");
-
-                    b.Navigation("CampEvent");
-
-                    b.Navigation("LinkedUser");
-                });
-
             modelBuilder.Entity("CampClotNot.Data.Entities.Transaction", b =>
                 {
                     b.HasOne("CampClotNot.Data.Entities.CurrencyType", "CurrencyType")
@@ -1581,17 +1953,11 @@ namespace CampClotNot.Migrations
 
             modelBuilder.Entity("CampClotNot.Data.Entities.User", b =>
                 {
-                    b.HasOne("CampClotNot.Data.Entities.Group", "Group")
-                        .WithMany()
-                        .HasForeignKey("GroupId");
-
                     b.HasOne("CampClotNot.Data.Entities.UserRole", "UserRole")
                         .WithMany("Users")
                         .HasForeignKey("UserRoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Group");
 
                     b.Navigation("UserRole");
                 });
@@ -1706,9 +2072,16 @@ namespace CampClotNot.Migrations
                     b.Navigation("Transactions");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.GuestAttendee", b =>
+                {
+                    b.Navigation("Visits");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.ScheduleItem", b =>
                 {
                     b.Navigation("ItemGroups");
+
+                    b.Navigation("Options");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.Theme", b =>

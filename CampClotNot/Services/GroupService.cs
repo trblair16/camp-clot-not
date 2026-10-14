@@ -5,9 +5,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CampClotNot.Services;
 
-public class GroupService(IGroupRepository groups, IDbContextFactory<AppDbContext> factory)
+public class GroupService(IGroupRepository groups, IDbContextFactory<AppDbContext> factory, ActiveEventService activeEventSvc)
 {
-    public Task<List<Group>> GetAllAsync() => groups.GetAllAsync();
+    /// <summary>
+    /// The active event's groups. Groups belong to one event, so every page that lists them
+    /// (leaderboard, transactions, board, admin) must only see the current event's.
+    /// </summary>
+    public async Task<List<Group>> GetAllAsync()
+    {
+        var ev = await activeEventSvc.GetActiveEventAsync();
+        return ev is null ? [] : await groups.GetForEventAsync(ev.EventId);
+    }
+
+    public Task<List<Group>> GetForEventAsync(Guid eventId) => groups.GetForEventAsync(eventId);
 
     public Task<Group?> GetByIdAsync(Guid groupId) => groups.GetByIdAsync(groupId);
 

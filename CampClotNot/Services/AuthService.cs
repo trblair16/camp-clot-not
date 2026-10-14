@@ -20,7 +20,9 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         DateTimeOffset? expiresUtc = null)
     {
         var user = await users.GetByEmailAsync(email);
-        if (user is null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        // People who are only listed on a team (CanSignIn false) have no password to check.
+        if (user is null || !user.IsActive || !user.CanSignIn || string.IsNullOrEmpty(user.PasswordHash)
+            || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             return LoginResult.Failed;
 
         await SignInUserAsync(httpContext, user, user.MustChangePassword, rememberMe, expiresUtc);
@@ -38,6 +40,16 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         await SignInUserAsync(httpContext, user, false, false, null);
     }
 
+    /// Signs in after a successful email reset/invite (the password was just set by the user,
+    /// so no forced change).
+    public async Task SignInAsync(HttpContext httpContext, Guid userId)
+    {
+        var all = await users.GetAllAsync();
+        var user = all.FirstOrDefault(u => u.UserId == userId)
+            ?? throw new InvalidOperationException($"User {userId} not found.");
+        await SignInUserAsync(httpContext, user, false, false, null);
+    }
+
     public async Task LogoutAsync(HttpContext httpContext) =>
         await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -47,7 +59,6 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         string email,
         string plainPassword,
         Role role,
-        Guid? groupId = null,
         bool mustChangePassword = true)
     {
         var userRole = await users.GetRoleAsync(role)
@@ -62,12 +73,11 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
             Email               = email.ToLowerInvariant(),
             PasswordHash        = BCrypt.Net.BCrypt.HashPassword(plainPassword),
             IsActive            = true,
-            MustChangePassword  = mustChangePassword,
-            GroupId             = groupId
+            MustChangePassword  = mustChangePassword
         });
     }
 
-    public async Task UpdateUserAsync(Guid userId, string firstName, string lastName, string email, Role role, Guid? groupId)
+    public async Task UpdateUserAsync(Guid userId, string firstName, string lastName, string email, Role role)
     {
         var all = await users.GetAllAsync();
         var user = all.FirstOrDefault(u => u.UserId == userId)
@@ -80,7 +90,6 @@ public class AuthService(IUserRepository users, IDbContextFactory<AppDbContext> 
         user.LastName   = lastName;
         user.Email      = email.ToLowerInvariant();
         user.UserRoleId = userRole.UserRoleId;
-        user.GroupId    = role == Role.Volunteer ? groupId : null;
 
         await users.UpdateAsync(user);
     }

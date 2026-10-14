@@ -99,4 +99,7 @@ public class ScheduleItemTypeService(IDbContextFactory<AppDbContext> factory, IM
         await db.SaveChangesAsync();
         cache.Remove(EventKey(eventId));
     }
+
+    /// <summary>Drops the cached enabled-type list after types are enabled elsewhere (schedule import/copy).</summary>
+    public void InvalidateEvent(Guid eventId) => cache.Remove(EventKey(eventId));
 }

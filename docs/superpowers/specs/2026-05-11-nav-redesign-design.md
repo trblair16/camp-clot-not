@@ -1,7 +1,7 @@
 # Navigation Redesign — Design Spec
 **Date:** 2026-05-11  
 **Branch:** feature/94-ui-overhaul  
-**Status:** Approved, pending implementation plan
+**Status:** Implemented (v0.3.1, PR #95). The nav has changed since (admin section headers, guest nav, mobile app shell #326).
 
 ---
 
@@ -20,7 +20,7 @@ The current navigation is a single horizontal header bar containing the logo, �
 
 **Responsive dual-nav with CSS media queries** — one `AppNav` component renders both a mobile bottom bar and a desktop top bar; CSS shows/hides the appropriate variant at a 768px breakpoint. No JS, no Blazor render-time branching, no flicker.
 
-This gives phone-first volunteers thumb-friendly navigation while preserving a natural top bar for Tyler and Amanda on laptops. Two nav UI patterns, one component, one CSS breakpoint.
+This gives phone-first volunteers thumb-friendly navigation while preserving a natural top bar for admins on laptops. Two nav UI patterns, one component, one CSS breakpoint.
 
 ---
 

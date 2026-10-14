@@ -8,6 +8,9 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject ThemeService ThemeSvc
 @inject CapabilityService CapSvc
+@inject RegistrationService RegistrationSvc
+@inject AuthenticationStateProvider Auth
+@inject GuestAccessService GuestSvc
 
 <PageTitle>Home — Camp Clot Not</PageTitle>
 
@@ -61,9 +64,9 @@ else
                 text-align:center;
                 animation:popIn .3s ease">
 
-        @if (ThemeSvc.Active.BannerAssetPath is null)
+        @if (ThemeSvc.Active.BannerAssetPath is null && ThemeSvc.Active.UseCcnArtwork)
         {
-            @* Decorative background coins/stars — Mario-specific, only shown for CCN's theme *@
+            @* Decorative background coins/stars — Mario-specific, only shown for CCN-style themes *@
             <img src="/img/ccn-coin.webp" aria-hidden="true"
                  style="position:absolute;top:-8px;left:12px;width:54px;opacity:.18;transform:rotate(-20deg)" />
             <img src="/img/ccn-star.webp" aria-hidden="true"
@@ -82,11 +85,16 @@ else
                  style="width:100%;max-width:240px;height:auto;object-fit:contain;margin-bottom:14px;
                         border-radius:10px;border:var(--panel-border);box-shadow:var(--panel-shadow)" />
         }
-        else
+        else if (ThemeSvc.Active.UseCcnArtwork)
         {
             <img src="/img/ccn-logo-2026.webp" alt="Camp Clot Not Super Party '26"
                  style="height:72px;width:auto;object-fit:contain;margin-bottom:14px;
                         filter:drop-shadow(2px 3px 0 rgba(0,0,0,.25))" />
+        }
+        else if (ThemeSvc.HeroLogoUrl is { } heroLogo)
+        {
+            <img src="@heroLogo" alt="@ThemeSvc.Active.AppTitle"
+                 style="height:72px;width:auto;max-width:100%;object-fit:contain;margin-bottom:14px" />
         }
 
         @* Welcome text *@
@@ -101,13 +109,17 @@ else
 
         @* Quick nav pills *@
         <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px">
-            @if (_anyGameEnabled)
+            @* Guests only get the Hub pages GuestNav links to — no leaderboard or staff info pages. *@
+            @if (_anyGameEnabled && !_isGuest)
             {
                 <a href="/leaderboard" class="hero-pill"><img src="/img/icons/leaderboard.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Leaderboard</a>
             }
             <a href="/hub/schedule"     class="hero-pill"><img src="/img/icons/schedule.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Schedule</a>
             <a href="/hub/staff"        class="hero-pill"><img src="/img/icons/person.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Staff</a>
-            <a href="/hub/info"         class="hero-pill"><img src="/img/icons/hub.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Event Info</a>
+@if (!_isGuest)
+            {
+                <a href="/hub/info"         class="hero-pill"><img src="/img/icons/hub.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Event Info</a>
+            }
             <a href="/hub/announcements" class="hero-pill"><img src="/img/icons/announcements.svg?v=3" style="width:14px;height:14px;vertical-align:middle;margin-right:4px" alt="" />Announcements</a>
         </div>
     </div>
@@ -197,7 +209,7 @@ else
                         <span style="font-size:11px;color:var(--text-light);white-space:nowrap;min-width:58px;font-weight:700">
                             @ev.StartTime.ToString("h:mm tt")
                         </span>
-                        <span style="font-size:13px;font-weight:700;color:var(--black)">@ev.Title</span>
+                        <span style="font-size:13px;font-weight:700;color:var(--black)">@ev.Title@(ev.IsBreakoutSlot ? " 🔀" : "")</span>
                     </div>
                 }
                 @if (_todayEvents.Count > 5)
@@ -237,12 +249,17 @@ else
     private DateOnly            _scheduleDay;
     private bool                _showingFirstDay;
     private bool                _anyGameEnabled;
+    private bool                _isGuest;
     private Event?               _activeEvent;
 
     protected override async Task OnInitializedAsync()
     {
         await ThemeSvc.LoadAsync();
-        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        // Guests see the event they joined (same as the Hub pages), everyone else the active one.
+        var user = (await Auth.GetAuthenticationStateAsync()).User;
+        var guestEventId = GuestSvc.GetGuestEventId(user);
+        _isGuest = guestEventId.HasValue;
+        var eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
         _sponsors = await SponsorSvc.GetAllForEventAsync(eventId);
 
         _anyGameEnabled = await CapSvc.IsEnabledAsync(eventId, Feature.BoardGame)
@@ -251,7 +268,14 @@ else
             || await CapSvc.IsEnabledAsync(eventId, Feature.Awards);
 
         var today = CampTime.Today;
-        var campEvent = await ActiveEventSvc.GetActiveEventAsync();
+        Event? campEvent;
+        if (guestEventId is { } gid)
+        {
+            using var db = DbFactory.CreateDbContext();
+            campEvent = await db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.EventId == gid);
+        }
+        else
+            campEvent = await ActiveEventSvc.GetActiveEventAsync();
         _activeEvent = campEvent;
 
         if (campEvent is not null)
@@ -270,7 +294,11 @@ else
         {
             _scheduleDay = today;
         }
-        _todayEvents = await ScheduleSvc.GetForDayAsync(eventId, _scheduleDay);
+        // Same breakout visibility as /hub/schedule: Admins see every option, everyone else sees
+        // their pick (or the slot placeholder).
+        var myRegs = await RegistrationSvc.GetMyRegistrationsAsync(user, eventId);
+        _todayEvents = ScheduleVisibility.Apply(
+            await ScheduleSvc.GetForDayAsync(eventId, _scheduleDay), user.IsInRole("Admin"), myRegs);
 
         var feed = await AnnouncementSvc.GetFeedAsync(eventId);
         _latestAnnouncement = feed.FirstOrDefault();

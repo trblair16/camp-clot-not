@@ -1,246 +1,71 @@
 # Camp Clot Not — Claude Code Briefing
 
 ## What This Is
-A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with bleeding disorders run by HBDA (Alabama chapter). The 2026 theme is Super Mario Party. The platform is being built to run camp scoring/competition for June 20-25, 2026, with a longer-term goal of replacing the chapter's Yapp subscription (~$1,600/year) for all chapter events.
+A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with bleeding disorders run by HBDA (Alabama chapter). The 2026 theme is Super Mario Party. The platform is being built to run camp scoring/competition for June 20-25, 2026, with a longer-term goal of running all chapter events.
 
 **Primary spec:** `REQUIREMENTS.md`  
 **Schema redesign spec:** `docs/superpowers/specs/2026-04-28-schema-redesign.md`
 
 ---
 
-## Current State (as of 2026-06-05)
+## Current State (as of 2026-10-08)
 
-**Active branch:** `dev` — v0.5.7 merged; RC phase begins next
-**On dev (pending main PR):** v0.5.7 — info overhaul, UX polish, PDF uploads, schedule table, bug fixes
-**Released to main:** v0.5.6 — table-driven schedule item types + UX polish *(pending PR #127)*
-**Next:** v1.0.0-rc.1 — first release candidate (see RC versioning below)
+The app is now a multi-event HBDA platform ("HBDA Events"). CCN 2026 (June 19–25) ran on v1.0.0/v1.0.1, and Men's Retreat 2026 (July) ran on v1.1.0. **The next event is Camp Harvest 2026 (mid-October).** Release tags and history: `docs/RELEASES.md`.
 
-**RC Versioning Convention (2026-06-05 onward):**
-- Format: `v1.0.0-rc.N` — increment N for every fix/tweak before camp goes live
-- Branch naming: `feature/N-v100rc1-description`, `feature/N-v100rc2-description`, etc. (open issue first)
-- **True v1.0.0 go-live date: June 19, 2026** (one day before camp June 20)
-- After go-live, any camp-week hotfixes are `v1.0.1`, `v1.0.2`, etc.
+**`main` (production) = `v1.1.1`:** last updated 2026-07-25 (PR #301). It has the CCN go-live build plus v1.1.0 Men's Retreat enablement (#297): active-event wiring, capability gating, per-event theme, and guest QR/event-code access.
 
-**v0.1.0 — Done:**
-- Blazor Server project: entities, repositories, services, SignalR hub, MudBlazor pages
-- Schema redesign: 23 entity classes, Option C enum naming (`Currency`, `AwardKind`, `Role`, `Feature`, `Permission`), 22-table PostgreSQL schema
-- `AddDbContextFactory` pattern (Blazor Server concurrency fix)
-- BCrypt/cookie auth: login via native POST to `/account/login`, 24-hour sliding sessions
-- RBAC: role + per-user authority claims loaded into session at login
-- User management: create, deactivate, reset password (`/admin/users`)
-- Group management: create, edit, delete — scoped to CCN 2026 event (`/admin/groups`)
-- Startup seed service: all reference data + CCN 2026 event + admin user (idempotent)
-- Railway infrastructure: PORT env var, `postgres://` URI conversion, `/health` endpoint
+**`dev`: merged but not yet released to `main`.** This is the Camp Harvest release (87 commits ahead of `main`, 8 migrations):
 
-**v0.3.0 — Done (Board & Block Hit):**
-- SVG board with winding snake path, BoardComponent, BoardService
-- Pre-scripted block hit — admin trigger via `/admin/board`, animation on `/board/display` via SignalR
-- ThemeService + CSS variables foundation
+| Issue / PR | Feature | Spec |
+|---|---|---|
+| #304 / #305 | Named guest identity: `GuestAttendee`, `GuestEventVisit`, `/admin/guests` | `2026-09-18-named-guest-identity-design.md` |
+| #306 / #307 | Guest push notifications for announcements (Web Push, VAPID, `PushSubscription`) | `2026-09-21-guest-push-notifications-design.md` |
+| #308 / #309 | Attendance: "I'm here" self check-in, `/admin/attendance` roster, walk-ins, CSV export | `2026-09-23-attendance-tracking-design.md` |
+| #310 / #312 | `/admin/theme` editor (presets, colors, logo/banner upload, **one `Theme` row per event**) and "Copy setup from…" event duplication | `2026-09-23-admin-event-configurability-design.md` |
+| #125 / #313 | Forgot password, Admin "Email reset link", and invite emails via Resend (`Services/Email/`) | `2026-09-23-password-reset-email-design.md` |
+| #311 / #317 | Breakout slots, session sign-ups, per-event staff (`EventStaff`, `/admin/team` replaces `/admin/staff`), per-session QR check-in, and faster schedule setup (smarter form, .xlsx import, copy a past event's schedule) | `2026-09-26-breakout-slots-session-signups-design.md`, `2026-09-26-faster-schedule-setup-design.md` |
+| #318 / #319, #320 / #321 | Theme-variable fixes (nav, reconnect banner, loading screen, auth pages), new app icon | — |
+| #322 / #323 | Image uploads up to 20 MB with auto-resize (staff photos, sponsor logos, theme, groups) | `2026-10-05-larger-logo-uploads-design.md` |
+| #324 / #325 | Guests land on the Dashboard, get a Home tab; bottom-nav highlight fix | — |
+| #326 / #327–#333 | Mobile app-shell layout for the iOS PWA (fixed header and bottom bar, `.app-main` scroller, black status bar, content-hashed CSS/JS). Supersedes #153. See pitfalls #22–#23 | — |
 
-**v0.3.1 — Done (UI Overhaul, PR #95):**
-- Neo-brutalist redesign — cream bg (`#F2ECD8`), black borders, shadow offsets, rank rows
-- ThemeService extended with flat palette CSS vars
-- MainLayout: black header band, light MudBlazor theme
-- Dashboard: rank rows replacing card grid; score pills with ccn-coin.png / ccn-star.png
-- Groups confirmed: Mini Marios (MM, red), Blue Shell Bandits (BB, blue), Mushroom Militia (MU, green), Luma Legends (LL, purple) — 4 groups final
+**Releasing `dev` → `main`:** two migrations remove data the old code depends on (`AddEventStaff` drops `Users.GroupId`; `MergeStaffDirectoryIntoTeam` drops `StaffMembers` after copying it into `Users`/`EventStaff`). **Back up the Railway Postgres before merging.** Rolling back means restoring that backup and redeploying `v1.1.1`. Redeploying the old code alone won't work. Confirm `Vapid__*` is set on prod. After deploying, trim each event's team on `/admin/team`: the `AddEventStaff` backfill adds every active user to every existing event.
 
-**v0.4.0 — Done (Mini-Game Spinner, feature/96):**
-- `LiveHub` (renamed from `CampHub`) at `/livehub` — adds `MiniGameSpinTriggered`, `MiniGameSpinRevealed`, `MiniGameSpinReset` hub events
-- `MiniGameService` — GetActivities, GetScripts, Upsert, TriggerSpin, Reveal, ResetDay
-- `/admin/games` — combined Game Admin page (absorbs old `/admin/board`); tabs: Board Spaces, Block Hit Scripts, Mini-Game Scripts, Reset
-- `/minigames` — admin trigger page; day selector, Start Spin → Reveal Result → log coins/stars
-- `/minigames/display` — projector display page (Admin only); yellow cells → hand cycles green → lands green + pulses
-- `/board/display` — renamed from `/display` (file: `BoardDisplay.razor`)
-- Activities nav is now a dropdown: Board Game (`/board`) + Mini-Game (`/minigames`)
-- `LoginLayout.razor` — bare layout for login page (no nav, no MudBlazor providers)
-- Login page redesigned: `LoginLayout`, `position:fixed` centering, ccn-logo-2026.png (background made transparent via Python Pillow flood fill)
-- `RedirectToLogin.razor` — fixed `NavigationException` with `IHttpContextAccessor`
-- Two new MinuteToWinIt activities seeded: "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay"
-- `gh` CLI installed at `$env:LOCALAPPDATA\Programs\gh\gh.exe` (user PATH)
+**Before Camp Harvest:** verify on staging (including a real Resend email once `Email__*` is set), back up prod, open the `dev` → `main` release PR, merge and tag it (`v1.2.0`), smoke test production, then set up the Camp Harvest event (theme, logo, guest code, team).
 
-**v0.5.0 — Done (Camp Info Hub + PWA, feature/99):**
-- `HubSubNav.razor` — shared sub-nav for all Hub pages (Schedule / Announcements / Staff / Info)
-- `/hub/schedule` — day-grouped collapsible timeline; per-group Activity + Location + Note overrides via `ScheduleEventGroup`; today auto-expanded; Admin/Staff/Volunteer access
-- `/hub/announcements` — priority feed (pinned → newest); urgent red badge; dismissible banner on Dashboard; pin/archive Admin-only
-- `/hub/staff` — card grid; emoji avatars; tap-to-call/email links; "Import from Users" admin shortcut; event-scoped
-- `/hub/info` — sidebar page list + Markdig markdown body; Admin inline edit; seeded slugs: `rules`, `faq`, `medical` (`schedule-overview` and `packing` removed in v0.5.1)
-- `Location` entity + `/admin/locations` — full CRUD; FK referenced by `ScheduleEvent` and `ScheduleEventGroup`; replaces old `LocationDisplayName` string column
-- `ScheduleEventGroup` extended beyond spec: per-group Activity, Location override, and Note fields
-- `Volunteer` role finalized in `Role` enum; `Display` role removed — projector pages (`/board/display`, `/minigames/display`) are now Admin-only; `ViewDisplay` permission removed
-- PWA fixes: `manifest.json` theme/background → `#F2ECD8`; service worker → network-first for navigation, cache-first for static assets; bumped to `ccn-shell-v2`
-- `railway.toml` added with `/health` healthcheck, `ON_FAILURE` restart policy
-- Railway production: project `camp-clot-not` live; Postgres running (SFO); env vars set (`DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`, `Seed__AdminPassword`)
+**Open issues:** #315 (Cloudflare Turnstile on login and forgot-password) is the only real backlog item. #311, #314, #318, #320, #324, and #326 are merged into `dev` but still open (see "Closing issues" below). #153 is superseded by #326. Planned-but-unstarted items are in the Roadmap below.
 
-**v0.5.1 — Done (feature/103-mobile-pwa-fixes, PR #104/105):**
-- User edit dialog on `/admin/users`; PWA `short_name` → "CCN 2026"; `viewport-fit=cover`; desktop nav mobile suppression; bottom nav safe-area padding; Activities → Transactions swap in mobile nav (Admin); PWA icons regenerated from tall 3-row CCN logo; Children's Harbor logo extracted to `wwwroot/img/childrens-harbor-logo.png`
-- `IncidentReport` entity + `IncidentReportService` — submit, list, acknowledge
-- `Sponsor` entity + `SponsorService` — CRUD, ordered by SortOrder
-- `PrintLayout.razor` — bare layout (ThemeHead only, no nav, no MudBlazor providers) for print views
-- `/hub/incidents` — Admin-only incident list with Acknowledge button and Print link
-- `/hub/incidents/{id}/print` — uses `PrintLayout`; mirrors Children's Harbor paper form
-- `/hub/sponsors` — responsive logo tile grid; all roles
-- `/admin/sponsors` — Admin CRUD; matches `/admin/locations` pattern
-- `HubSubNav.razor` — Sponsors + Incidents (Admin-only) tabs added; floating 🚨 Report Incident FAB + modal
-- `AppNav.razor` — `/admin/sponsors` in desktop Admin dropdown and mobile admin sheet
-- `SeedService` — `schedule-overview` and `packing` removed from InfoPage seed (and from `SeedService.Id`)
-- EF migration `AddIncidentReportAndSponsor` added and applied
-
-**v0.5.2 — Done (feature/108, PR #110/111):**
-- Sponsor logo upload: `Sponsor` entity extended with `LogoData (byte[]?)` + `LogoContentType (string?)`; logo stored in DB; `/admin/sponsors` serves logos via a streaming endpoint; display pages render `<img src="/sponsor-logo/{id}">` (or fall back to LogoUrl)
-- Nav restructure: Admin dropdown order → Game Admin → Activities → Schedule → Groups → Users → Locations → Sponsors (desktop and mobile sheet)
-- `/hub/schedule` day tabs: collapsible accordion replaced with horizontal day tabs; `_selectedDay` tracks active tab; `_campEvent` loaded for min/max date constraints; sets `_selectedDay` after save
-- `/admin/schedule` (new page): Admin CRUD for `ScheduleEvent` — form panel + table pattern (same as Locations); date/time inputs use `value`+`@onchange` string pattern; group assignments collapsible section; calls `ScheduleService.UpsertAsync`
-- `Index.razor` redirects `/` to `/hub/schedule` via `IHttpContextAccessor`; `Dashboard.razor` route changed from `@page "/"` to `@page "/dashboard"`
-- EF migration `AddSponsorLogoUpload` applied
-
-**v0.5.3 — Done (feature/112, PR #113):**
-- `/admin/activities` (new page): Admin CRUD for MinuteToWinIt activities (Name + Description) — same form panel + table pattern; delete blocked if activity is referenced by a `ScriptedMiniGame`
-- `MiniGameService.UpsertActivityAsync` and `DeleteActivityAsync` added
-- These are the activities Vicki/Amanda can configure: "Mushroom Kingdom Trivia Showdown", "Yoshi Egg Rescue Relay", etc.
-
-**v0.5.4 — Done (feature/114, PR #115/116):**
-- Bug fix: schedule event save caused Blazor circuit crash (white bar + freeze)
-- Root cause: `ScheduleEvent.CreatedByUser` navigation had no explicit FK config; EF Core created shadow property `CreatedByUserUserId`; on insert it defaulted to `Guid.Empty`, violating NOT NULL FK constraint
-- Fix: `HasForeignKey(e => e.CreatedBy)` added to `OnModelCreating`
-- Migration `FixScheduleEventCreatedByFK`: drops `CreatedByUserUserId` shadow column/index/FK; wires `CreatedBy` as the real FK to `Users.UserId`
-
-**v0.5.5 — Done (feature/118, issue #118):**
-
-*Entities / enums changed:*
-- `Role` enum: add `MedicalStaff` (C# only — no schema change; stored via UserRole seed). Permissions: log transactions, view+acknowledge incident reports, all Hub features; no admin panel.
-- `ScheduleEventType` enum: add `Presentation` (C# only). `Travel` keeps its code name but displays as "Arrival/Departure" everywhere in the UI.
-- `IncidentReport`: add `IncidentLocationId (Guid? FK→Location)` + `IncidentLocationOther (string?)` + `ReportType (IncidentReportType enum: Internal/ChildrensHarbor)`. Incident form shows location dropdown from active event's locations + always-visible "Other" option (reveals free-text when selected). Admins can choose `ChildrensHarbor` type; all other roles default to `Internal`.
-- `StaffMember`: add `PhotoData (byte[]?)` + `PhotoContentType (string?)`; served via `/staff-photo/{id}`; shows in `/hub/staff` card (falls back to emoji); uploadable in admin dialog.
-- `ScheduleEvent`: add `PresenterName (string?)` + `PresenterBio (string?)`; ONLY shown/editable in admin form when `EventType == Presentation`; only displayed in `/hub/schedule` for Presentation events.
-- `Sponsor`: add `ContactName (string?)` + `Phone (string?)`; tap-to-call `tel:` link on `/hub/sponsors`; drag-and-drop sort in `/admin/sponsors` (admin-only, saves `SortOrder` to DB, drives order for all users).
-- `Location`: add `ImageData (byte[]?)` + `ImageContentType (string?)`; served via `/location-image/{id}`; upload in `/admin/locations` form.
-- `Activity`: add `LocationId (Guid? FK→Location)`; optional location link set in `/admin/activities`; board space rendering (Board.razor, BoardDisplay.razor) uses location image when activity has a location with image.
-
-*Other changes:*
-- Remove Mini Marios group from seed → 3 groups: Blue Shell Bandits, Mushroom Militia, Luma Legends. (Prod DB note: purge will fail if Mini Marios has FK-referenced rows — delete transactions/board positions first.)
-- 12-hour AM/PM time format everywhere in schedule display and admin.
-- Dashboard landing page at `/dashboard`: Sponsors widget (prominent per Vicki), today's schedule, latest announcement, quick nav; `Index.razor` redirects here instead of `/hub/schedule`.
-
-**Migration:** `AddV055Enhancements` (`20260603051634`) — DONE. Applied to local dev DB. Adds columns to `IncidentReport` (IncidentLocationId FK, IncidentLocationOther, ReportType), `StaffMember` (PhotoData, PhotoContentType), `ScheduleEvent` (PresenterName, PresenterBio), `Sponsor` (ContactName, Phone), `Location` (ImageData, ImageContentType), `Activity` (LocationId FK).
-
-**v0.5.5 progress as of 2026-06-03:**
-- [x] All entity files updated
-- [x] All enum additions (MedicalStaff in Role, IncidentReportType, Presentation in ScheduleEventType)
-- [x] AppDbContext: explicit FK config for Activity.LocationId and IncidentReport.IncidentLocationId
-- [x] SeedService: MedicalStaff UserRole + LogTransaction authority link; Mini Marios removed; board positions seed uses Group2/3/4
-- [x] Migration AddV055Enhancements created and applied to dev DB
-
-**v0.5.5 completed items:**
-- [x] Staff photo: endpoint `GET /staff-photo/{id}` + InputFile upload in admin staff dialog + `<img>` in `/hub/staff` card (fallback to AvatarEmoji)
-- [x] Sponsor: ContactName/Phone fields in `/admin/sponsors` form + tap-to-call display in `/hub/sponsors` tile
-- [x] Sponsor drag-and-drop sort in `/admin/sponsors` (HTML5 drag events; saves SortOrder to DB via `SponsorService.UpdateSortOrderAsync`)
-- [x] Incident form (`HubSubNav.razor` modal): location dropdown + "Other" free-text; Admin-only ReportType field
-- [x] `/hub/incidents` list + print view: IncidentLocation column + ReportType badge; MedicalStaff role access
-- [x] Schedule display (`/hub/schedule`): Travel → "Arrival/Departure"; Presentation type + PresenterName/Bio; 12-hr time format
-- [x] Schedule admin (`/admin/schedule`): same Travel label + Presentation type + conditional presenter fields + 12-hr times
-- [x] Location images: `GET /location-image/{id}` in Program.cs + InputFile upload in `/admin/locations` + board space shows location image when available
-- [x] `/admin/activities`: Location dropdown (nullable FK to Location for board image purposes)
-- [x] Dashboard (`/dashboard`): Sponsors widget, today's schedule, latest announcement, quick nav; `Index.razor` redirects here
-- [x] `/hub/incidents` + `/hub/incidents/{id}/print`: `MedicalStaff` role added alongside `Admin`
-- [x] `/admin/users` role dropdown: Medical Staff option added
-
-**v0.5.6 — Done (feature/121-v056-schedule-item-types, PR #122, merged to dev):**
-
-*Schema changes:*
-- `ScheduleEvent` entity/table → `ScheduleItem`; `ScheduleEventGroup` → `ScheduleItemGroup`; `ScheduleEventType` enum removed
-- New **`ScheduleItemType`** entity — `ScheduleItemTypeId`, `Name`, `SystemName`, `Description?`, `SortOrder`; seeded with 6 types (Activity, Meal, Travel, Free, Mandatory, Presentation)
-- New **`EventScheduleItemType`** join table — which types are active per event; CCN 2026 gets all 6 enabled by default
-- `ScheduleItem`: drop `EventType` enum column; add `ScheduleItemTypeId (Guid FK → ScheduleItemType)`; add `LocationOther (string?)` freetext alongside location dropdown
-- `StaffMember`: add `PhotoObjectPosition (string?)` — stored as `"X% Y%"` string, drives `object-position` CSS on hub cards
-
-*Service/page changes:*
-- `ScheduleEventDto` → `ScheduleItemDto`; all `ScheduleService` queries include `ScheduleItemType`
-- New `ScheduleItemTypeService` — CRUD + `GetForEventAsync(eventId)` for dropdowns
-- New `/admin/schedule-item-types` page — Admin CRUD + per-event enable/disable
-- Special-case UI: Presenter fields keyed off `SystemName == "Presentation"`; Travel → "Arrival/Departure" keyed off `SystemName == "Travel"`
-- Admin nav: 4 section headers in Admin dropdown (Game / Schedule / People / Venue & Content); "Types" shorthand for schedule item types
-
-*UX polish:*
-- Tel: links use E.164 format (`+1XXXXXXXXXX`) via `TelHref()` helper — required for Android Chrome dialer; applied to Staff.razor + Sponsors.razor
-- Staff phone/email links darkened to `#1a5fa8`
-- Staff photo focal point: X/Y position sliders in admin dialog; `PhotoObjectPosition` stored as `"X% Y%"`; `object-position` CSS on hub cards
-- Admin Locations: Capacity hidden from UI; location image preview in form; 56×40px thumbnails in table with fullscreen lightbox on click
-- Password visibility toggle (👁/🙈) on all 3 password inputs in `/admin/users`
-- Schedule item dividers darkened to `3px solid #3a3a3a`; location chip bold requires `font-family:'Fredoka One',cursive` (not just `font-weight`)
-- Dashboard: fixed async DbContext bug (`CreateDbContext()` not `CreateDbContextAsync()`); 3-case date logic (before event → first day, during → today, after → last day)
-- Hub/schedule: default tab = today (first day if before event, last day if event has ended)
-- Admin Users: search input + role filter dropdown + sortable Name/Role columns; default sort = role rank then last name A-Z; `FilteredUsers` computed property
-- LocationOther freetext always shown alongside location dropdown; displayed as separate chip in hub view
-
-*EF migrations added:*
-- `AddScheduleItemTypes` — table renames, new ScheduleItemType + EventScheduleItemType tables, drop EventType column, add ScheduleItemTypeId FK
-- `AddStaffPhotoPosition` — adds `PhotoObjectPosition (text)` to `StaffMembers`
-- `AddScheduleItemLocationOther` — adds `LocationOther (text)` to `ScheduleItems`
-
-**v0.5.7 — Planned:**
-
-*Info section overhaul:*
-- Remove `faq` info page (redundant with schedule); `medical` page kept + restructured for emergency contacts
-- Add PDF upload support to `InfoPage` — `PdfData (byte[]?)` + `PdfContentType (string?)`; served via `/hub/info/{slug}/pdf`; display via native PDF viewer (`<iframe>`) or new-tab link
-- Role-based PDF visibility: per-page visibility flag controlling which roles can download
-- Emergency contacts PDF on `medical` page — visible to MedicalStaff + Admin only
-
-*Dashboard:*
-- Sponsor widget currently caps at 8; use full available width/whitespace to show all sponsors
-
-*Hub/sponsors (mobile):*
-- Remove "Report Incident" FAB on `/hub/sponsors` on mobile only (FAB renders on top of content)
-
-*Staff directory:*
-- Fix email addresses overflowing card border (overflow-wrap or truncation with tooltip)
-- Fix pixelated staff photos — review stored resolution vs. render size
-
-*Schedule:*
-- Show location image thumbnail on schedule item row in admin table (small, with lightbox expand)
-- Rearrange schedule item admin layout — currently content squished to left
-- Mobile: remove Edit/Delete buttons from `/hub/schedule` items (admin actions belong on admin page)
-
-*Transactions:*
-- Apply CCN neo-brutalist table style to transactions table (currently unstyled)
-
-*Schedule item cells:*
-- Make schedule item cell backgrounds opaque
-
-**v0.5.7 is the last v0.5.x release.** All subsequent versions use the `v1.0.0-rc.N` → `v1.0.0` convention (see Branching & Versioning).
+**How work is done here:** every feature has a design spec in `docs/superpowers/specs/` and an implementation plan in `docs/superpowers/plans/`. Read the relevant spec before changing a feature. New work follows the same process: ask the design questions first, write a spec with a "Design Decisions" table, write a plan, implement in logical commits, then open a PR into `dev` with a manual test checklist.
 
 ---
 
-**v1.0.0-rc.1 — Planned (next branch after v0.5.7 merges):**
+## Release History
 
-*Reconnect UX overhaul (no migrations required — HTML/CSS/JS only):*
-- Remove `ConnectionIndicator.razor` and `connection-indicator.js` — the dot never turns red because `invokeMethodAsync` can't call back into .NET when the SignalR circuit is down; a banner makes it redundant anyway
-- Add custom `<div id="components-reconnect-modal">` to `_Layout.cshtml` with three styled states:
-  - `.components-reconnect-show` — slim non-blocking banner at top ("📶 Reconnecting…"), page content stays visible
-  - `.components-reconnect-failed` — red banner with Reload button + auto-reload countdown (~8s)
-  - `.components-reconnect-rejected` — auto-reload after ~1.5s with brief "Session expired — reloading…" (most common Railway cause)
-- Switch `blazor.server.js` to `autostart="false"` and configure `Blazor.start({ reconnectionOptions: { maxRetries: 12, retryIntervalMilliseconds: (n) => Math.min(n * 2000 + 1000, 20000) } })` for exponential backoff
-- Add `visibilitychange` listener: if app was backgrounded (PWA) and circuit already failed, silently `location.reload()` when user returns — app just "opens fresh" with no error shown
-- Remove `<ConnectionIndicator />` from `AppNav.razor`
-- Style the banner to match CCN neo-brutalist design (`#F5C800` yellow background, black border, Fredoka One font)
-
-*Dry Run prep:*
-- End-to-end smoke test of all Hub features, game triggers, board display
-- Validate MedicalStaff role access on incidents + info PDF
-- Confirm all migrations applied to prod
+Tags, dates, and the full v0.1.0 → v1.0.0 build log (the per-version notes that used to live here) are in **`docs/RELEASES.md`**.
 
 ---
 
-**v1.1.0 — Post-Camp Quick Wins + Architecture Prep**
+## Roadmap (status as of 2026-10-08)
 
-*Standalone improvements (no v2.0 architecture required):*
+✅ = shipped (on `dev` or `main`), 🚧 = in progress, ⬜ = not started. The version labels below are the original plan, not release numbers. Actual releases didn't follow them (v1.1.0 became Men's Retreat enablement, #297, and most of v2.0–v2.2 ships in the Camp Harvest release). `docs/RELEASES.md` has what each tag actually contains.
+
+**v1.1.0 — Post-Camp Quick Wins + Architecture Prep** (all ✅)
+
+- ✅ Forgot password: shipped in #125 / PR #313 using **Resend**, not SendGrid
+- ✅ Response caching: `IMemoryCache` in the services (schedule, announcements, sponsors, staff, capabilities, active event)
+- ✅ Awards (`Awards` capability, shipped post-camp)
+- ✅ `IActiveEventService`: shipped as `ActiveEventService` (30s cache). Pages resolve the active event at runtime. Only `SeedService` uses `SeedService.Id.EventCcn2026`
+
+*Original notes:*
 - Forgot password via email (SendGrid free tier — infra now in place post-v1.0)
 - Response caching for Hub read endpoints — in-memory cache on server, zero schema changes (schedule 60s, announcements 15s, info 5min, staff 2min); reduces DB load when 150+ Annual Meeting attendees hit the Hub simultaneously. *Note: unrelated to reconnect UX — this is server↔DB performance, not browser↔server connection handling.*
 - Awards UI — `AwardType` and `CamperAward` entities already in schema from day one; just needs admin CRUD + a display view + projector page for award ceremony
 - `IActiveEventService` — one-file wrapper replacing direct `SeedService.Id.EventCcn2026` references across pages/services with a runtime interface call. No migrations, no UI, no user-facing change — but makes v2.0.0 decoupling a search-and-replace rather than a surgery
 
-**v1.2.0 — Polish + Deeper v2.0 Prep**
+**v1.2.0 — Polish + Deeper v2.0 Prep** (all ⬜)
 
-- Audit log — `AuditEntry` table + interceptor on SaveChanges; Vicki can see "Tyler deleted a schedule item at 3pm." Single migration, high ops value before chapter-scale events
+- Cloudflare Turnstile on login and forgot-password (#315); there's no login rate limit today
+- Audit log — `AuditEntry` table + interceptor on SaveChanges; the event coordinator can see "Tyler deleted a schedule item at 3pm." Single migration, high ops value before chapter-scale events
 - `ScheduleTemplate` + `ScheduleTemplateItem` entity + migration (data layer only, no admin UI yet) — v2.0.0 branch starts with the schema already done and just builds the interface on top
 - Test suite foundation — service-layer unit tests for scoring, auth, and seed. Manual testing only for v1.x; want these in place before v2.0 architectural changes touch everything
 
@@ -248,7 +73,15 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 **v2.0.0 — Self-Service Event Management**
 
-*Goal: Vicki can configure and launch a "Men's Retreat" (or any HBDA event) entirely within the admin UI without any developer involvement. No seed changes, no code deploys, no Tyler.*
+*Goal: The event coordinator can configure and launch a "Men's Retreat" (or any HBDA event) entirely within the admin UI without any developer involvement. No seed changes, no code deploys, no Tyler.*
+
+*Status:* mostly ✅ ahead of schedule.
+- ✅ `/admin/events`: create, edit, set active, capability checkboxes, guest code and QR, "Copy setup from…" duplication (#312)
+- ✅ `/admin/theme` (#312)
+- **Duplication copies:** capabilities and schedule item types always, and sponsors, staff directory, and activities as opt-ins. It **never** copies groups, schedule, or announcements. Locations and info pages aren't event-scoped. This supersedes the "clone groups/locations/activities" line below.
+- ✅ Capabilities UI (it lives on `/admin/events`, so a separate `/admin/capabilities` page was decided against)
+- ✅ Faster schedule setup (#317): .xlsx template and import, paste import with preview, and "copy a past event's schedule". This covers most of what schedule templates were for
+- ⬜ Schedule templates as their own entity, the setup checklist, and the Event Designer nav group
 
 *What's already there (building blocks exist):*
 - `/admin/groups` — group CRUD, event-scoped ✓
@@ -258,7 +91,7 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 - `/admin/schedule` — schedule item CRUD ✓
 - `Event` entity has `EffDate`, `ExpDate`, `IsActive`, `EventTypeId`, `ThemeId` ✓
 - `EventCapability` join table exists (feature flags per event) ✓
-- `ScheduleTemplate` + `ScheduleTemplateItem` entities (added in v1.2.0) ✓
+- `ScheduleTemplate` + `ScheduleTemplateItem` entities ⬜ (planned for v1.2.0, not built)
 
 *What needs to be built:*
 - **`/admin/events` — Event CRUD**: create, edit, duplicate, set active event; replaces `IActiveEventService` stub (from v1.1.0) with full runtime-selected active event
@@ -282,13 +115,19 @@ Admin → Event Designer
   └── Capabilities        /admin/capabilities        (new)
 ```
 
-*This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "Vicki configures events in the UI."
+*This is the primary driver for the 1→2 major version bump.* The shift is from "Tyler configures events in code" to "the event coordinator configures events in the UI."
 
 ---
 
-**v2.1.0 — Member Access (Yapp Replacement)**
+**v2.1.0 — Member Access**
 
-*Goal: Families and chapter members can access event info on their phones with zero friction — same experience as Yapp, but ours.*
+*Goal: Families and chapter members can access event info on their phones with zero friction, on a platform the chapter owns.*
+
+*Status:* partly ✅.
+- ✅ Event code and QR `/join` (`Event.GuestCode`, PR #298)
+- ✅ Named guests (`GuestAttendee`, #304)
+- ✅ Guest push notifications (#306)
+- ⬜ Persistent "full member" accounts across events
 
 *Tiered identity model:*
 
@@ -300,7 +139,7 @@ Admin → Event Designer
 | Staff/Admin | Full account | Admin-created (existing) | Everything |
 
 *What ships:*
-- `EventCode` entity + `/join/{code}` route — validates code, issues a `Member` role cookie carrying `EventId` claim scoped to that event; expires at `EventExpDate + 1 day`; Vicki generates one code per event (`HARVEST26`), posts it on a flyer
+- `EventCode` entity + `/join/{code}` route — validates code, issues a `Member` role cookie carrying `EventId` claim scoped to that event; expires at `EventExpDate + 1 day`; the event coordinator generates one code per event (`EVENT26`), posts it on a flyer
 - `GuestAttendee` entity — `Name`, `Email?`, `EventId`, `SessionToken` (ties back to cookie); created on first identity-requiring action with a single low-friction "What's your name?" prompt
 - Member-facing Hub: read-only schedule, announcements, info pages, staff directory with its own layout/nav tier (no admin controls, no transaction log)
 - Push notifications (Web Push + VAPID, `PushSubscription` table, background ASP.NET service) — now that member identity exists; "new announcement" and "schedule change" pushes to both named guests and full members
@@ -314,9 +153,14 @@ Admin → Event Designer
 
 *Goal: Operational depth for larger events — session signups, attendance, awards ceremony, post-event reporting.*
 
+*Status:*
+- ✅ Attendance (#308, shipped as `ScheduleItemAttendance`, not `EventAttendance`)
+- ✅ Session sign-ups, as breakout slots plus `ScheduleItemRegistration`, and QR check-in per item (#311 / PR #317; `/admin/breakouts`, `/checkin/{code}`)
+- ⬜ End-of-event reporting beyond attendance CSV
+
 - **Session signups**: limited-capacity breakout sessions; `SessionSignup` entity FK to either `UserId` (staff) or `GuestAttendeeId` (named guest); capacity counts; roster view for facilitators
 - **Attendance tracking**: `EventAttendance` table; check-in flow; admin roster; works across all identity tiers
-- **End-of-event reporting/export**: final score summary, transaction log PDF, incident report bundle, attendance sheets — the "give Vicki the paperwork" feature
+- **End-of-event reporting/export**: final score summary, transaction log PDF, incident report bundle, attendance sheets — the "give the event coordinator the paperwork" feature
 - Awards UI already shipped in v1.1.0; this release adds ceremony projector display
 
 ---
@@ -332,7 +176,7 @@ None of these are on the near-term horizon. The entire v2.x roadmap is extending
 
 ---
 
-## Pitfalls to Avoid (Lessons from v0.4.0)
+## Pitfalls to Avoid (Lessons Learned)
 
 **1. Never use PowerShell for source file text replacement.**  
 PowerShell 5.1's `Get-Content` reads UTF-8-without-BOM files using the system code page (CP1252 on US Windows), corrupting multi-byte characters like emoji. Always use the **Edit tool** for replacements in source files. If you must use PowerShell, use `[System.IO.File]::ReadAllText(path, [System.Text.Encoding]::UTF8)` and `[System.IO.File]::WriteAllText(path, content, [System.Text.Encoding]::UTF8)` explicitly.
@@ -368,9 +212,10 @@ This file is gitignored and won't exist in a new worktree. EF migrations (`dotne
 Floating action buttons (like "Log Score" and "Report Incident") must use the class `ccn-fab-mobile` with `position:fixed;bottom:24px;right:24px`. The global `ThemeHead.razor` media query `@media (max-width:768px) { .ccn-fab-mobile { bottom: 80px !important; } }` handles bottom-nav clearance on mobile automatically. Do NOT hardcode `calc(80px + env(safe-area-inset-bottom))` — that is always elevated and misses the desktop position.
 
 **12. Modal dialogs — always use the `fadeIn`/`popIn` pattern from `LogTransactionDialog`.**  
+All form modals must use: backdrop `animation:fadeIn .2s ease` with `rgba(26,26,26,.65)`, panel `ccn-panel` class with `animation:popIn .25s ease` and `box-shadow:8px 8px 0 var(--black)`, and centered with `display:flex;align-items:center;justify-content:center;padding:20px`. Do not use bottom-sheet patterns for forms — they lack the popIn animation and feel inconsistent.
+
 **13. Navigation property names must follow EF Core FK convention or be configured explicitly.**  
-If a navigation property `FooUser` references `User` but the FK property is not named `FooUserUserId` or `UserId`, EF Core creates a shadow property (e.g. `FooUserUserId`) instead of using your named property. The shadow property defaults to `Guid.Empty` on insert, causing a NOT NULL FK constraint violation that crashes the Blazor circuit. Fix: add explicit `.HasForeignKey(e => e.YourProperty)` in `OnModelCreating` whenever the FK property name doesn't match the `<NavName><PKName>` convention. This was the root cause of the v0.5.4 schedule save bug.  
-All form modals must use: backdrop `animation:fadeIn .2s ease` with `rgba(26,26,26,.65)`, panel `ccn-panel` class with `animation:popIn .25s ease` and `box-shadow:8px 8px 0 var(--black)`, and centered with `display:flex;align-items:center;justify-content:center;padding:20px`. Do not use bottom-sheet patterns for forms — they lack the popIn animation and feel inconsistent. A shared `CcnDialog.razor` wrapper is planned post-v0.5.1 once a third dialog exists.
+If a navigation property `FooUser` references `User` but the FK property is not named `FooUserUserId` or `UserId`, EF Core creates a shadow property (e.g. `FooUserUserId`) instead of using your named property. The shadow property defaults to `Guid.Empty` on insert, causing a NOT NULL FK constraint violation that crashes the Blazor circuit. Fix: add explicit `.HasForeignKey(e => e.YourProperty)` in `OnModelCreating` whenever the FK property name doesn't match the `<NavName><PKName>` convention. This was the root cause of the v0.5.4 schedule save bug. Any entity with **two** navigations to the same table (e.g. `ScheduleItemAttendance.User` + `CheckedInByUser`, `PasswordResetToken.User` + `CreatedByUser`) must configure both explicitly. After `dotnet ef migrations add`, read the migration and confirm there are no shadow columns like `UserId1` / `EventId1`.
 
 **14. Always use synchronous `DbFactory.CreateDbContext()` — never the async variant.**  
 `await using var db = await DbFactory.CreateDbContextAsync()` introduces an async disposal pattern that conflicts with how services are structured in this codebase. Use `using var db = DbFactory.CreateDbContext()` (synchronous) everywhere. The async variant caused a silent bug on `Dashboard.razor` where the first-day schedule query returned nothing despite data existing. All existing services use the synchronous call — match it.
@@ -379,6 +224,31 @@ All form modals must use: backdrop `animation:fadeIn .2s ease` with `rgba(26,26,
 If an `@onclick` (or other `@on*`) lambda contains a C# interpolated string literal, using double quotes for the HTML attribute causes parse errors (CS1525/CS1056). Wrap the outer attribute in single quotes instead:  
 `@onclick='() => _field = $"/path/{someId}"'`  
 This also applies to any event attribute whose lambda body contains a double-quoted string literal. Root cause of the lightbox onclick bug in `/admin/locations`.
+
+**16. MudBlazor is 6.11 — checkboxes bind with `@bind-Checked`, not `@bind-Value`.**  
+Most admin pages use plain `<input type="checkbox" checked="@x" @onchange="...">` instead, which is fine too.
+
+**17. A child component whose parameters never change won't re-render when its parent does.**  
+Blazor skips re-rendering components whose parameters are all unchanged primitives. If such a component reads scoped state that loads asynchronously (e.g. `ThemeService`), it must `await ThemeSvc.LoadAsync()` in its own `OnInitializedAsync`, or it keeps showing the pre-load defaults. Root cause of `NavBrand` showing the CCN logo on other events (#312).
+
+**18. `[SupplyParameterFromQuery]` `bool` parameters don't parse `1`.**  
+`?sent=1` throws "Cannot parse the value '1' as type 'System.Boolean'" and 500s the page. Use `?sent=true` (or a `string` parameter).
+
+**19. Seed methods must not overwrite rows admins can edit.**  
+`SeedService` runs on every startup. Once a table has an admin UI (themes, since #312), its seed must be insert-only. `SeedThemeAsync` is the example, including its one-time backfill guarded by `ColorPalette is null`.
+
+**20. One `Theme` row per event.**  
+Themes are owned by a single event (app invariant, not a DB constraint). Creating an event clones a theme via `ThemeCloner` (from a `ThemePresets` preset or the source event); never point two events at the same `ThemeId`. `SeedService.SplitSharedThemesAsync` repairs any shared rows on startup.
+
+**21. Native form posts for anything that sets a cookie.**  
+Login, change-password, reset-password, and guest join are HTML `<form method="post">` to minimal-API endpoints in `Program.cs`, because a cookie can't be set from the SignalR circuit. When testing these pages with Playwright, wait ~3s after load before filling inputs: the interactive render replaces the prerendered form and wipes anything typed earlier.
+
+**22. On phones the page doesn't scroll: `.app-main` does (app shell, #326).**  
+Below 1024px, `MainLayout` is a flex column pinned with `position:fixed; inset:0`: header, then `.app-main` (the only scroller), then the bottom bar. This stops iOS PWAs from dragging the sticky header on overscroll and from shifting the fixed bottom bar between pages (#153). So `window.scrollY` stays 0 on mobile. Scroll `.app-main` instead (`ccnShell.scrollToTop()`). `MainLayout` resets it on every path change. `.app-content` is 1px taller than `.app-main`, so short pages still bounce (an iOS scroller that fits doesn't respond to touch). Don't make the header or bottom bar `sticky`/`fixed` again inside `.app-frame`. `Ui__AppShell=false` restores the old layout if it ever needs reverting.  
+**The status bar style must stay `black`, not `black-translucent`.** With translucent, iOS draws the page under the status bar but reports *and paints* it one status bar short (873 of 932pt on a 430×932 iPhone). Nothing can reach the bottom 59pt: a taller frame (`100lvh`) just gets its bottom clipped, which hid the tab labels. iOS reads this meta when the app is added to the home screen, so changing it means deleting and re-adding the app.
+
+**23. Local CSS/JS URLs are content-hashed: never hand-version them (#326).**  
+Static files are served with `Cache-Control: immutable` for a year, so a file whose URL doesn't change when its contents do stays stale on phones. Every local `<link>`/`<script>` in `_Layout.cshtml` uses `asp-append-version="true"` (`?v=<hash>`), and `service-worker.js` is network-first for same-origin files, keeping copies only as an offline fallback (`service-worker.js` itself is served `no-cache`). So a CSS or JS deploy reaches installed apps on their next launch with no reinstall. Add `asp-append-version` to any new script or stylesheet tag. Before this, the worker served `app.css` cache-first from a hand-versioned precache, and a version mismatch shipped pre-shell CSS to phones. The one thing a deploy can't change is the `apple-mobile-web-app-*` meta tags, which iOS reads only when the app is added to the home screen.
 
 ---
 
@@ -411,6 +281,8 @@ Reviewed actual Mario Party Superstars / Mario Party 9 screenshots 2026-05-07. R
 
 ## Groups (CCN 2026 — Confirmed)
 
+*Mini Marios (Group1) was removed from the seed in v0.5.5, so CCN 2026 ran with 3 groups (Group2–4). Groups are event-scoped. Most non-camp events have none.*
+
 | ID | Name | Short | Color | Logo |
 |---|---|---|---|---|
 | Group1 | Mini Marios | MM | #E74C3C (red) | mini-marios-logo.png |
@@ -432,7 +304,13 @@ Groups 5 & 6 removed from seed. SeedGroupsAsync upserts by ID and purges stale e
 | Competition | `CurrencyType`, `Group`, `Transaction`, `BoardSpace`, `GroupBoardPos`, `ScriptedBlockHit`, `ScriptedMiniGame` |
 | Awards | `AwardType`, `CamperAward` |
 | Auth/RBAC | `UserRole`, `Authority`, `UserRoleAuthorityLink`, `UserAuthorityLink`, `User` |
-| Hub (Camp Info) | `Location`, `InfoPage`, `StaffMember`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor` |
+| Hub (Camp Info) | `Location`, `InfoPage`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor`, `CampDocument` |
+| Guests | `GuestAttendee`, `GuestEventVisit`, `PushSubscription`, `ScheduleItemAttendance`, `ScheduleItemRegistration` |
+| Per-event staff | `EventStaff` (a person on one event's team: role label, group, Hub directory title/visibility/order). A person is a `User` row (contact details and photo entered once; `CanSignIn` false for listed-only people). The old per-event `StaffMember` directory cards were merged into this (#311). |
+| Auth extras | `PasswordResetToken` (SHA-256 hashed, single-use) |
+| Games (post-camp) | `BowserScript` |
+
+**Event-scoped vs global:** `Location` and `InfoPage` are **global** (no `EventId`) and shared by every event. Groups, activities, sponsors, team members (`EventStaff`), documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` itself is global. Who is staff at an event is `EventStaff` (#311), and that's what rosters, bulk sign-up, and "all staff" use. Its role is a label only: permissions still come from `User.UserRoleId`.
 
 **Column convention:** `Name` + `Description` + `SystemName` on all reference/catalog tables.
 
@@ -453,22 +331,10 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 ```
 
 **Release flow:** `feature/*` → PR to `dev` → PR to `main` → tag  
+**Tags:** after each `dev` → `main` release PR merges, add an annotated tag on that merge commit (`git tag -a vX.Y.Z <sha> -m "…"`), push it, and add a row to `docs/RELEASES.md`. A feature release bumps the minor version (the Camp Harvest release is `v1.2.0`) and a hotfix bumps the patch. `v1.0.0`–`v1.1.1` were tagged after the fact on 2026-10-08. The `v1.0.0-rc.N` convention ended at go-live (details in `docs/RELEASES.md`).  
 **Issue-first rule:** Open a GitHub issue before creating a branch. Branch name must use the issue number GitHub assigns.  
+**Closing issues:** `main` is the default branch, so "Closes #N" in a PR into `dev` does **not** auto-close the issue. Close it by hand (with a comment naming the PR) once the PR merges into `dev`.  
 **`gh` CLI:** Installed at `$env:LOCALAPPDATA\Programs\gh\gh.exe`. Use PowerShell (not Bash) to invoke it.
-
-### Version Convention (updated 2026-06-04)
-
-v0.5.7 is the **last v0.5.x release**. With production live and real data being entered, the project moves to a release-candidate convention:
-
-| Version | Meaning |
-|---|---|
-| `v1.0.0-rc.1` | First RC — reconnect UX + dry run prep |
-| `v1.0.0-rc.2`, `rc.3` … | Dry run fixes (June ~14-19) |
-| `v1.0.0` | Go-live build — deployed before June 20 camp start |
-| `v1.0.1`, `v1.0.2` … | Hotfixes during/after camp |
-| `v1.1.0` | Next feature cycle (post-camp chapter Yapp replacement work) |
-
-Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-...`, etc.
 
 ---
 
@@ -481,13 +347,33 @@ Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-.
 | `CampClotNot/Services/BoardService.cs` | Board logic + block hit SignalR broadcasts |
 | `CampClotNot/Services/MiniGameService.cs` | Mini-game logic + spinner SignalR broadcasts |
 | `CampClotNot/Services/SeedService.cs` | Startup seed — all reference data + CCN 2026 event |
-| `CampClotNot/Services/ThemeService.cs` | CSS variable tokens — `ThemeConfig.CssVariables` injected via `ThemeHead.razor` |
+| `CampClotNot/Services/ThemeService.cs` | `ThemeConfig` (CSS variable tokens injected via `ThemeHead.razor`), `ThemePresets` (Classic / Men's Retreat / Mario), and scoped `ThemeService` resolving the active event's theme + logo URLs |
+| `CampClotNot/Services/ThemeAdminService.cs` / `ThemeCloner.cs` | `/admin/theme` persistence and logo/banner uploads / per-event theme row creation |
+| `CampClotNot/Services/ActiveEventService.cs` | Resolves the active `Event` (30s `IMemoryCache`); call `InvalidateCache()` after changing which event is active |
+| `CampClotNot/Services/CapabilityService.cs` | Per-event feature flags (`Feature` enum) for nav and page gating |
+| `CampClotNot/Services/EventSetupService.cs` | Create an event (+ theme + copied rows) in one `SaveChanges`; `EventCopyOptions` holds the opt-in copy flags (sponsors, activities, event staff) |
+| `CampClotNot/Services/GuestAccessService.cs` | Guest join, `GuestAttendee` lookup/creation, guest claims (`GuestClaimTypes`) |
+| `CampClotNot/Services/AttendanceService.cs` | Self/Admin/QR check-in, check-in codes, roster, CSV export |
+| `CampClotNot/Services/RegistrationService.cs` | Breakout sign-ups: self sign-up (row-locked capacity), admin assign/move/remove, unassigned list |
+| `CampClotNot/Services/EventStaffService.cs` | Per-event staff list (`EventStaff`) |
+| `CampClotNot/Services/ScheduleVisibility.cs` | Which items a person sees given breakout picks (shared by `/hub/schedule` and the Dashboard) |
+| `CampClotNot/Services/ScheduleImportService.cs` | Schedule setup: lenient time/day parsing, .xlsx template (ClosedXML), spreadsheet/paste import with preview, copy a past event's schedule |
+| `CampClotNot/Pages/CheckIn.razor` | `/checkin/{code}`, the landing page for a session's QR code |
+| `CampClotNot/Pages/Admin/Breakouts.razor` / `Team.razor` | `/admin/breakouts` / `/admin/team`: the one page for staffing an event and its Hub staff directory. Add from past events or someone new (with or without sign-in), role and group at this event, edit contact details and photo, directory title and order. `/admin/event-staff` and `/admin/staff` route here |
+| `CampClotNot/Services/StaffDirectoryService.cs` | Hub staff directory cards (team rows with `ShowInDirectory`), order, cache |
+| `CampClotNot/Services/PushNotificationService.cs` | Web Push (VAPID) to guest subscriptions (singleton) |
+| `CampClotNot/Services/PasswordResetService.cs` | Reset/invite tokens, `ForgotPasswordQueue` + background worker, `PublicBaseUrl` |
+| `CampClotNot/Services/Email/` | `IEmailSender`, `ResendEmailSender` (HTTPS API), `EmailTemplates` |
+| `CampClotNot/Pages/Admin/Events.razor` | Event CRUD, active toggle, capabilities, guest code/QR, duplication |
+| `CampClotNot/Pages/Admin/ThemeEditor.razor` | `/admin/theme` (named `ThemeEditor` to avoid clashing with the `Theme` entity) |
+| `CampClotNot/Pages/Admin/Guests.razor` / `Attendance.razor` | `/admin/guests` / `/admin/attendance` |
+| `CampClotNot/Shared/NavBrand.razor` | Nav badge logo/wordmark + subtitle, shared by `AppNav` and `GuestNav` |
 | `CampClotNot/Shared/ThemeHead.razor` | Injects CSS vars into `:root`, defines body styles, shared animations |
 | `CampClotNot/Shared/LoginLayout.razor` | Bare layout for login page — ThemeHead only, no nav |
 | `CampClotNot/Shared/PrintLayout.razor` | Bare layout for print views — ThemeHead only, no nav, no MudBlazor providers |
 | `CampClotNot/Pages/Login.razor` | Login page — uses `LoginLayout`, `position:fixed` centering |
 | `CampClotNot/Pages/Board.razor` | Board game trigger — Admin + Staff |
-| `CampClotNot/Pages/BoardDisplay.razor` | Board projector display at `/board/display` — Admin + Display |
+| `CampClotNot/Pages/BoardDisplay.razor` | Board projector display at `/board/display` — Admin only |
 | `CampClotNot/Pages/MiniGames.razor` | Mini-game trigger at `/minigames` — Admin only |
 | `CampClotNot/Pages/MiniGamesDisplay.razor` | Mini-game projector at `/minigames/display` — Admin only |
 | `CampClotNot/Pages/Admin/Games.razor` | Combined game admin at `/admin/games` |
@@ -502,33 +388,47 @@ Branch names follow the same pattern: `feature/N-v100rc1-...`, `feature/N-v100-.
 | `CampClotNot/Pages/Hub/IncidentPrint.razor` | Print view at `/hub/incidents/{id}/print` — uses `PrintLayout` |
 | `CampClotNot/Pages/Hub/Sponsors.razor` | Public sponsor grid at `/hub/sponsors` |
 | `CampClotNot/Services/IncidentReportService.cs` | Submit, list, acknowledge incident reports |
-| `CampClotNot/Services/SponsorService.cs` | Sponsor CRUD scoped to CCN 2026 event |
+| `CampClotNot/Services/SponsorService.cs` | Sponsor CRUD scoped to the active event |
 | `CampClotNot/appsettings.Development.json` | Local DB + seed credentials (gitignored — must copy to worktrees manually) |
 
 ---
 
-## Local Dev Setup
+## Local Dev Setup (Tyler's Windows machine)
 
 - **DB:** PostgreSQL local, database `hbda_dev`
 - **Connection string:** `CampClotNot/appsettings.Development.json` (gitignored)
-- **Run migrations (local):** `dotnet ef database update` from `CampClotNot/`
+- **Migrations:** applied automatically at startup by `SeedService.SeedAsync()` → `MigrateAsync()`. `dotnet ef database update` from `CampClotNot/` also works.
 - **Start app:** `dotnet run` from `CampClotNot/` or F5 in Visual Studio
-- **Login (dev):** `tyler@hbda.local` / `DevAdmin1!` (seeded from appsettings.Development.json)
+- **Login (dev):** `tyler@hbda.local` and your local `Seed:AdminPassword` (seeded from appsettings.Development.json)
 - **gh CLI:** `& "$env:LOCALAPPDATA\Programs\gh\gh.exe" <command>` from PowerShell
 
-## Running Migrations on Production (Railway)
+## Cloud Agent Sessions (Claude Code on the web)
 
-Railway's internal DB URL does not resolve outside Railway's network. Use the `--connection` flag with the **public** TCP proxy URL from Railway → Postgres service → Settings → Public Networking.
+- **.NET isn't preinstalled** and `dot.net` is blocked by the network proxy:
+  ```bash
+  apt-get update && apt-get install -y dotnet-sdk-8.0
+  dotnet tool install -g dotnet-ef --version '8.*'
+  export PATH="$PATH:$HOME/.dotnet/tools"
+  ```
+- **Creating a migration** needs a design-time connection string but no database. From `CampClotNot/`:
+  ```bash
+  ConnectionStrings__DefaultConnection="Host=localhost;Database=dummy;Username=x;Password=x" \
+  Vapid__PublicKey=BPlaceholderPlaceholderPlaceholder Vapid__PrivateKey=x \
+  dotnet ef migrations add <Name>
+  ```
+  Then read the migration and check for shadow FK columns (pitfall #13).
+- **Build check:** `dotnet build` with no new warnings. The baseline on `dev` is 3 (`Dashboard.razor` CS0414, `Announcements.razor` CS4014, `MainLayout.razor` CS0618). There's no automated test suite, so PRs carry a manual checklist.
+- **Running the app** (optional, very useful): `apt-get install -y postgresql`, `service postgresql start`, create a DB, then run with:
+  - `ASPNETCORE_URLS=http://localhost:5055`, `ASPNETCORE_ENVIRONMENT=Development`, `ConnectionStrings__DefaultConnection=...`, `Seed__AdminEmail`/`Seed__AdminPassword`
+  - a **real** P-256 VAPID key pair (`Vapid__PublicKey`/`Vapid__PrivateKey`). The placeholder crashes pages that build the push service.
+  - `dotnet run --no-build --no-launch-profile`. The launch profile's HTTPS dev cert crashes Blazor circuits here.
+- **Playwright/Chromium** is preinstalled (`executablePath: /opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Google Fonts is blocked, so use `waitUntil: 'domcontentloaded'` instead of `load`. See pitfall #21 for native-form pages.
+- **Unreachable from the sandbox:** Railway's Postgres (the egress proxy only carries HTTPS) and `api.resend.com`. Verify those on staging.
+- When killing the app, match the binary (`bin/Debug/net8.0/CampClotNot`), not `CampClotNot`. The broader pattern also matches the agent's own shell.
 
-```powershell
-dotnet ef database update `
-  --project "C:\Users\TRBla\source\repos\camp-clot-not\CampClotNot" `
-  --connection 'Host=zephyr.proxy.rlwy.net;Port=13245;Database=railway;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Require;Trust Server Certificate=true'
-```
+## Production (Railway)
 
-**Notes:**
-- Use **single quotes** around the connection string — prevents PowerShell from expanding `$` characters in the password
-- `Port=13245` is the Railway TCP proxy port (not 5432 — Railway never uses the default port publicly)
-- `Host=zephyr.proxy.rlwy.net` — get the current host/port from Railway → Postgres → Settings → Public Networking if this changes
-- Do NOT set `DATABASE_URL` or `ASPNETCORE_ENVIRONMENT` env vars — the `--connection` flag bypasses Program.cs entirely
-- Successful output ends with: `Applying migration 'XXXXXX_MigrationName'` then `Done`
+- **Migrations apply automatically at startup.** There's no manual step when deploying.
+- **Environment variables:** `DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`/`Seed__AdminPassword` (only used when the Users table is empty), `Vapid__PublicKey`/`Vapid__PrivateKey`/`Vapid__Subject`, `Email__ResendApiKey`/`Email__From` (password emails; unset means Admins get copyable links instead), and `App__PublicBaseUrl` (optional, the base for emailed links), and `Ui__AppShell` (optional; `false` turns off the mobile app-shell layout from #326 and restores whole-page scrolling).
+- **Emergency manual migration** (normally unnecessary): `dotnet ef database update --connection '<public TCP proxy connection string>'` from a machine that can reach Railway's public Postgres proxy (Railway → Postgres → Settings → Public Networking). Use single quotes in PowerShell so `$` in the password isn't expanded.
+- **Locked out of an account:** use "Forgot password?" (once email is configured), or have another Admin use "Email reset link" / "Reset PW" on `/admin/users`.
