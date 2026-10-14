@@ -401,6 +401,25 @@ try
             : Results.NotFound();
     }).RequireAuthorization(policy => policy.RequireRole("Admin"));
 
+    // Schedule exports for the active event: .json to move it to another site, .xlsx to read/edit it.
+    app.MapGet("/admin/schedule/export.json", async (ActiveEventService activeEvents, ScheduleImportService imports) =>
+    {
+        var ev = await activeEvents.GetActiveEventAsync();
+        var schedule = ev is null ? null : await imports.ExportAsync(ev.EventId);
+        return schedule is null
+            ? Results.NotFound()
+            : Results.File(schedule.ToJson(), "application/json", $"schedule-{ScheduleImportService.Slug(ev!.Name)}-{CampTime.Now:yyyy-MM-dd}.json");
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+    app.MapGet("/admin/schedule/export.xlsx", async (ActiveEventService activeEvents, ScheduleImportService imports) =>
+    {
+        var ev = await activeEvents.GetActiveEventAsync();
+        var file = ev is null ? null : await imports.BuildExportXlsxAsync(ev.EventId);
+        return file is { } f
+            ? Results.File(f.Content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", f.FileName)
+            : Results.NotFound();
+    }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+
     // Attendance CSV downloads — file responses need a real HTTP endpoint, not a Blazor circuit.
     app.MapGet("/admin/attendance/item/{id:guid}/csv", async (Guid id, AttendanceService svc) =>
     {
