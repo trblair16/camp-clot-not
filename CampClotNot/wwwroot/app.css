@@ -350,3 +350,47 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
 .nav-admin-sheet button:last-child,
 .nav-game-sheet a:last-child,
 .nav-game-sheet button:last-child { border-bottom: none; }
+
+/* ── Mobile form overlay (the admin pages' "+ Add"/"Edit" form on phones) ───────────────────
+   The overlay doesn't scroll; the panel does, so Save/Cancel are always reachable. In the app
+   shell (#326) the overlay sits between the header and the bottom bar: it renders inside
+   .app-main, and iOS can clip or cover fixed elements there. */
+.ccn-form-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(26,26,26,.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+    animation: fadeIn .15s ease;
+}
+.ccn-form-overlay > div {
+    flex: 0 1 480px !important;
+    min-width: 0 !important;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin: 0 !important;
+}
+@media (max-width: 1023px) {
+    html:has(.app-frame) .ccn-form-overlay {
+        top: calc(72px + env(safe-area-inset-top));
+        bottom: calc(60px + env(safe-area-inset-bottom));
+        padding: 12px;
+    }
+}
+
+/* iOS Safari gives date/time inputs an intrinsic minimum width that ignores width:100%, so they
+   spill out of narrow panels. */
+@media (max-width: 1023px) {
+    input[type="date"], input[type="time"], input[type="datetime-local"] {
+        -webkit-appearance: none;
+        appearance: none;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 38px;
+    }
+    input::-webkit-date-and-time-value { text-align: left; }
+}
