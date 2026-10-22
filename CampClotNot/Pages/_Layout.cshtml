@@ -69,6 +69,25 @@
         // App shell (#326): .app-main is the page's scroller on phones. iOS can still leave the
         // window itself scrolled after the keyboard closes, which pushes the chrome off — undo it.
         window.ccnShell = { scrollToTop: () => document.querySelector('.app-main')?.scrollTo(0, 0) };
+        // Save an image (e.g. a QR code). Touch devices get the share sheet, where "Save Image"
+        // puts it in Photos; that's the only way to save from the iOS home-screen app. Elsewhere
+        // it downloads. Returns "shared", "cancelled" or "downloaded".
+        window.ccnSaveImage = async (url, filename) => {
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const blob = await res.blob();
+            const file = new File([blob], filename, { type: blob.type || 'image/png' });
+            if (matchMedia('(pointer: coarse)').matches && navigator.canShare?.({ files: [file] })) {
+                try { await navigator.share({ files: [file] }); return 'shared'; }
+                catch (e) { if (e.name === 'AbortError') return 'cancelled'; }
+            }
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+            return 'downloaded';
+        };
         document.addEventListener('focusout', () => setTimeout(() => {
             if (window.scrollY && document.querySelector('.app-frame') && matchMedia('(max-width: 1023px)').matches)
                 window.scrollTo(0, 0);

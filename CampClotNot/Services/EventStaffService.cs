@@ -68,13 +68,17 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory, StaffDir
         return await db.EventStaff.AnyAsync(s => s.UserId == userId && s.EventId == eventId);
     }
 
-    /// <summary>Adds the person (role defaults to their account role). A no-op if they're already on the team.</summary>
+    /// <summary>
+    /// Adds the person. The role defaults to the one they had on their most recent team (so a
+    /// returning speaker is still a Speaker), else their account role. A no-op if they're already on the team.
+    /// </summary>
     public async Task AddAsync(Guid eventId, Guid userId, Guid? userRoleId = null, bool showInDirectory = false, string? title = null)
     {
         using var db = factory.CreateDbContext();
         if (await db.EventStaff.AnyAsync(s => s.EventId == eventId && s.UserId == userId)) return;
 
         var roleId = userRoleId
+            ?? await db.EventStaff.Where(s => s.UserId == userId).OrderByDescending(s => s.AddedAt).Select(s => (Guid?)s.UserRoleId).FirstOrDefaultAsync()
             ?? await db.Users.Where(u => u.UserId == userId).Select(u => u.UserRoleId).FirstAsync();
         db.EventStaff.Add(new EventStaff
         {
@@ -110,7 +114,13 @@ public class EventStaffService(IDbContextFactory<AppDbContext> factory, StaffDir
         using var db = factory.CreateDbContext();
         var missing = await db.Users
             .Where(u => u.IsActive && !db.EventStaff.Any(s => s.EventId == eventId && s.UserId == u.UserId))
-            .Select(u => new { u.UserId, u.UserRoleId })
+            .Select(u => new
+            {
+                u.UserId,
+                // Their most recent team role, else their account role (as in AddAsync).
+                UserRoleId = db.EventStaff.Where(s => s.UserId == u.UserId).OrderByDescending(s => s.AddedAt)
+                                 .Select(s => (Guid?)s.UserRoleId).FirstOrDefault() ?? u.UserRoleId
+            })
             .ToListAsync();
         foreach (var u in missing)
             db.EventStaff.Add(new EventStaff
