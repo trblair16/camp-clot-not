@@ -4,7 +4,9 @@ public enum Currency { Primary, Prestige }
 
 public enum AwardKind { Named, BigStick, Branch }
 
-public enum Role { Admin, Staff, MedicalStaff, Volunteer }
+// Speaker and Sponsor are team labels only (an event's Team page, rosters, filters). They have no
+// permissions and are never an account role: someone added with one signs in as a Volunteer.
+public enum Role { Admin, Staff, MedicalStaff, Volunteer, Speaker, Sponsor }
 
 public enum IncidentReportType { Internal = 0, ChildrensHarbor = 1 }
 

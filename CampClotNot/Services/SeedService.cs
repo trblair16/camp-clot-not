@@ -14,6 +14,8 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         public static readonly Guid RoleStaff        = new("00000001-0001-0001-0001-000000000002");
         public static readonly Guid RoleMedicalStaff = new("00000001-0001-0001-0001-000000000003");
         public static readonly Guid RoleVolunteer    = new("00000001-0001-0001-0001-000000000004");
+        public static readonly Guid RoleSpeaker      = new("00000001-0001-0001-0001-000000000005");
+        public static readonly Guid RoleSponsor      = new("00000001-0001-0001-0001-000000000006");
 
         // Authorities
         public static readonly Guid AuthLogTransaction   = new("00000002-0002-0002-0002-000000000001");
@@ -166,6 +168,9 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             new { Id = Id.RoleStaff,        Name = "Staff",         Description = "Camp staff — full Hub access",                  SystemName = nameof(Role.Staff) },
             new { Id = Id.RoleMedicalStaff, Name = "Medical Staff", Description = "Medical team — can view and act on incidents",  SystemName = nameof(Role.MedicalStaff) },
             new { Id = Id.RoleVolunteer,    Name = "Volunteer",     Description = "Counselor / volunteer — limited access",        SystemName = nameof(Role.Volunteer) },
+            // Team labels only — no authorities, never an account role (see Role).
+            new { Id = Id.RoleSpeaker,      Name = "Speaker",       Description = "Presenter at an event (team label only)",       SystemName = nameof(Role.Speaker) },
+            new { Id = Id.RoleSponsor,      Name = "Sponsor",       Description = "Sponsor representative (team label only)",      SystemName = nameof(Role.Sponsor) },
         };
         foreach (var def in defs)
         {
