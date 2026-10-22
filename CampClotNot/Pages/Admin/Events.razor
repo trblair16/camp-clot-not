@@ -4,6 +4,10 @@
 @inject ActiveEventService ActiveEventSvc
 @inject CapabilityService CapSvc
 @inject EventSetupService EventSetup
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject IConfiguration Config
+@inject ISnackbar Snackbar
 @using CampClotNot.Data
 @using Microsoft.EntityFrameworkCore
 
@@ -153,8 +157,7 @@
                     @* The QR endpoint reads the saved code, so only offer it once the typed code is saved. *@
                     @if (SavedGuestCode == _fGuestCode.Trim().ToUpperInvariant())
                     {
-                        <a class="ccn-btn" style="display:inline-block;margin-top:8px;font-size:11px;padding:6px 10px;text-decoration:none"
-                           href="/admin/events/@_editingId/guest-qr" target="_blank">Generate QR</a>
+                        <button type="button" class="ccn-btn" style="margin-top:8px;font-size:11px;padding:6px 10px" @onclick="() => _qrOpen = true">📷 Show QR code</button>
                     }
                     else
                     {
@@ -266,9 +269,61 @@
     </div>
 </div>
 
+@* Guest QR dialog. Outside the form so its clicks don't reach the mobile form overlay; it uses
+   the same overlay class so it stays clear of the app shell's header and bottom bar. *@
+@if (_qrOpen && _editingId != Guid.Empty && SavedGuestCode is { } qrCode)
+{
+    <div class="ccn-form-overlay" style="z-index:150" @onclick="() => _qrOpen = false">
+        <div class="ccn-panel" style="padding:20px;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease;text-align:center" @onclick:stopPropagation>
+            <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:2px">@_fName</div>
+            <div style="font-size:12px;color:var(--text-light);font-weight:700;margin-bottom:12px">Guest access</div>
+            <img src="@QrPath?c=@qrCode" alt="Guest QR code"
+                 style="width:min(280px,100%);height:auto;border:var(--panel-border);border-radius:8px;background:white" />
+            <div style="font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-top:12px">Event code</div>
+            <div style="font-family:var(--font-display);font-weight:700;font-size:28px;letter-spacing:2px;line-height:1.2">@qrCode</div>
+            <div style="font-size:12px;color:var(--text-mid);margin:6px 0 4px;overflow-wrap:anywhere;font-family:monospace">@JoinUrl</div>
+            <div style="font-size:11px;color:var(--text-light);margin-bottom:14px">
+                Guests scan the code (or go to the link), then type the event code. Put both on the flyer.
+            </div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                <button class="ccn-btn" style="background:var(--color-primary)" disabled="@_qrSaving" @onclick="() => SaveQrAsync(qrCode)">⬇ Save image</button>
+                <button class="ccn-btn" style="background:transparent" @onclick="CopyJoinLinkAsync">Copy link</button>
+                <button class="ccn-btn" style="background:transparent" @onclick="() => _qrOpen = false">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool _loading = true;
     private bool _mobileFormOpen;
+    private bool _qrOpen;
+    private bool _qrSaving;
+    private string QrPath => $"/admin/events/{_editingId}/guest-qr";
+    private string JoinUrl => $"{PublicBaseUrl.From(Nav.BaseUri, Config)}/join";
+
+    private async Task SaveQrAsync(string code)
+    {
+        _qrSaving = true;
+        try
+        {
+            // Phones get the share sheet (Save Image, AirDrop…); desktops download the PNG.
+            var result = await JS.InvokeAsync<string>("ccnSaveImage", $"{QrPath}?c={code}", $"{code}-guest-qr.png");
+            if (result == "downloaded") Snackbar.Add("QR code downloaded.", Severity.Success);
+        }
+        catch { Snackbar.Add("Couldn't save the image. Long-press (or right-click) the QR to save it instead.", Severity.Warning); }
+        finally { _qrSaving = false; }
+    }
+
+    private async Task CopyJoinLinkAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", JoinUrl);
+            Snackbar.Add("Link copied.", Severity.Success);
+        }
+        catch { Snackbar.Add(JoinUrl, Severity.Info); }
+    }
     private List<Event> _events = new();
     private List<EventType> _eventTypes = new();
 
@@ -332,6 +387,7 @@
 
     private void ResetForm()
     {
+        _qrOpen = false;
         _editingId = Guid.Empty;
         _fName = "";
         _fStartDate = null;

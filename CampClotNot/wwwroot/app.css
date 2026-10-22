@@ -380,6 +380,10 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
         bottom: calc(60px + env(safe-area-inset-bottom));
         padding: 12px;
     }
+    /* Belt and braces for iOS: if WebKit paints .app-main's fixed children at .app-main's own
+       level, the header (z 50) and bottom bar (z 40) would still cover the dialog. Raise the
+       content area above them while a dialog is open; it doesn't overlap them otherwise. */
+    html:has(.ccn-form-overlay) .app-frame > .app-main { position: relative; z-index: 60; }
 }
 
 /* iOS Safari gives date/time inputs an intrinsic minimum width that ignores width:100%, so they

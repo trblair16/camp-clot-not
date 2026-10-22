@@ -280,6 +280,8 @@
                         <select @bind="_n.Role" style="@Input;flex:1">
                             <option value="@Role.Volunteer">Volunteer</option>
                             <option value="@Role.Staff">Staff</option>
+                            <option value="@Role.Speaker">Speaker</option>
+                            <option value="@Role.Sponsor">Sponsor</option>
                             <option value="@Role.MedicalStaff">Medical Staff</option>
                             <option value="@Role.Admin">Admin</option>
                         </select>
@@ -515,6 +517,10 @@
 
     private Guid RoleId(Role role) => _roles.First(r => r.SystemName == role.ToString()).UserRoleId;
 
+    // Speaker and Sponsor only label someone on this team; what they can open in the app comes
+    // from their account, which is Volunteer for them.
+    private static Role AccountRole(Role teamRole) => teamRole is Role.Speaker or Role.Sponsor ? Role.Volunteer : teamRole;
+
     // ── Add ──
 
     private void OpenAdd()
@@ -534,7 +540,7 @@
         _busy = true;
         try
         {
-            await EventStaffSvc.AddAsync(_event!.EventId, u.UserId, u.UserRoleId);
+            await EventStaffSvc.AddAsync(_event!.EventId, u.UserId);   // their last team role, else account role
             await ReloadAsync();
             Snackbar.Add($"{u.FirstName} {u.LastName} added.", Severity.Success);
         }
@@ -571,12 +577,12 @@
             {
                 // The invitee sets their own password from the link; this one is never shown or used.
                 user = await AuthSvc.CreateUserAsync(_n.First.Trim(), _n.Last.Trim(), _n.Email.Trim(),
-                    PasswordResetService.RandomPassword(), _n.Role, mustChangePassword: false);
+                    PasswordResetService.RandomPassword(), AccountRole(_n.Role), mustChangePassword: false);
                 await EventStaffSvc.UpdatePersonAsync(user.UserId, new PersonDetails(user.FirstName, user.LastName, user.Email, _n.Phone));
             }
             else
             {
-                user = await EventStaffSvc.CreateListedPersonAsync(new PersonDetails(_n.First, _n.Last, _n.Email, _n.Phone), RoleId(_n.Role));
+                user = await EventStaffSvc.CreateListedPersonAsync(new PersonDetails(_n.First, _n.Last, _n.Email, _n.Phone), RoleId(AccountRole(_n.Role)));
             }
             await EventStaffSvc.AddAsync(_event!.EventId, user.UserId, RoleId(_n.Role), _n.ShowInDirectory, _n.Title);
 

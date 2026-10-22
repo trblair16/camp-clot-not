@@ -310,7 +310,7 @@ Groups 5 & 6 removed from seed. SeedGroupsAsync upserts by ID and purges stale e
 | Auth extras | `PasswordResetToken` (SHA-256 hashed, single-use) |
 | Games (post-camp) | `BowserScript` |
 
-**Event-scoped vs global:** `Location` and `InfoPage` are **global** (no `EventId`) and shared by every event. Groups, activities, sponsors, team members (`EventStaff`), documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` itself is global. Who is staff at an event is `EventStaff` (#311), and that's what rosters, bulk sign-up, and "all staff" use. Its role is a label only: permissions still come from `User.UserRoleId`.
+**Event-scoped vs global:** `Location` and `InfoPage` are **global** (no `EventId`) and shared by every event. Groups, activities, sponsors, team members (`EventStaff`), documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` itself is global. Who is staff at an event is `EventStaff` (#311), and that's what rosters, bulk sign-up, and "all staff" use. Its role is a label only: permissions still come from `User.UserRoleId`. `Speaker` and `Sponsor` are team-only roles: they have no authorities, aren't offered on Accounts, and anyone added with one gets a Volunteer account. Adding someone from a past event defaults to their most recent team role.
 
 **Column convention:** `Name` + `Description` + `SystemName` on all reference/catalog tables.
 
