@@ -25,7 +25,7 @@
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
         @* ── Form panel (desktop) / mobile overlay ── *@
-        <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
+        <div class="@(_mobileFormOpen ? "ccn-form-overlay" : null)" style="@(_mobileFormOpen ? null : "display:contents")"
              @onclick="CloseFormOverlay">
         <div class="admin-loc-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 300px;min-width:240px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>

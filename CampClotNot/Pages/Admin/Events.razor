@@ -27,7 +27,7 @@
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
-        <div style="@(_mobileFormOpen ? "position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:100;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;animation:fadeIn .15s ease" : "display:contents")"
+        <div class="@(_mobileFormOpen ? "ccn-form-overlay" : null)" style="@(_mobileFormOpen ? null : "display:contents")"
              @onclick="CloseFormOverlay">
         <div class="admin-evt-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
@@ -150,8 +150,16 @@
                 <div style="font-size:11px;color:var(--text-light);margin-top:4px">Attendees scan a QR code or type this to reach a read-only Schedule/Announcements view. Leave blank to disable guest access for this event.</div>
                 @if (_editingId != Guid.Empty && !string.IsNullOrWhiteSpace(_fGuestCode))
                 {
-                    <a class="ccn-btn" style="display:inline-block;margin-top:8px;font-size:11px;padding:6px 10px;text-decoration:none"
-                       href="/admin/events/@_editingId/guest-qr" target="_blank">Generate QR</a>
+                    @* The QR endpoint reads the saved code, so only offer it once the typed code is saved. *@
+                    @if (SavedGuestCode == _fGuestCode.Trim().ToUpperInvariant())
+                    {
+                        <a class="ccn-btn" style="display:inline-block;margin-top:8px;font-size:11px;padding:6px 10px;text-decoration:none"
+                           href="/admin/events/@_editingId/guest-qr" target="_blank">Generate QR</a>
+                    }
+                    else
+                    {
+                        <div style="font-size:11px;font-weight:700;color:#8A6D00;margin-top:6px">Save changes to use this code and get its QR.</div>
+                    }
                 }
             </div>
 
@@ -279,6 +287,7 @@
     private bool _copyEventStaff = true;
     private bool _fIsActive;
     private string _fGuestCode = "";
+    private string? SavedGuestCode => _events.FirstOrDefault(e => e.EventId == _editingId)?.GuestCode;
     private List<Capability> _allCapabilities = new();
     private HashSet<Guid> _fEnabledCapIds = new();
     private string _saveError = "";

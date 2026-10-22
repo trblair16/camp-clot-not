@@ -367,7 +367,7 @@ try
         return Results.File(theme.BannerData, theme.BannerContentType ?? "image/png");
     }).AllowAnonymous();
 
-    app.MapGet("/admin/events/{id:guid}/guest-qr", async (Guid id, HttpRequest req, IDbContextFactory<AppDbContext> factory, GuestAccessService guestSvc) =>
+    app.MapGet("/admin/events/{id:guid}/guest-qr", async (Guid id, HttpRequest req, IConfiguration config, IDbContextFactory<AppDbContext> factory, GuestAccessService guestSvc) =>
     {
         using var db = factory.CreateDbContext();
         var ev = await db.Events.FindAsync(id);
@@ -375,7 +375,7 @@ try
 
         // Links to the bare /join entry form, not a code-carrying deep link — scanning still
         // requires typing the code shown on the flyer, by design.
-        var joinUrl = $"{req.Scheme}://{req.Host}/join";
+        var joinUrl = $"{PublicBaseUrl.From(req, config)}/join";   // https behind Railway
         var png = guestSvc.GenerateJoinQrPng(joinUrl);
         return Results.File(png, "image/png");
     }).RequireAuthorization(policy => policy.RequireRole("Admin"));
