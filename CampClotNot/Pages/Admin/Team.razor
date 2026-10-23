@@ -19,14 +19,14 @@
    group, title, and directory settings are per event. /admin/event-staff and /admin/staff (the
    old Staff Directory page) route here. *@
 
-<PageTitle>Team — Camp Clot Not</PageTitle>
+<PageTitle>Event Team — Camp Clot Not</PageTitle>
 
 <div style="padding: 0 16px 100px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
-        <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0"><img src="/img/icons/people.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Team@(_event is not null ? $" — {_event.Name}" : "")</h2>
+        <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0"><img src="/img/icons/people.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Event Team@(_event is not null ? $" — {_event.Name}" : "")</h2>
         @if (_event is not null && _staff.Any())
         {
-            <button class="ccn-btn" style="background:var(--color-primary)" @onclick="OpenAdd">+ Add to team</button>
+            <button class="ccn-btn" style="background:var(--color-primary)" @onclick="OpenAdd">+ Add to event team</button>
         }
     </div>
     @if (_event is not null)
@@ -49,14 +49,14 @@
     {
         @* Empty team: the three ways to fill it, front and center. *@
         <div class="ccn-panel" style="padding:20px;max-width:640px;box-shadow:var(--panel-shadow)">
-            <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:4px">Nobody is on this team yet</div>
+            <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:4px">Nobody is on the event team yet</div>
             <div style="font-size:13px;color:var(--text-mid);margin-bottom:16px">Pick whichever is quickest:</div>
             <div style="display:flex;flex-direction:column;gap:12px">
                 @if (_otherEvents.Any(e => e.TeamSize > 0))
                 {
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                         <select @bind="_copyFromId" style="@Input;flex:1;min-width:200px">
-                            <option value="">Copy the team from…</option>
+                            <option value="">Copy the event team from…</option>
                             @foreach (var (ev, size) in _otherEvents.Where(e => e.TeamSize > 0))
                             {
                                 <option value="@ev.EventId">@ev.Name (@size)</option>
@@ -73,7 +73,7 @@
     else
     {
         <div style="display:flex;border:var(--panel-border);border-radius:8px;overflow:hidden;margin-bottom:14px;width:fit-content;box-shadow:var(--control-shadow)">
-            <button style="@TabStyle(!_orderView)" @onclick="() => _orderView = false">Team (@_staff.Count)</button>
+            <button style="@TabStyle(!_orderView)" @onclick="() => _orderView = false">Event team (@_staff.Count)</button>
             <button style="@TabStyle(_orderView)" @onclick="() => _orderView = true">Hub directory order (@DirectoryRows.Count)</button>
         </div>
 
@@ -99,7 +99,7 @@
                             <th style="@Th">Name</th>
                             <th style="@Th">Role at this event</th>
                             @if (_groups.Any()) { <th style="@Th">Group</th> }
-                            <th style="@Th" title="Shows a card for them on the Hub's Staff page">Hub directory</th>
+                            <th style="@Th" title="Shows a card for them on the Hub's Event Team page">Hub directory</th>
                             <th style="@Th" title="Whether they can sign in to this app">Sign in</th>
                             <th style="padding:10px 14px"></th>
                         </tr>
