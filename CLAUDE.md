@@ -33,6 +33,8 @@ The app is now a multi-event HBDA platform ("HBDA Events"). CCN 2026 (June 19–
 
 **Before Camp Harvest:** verify on staging (including a real Resend email once `Email__*` is set), back up prod, open the `dev` → `main` release PR, merge and tag it (`v1.2.0`), smoke test production, then set up the Camp Harvest event (theme, logo, guest code, team).
 
+**In progress:** #335, schedule export (.json to move a schedule from staging to production, .xlsx to read/edit it), on `feature/335-schedule-export`. Spec: `2026-10-14-schedule-export-design.md`.
+
 **Open issues:** #315 (Cloudflare Turnstile on login and forgot-password) is the only real backlog item. #311, #314, #318, #320, #324, and #326 are merged into `dev` but still open (see "Closing issues" below). #153 is superseded by #326. Planned-but-unstarted items are in the Roadmap below.
 
 **How work is done here:** every feature has a design spec in `docs/superpowers/specs/` and an implementation plan in `docs/superpowers/plans/`. Read the relevant spec before changing a feature. New work follows the same process: ask the design questions first, write a spec with a "Design Decisions" table, write a plan, implement in logical commits, then open a PR into `dev` with a manual test checklist.
@@ -357,7 +359,8 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 | `CampClotNot/Services/RegistrationService.cs` | Breakout sign-ups: self sign-up (row-locked capacity), admin assign/move/remove, unassigned list |
 | `CampClotNot/Services/EventStaffService.cs` | Per-event staff list (`EventStaff`) |
 | `CampClotNot/Services/ScheduleVisibility.cs` | Which items a person sees given breakout picks (shared by `/hub/schedule` and the Dashboard) |
-| `CampClotNot/Services/ScheduleImportService.cs` | Schedule setup: lenient time/day parsing, .xlsx template (ClosedXML), spreadsheet/paste import with preview, copy a past event's schedule |
+| `CampClotNot/Services/ScheduleImportService.cs` | Schedule setup: lenient time/day parsing, .xlsx template and export (ClosedXML), spreadsheet/paste import with preview, and the export → preview → apply engine behind both "Copy from another event" and .json import |
+| `CampClotNot/Services/PortableSchedule.cs` | The .json schedule export format (#335): references as names (IDs kept for same-database matches), validation on read |
 | `CampClotNot/Pages/CheckIn.razor` | `/checkin/{code}`, the landing page for a session's QR code |
 | `CampClotNot/Pages/Admin/Breakouts.razor` / `Team.razor` | `/admin/breakouts` / `/admin/team`: the one page for staffing an event and its Hub staff directory. Add from past events or someone new (with or without sign-in), role and group at this event, edit contact details and photo, directory title and order. `/admin/event-staff` and `/admin/staff` route here |
 | `CampClotNot/Services/StaffDirectoryService.cs` | Hub staff directory cards (team rows with `ShowInDirectory`), order, cache |

@@ -280,8 +280,13 @@
         <div style="flex:1;min-width:300px">
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
                 <a class="ccn-btn" href="/admin/schedule/template.xlsx" download style="font-size:12px;padding:6px 12px;text-decoration:none;background:transparent" title="An Excel file with dropdowns for this event's days, types, and locations">⬇ Spreadsheet template</a>
-                <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="OpenImport">⬆ Import spreadsheet</button>
+                <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="OpenImport" title="A filled-in spreadsheet, pasted rows, or a .json export from another site">⬆ Import</button>
                 <button class="ccn-btn" style="font-size:12px;padding:6px 12px" @onclick="OpenCopyFrom">⧉ Copy from another event</button>
+                @if (_events.Any())
+                {
+                    <a class="ccn-btn" href="/admin/schedule/export.json" download style="font-size:12px;padding:6px 12px;text-decoration:none;background:transparent" title="The whole schedule, breakouts included, for importing on another site (e.g. staging → production)">⬇ Export (.json)</a>
+                    <a class="ccn-btn" href="/admin/schedule/export.xlsx" download style="font-size:12px;padding:6px 12px;text-decoration:none;background:transparent" title="The schedule as a spreadsheet, for reading or editing">⬇ Export (.xlsx)</a>
+                }
             </div>
 
             @if (_eventDays.Any())
@@ -480,15 +485,56 @@
          @onclick="CloseImport">
         <div class="ccn-panel" style="width:min(960px,100%);max-height:90vh;display:flex;flex-direction:column;padding:20px;animation:popIn .25s ease;box-shadow:8px 8px 0 var(--black)"
              @onclick:stopPropagation="true">
-            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 6px">Import a spreadsheet</h3>
-            @if (_importRows is null)
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 6px">@(_transfer is null ? "Import a schedule" : "Import a schedule export")</h3>
+            @if (_transfer is { } tr)
+            {
+                <div style="font-size:13px;color:var(--text-mid);margin-bottom:10px">
+                    From <strong>@(string.IsNullOrWhiteSpace(tr.Preview.SourceName) ? "another site" : tr.Preview.SourceName)</strong>@(tr.Preview.SourceStart == default ? "" : $" ({tr.Preview.SourceStart:MMM d} – {tr.Preview.SourceEnd:MMM d, yyyy})").
+                    Day 1 of that event becomes day 1 here. Items already on this schedule (same day, time, and title) are skipped.
+                </div>
+                <div style="overflow:auto;flex:1;min-height:0">
+                    <div style="border:2px solid var(--divider);border-radius:8px;overflow:hidden;margin-bottom:12px">
+                        @foreach (var d in tr.Preview.Days)
+                        {
+                            <div style="display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border-bottom:1px solid var(--divider);font-size:13px;@(d.TargetDay is null ? "color:var(--text-light)" : "")">
+                                <span>@d.SourceDay.ToString("ddd MMM d") → <strong>@(d.TargetDay?.ToString("ddd MMM d") ?? "no matching day (skipped)")</strong></span>
+                                <span>@(d.Items - d.Duplicates) item@(d.Items - d.Duplicates == 1 ? "" : "s")@(d.Duplicates > 0 ? $" · {d.Duplicates} already here" : "")</span>
+                            </div>
+                        }
+                    </div>
+                    @if (tr.Preview.SkippedDays > 0)
+                    {
+                        <div style="font-size:12px;color:#8A6D00;margin-bottom:10px">⚠ That schedule is longer than this event, so @tr.Preview.SkippedDays day@(tr.Preview.SkippedDays == 1 ? "" : "s") won't be imported.</div>
+                    }
+                    @if (tr.Preview.NewLocations.Any())
+                    {
+                        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:10px;cursor:pointer">
+                            <input type="checkbox" checked="@_createLocations" @onchange="() => _createLocations = !_createLocations" style="margin-top:3px" />
+                            <span>Create @tr.Preview.NewLocations.Count new location@(tr.Preview.NewLocations.Count == 1 ? "" : "s"): <strong>@string.Join(", ", tr.Preview.NewLocations)</strong>
+                                <span style="color:var(--text-light)">(untick to put the names in Additional Info instead)</span></span>
+                        </label>
+                    }
+                    @foreach (var u in tr.Preview.Unmatched)
+                    {
+                        <div style="font-size:12px;color:#8A6D00;margin-bottom:6px">⚠ @u</div>
+                    }
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                    <button class="ccn-btn" style="background:transparent" @onclick="() => _transfer = null">← Back</button>
+                    <button class="ccn-btn" style="background:var(--color-primary)" disabled="@(_busy || tr.Preview.ToCopy == 0)" @onclick="CommitTransferAsync">
+                        Add @tr.Preview.ToCopy item@(tr.Preview.ToCopy == 1 ? "" : "s")
+                    </button>
+                </div>
+            }
+            else if (_importRows is null)
             {
                 <div style="font-size:13px;color:var(--text-mid);margin-bottom:14px">
                     Use the <a href="/admin/schedule/template.xlsx" download style="color:var(--black);font-weight:700">spreadsheet template</a> (it has dropdowns for this event's days, types, and locations),
-                    or any sheet with columns like <em>Day, Start, End, Title, Type, Location</em>. Nothing is saved until you check the preview.
+                    or any sheet with columns like <em>Day, Start, End, Title, Type, Location</em>. To bring over a schedule from another site
+                    (staging → production), upload its <strong>⬇ Export (.json)</strong> file. Nothing is saved until you check the preview.
                 </div>
-                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Upload the file (.xlsx or .csv)</div>
-                <InputFile OnChange="OnImportFile" accept=".xlsx,.csv" style="font-size:13px;margin-bottom:16px" />
+                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Upload the file (.xlsx, .csv, or a .json export)</div>
+                <InputFile OnChange="OnImportFile" accept=".xlsx,.csv,.json" style="font-size:13px;margin-bottom:16px" />
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">…or paste rows copied from Excel, Google Sheets, or a Word table</div>
                 <textarea @bind="_importPaste" @bind:event="oninput" rows="7" placeholder="Day&#9;Start&#9;End&#9;Title&#9;Type&#9;Location"
                           style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:12px;font-family:monospace;resize:vertical"></textarea>
@@ -613,7 +659,11 @@
                     </div>
                     @if (pv.SkippedDays > 0)
                     {
-                        <div style="font-size:12px;color:#8A6D00;margin-bottom:10px">⚠ @pv.Source.Name is longer than this event, so @pv.SkippedDays day@(pv.SkippedDays == 1 ? "" : "s") won't be copied.</div>
+                        <div style="font-size:12px;color:#8A6D00;margin-bottom:10px">⚠ @pv.SourceName is longer than this event, so @pv.SkippedDays day@(pv.SkippedDays == 1 ? "" : "s") won't be copied.</div>
+                    }
+                    @foreach (var u in pv.Unmatched)
+                    {
+                        <div style="font-size:12px;color:#8A6D00;margin-bottom:6px">⚠ @u</div>
                     }
                 }
             }
@@ -704,7 +754,7 @@
 
     private void OpenImport()
     {
-        _importOpen = true; _importRows = null; _importPaste = ""; _importError = null; _createLocations = true;
+        _importOpen = true; _importRows = null; _transfer = null; _importPaste = ""; _importError = null; _createLocations = true;
     }
 
     private void CloseImport() => _importOpen = false;
@@ -717,6 +767,11 @@
             using var ms = new MemoryStream();
             await e.File.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
             ms.Position = 0;
+            if (e.File.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                await PreviewTransferAsync(ms);
+                return;
+            }
             var table = e.File.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
                 ? ScheduleImportService.ReadDelimited(System.Text.Encoding.UTF8.GetString(ms.ToArray()))
                 : ScheduleImportService.ReadXlsx(ms);
@@ -729,6 +784,38 @@
     }
 
     private Task PreviewPasteAsync() => PreviewAsync(ScheduleImportService.ReadDelimited(_importPaste));
+
+    // ── Import a .json export (another site's schedule) ──
+    private (PortableSchedule Schedule, SchedulePreview Preview)? _transfer;
+
+    private async Task PreviewTransferAsync(Stream stream)
+    {
+        _busy = true;
+        try
+        {
+            var (schedule, error) = await PortableSchedule.ReadAsync(stream);
+            if (schedule is null) { _importError = error; return; }
+            _transfer = (schedule, await ImportSvc.PreviewAsync(schedule, _eventId));
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task CommitTransferAsync()
+    {
+        if (_transfer is not { } tr) return;
+        _busy = true;
+        try
+        {
+            var added = await ImportSvc.ApplyAsync(tr.Schedule, _eventId, _createLocations, _userId);
+            _importOpen = false;
+            _transfer = null;
+            _locations = await LocationSvc.GetAllAsync();
+            _scheduleItemTypes = await ScheduleItemTypeSvc.GetForEventAsync(_eventId);
+            await Reload();
+            Snackbar.Add($"Added {added} item{(added == 1 ? "" : "s")} to the schedule.", Severity.Success);
+        }
+        finally { _busy = false; }
+    }
 
     private async Task PreviewAsync(List<string[]> table)
     {
@@ -762,7 +849,7 @@
     private bool _copyOpen;
     private List<(Event Event, bool SameKind, int Items)> _copySources = new();
     private Guid? _copySourceId;
-    private CopyPreview? _copyPreview;
+    private SchedulePreview? _copyPreview;
 
     private async Task OpenCopyFrom()
     {

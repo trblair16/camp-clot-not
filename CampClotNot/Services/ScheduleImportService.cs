@@ -5,6 +5,7 @@ using ClosedXML.Excel;
 using CampClotNot.Data;
 using CampClotNot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Group = CampClotNot.Data.Entities.Group;
 
 namespace CampClotNot.Services;
 
@@ -31,7 +32,10 @@ public class ImportRow
 }
 
 public record CopyDay(DateOnly SourceDay, DateOnly? TargetDay, int Items, int Duplicates);
-public record CopyPreview(Event Source, List<CopyDay> Days)
+
+/// <summary>What applying a schedule (copied or imported from a .json export) would do to the target event.</summary>
+public record SchedulePreview(string SourceName, DateOnly SourceStart, DateOnly SourceEnd, List<CopyDay> Days,
+    List<string> NewLocations, List<string> Unmatched)
 {
     public int ToCopy => Days.Where(d => d.TargetDay is not null).Sum(d => d.Items - d.Duplicates);
     public int SkippedDays => Days.Count(d => d.TargetDay is null);
@@ -225,7 +229,7 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
 
     // ── Parsing + preview ────────────────────────────────────────────────────
 
-    private enum Col { Day, Start, End, Title, Type, Location, Info, Description, Presenter, Track }
+    private enum Col { Day, Start, End, Title, Type, Location, Info, Description, Presenter, Track, Breakout }
 
     private static readonly Dictionary<string, Col> HeaderNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -239,6 +243,7 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
         ["description"] = Col.Description, ["details"] = Col.Description,
         ["presenter"] = Col.Presenter, ["speaker"] = Col.Presenter,
         ["track attendance"] = Col.Track, ["attendance"] = Col.Track, ["check-in"] = Col.Track, ["check in"] = Col.Track,
+        ["breakout"] = Col.Breakout,   // written by the .xlsx export; informational only
     };
 
     private static readonly Col[] TemplateOrder = [Col.Day, Col.Start, Col.End, Col.Title, Col.Type, Col.Location, Col.Info, Col.Description, Col.Presenter, Col.Track];
@@ -330,6 +335,8 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
             row.Description     = Get(Col.Description);
             row.Presenter       = Get(Col.Presenter);
             row.TrackAttendance = Get(Col.Track) is { } tr && tr.Trim().ToLowerInvariant() is "yes" or "y" or "true" or "x" or "✓" or "1";
+            if (Get(Col.Breakout) is not null)
+                row.Warnings.Add("Added as an ordinary item: breakouts don't come across in a spreadsheet (use the .json export)");
 
             if (row.Day is { } d && row.Start is { } s && row.Title.Length > 0)
             {
@@ -411,11 +418,26 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
     // ── Template ─────────────────────────────────────────────────────────────
 
     /// <summary>An .xlsx for the event: headers, dropdowns for Day/Type/Location/Track, and instructions.</summary>
-    public async Task<(string FileName, byte[] Content)?> BuildTemplateAsync(Guid eventId)
+    public Task<(string FileName, byte[] Content)?> BuildTemplateAsync(Guid eventId) => BuildWorkbookAsync(eventId, withItems: false);
+
+    /// <summary>
+    /// The event's schedule in the template's layout, plus an informational Breakout column. It
+    /// re-imports as ordinary items; the .json export is the one that keeps breakouts.
+    /// </summary>
+    public Task<(string FileName, byte[] Content)?> BuildExportXlsxAsync(Guid eventId) => BuildWorkbookAsync(eventId, withItems: true);
+
+    private async Task<(string FileName, byte[] Content)?> BuildWorkbookAsync(Guid eventId, bool withItems)
     {
         using var db = factory.CreateDbContext();
         var ev = await db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.EventId == eventId);
         if (ev is null) return null;
+        var items = withItems
+            ? ScheduleVisibility.OrderWithOptionsUnderSlots(await db.ScheduleItems.AsNoTracking()
+                .Where(i => i.CampEventId == eventId)
+                .Include(i => i.ScheduleItemType).Include(i => i.Location)
+                .ToListAsync())
+            : [];
+        var lastRow = Math.Max(500, items.Count + 200);
         var types = await typeSvc.GetForEventAsync(eventId);
         var locations = await db.Locations.AsNoTracking().OrderBy(l => l.SortOrder).ThenBy(l => l.Name).Select(l => l.Name).ToListAsync();
         var days = Enumerable.Range(0, ev.ExpDate.DayNumber - ev.EffDate.DayNumber + 1)
@@ -423,16 +445,37 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
 
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Schedule");
-        string[] headers = ["Day", "Start", "End", "Title", "Type", "Location", "Additional Info", "Description", "Presenter", "Track Attendance"];
+        string[] headers = ["Day", "Start", "End", "Title", "Type", "Location", "Additional Info", "Description", "Presenter", "Track Attendance",
+                            .. withItems ? new[] { "Breakout" } : []];
         for (var c = 0; c < headers.Length; c++) ws.Cell(1, c + 1).Value = headers[c];
         var head = ws.Range(1, 1, 1, headers.Length);
         head.Style.Font.Bold = true;
         head.Style.Fill.BackgroundColor = XLColor.FromHtml("#F5C800");
         head.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
         ws.SheetView.FreezeRows(1);
-        double[] widths = [18, 11, 11, 34, 16, 22, 26, 40, 22, 17];
-        for (var c = 0; c < widths.Length; c++) ws.Column(c + 1).Width = widths[c];
-        ws.Range("B2:C500").Style.NumberFormat.Format = "h:mm AM/PM";
+        double[] widths = [18, 11, 11, 34, 16, 22, 26, 40, 22, 17, 30];
+        for (var c = 0; c < headers.Length; c++) ws.Column(c + 1).Width = widths[c];
+        ws.Range($"B2:C{lastRow}").Style.NumberFormat.Format = "h:mm AM/PM";
+
+        // Days are written the way the Day dropdown lists them, times as text the import reads back.
+        var titles = items.ToDictionary(i => i.ScheduleItemId, i => i.Title);
+        for (var n = 0; n < items.Count; n++)
+        {
+            var i = items[n];
+            var r = n + 2;
+            ws.Cell(r, 1).Value = i.CampDay.ToString("ddd M/d/yyyy", Us);
+            ws.Cell(r, 2).Value = i.StartTime.ToString("h:mm tt", Us);
+            if (i.EndTime is { } end) ws.Cell(r, 3).Value = end.ToString("h:mm tt", Us);
+            ws.Cell(r, 4).Value = i.Title;
+            ws.Cell(r, 5).Value = i.ScheduleItemType.Name;
+            ws.Cell(r, 6).Value = i.Location?.Name ?? "";
+            ws.Cell(r, 7).Value = i.LocationOther ?? "";
+            ws.Cell(r, 8).Value = i.Description ?? "";
+            ws.Cell(r, 9).Value = i.PresenterName ?? "";
+            ws.Cell(r, 10).Value = i.TrackAttendance ? "Yes" : "No";
+            ws.Cell(r, 11).Value = i.IsBreakoutSlot ? "Slot"
+                : i.ParentScheduleItemId is { } p ? $"Option of: {(titles.TryGetValue(p, out var t) ? t : "another item")}" : "";
+        }
 
         var lists = wb.Worksheets.Add("Lists");
         for (var i = 0; i < days.Count; i++) lists.Cell(i + 1, 1).Value = days[i];
@@ -453,16 +496,26 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
             dv.ErrorStyle = strict ? XLErrorStyle.Stop : XLErrorStyle.Warning;
             dv.ErrorMessage = message;
         }
-        Dropdown("A2:A500", 1, days.Count, true, "Pick one of the event's days from the list.");
-        Dropdown("E2:E500", 2, types.Count, false, "Not one of this event's types — it will fall back to the default type.");
-        Dropdown("F2:F500", 3, locations.Count, false, "Not an existing location — it will be created when you import.");
-        Dropdown("J2:J500", 4, 2, true, "Yes or No.");
+        Dropdown($"A2:A{lastRow}", 1, days.Count, true, "Pick one of the event's days from the list.");
+        Dropdown($"E2:E{lastRow}", 2, types.Count, false, "Not one of this event's types — it will fall back to the default type.");
+        Dropdown($"F2:F{lastRow}", 3, locations.Count, false, "Not an existing location — it will be created when you import.");
+        Dropdown($"J2:J{lastRow}", 4, 2, true, "Yes or No.");
 
         var help = wb.Worksheets.Add("How to fill this in");
+        string[] intro = withItems
+            ?
+            [
+                $"Schedule export for {ev.Name} ({ev.EffDate:MMM d} – {ev.ExpDate:MMM d, yyyy}), {items.Count} items, {CampTime.Now:MMM d, yyyy h:mm tt}",
+                "",
+                "This is for reading or editing the schedule. To move it to another site with breakouts, capacity, and",
+                "group details intact, use Admin → Schedule → ⬇ Export (.json) instead, then ⬆ Import that file on the other site.",
+                "Re-importing this spreadsheet adds breakout slots and options (see the Breakout column) as ordinary items.",
+                "",
+            ]
+            : [$"Schedule template for {ev.Name} ({ev.EffDate:MMM d} – {ev.ExpDate:MMM d, yyyy})", ""];
         string[] lines =
         [
-            $"Schedule template for {ev.Name} ({ev.EffDate:MMM d} – {ev.ExpDate:MMM d, yyyy})",
-            "",
+            .. intro,
             "One row per schedule item on the Schedule sheet. Only Day, Start, and Title are required.",
             "",
             "Day — pick from the dropdown. You can also type a date (10/17), a weekday (Saturday), or Day 1.",
@@ -474,7 +527,7 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
             "Description, Presenter — optional.",
             "Track Attendance — Yes to show the check-in button and QR code for this item.",
             "",
-            "When you're done: Admin → Schedule → Import spreadsheet, and upload this file.",
+            "When you're done: Admin → Schedule → ⬆ Import, and upload this file.",
             "You'll see a preview before anything is saved. Rows already on the schedule are skipped.",
             "Breakout sessions (pick-one options) are set up on the Schedule page after importing.",
         ];
@@ -485,9 +538,284 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
 
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
-        var slug = Regex.Replace(ev.Name.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
-        return ($"schedule-template-{slug}.xlsx", ms.ToArray());
+        return (withItems ? $"schedule-{Slug(ev.Name)}-{CampTime.Now:yyyy-MM-dd}.xlsx" : $"schedule-template-{Slug(ev.Name)}.xlsx", ms.ToArray());
     }
+
+    // ── Export, preview, apply (also behind "Copy from another event") ───────
+    // See docs/superpowers/specs/2026-10-14-schedule-export-design.md.
+
+    /// <summary>The event's schedule with references as names (ids kept too). Slots come before their options.</summary>
+    public async Task<PortableSchedule?> ExportAsync(Guid eventId)
+    {
+        using var db = factory.CreateDbContext();
+        var ev = await db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.EventId == eventId);
+        if (ev is null) return null;
+        var items = await db.ScheduleItems.AsNoTracking()
+            .Where(i => i.CampEventId == eventId)
+            .Include(i => i.ScheduleItemType)
+            .Include(i => i.Location)
+            .Include(i => i.Activity)
+            .Include(i => i.ItemGroups).ThenInclude(g => g.Group)
+            .Include(i => i.ItemGroups).ThenInclude(g => g.Activity)
+            .Include(i => i.ItemGroups).ThenInclude(g => g.Location)
+            .ToListAsync();
+
+        var ordered = items.Where(i => i.ParentScheduleItemId is null)
+            .OrderBy(i => i.CampDay).ThenBy(i => i.StartTime).ThenBy(i => i.Title)
+            .Concat(items.Where(i => i.ParentScheduleItemId is not null).OrderBy(i => i.CampDay).ThenBy(i => i.StartTime).ThenBy(i => i.Title))
+            .ToList();
+        var keys = ordered.Select((i, n) => (i.ScheduleItemId, Key: (n + 1).ToString(Us))).ToDictionary(x => x.ScheduleItemId, x => x.Key);
+
+        return new PortableSchedule
+        {
+            Format     = PortableSchedule.FormatName,
+            Version    = PortableSchedule.CurrentVersion,
+            ExportedAt = DateTime.UtcNow,
+            Source = new PortableSource { EventName = ev.Name, EffDate = ev.EffDate, ExpDate = ev.ExpDate },
+            Items = ordered
+                // An option whose slot belongs to another event (shouldn't happen) is exported on its own.
+                .Select(i => new PortableScheduleItem
+                {
+                    Key             = keys[i.ScheduleItemId],
+                    ParentKey       = i.ParentScheduleItemId is { } p && keys.TryGetValue(p, out var pk) ? pk : null,
+                    DayIndex        = i.CampDay.DayNumber - ev.EffDate.DayNumber,
+                    Date            = i.CampDay,
+                    Start           = i.StartTime,
+                    End             = i.EndTime,
+                    Title           = i.Title,
+                    Description     = i.Description,
+                    TypeId          = i.ScheduleItemTypeId,
+                    TypeSystemName  = i.ScheduleItemType.SystemName,
+                    TypeName        = i.ScheduleItemType.Name,
+                    LocationId      = i.LocationId,
+                    Location        = i.Location?.Name,
+                    LocationOther   = i.LocationOther,
+                    Activity        = i.Activity?.Name,
+                    PresenterName   = i.PresenterName,
+                    PresenterBio    = i.PresenterBio,
+                    MaxCapacity     = i.MaxCapacity,
+                    TrackAttendance = i.TrackAttendance,
+                    SelfCheckInMode = i.SelfCheckInMode,
+                    IsBreakoutSlot  = i.IsBreakoutSlot,
+                    AllowSelfSignup = i.AllowSelfSignup,
+                    Groups = i.ItemGroups.Select(g => new PortableItemGroup
+                    {
+                        Group          = g.Group.Name,
+                        GroupShortName = g.Group.ShortName,
+                        Activity       = g.Activity?.Name,
+                        LocationId     = g.LocationId,
+                        Location       = g.Location?.Name,
+                        Note           = g.Note,
+                    }).ToList(),
+                }).ToList(),
+        };
+    }
+
+    /// <summary>
+    /// Everything a schedule refers to, resolved against the target event: locations by id then
+    /// name, types by id then SystemName then Name, activities and groups by name within the event.
+    /// Preview and Apply share it so they always agree.
+    /// </summary>
+    private sealed class Resolver
+    {
+        public required Event Target { get; init; }
+        public required List<Location> Locations { get; init; }
+        public required List<ScheduleItemType> Types { get; init; }
+        public required ScheduleItemType DefaultType { get; init; }
+        public required List<Activity> Activities { get; init; }
+        public required List<Group> Groups { get; init; }
+        public required HashSet<string> Existing { get; init; }
+
+        public Location? FindLocation(Guid? id, string? name) =>
+            (id is { } i ? Locations.FirstOrDefault(l => l.LocationId == i) : null)
+            ?? (string.IsNullOrWhiteSpace(name) ? null : Locations.FirstOrDefault(l => l.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+        /// <summary>A location the item names that this site doesn't have (null when it matches or names none).</summary>
+        public string? NewLocation(Guid? id, string? name) =>
+            string.IsNullOrWhiteSpace(name) || FindLocation(id, name) is not null ? null : name.Trim();
+
+        public ScheduleItemType? FindType(PortableScheduleItem i) =>
+            (i.TypeId is { } id ? Types.FirstOrDefault(t => t.ScheduleItemTypeId == id) : null)
+            ?? (i.TypeSystemName is { } sn ? Types.FirstOrDefault(t => t.SystemName.Equals(sn, StringComparison.OrdinalIgnoreCase)) : null)
+            ?? (i.TypeName is { } n ? Types.FirstOrDefault(t => t.Name.Equals(n, StringComparison.OrdinalIgnoreCase)) : null);
+
+        public Activity? FindActivity(string? name) =>
+            string.IsNullOrWhiteSpace(name) ? null : Activities.FirstOrDefault(a => a.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        public Group? FindGroup(PortableItemGroup g) =>
+            Groups.FirstOrDefault(x => x.Name.Equals(g.Group.Trim(), StringComparison.OrdinalIgnoreCase))
+            ?? (string.IsNullOrWhiteSpace(g.GroupShortName) ? null
+                : Groups.FirstOrDefault(x => x.ShortName.Equals(g.GroupShortName.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+        public DateOnly? Day(int dayIndex)
+        {
+            var d = Target.EffDate.AddDays(dayIndex);
+            return d >= Target.EffDate && d <= Target.ExpDate ? d : null;
+        }
+    }
+
+    private async Task<Resolver> LoadResolverAsync(AppDbContext db, Guid targetEventId)
+    {
+        var target = await db.Events.AsNoTracking().FirstAsync(e => e.EventId == targetEventId);
+        var types = await db.ScheduleItemTypes.AsNoTracking().OrderBy(t => t.SortOrder).ToListAsync();
+        var enabled = await typeSvc.GetForEventAsync(targetEventId);
+        return new Resolver
+        {
+            Target      = target,
+            Locations   = await db.Locations.AsNoTracking().OrderBy(l => l.SortOrder).ThenBy(l => l.Name)
+                              .Select(l => new Location { LocationId = l.LocationId, Name = l.Name }).ToListAsync(),
+            Types       = types,
+            DefaultType = enabled.FirstOrDefault(t => t.SystemName == "Activity") ?? enabled.FirstOrDefault() ?? types.First(),
+            Activities  = await db.Activities.AsNoTracking().Where(a => a.EventId == targetEventId).ToListAsync(),
+            Groups      = await db.Groups.AsNoTracking().Where(g => g.EventId == targetEventId).ToListAsync(),
+            Existing    = (await db.ScheduleItems.AsNoTracking().Where(i => i.CampEventId == targetEventId)
+                              .Select(i => new { i.CampDay, i.StartTime, i.Title }).ToListAsync())
+                              .Select(i => Key(i.CampDay, i.StartTime, i.Title)).ToHashSet(),
+        };
+    }
+
+    /// <summary>
+    /// Which items get added and on what day. An item is skipped when its day is past the target's
+    /// end, when the target already has it (same day, start, title), or when its slot was skipped.
+    /// </summary>
+    private static List<(PortableScheduleItem Item, DateOnly? Day, bool Add)> Plan(PortableSchedule s, Resolver r)
+    {
+        var added = new HashSet<string>();
+        var seen = new HashSet<string>(r.Existing);
+        var plan = new List<(PortableScheduleItem, DateOnly?, bool)>();
+        foreach (var i in s.Items.OrderBy(i => i.ParentKey is null ? 0 : 1))
+        {
+            var day = r.Day(i.DayIndex);
+            var add = day is { } d
+                      && (i.ParentKey is null || added.Contains(i.ParentKey))
+                      && seen.Add(Key(d, i.Start, i.Title));
+            if (add) added.Add(i.Key);
+            plan.Add((i, day, add));
+        }
+        return plan;
+    }
+
+    public async Task<SchedulePreview> PreviewAsync(PortableSchedule s, Guid targetEventId)
+    {
+        using var db = factory.CreateDbContext();
+        var r = await LoadResolverAsync(db, targetEventId);
+        var plan = Plan(s, r);
+
+        // Duplicates only count on days that map; a day past the target's end is skipped whole.
+        var days = plan.GroupBy(p => p.Item.DayIndex).OrderBy(g => g.Key).Select(g => new CopyDay(
+            s.Source.EffDate.AddDays(g.Key), g.First().Day, g.Count(), g.First().Day is null ? 0 : g.Count(p => !p.Add))).ToList();
+
+        var adding = plan.Where(p => p.Add).Select(p => p.Item).ToList();
+        var newLocations = adding.Select(i => r.NewLocation(i.LocationId, i.Location))
+            .Concat(adding.SelectMany(i => i.Groups).Select(g => r.NewLocation(g.LocationId, g.Location)))
+            .OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).Order().ToList();
+
+        var unmatched = new List<string>();
+        void Note(IEnumerable<string?> names, string what)
+        {
+            foreach (var g in names.OfType<string>().GroupBy(n => n.Trim(), StringComparer.OrdinalIgnoreCase))
+                unmatched.Add($"{what} \"{g.Key}\" isn't in {r.Target.Name} ({g.Count()} item{(g.Count() == 1 ? "" : "s")}), so {(what == "Group" ? "that group's override is" : "the link is")} left off");
+        }
+        foreach (var g in adding.Where(i => r.FindType(i) is null).GroupBy(i => i.TypeName ?? i.TypeSystemName ?? "?"))
+            unmatched.Add($"Type \"{g.Key}\" isn't on this site ({g.Count()} item{(g.Count() == 1 ? "" : "s")}), so {r.DefaultType.Name} is used");
+        Note(adding.Where(i => i.Activity is not null && r.FindActivity(i.Activity) is null).Select(i => i.Activity)
+            .Concat(adding.SelectMany(i => i.Groups).Where(g => r.FindGroup(g) is not null && g.Activity is not null && r.FindActivity(g.Activity) is null).Select(g => g.Activity)), "Activity");
+        Note(adding.SelectMany(i => i.Groups).Where(g => r.FindGroup(g) is null).Select(g => g.Group), "Group");
+
+        return new SchedulePreview(s.Source.EventName, s.Source.EffDate, s.Source.ExpDate, days, newLocations, unmatched);
+    }
+
+    /// <summary>
+    /// Adds the schedule to the target event in one save (see <see cref="Plan"/> for what's skipped).
+    /// Unknown locations are created, or with <paramref name="createLocations"/> off, an item's
+    /// location name goes into Additional Info and a group override's is dropped. Types used but not
+    /// enabled for the event are enabled. Returns how many items were added.
+    /// </summary>
+    public async Task<int> ApplyAsync(PortableSchedule s, Guid targetEventId, bool createLocations, Guid userId)
+    {
+        using var db = factory.CreateDbContext();
+        var r = await LoadResolverAsync(db, targetEventId);
+        var plan = Plan(s, r).Where(p => p.Add).ToList();
+        if (plan.Count == 0) return 0;
+
+        var created = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+        var nextSort = (await db.Locations.MaxAsync(l => (int?)l.SortOrder) ?? 0) + 1;
+        Guid? LocationId(Guid? id, string? name)
+        {
+            if (r.FindLocation(id, name) is { } l) return l.LocationId;
+            if (r.NewLocation(id, name) is not { } n || !createLocations) return null;
+            if (!created.TryGetValue(n, out var newId))
+            {
+                newId = Guid.NewGuid();
+                db.Locations.Add(new Location { LocationId = newId, Name = n, SortOrder = nextSort++ });
+                created[n] = newId;
+            }
+            return newId;
+        }
+
+        var newIds = new Dictionary<string, Guid>();
+        var added = new List<ScheduleItem>();
+        foreach (var (i, day, _) in plan)
+        {
+            var id = Guid.NewGuid();
+            newIds[i.Key] = id;
+            var itemGroups = i.Groups
+                .Select(g => (g, group: r.FindGroup(g)))
+                .Where(x => x.group is not null)
+                .DistinctBy(x => x.group!.GroupId)
+                .Select(x => new ScheduleItemGroup
+                {
+                    ScheduleItemId = id,
+                    GroupId        = x.group!.GroupId,
+                    ActivityId     = r.FindActivity(x.g.Activity)?.ActivityId,
+                    LocationId     = LocationId(x.g.LocationId, x.g.Location),
+                    Note           = x.g.Note,
+                }).ToList();
+            var locationId = LocationId(i.LocationId, i.Location);
+            var other = i.LocationOther;
+            if (locationId is null && r.NewLocation(i.LocationId, i.Location) is { } lost)
+                other = string.IsNullOrEmpty(other) ? lost : $"{lost} · {other}";
+            added.Add(new ScheduleItem
+            {
+                ScheduleItemId       = id,
+                CampEventId          = targetEventId,
+                CampDay              = day!.Value,
+                StartTime            = i.Start,
+                EndTime              = i.End,
+                Title                = i.Title.Trim(),
+                Description          = i.Description,
+                LocationId           = locationId,
+                LocationOther        = other,
+                ActivityId           = r.FindActivity(i.Activity)?.ActivityId,
+                ScheduleItemTypeId   = (r.FindType(i) ?? r.DefaultType).ScheduleItemTypeId,
+                PresenterName        = i.PresenterName,
+                PresenterBio         = i.PresenterBio,
+                AppliesToAllGroups   = itemGroups.Count == 0,
+                MaxCapacity          = i.MaxCapacity,
+                TrackAttendance      = i.TrackAttendance,
+                SelfCheckInMode      = i.SelfCheckInMode,
+                IsBreakoutSlot       = i.IsBreakoutSlot && i.ParentKey is null,
+                AllowSelfSignup      = i.AllowSelfSignup,
+                ParentScheduleItemId = i.ParentKey is { } p ? newIds[p] : null,
+                CreatedBy            = userId,
+                UpdatedAt            = CampTime.Now,
+                ItemGroups           = itemGroups,
+            });
+        }
+
+        var enabledIds = await db.EventScheduleItemTypes.Where(t => t.EventId == targetEventId).Select(t => t.ScheduleItemTypeId).ToListAsync();
+        foreach (var typeId in added.Select(a => a.ScheduleItemTypeId).Distinct().Where(t => !enabledIds.Contains(t)))
+            db.EventScheduleItemTypes.Add(new EventScheduleItemType { EventId = targetEventId, ScheduleItemTypeId = typeId });
+
+        db.ScheduleItems.AddRange(added);
+        await db.SaveChangesAsync();
+
+        typeSvc.InvalidateEvent(targetEventId);
+        foreach (var d in added.Select(a => a.CampDay).Distinct()) scheduleSvc.Invalidate(targetEventId, d);
+        return added.Count;
+    }
+
+    public static string Slug(string name) => Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
 
     // ── Copy from another event ──────────────────────────────────────────────
 
@@ -507,124 +835,11 @@ public class ScheduleImportService(IDbContextFactory<AppDbContext> factory, Sche
             .ToList();
     }
 
-    public async Task<CopyPreview?> PreviewCopyAsync(Guid sourceEventId, Guid targetEventId)
-    {
-        using var db = factory.CreateDbContext();
-        var source = await db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.EventId == sourceEventId);
-        var target = await db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.EventId == targetEventId);
-        if (source is null || target is null) return null;
-        var items = await db.ScheduleItems.AsNoTracking().Where(i => i.CampEventId == sourceEventId)
-            .Select(i => new { i.CampDay, i.StartTime, i.Title }).ToListAsync();
-        var existing = (await db.ScheduleItems.AsNoTracking().Where(i => i.CampEventId == targetEventId)
-                .Select(i => new { i.CampDay, i.StartTime, i.Title }).ToListAsync())
-            .Select(i => Key(i.CampDay, i.StartTime, i.Title)).ToHashSet();
+    // Copying is an export applied straight to the target: day N of the source becomes day N of the
+    // target, and ids still match because it's the same database.
+    public async Task<SchedulePreview?> PreviewCopyAsync(Guid sourceEventId, Guid targetEventId) =>
+        await ExportAsync(sourceEventId) is { } s ? await PreviewAsync(s, targetEventId) : null;
 
-        var days = items.GroupBy(i => i.CampDay).OrderBy(g => g.Key).Select(g =>
-        {
-            var targetDay = MapDay(g.Key, source, target);
-            var dupes = targetDay is { } td ? g.Count(i => existing.Contains(Key(td, i.StartTime, i.Title))) : 0;
-            return new CopyDay(g.Key, targetDay, g.Count(), dupes);
-        }).ToList();
-        return new CopyPreview(source, days);
-    }
-
-    // Day N of the source becomes day N of the target; days past the target's end are dropped.
-    private static DateOnly? MapDay(DateOnly sourceDay, Event source, Event target)
-    {
-        var mapped = target.EffDate.AddDays(sourceDay.DayNumber - source.EffDate.DayNumber);
-        return mapped >= target.EffDate && mapped <= target.ExpDate ? mapped : null;
-    }
-
-    /// <summary>
-    /// Copies the source schedule into the target by day position. Breakout slots keep their
-    /// options; activities and group assignments are matched by name in the target event. Items
-    /// already on the target (same day, start, title) are skipped, along with a skipped slot's
-    /// options. Returns how many items were added.
-    /// </summary>
-    public async Task<int> CopyAsync(Guid sourceEventId, Guid targetEventId, Guid userId)
-    {
-        using var db = factory.CreateDbContext();
-        var source = await db.Events.AsNoTracking().FirstAsync(e => e.EventId == sourceEventId);
-        var target = await db.Events.AsNoTracking().FirstAsync(e => e.EventId == targetEventId);
-        var items = await db.ScheduleItems.AsNoTracking()
-            .Where(i => i.CampEventId == sourceEventId)
-            .Include(i => i.Activity)
-            .Include(i => i.ItemGroups).ThenInclude(g => g.Group)
-            .Include(i => i.ItemGroups).ThenInclude(g => g.Activity)
-            .ToListAsync();
-        var existing = (await db.ScheduleItems.AsNoTracking().Where(i => i.CampEventId == targetEventId)
-                .Select(i => new { i.CampDay, i.StartTime, i.Title }).ToListAsync())
-            .Select(i => Key(i.CampDay, i.StartTime, i.Title)).ToHashSet();
-        var activities = await db.Activities.AsNoTracking().Where(a => a.EventId == targetEventId).ToListAsync();
-        var groups = await db.Groups.AsNoTracking().Where(g => g.EventId == targetEventId).ToListAsync();
-        Guid? ActivityByName(Activity? a) =>
-            a is null ? null : activities.FirstOrDefault(x => x.Name.Equals(a.Name, StringComparison.OrdinalIgnoreCase))?.ActivityId;
-
-        // Slots first so options can point at their new ids.
-        var newIds = new Dictionary<Guid, Guid>();
-        var added = new List<ScheduleItem>();
-        foreach (var i in items.OrderBy(i => i.ParentScheduleItemId is null ? 0 : 1))
-        {
-            if (MapDay(i.CampDay, source, target) is not { } day) continue;
-            if (existing.Contains(Key(day, i.StartTime, i.Title))) continue;
-            Guid? parent = null;
-            if (i.ParentScheduleItemId is { } p)
-            {
-                if (!newIds.TryGetValue(p, out var np)) continue;   // its slot was skipped
-                parent = np;
-            }
-
-            var id = Guid.NewGuid();
-            newIds[i.ScheduleItemId] = id;
-            var itemGroups = i.ItemGroups
-                .Select(g => (g, target: groups.FirstOrDefault(x => x.Name.Equals(g.Group.Name, StringComparison.OrdinalIgnoreCase))))
-                .Where(x => x.target is not null)
-                .Select(x => new ScheduleItemGroup
-                {
-                    ScheduleItemId = id,
-                    GroupId        = x.target!.GroupId,
-                    ActivityId     = ActivityByName(x.g.Activity),
-                    LocationId     = x.g.LocationId,
-                    Note           = x.g.Note
-                }).ToList();
-            added.Add(new ScheduleItem
-            {
-                ScheduleItemId       = id,
-                CampEventId          = targetEventId,
-                CampDay              = day,
-                StartTime            = i.StartTime,
-                EndTime              = i.EndTime,
-                Title                = i.Title,
-                Description          = i.Description,
-                LocationId           = i.LocationId,
-                LocationOther        = i.LocationOther,
-                ActivityId           = ActivityByName(i.Activity),
-                ScheduleItemTypeId   = i.ScheduleItemTypeId,
-                PresenterName        = i.PresenterName,
-                PresenterBio         = i.PresenterBio,
-                AppliesToAllGroups   = itemGroups.Count == 0,
-                MaxCapacity          = i.MaxCapacity,
-                TrackAttendance      = i.TrackAttendance,
-                SelfCheckInMode      = i.SelfCheckInMode,
-                IsBreakoutSlot       = i.IsBreakoutSlot,
-                AllowSelfSignup      = i.AllowSelfSignup,
-                ParentScheduleItemId = parent,
-                CreatedBy            = userId,
-                UpdatedAt            = CampTime.Now,
-                ItemGroups           = itemGroups
-            });
-        }
-        if (added.Count == 0) return 0;
-
-        var enabledIds = await db.EventScheduleItemTypes.Where(t => t.EventId == targetEventId).Select(t => t.ScheduleItemTypeId).ToListAsync();
-        foreach (var typeId in added.Select(a => a.ScheduleItemTypeId).Distinct().Where(t => !enabledIds.Contains(t)))
-            db.EventScheduleItemTypes.Add(new EventScheduleItemType { EventId = targetEventId, ScheduleItemTypeId = typeId });
-
-        db.ScheduleItems.AddRange(added);
-        await db.SaveChangesAsync();
-
-        typeSvc.InvalidateEvent(targetEventId);
-        foreach (var d in added.Select(a => a.CampDay).Distinct()) scheduleSvc.Invalidate(targetEventId, d);
-        return added.Count;
-    }
+    public async Task<int> CopyAsync(Guid sourceEventId, Guid targetEventId, Guid userId) =>
+        await ExportAsync(sourceEventId) is { } s ? await ApplyAsync(s, targetEventId, createLocations: true, userId) : 0;
 }
