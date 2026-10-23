@@ -9,10 +9,10 @@
                 animation:fadeIn .2s ease"
          @onclick="Close">
         <div class="ccn-panel" style="padding:24px;width:100%;max-width:420px;
-                                      box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease"
+                                      box-shadow:var(--modal-shadow);animation:popIn .25s ease"
              @onclick:stopPropagation="true">
 
-            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--black);margin-bottom:18px">
+            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--text-dark);margin-bottom:18px">
                 ＋ Log Transaction
             </div>
 
@@ -26,8 +26,8 @@
                         {
                             var sel = _form.GroupId == g.GroupId;
                             var s   = sel
-                                ? $"font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:{g.Color};color:white;border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)"
-                                : "font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--black);border:3px solid var(--black);box-shadow:2px 2px 0 var(--black)";
+                                ? $"font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:{g.Color};color:white;border:var(--panel-border);box-shadow:var(--card-shadow)"
+                                : "font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--text-dark);border:var(--panel-border);box-shadow:var(--control-shadow)";
                             <button style="@s" @onclick="() => _form.GroupId = g.GroupId">@g.ShortName</button>
                         }
                     </div>
@@ -46,8 +46,8 @@
                             var label     = isPrimary ? "Coins" : "Stars";
                             var icon      = isPrimary ? "/img/ccn-coin.webp" : "/img/ccn-star.webp";
                             var s         = sel
-                                ? $"flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:{color};color:{textColor};border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)"
-                                : "flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--black);border:3px solid var(--black);box-shadow:2px 2px 0 var(--black)";
+                                ? $"flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:{color};color:{textColor};border:var(--panel-border);box-shadow:var(--card-shadow)"
+                                : "flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--text-dark);border:var(--panel-border);box-shadow:var(--control-shadow)";
                             <button style="@s;display:flex;align-items:center;justify-content:center;gap:8px" @onclick="() => _form.CurrencyTypeId = ct.CurrencyTypeId">
                                 <img src="@icon" style="height:20px;width:auto" alt="@label" />
                                 @label
@@ -70,7 +70,7 @@
                                   box-shadow:2px 2px 0 @(CoinAmountInvalid ? "#D12B2B" : "var(--black)");outline:none" />
                     @if (CoinAmountInvalid)
                     {
-                        <div style="font-size:12px;font-weight:800;color:#D12B2B;margin-top:5px">
+                        <div style="font-size:12px;font-weight:800;color:var(--text-danger);margin-top:5px">
                             ⚠️ Coins must be a multiple of 5 (e.g. 5, 10, 25, -10)
                         </div>
                     }
@@ -80,10 +80,10 @@
                 <div>
                     <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Note (optional)</div>
                     <input type="text" placeholder="e.g. Won Bowser Dodge Battle" @bind="_form.Note"
-                           style="background:var(--bg-base);border:3px solid var(--black);border-radius:7px;
+                           style="background:var(--bg-base);border:var(--panel-border);border-radius:7px;
                                   color:var(--text-dark);padding:9px 12px;font-size:14px;
                                   font-family:'Nunito',sans-serif;font-weight:700;width:100%;
-                                  box-shadow:2px 2px 0 var(--black);outline:none" />
+                                  box-shadow:var(--control-shadow);outline:none" />
                 </div>
 
                 @* Actions *@

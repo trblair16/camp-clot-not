@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CampClotNot.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,17 +46,16 @@ public record ThemeConfig(
     // Full-size hero image for the Dashboard — distinct from Theme.LogoAssetPath,
     // which is cropped/sized for the compact nav slot. Null falls back to CCN's hero logo.
     string? BannerAssetPath = null,
-    // Page chrome — background, panels, text. Defaulted to CCN's exact current values so
-    // the Mario theme (and any older serialized palette missing these fields) is unaffected.
+    // Page chrome — background and panels. Defaulted to CCN's exact current values so the
+    // Mario theme (and any older serialized palette missing these fields) is unaffected. Text
+    // colors aren't stored: they're black or white, whichever reads better on each surface
+    // (see TextOn below). Older palettes' TextDark/TextMid/TextLight values are ignored.
     // --black (borders/shadows) is deliberately NOT themed — the thick black border/offset
     // shadow is the constant neo-brutalist signature across every theme, only the colors
     // inside it change.
     string BgBase = "#F2ECD8",
     string BgDot = "#DDD5BE",
     string PanelBg = "#FFFEF7",
-    string TextDark = "#1A1A1A",
-    string TextMid = "#4A4035",
-    string TextLight = "#8A7D6A",
     // The polka-dot page texture is a party/confetti motif, not a neutral pattern —
     // changing its color alone still reads as "Mario Party but recolored." Themes that
     // aren't a kids' party (Men's Retreat, future HBDA events) turn it off entirely for
@@ -75,10 +75,47 @@ public record ThemeConfig(
     bool UseCcnArtwork = false
 )
 {
-    public string BackgroundGradient =>
+    // Text for each surface: black or white by contrast, with the secondary and hint shades
+    // blended toward that surface so they stay readable on it (WCAG ≥ 4.5:1 on plain colors).
+    [JsonIgnore] public string TextDark  => TextContrast.TextOn(BgBase);
+    [JsonIgnore] public string TextMid   => TextContrast.Shade(BgBase, TextContrast.Mid);
+    [JsonIgnore] public string TextLight => TextContrast.Shade(BgBase, TextContrast.Light);
+    [JsonIgnore] public string PanelTextDark  => TextContrast.TextOn(PanelBg);
+    [JsonIgnore] public string PanelTextMid   => TextContrast.Shade(PanelBg, TextContrast.Mid);
+    [JsonIgnore] public string PanelTextLight => TextContrast.Shade(PanelBg, TextContrast.Light);
+    [JsonIgnore] public string PrimaryTextDark  => TextContrast.TextOn(Primary);
+    [JsonIgnore] public string PrimaryTextMid   => TextContrast.Shade(Primary, TextContrast.Mid);
+    [JsonIgnore] public string PrimaryTextLight => TextContrast.Shade(Primary, TextContrast.Light);
+    // The black nav header shows the subtitle in the primary color; lighten it there if it's too dark.
+    [JsonIgnore] public string PrimaryOnBlack => TextContrast.Readable(Primary, TextContrast.Black, 3);
+
+    // Per-surface versions of colored text: the original color wherever it's readable, otherwise
+    // nudged toward that surface's text color. Page / panel / primary-colored surfaces.
+    private string SurfaceVars(string prefix, string bg) => $"""
+        --{prefix}text-accent: {TextContrast.Readable(Primary, bg, 3, fallback: TextContrast.TextOn(bg))};
+        --{prefix}text-danger: {TextContrast.Readable("#D12B2B", bg)};
+        --{prefix}text-success: {TextContrast.Readable("#1E7F46", bg)};
+        --{prefix}text-link: {TextContrast.Readable("#1A5FA8", bg)};
+        --{prefix}text-warn: {TextContrast.Readable("#8A6D00", bg)};
+        """;
+
+    // Border/shadow sizes for smaller and larger things than a panel, in the theme's shape
+    // language: bold = thick border + hard offset shadow (Mario), soft = the theme's thin border
+    // and soft panel shadow. Bold is the same test the Theme editor uses (3px borders).
+    [JsonIgnore] public bool IsBold => BorderWidth == "3px";
+    [JsonIgnore] public string ControlBorder => IsBold ? $"2px solid {BorderColor}" : $"{BorderWidth} solid {BorderColor}";
+    // "0 0 0 transparent" rather than "none" so it can still be combined with another shadow.
+    [JsonIgnore] public string ControlShadow => IsBold ? $"2px 2px 0 {BorderColor}" : "0 0 0 transparent";
+    [JsonIgnore] public string CardShadow    => IsBold ? $"3px 3px 0 {BorderColor}" : PanelShadow;
+    [JsonIgnore] public string ModalShadow   => IsBold ? $"8px 8px 0 {BorderColor}" : "0 18px 48px rgba(0,0,0,0.28)";
+
+    [JsonIgnore] public string BackgroundGradient =>
         $"linear-gradient(135deg,{BgStart} 0%,{BgMid} 60%,{BgEnd} 100%)";
 
-    // Injected into :root by ThemeHead.razor — use var(--color-primary) etc. in components
+    // Injected into :root by ThemeHead.razor. --text-* is for the page background; ThemeHead
+    // swaps in --panel-text-* / --primary-text-* inside panels and primary-colored surfaces.
+    // Use var(--color-primary) etc. in components.
+    [JsonIgnore]
     public string CssVariables => $"""
         --bg-start: {BgStart};
         --bg-mid: {BgMid};
@@ -99,9 +136,26 @@ public record ThemeConfig(
         --panel-bg: {PanelBg};
         --panel-border: {BorderWidth} solid {BorderColor};
         --panel-shadow: {PanelShadow};
+        --control-border: {ControlBorder};
+        --control-shadow: {ControlShadow};
+        --card-shadow: {CardShadow};
+        --modal-shadow: {ModalShadow};
         --text-dark: {TextDark};
         --text-mid: {TextMid};
         --text-light: {TextLight};
+        --page-text-dark: {TextDark};
+        --page-text-mid: {TextMid};
+        --page-text-light: {TextLight};
+        --panel-text-dark: {PanelTextDark};
+        --panel-text-mid: {PanelTextMid};
+        --panel-text-light: {PanelTextLight};
+        --primary-text-dark: {PrimaryTextDark};
+        --primary-text-mid: {PrimaryTextMid};
+        --primary-text-light: {PrimaryTextLight};
+        --primary-on-black: {PrimaryOnBlack};
+        {SurfaceVars("page-", BgBase)}
+        {SurfaceVars("panel-", PanelBg)}
+        {SurfaceVars("primary-", Primary)}
         """;
 
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
@@ -150,9 +204,6 @@ public static class ThemePresets
             BgBase:    "#F2ECD8",
             BgDot:     "#DDD5BE",
             PanelBg:   "#FFFEF7",
-            TextDark:  "#1A1A1A",
-            TextMid:   "#4A4035",
-            TextLight: "#8A7D6A",
             UseDotPattern: true,
             HeadingFont: "'Fredoka One', cursive",
             BorderColor: "#1A1A1A",
@@ -188,9 +239,6 @@ public static class ThemePresets
             BgBase:    "#EDE0C4",
             BgDot:     "#D4C29A",
             PanelBg:   "#FBF6E8",
-            TextDark:  "#2A1D0F",
-            TextMid:   "#5C4A32",
-            TextLight: "#8C795C",
             // Polka dots read as party/confetti no matter the color — off for a retreat.
             UseDotPattern: false,
             // Warm-professional shape language: clean rounded sans instead of the comic-book
@@ -226,9 +274,6 @@ public static class ThemePresets
             BgBase:    "#F3F5F7",
             BgDot:     "#DCE3EA",
             PanelBg:   "#FFFFFF",
-            TextDark:  "#1B2733",
-            TextMid:   "#45556A",
-            TextLight: "#7A8899",
             UseDotPattern: false,
             HeadingFont: "'Poppins', sans-serif",
             BorderColor: "#C5CED8",
@@ -290,5 +335,75 @@ public class ThemeService(IDbContextFactory<AppDbContext> factory, ActiveEventSe
         NavLogoUrl  = ownLogo ?? (config.UseCcnArtwork ? "/img/ccn-logo-nav.webp" : null);
         HeroLogoUrl = ownLogo ?? (config.UseCcnArtwork ? "/img/ccn-logo-2026.webp?v=2" : null);
         _active     = config;
+    }
+}
+
+/// <summary>
+/// Picks readable text for a background: black (#1A1A1A) or white, whichever has the higher
+/// WCAG contrast ratio, plus lighter shades of it blended toward the background.
+/// </summary>
+public static class TextContrast
+{
+    public const string Black = "#1A1A1A";
+    public const string White = "#FFFFFF";
+    public const double Mid = 0.78;     // secondary text: ≈ 8:1 on white
+    public const double Light = 0.62;   // hints and labels: ≈ 4.8:1 on white
+
+    public static string TextOn(string background) =>
+        TryParse(background, out var bg) && Contrast(Parse(White), bg) > Contrast(Parse(Black), bg) ? White : Black;
+
+    /// <summary>The text color for <paramref name="background"/>, mixed <paramref name="amount"/> of the way from the background.</summary>
+    public static string Shade(string background, double amount)
+    {
+        if (!TryParse(background, out var bg)) bg = Parse("#FFFFFF");
+        var fg = Parse(TextOn(background));
+        int Mix(int f, int b) => (int)Math.Round(f * amount + b * (1 - amount));
+        return $"#{Mix(fg.R, bg.R):X2}{Mix(fg.G, bg.G):X2}{Mix(fg.B, bg.B):X2}";
+    }
+
+    /// <summary>
+    /// <paramref name="color"/> if it reaches <paramref name="min"/>:1 on <paramref name="background"/>;
+    /// otherwise <paramref name="fallback"/> when given, else the color blended toward the
+    /// background's text color (lighter on dark surfaces, darker on light ones) until it does.
+    /// </summary>
+    public static string Readable(string color, string background, double min = 4.5, string? fallback = null)
+    {
+        if (!TryParse(color, out var c) || !TryParse(background, out var bg)) return fallback ?? color;
+        if (Contrast(c, bg) >= min) return color;
+        if (fallback is not null) return fallback;
+        var target = Parse(TextOn(background));
+        for (var t = 0.1; t < 1; t += 0.1)
+        {
+            int Mix(int a, int b) => (int)Math.Round(a + (b - a) * t);
+            var m = (Mix(c.R, target.R), Mix(c.G, target.G), Mix(c.B, target.B));
+            if (Contrast(m, bg) >= min) return $"#{m.Item1:X2}{m.Item2:X2}{m.Item3:X2}";
+        }
+        return TextOn(background);
+    }
+
+    public static double Contrast(string a, string b) =>
+        TryParse(a, out var x) && TryParse(b, out var y) ? Contrast(x, y) : 1;
+
+    private static double Contrast((int R, int G, int B) a, (int R, int G, int B) b)
+    {
+        double la = Luminance(a), lb = Luminance(b);
+        return (Math.Max(la, lb) + 0.05) / (Math.Min(la, lb) + 0.05);
+    }
+
+    private static double Luminance((int R, int G, int B) c)
+    {
+        static double Lin(int v) { var s = v / 255.0; return s <= 0.03928 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4); }
+        return 0.2126 * Lin(c.R) + 0.7152 * Lin(c.G) + 0.0722 * Lin(c.B);
+    }
+
+    private static (int R, int G, int B) Parse(string hex) => TryParse(hex, out var c) ? c : (0, 0, 0);
+
+    private static bool TryParse(string? hex, out (int R, int G, int B) c)
+    {
+        c = default;
+        if (hex is null || hex.Length != 7 || hex[0] != '#') return false;
+        if (!int.TryParse(hex.AsSpan(1), System.Globalization.NumberStyles.HexNumber, null, out var v)) return false;
+        c = ((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF);
+        return true;
     }
 }

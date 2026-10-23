@@ -48,7 +48,7 @@
                     }
                     @if (!string.IsNullOrEmpty(s.Phone))
                     {
-                        <a href="@TelHref(s.Phone)" style="font-size:.85rem;font-weight:700;color:var(--color-primary);text-decoration:none;text-align:center;display:block">@s.Phone</a>
+                        <a href="@TelHref(s.Phone)" style="font-size:.85rem;font-weight:700;color:var(--text-accent);text-decoration:none;text-align:center;display:block">@s.Phone</a>
                     }
                 </div>
             }
@@ -72,11 +72,12 @@
         background: var(--panel-bg);
         border: var(--panel-border);
         border-radius: 10px;
-        box-shadow: 4px 4px 0 var(--border-color);
+        box-shadow: var(--panel-shadow);
         padding: 16px;
         display: flex;
         flex-direction: column;
         align-items: center;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     .sponsor-logo-box {
         width: 100%;

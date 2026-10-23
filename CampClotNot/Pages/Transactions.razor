@@ -16,9 +16,9 @@
 
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
         <input type="text" @bind="_search" @bind:event="oninput" placeholder="Search..."
-               style="flex:1;min-width:150px;padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+               style="flex:1;min-width:150px;padding:8px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
         <select class="tx-filter" value="@_filterGroup" @onchange="e => _filterGroup = e.Value?.ToString() ?? string.Empty"
-                style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+                style="padding:8px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;cursor:pointer">
             <option value="">All Groups</option>
             @foreach (var g in _groups)
             {
@@ -26,13 +26,13 @@
             }
         </select>
         <select class="tx-filter" value="@_filterType" @onchange="e => _filterType = e.Value?.ToString() ?? string.Empty"
-                style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+                style="padding:8px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;cursor:pointer">
             <option value="">All Types</option>
             <option value="Primary">Coins</option>
             <option value="Prestige">Stars</option>
         </select>
         <select class="tx-filter" value="@_filterStatus" @onchange="e => _filterStatus = e.Value?.ToString() ?? string.Empty"
-                style="padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer">
+                style="padding:8px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;cursor:pointer">
             <option value="">All Status</option>
             <option value="active">Active</option>
             <option value="voided">Voided</option>
@@ -63,7 +63,7 @@
                 var voided = tx.VoidedAt.HasValue;
                 var isCoins = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
                 var amtColor = voided ? "var(--text-light)" : tx.Amount < 0 ? "#D12B2B" : "#1A7A3E";
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);padding:12px 14px;margin-bottom:10px;@(voided ? "opacity:.5" : "")">
+                <div style="border:var(--panel-border);border-radius:10px;box-shadow:var(--card-shadow);background:var(--panel-bg);padding:12px 14px;margin-bottom:10px;@(voided ? "opacity:.5" : "")">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                         <span style="font-family:'Fredoka One',cursive;font-size:14px;color:@(tx.Group?.Color ?? "var(--black)")">@tx.Group?.Name</span>
                         <span style="font-weight:800;font-size:15px;color:@amtColor;@(voided ? "text-decoration:line-through" : "");display:inline-flex;align-items:center;gap:3px">@(tx.Amount > 0 ? "+" : "")@tx.Amount <img src="@(isCoins ? "/img/ccn-coin.webp" : "/img/ccn-star.webp")" style="height:16px;width:auto" alt="" /></span>
@@ -78,11 +78,11 @@
                     <div style="display:flex;justify-content:space-between;align-items:center">
                         @if (voided)
                         {
-                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#D12B2B;padding:2px 8px;border-radius:4px;border:2px solid var(--black)">VOIDED</span>
+                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#D12B2B;padding:2px 8px;border-radius:4px;border:var(--control-border)">VOIDED</span>
                         }
                         else
                         {
-                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#27AE60;padding:2px 8px;border-radius:4px;border:2px solid var(--black)">Active</span>
+                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#27AE60;padding:2px 8px;border-radius:4px;border:var(--control-border)">Active</span>
                         }
                         <AuthorizeView Roles="Admin">
                             @if (!voided)
@@ -100,7 +100,7 @@
         </div>
 
         @* ── Desktop table (hidden <700px) ── *@
-        <div class="tx-desktop-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+        <div class="tx-desktop-table" style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow:hidden">
             <table style="width:100%;border-collapse:collapse">
                 <thead>
                     <tr style="background:var(--black)">
@@ -122,7 +122,7 @@
                         var voided   = tx.VoidedAt.HasValue;
                         var isCoins  = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
                         var amtColor = voided ? "var(--text-light)" : tx.Amount < 0 ? "#D12B2B" : "#1A7A3E";
-                        <tr style="border-bottom:2px solid #E8E0CC;@(voided ? "opacity:.5" : "")">
+                        <tr style="border-bottom:2px solid var(--divider);@(voided ? "opacity:.5" : "")">
                             <td style="padding:10px 14px;font-size:12px;color:var(--text-mid);white-space:nowrap">
                                 @tx.CreatedAt.ToString("MM/dd h:mm tt")
                             </td>
@@ -140,13 +140,13 @@
                                 {
                                     <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;
                                                  color:white;background:#D12B2B;padding:2px 8px;border-radius:4px;
-                                                 border:2px solid var(--black);display:inline-block">VOIDED</span>
+                                                 border:var(--control-border);display:inline-block">VOIDED</span>
                                 }
                                 else
                                 {
                                     <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;
                                                  color:white;background:#27AE60;padding:2px 8px;border-radius:4px;
-                                                 border:2px solid var(--black);display:inline-block">Active</span>
+                                                 border:var(--control-border);display:inline-block">Active</span>
                                 }
                             </td>
                             <AuthorizeView Roles="Admin">

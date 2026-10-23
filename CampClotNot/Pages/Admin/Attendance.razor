@@ -19,8 +19,9 @@
         border: var(--panel-border);
         border-radius: 10px;
         background: var(--panel-bg);
-        box-shadow: 4px 4px 0 var(--border-color);
+        box-shadow: var(--panel-shadow);
         margin-bottom: 16px;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     .att-day-tabs::-webkit-scrollbar { display: none; }
     .att-day-tab {
@@ -38,22 +39,23 @@
         font-family: var(--font-display); font-weight: 700;
     }
     .att-day-tab:hover { background: rgba(26,26,26,.05); }
-    .att-day-tab.active { border-bottom-color: var(--border-color); background: var(--bg-base); }
+    .att-day-tab.active {border-bottom-color: var(--border-color); background: var(--bg-base); --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark); }
     .att-day-tab .tab-dow  { font-size: 11px; color: var(--text-light); letter-spacing: .5px; text-transform: uppercase; }
     .att-day-tab .tab-date { font-size: 18px; color: var(--text-dark); line-height: 1; }
     .att-day-tab .tab-count { font-size: 9px; color: var(--text-light); margin-top: 1px; }
     .att-item-row {
         display: flex; justify-content: space-between; align-items: center; gap: 10px;
-        width: 100%; padding: 10px 14px; border: none; border-bottom: 2px solid #E8E0CC;
+        width: 100%; padding: 10px 14px; border: none; border-bottom: 2px solid var(--divider);
         background: transparent; cursor: pointer; text-align: left;
     }
     .att-item-row:last-child { border-bottom: none; }
     .att-item-row:hover { background: rgba(26,26,26,.04); }
-    .att-item-row.selected { background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); }
+    .att-item-row.selected {background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark); }
     .att-pill {
         font-family: var(--font-display); font-weight: 700; font-size: 12px;
-        padding: 2px 10px; border-radius: 50px; border: 2px solid var(--border-color);
+        padding: 2px 10px; border-radius: 50px; border: var(--control-border);
         background: var(--panel-bg); white-space: nowrap;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     .att-filter button {
         font-family: var(--font-display); font-weight: 700; font-size: 12px;
@@ -97,8 +99,8 @@
         <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
             @* ── Tracked items for the day ── *@
-            <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);flex:0 0 320px;min-width:260px;overflow:hidden">
-                <div style="padding:12px 14px;border-bottom:2px solid var(--border-color);font-family:var(--font-display);font-weight:700;font-size:14px">Tracked items</div>
+            <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);flex:0 0 320px;min-width:260px;overflow:hidden">
+                <div style="padding:12px 14px;border-bottom:var(--control-border);font-family:var(--font-display);font-weight:700;font-size:14px">Tracked items</div>
                 @{ var dayItems = _trackedItems.Where(i => i.CampDay == _selectedDay).ToList(); }
                 @if (!dayItems.Any())
                 {
@@ -132,7 +134,7 @@
                 @if (SelectedItem is { } sel)
                 {
                     var checkedIn = _roster.Where(r => r.IsCheckedIn).ToList();
-                    <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);padding:14px 16px;margin-bottom:14px">
+                    <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);padding:14px 16px;margin-bottom:14px">
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
                             <div style="min-width:0">
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text-dark)">@sel.Title</div>
@@ -150,7 +152,7 @@
                                 </div>
                                 @if (sel.ParentScheduleItem is not null)
                                 {
-                                    <div style="font-size:12px;color:var(--text-light);margin-top:2px">🔀 Option in @sel.ParentScheduleItem.Title — only people signed up can check in. <a href="/admin/breakouts" style="color:var(--black);font-weight:700">Manage sign-ups →</a></div>
+                                    <div style="font-size:12px;color:var(--text-light);margin-top:2px">🔀 Option in @sel.ParentScheduleItem.Title — only people signed up can check in. <a href="/admin/breakouts" style="color:var(--text-dark);font-weight:700">Manage sign-ups →</a></div>
                                 }
                             </div>
                             <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -164,8 +166,8 @@
 
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
                         <input type="search" placeholder="Search names…" @bind="_search" @bind:event="oninput"
-                               style="flex:1;min-width:180px;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
-                        <div class="att-filter" style="display:flex;border:var(--panel-border);border-radius:7px;overflow:hidden;background:var(--panel-bg);box-shadow:2px 2px 0 var(--border-color)">
+                               style="flex:1;min-width:180px;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
+                        <div class="att-filter" style="display:flex;border:var(--panel-border);border-radius:7px;overflow:hidden;background:var(--panel-bg);box-shadow:var(--control-shadow)">
                             <button class="@(_filter == RosterFilter.All ? "active" : "")" @onclick="() => _filter = RosterFilter.All">All</button>
                             <button class="@(_filter == RosterFilter.In ? "active" : "")" @onclick="() => _filter = RosterFilter.In">Checked in</button>
                             <button class="@(_filter == RosterFilter.Out ? "active" : "")" @onclick="() => _filter = RosterFilter.Out">Not yet</button>
@@ -178,7 +180,7 @@
                     }
                     else
                     {
-                        <div style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow-x:auto;background:var(--panel-bg)">
+                        <div style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow-x:auto;background:var(--panel-bg)">
                             <table style="width:100%;border-collapse:collapse;min-width:480px">
                                 <thead>
                                     <tr style="background:var(--black)">
@@ -191,12 +193,12 @@
                                     @foreach (var r in FilteredRoster)
                                     {
                                         var entry = r;
-                                        <tr style="border-bottom:2px solid #E8E0CC">
+                                        <tr style="border-bottom:2px solid var(--divider)">
                                             <td style="padding:10px 14px;font-size:13px;font-weight:700">
                                                 @entry.LastName, @entry.FirstName
                                                 @if (entry.IsRegistered == false)
                                                 {
-                                                    <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEE2E2;border:1px solid #D12B2B;color:#C0392B;font-weight:700;margin-left:4px">not signed up</span>
+                                                    <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:color-mix(in srgb, var(--color-accent) 16%, var(--panel-bg));border:1px solid #D12B2B;color:var(--text-danger);font-weight:700;margin-left:4px">not signed up</span>
                                                 }
                                             </td>
                                             <td style="padding:10px 14px">
@@ -206,11 +208,11 @@
                                                 @if (entry.IsCheckedIn)
                                                 {
                                                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                                                        <span style="font-size:12px;font-weight:700;color:#1E7F46">
+                                                        <span style="font-size:12px;font-weight:700;color:var(--text-success)">
                                                             ✓ @entry.CheckedInAt?.ToString("h:mm tt")
                                                             <span style="color:var(--text-light);font-weight:600">· @MethodLabel(entry)</span>
                                                         </span>
-                                                        <button class="ccn-btn" style="font-size:11px;padding:3px 10px;background:transparent;color:#D12B2B;border-color:#D12B2B"
+                                                        <button class="ccn-btn" style="font-size:11px;padding:3px 10px;background:transparent;color:var(--text-danger);border-color:#D12B2B"
                                                                 disabled="@_busy" @onclick="() => UndoAsync(entry)">Undo</button>
                                                     </div>
                                                 }
@@ -238,7 +240,7 @@
 
 @if (SelectedItem is not null)
 {
-    <button class="ccn-btn ccn-fab-mobile" style="position:fixed;bottom:24px;right:24px;z-index:50;font-size:14px;padding:12px 20px;border-radius:50px;box-shadow:4px 4px 0 var(--border-color)"
+    <button class="ccn-btn ccn-fab-mobile" style="position:fixed;bottom:24px;right:24px;z-index:50;font-size:14px;padding:12px 20px;border-radius:50px;box-shadow:var(--panel-shadow)"
             @onclick="OpenWalkIn">+ Walk-in</button>
 }
 
@@ -246,7 +248,7 @@
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:150;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease"
          @onclick="CloseWalkIn">
-        <div class="ccn-panel" style="padding:20px;width:100%;max-width:400px;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease" @onclick:stopPropagation>
+        <div class="ccn-panel" style="padding:20px;width:100%;max-width:400px;box-shadow:var(--modal-shadow);animation:popIn .25s ease" @onclick:stopPropagation>
             <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:4px">Add a walk-in</div>
             <div style="font-size:12px;color:var(--text-light);margin-bottom:16px">
                 @(SelectedItem?.ParentScheduleItemId is not null ? "Signs them up for and checks them in to" : "Checks them in to") <strong>@SelectedItem?.Title</strong>. If they've joined before under the same name, it uses their existing guest record.
@@ -255,17 +257,17 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">First Name</div>
                 <input type="text" @bind="_wFirstName"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
             <div style="margin-bottom:16px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Last Name</div>
                 <input type="text" @bind="_wLastName"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             @if (!string.IsNullOrEmpty(_walkInError))
             {
-                <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_walkInError</div>
+                <div style="color:var(--text-danger);font-size:12px;margin-bottom:10px">@_walkInError</div>
             }
 
             <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -280,7 +282,7 @@
 {
     <div style="position:fixed;inset:0;background:rgba(26,26,26,.65);z-index:150;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease"
          @onclick="() => _qrOpen = false">
-        <div class="ccn-panel" style="padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease;text-align:center" @onclick:stopPropagation>
+        <div class="ccn-panel" style="padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:var(--modal-shadow);animation:popIn .25s ease;text-align:center" @onclick:stopPropagation>
             <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:2px">@qrItem.Title</div>
             <div style="font-size:12px;color:var(--text-light);font-weight:700;margin-bottom:12px">@qrItem.CampDay.ToString("dddd, MMM d") · @TimeRange(qrItem)</div>
             @if (_qrCode is not null)
@@ -296,7 +298,7 @@
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
                 <a class="ccn-btn" href="/admin/attendance/item/@qrItem.ScheduleItemId/qr" target="_blank" style="text-decoration:none">🖨 Print</a>
                 <button class="ccn-btn" style="background:transparent" @onclick="CopyQrLinkAsync">Copy link</button>
-                <button class="ccn-btn" style="background:transparent;color:#D12B2B;border-color:#D12B2B" disabled="@_busy" @onclick="RegenerateQrAsync">Regenerate</button>
+                <button class="ccn-btn" style="background:transparent;color:var(--text-danger);border-color:#D12B2B" disabled="@_busy" @onclick="RegenerateQrAsync">Regenerate</button>
                 <button class="ccn-btn" style="background:transparent" @onclick="() => _qrOpen = false">Close</button>
             </div>
         </div>

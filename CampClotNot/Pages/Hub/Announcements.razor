@@ -32,7 +32,7 @@
     {
         @if (_canPost)
         {
-        <div style="border:var(--panel-border);border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:3px 3px 0 var(--border-color);background:var(--panel-bg)">
+        <div style="border:var(--panel-border);border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:var(--card-shadow);background:var(--panel-bg)">
             <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0 0 12px">New Announcement</h3>
             <MudTextField @bind-Value="_newTitle" Label="Title" Required="true" Class="mb-2" />
             <MudTextField @bind-Value="_newBody"  Label="Message" Lines="3" Class="mb-2" />
@@ -57,7 +57,7 @@
         @foreach (var a in _feed)
         {
             var urgent = a.Priority == AnnouncementPriority.Urgent;
-            <div class="ann-card" style="border:var(--panel-border);border-radius:10px;margin-bottom:12px;box-shadow:3px 3px 0 var(--border-color);overflow:hidden;border-left-width:@(urgent ? "6px" : "3px");border-left-color:@(urgent ? "#D12B2B" : "var(--border-color)")">
+            <div class="ann-card" style="border:var(--panel-border);border-radius:10px;margin-bottom:12px;box-shadow:var(--card-shadow);overflow:hidden;border-left-width:@(urgent ? "6px" : "3px");border-left-color:@(urgent ? "#D12B2B" : "var(--border-color)")">
                 <div style="padding:14px 16px;background:var(--panel-bg)">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                         <div style="flex:1">
@@ -97,7 +97,7 @@
                                     var annId = a.AnnouncementId;
                                     var pickerOpen = _reactionPickerOpen == annId;
                                 }
-                                <button class="react-add" style="border:2px solid #D8D0BC;border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:13px;color:var(--text-light);transition:all .1s;@(pickerOpen ? "opacity:1 !important" : "")"
+                                <button class="react-add" style="border:2px solid var(--divider);border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:13px;color:var(--text-light);transition:all .1s;@(pickerOpen ? "opacity:1 !important" : "")"
                                         @onclick="() => _reactionPickerOpen = pickerOpen ? Guid.Empty : annId">
                                     @(pickerOpen ? "✕" : "+")
                                 </button>
@@ -108,7 +108,7 @@
                                         var alreadyShown = reactions.ContainsKey(emoji) && reactions[emoji].Count > 0;
                                         if (alreadyShown) continue;
                                         var eid = emoji;
-                                        <button style="border:2px solid #D8D0BC;border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:14px;transition:all .1s"
+                                        <button style="border:2px solid var(--divider);border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:14px;transition:all .1s"
                                                 @onclick="() => { React(annId, eid); _reactionPickerOpen = Guid.Empty; }">
                                             @emoji
                                         </button>
