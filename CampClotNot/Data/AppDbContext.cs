@@ -53,6 +53,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<EventScheduleItemType> EventScheduleItemTypes => Set<EventScheduleItemType>();
     public DbSet<IncidentReport> IncidentReports => Set<IncidentReport>();
     public DbSet<Sponsor> Sponsors => Set<Sponsor>();
+    public DbSet<EventSponsor> EventSponsors => Set<EventSponsor>();
     public DbSet<CampDocument> CampDocuments => Set<CampDocument>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
@@ -256,6 +257,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         // EventStaff: one row per user per event. Three navigations point at reference tables
         // (Event, User, UserRole) plus an optional Group, all configured explicitly.
+        // Reusable sponsors (#341): one Sponsor row, linked to each event that shows it.
+        modelBuilder.Entity<EventSponsor>()
+            .HasKey(es => new { es.EventId, es.SponsorId });
+        modelBuilder.Entity<EventSponsor>()
+            .HasOne(es => es.Event)
+            .WithMany()
+            .HasForeignKey(es => es.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<EventSponsor>()
+            .HasOne(es => es.Sponsor)
+            .WithMany(sp => sp.Events)
+            .HasForeignKey(es => es.SponsorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         modelBuilder.Entity<EventStaff>()
             .HasIndex(s => new { s.EventId, s.UserId })
             .IsUnique();

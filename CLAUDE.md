@@ -304,13 +304,13 @@ Groups 5 & 6 removed from seed. SeedGroupsAsync upserts by ID and purges stale e
 | Competition | `CurrencyType`, `Group`, `Transaction`, `BoardSpace`, `GroupBoardPos`, `ScriptedBlockHit`, `ScriptedMiniGame` |
 | Awards | `AwardType`, `CamperAward` |
 | Auth/RBAC | `UserRole`, `Authority`, `UserRoleAuthorityLink`, `UserAuthorityLink`, `User` |
-| Hub (Camp Info) | `Location`, `InfoPage`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor`, `CampDocument` |
+| Hub (Camp Info) | `Location`, `InfoPage`, `Announcement`, `ScheduleItem`, `ScheduleItemType`, `EventScheduleItemType`, `ScheduleItemGroup`, `IncidentReport`, `Sponsor`, `EventSponsor`, `CampDocument` |
 | Guests | `GuestAttendee`, `GuestEventVisit`, `PushSubscription`, `ScheduleItemAttendance`, `ScheduleItemRegistration` |
 | Per-event staff | `EventStaff` (a person on one event's team: role label, group, Hub directory title/visibility/order). A person is a `User` row (contact details and photo entered once; `CanSignIn` false for listed-only people). The old per-event `StaffMember` directory cards were merged into this (#311). |
 | Auth extras | `PasswordResetToken` (SHA-256 hashed, single-use) |
 | Games (post-camp) | `BowserScript` |
 
-**Event-scoped vs global:** `Location` and `InfoPage` are **global** (no `EventId`) and shared by every event. Groups, activities, sponsors, team members (`EventStaff`), documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` itself is global. Who is staff at an event is `EventStaff` (#311), and that's what rosters, bulk sign-up, and "all staff" use. Its role is a label only: permissions still come from `User.UserRoleId`. `Speaker` and `Sponsor` are team-only roles: they have no authorities, aren't offered on Accounts, and anyone added with one gets a Volunteer account. Adding someone from a past event defaults to their most recent team role.
+**Event-scoped vs global:** `Location`, `InfoPage`, and `Sponsor` are **global** (no `EventId`) and shared by every event. Which sponsors an event shows, and their order, is `EventSponsor` (#341); editing a sponsor changes it on every event. Groups, activities, team members (`EventStaff`), documents, schedule items, announcements, capabilities, enabled schedule item types, and the theme belong to one event. `User` itself is global. Who is staff at an event is `EventStaff` (#311), and that's what rosters, bulk sign-up, and "all staff" use. Its role is a label only: permissions still come from `User.UserRoleId`. `Speaker` and `Sponsor` are team-only roles: they have no authorities, aren't offered on Accounts, and anyone added with one gets a Volunteer account. Adding someone from a past event defaults to their most recent team role.
 
 **Column convention:** `Name` + `Description` + `SystemName` on all reference/catalog tables.
 
@@ -388,7 +388,7 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 | `CampClotNot/Pages/Hub/IncidentPrint.razor` | Print view at `/hub/incidents/{id}/print` — uses `PrintLayout` |
 | `CampClotNot/Pages/Hub/Sponsors.razor` | Public sponsor grid at `/hub/sponsors` |
 | `CampClotNot/Services/IncidentReportService.cs` | Submit, list, acknowledge incident reports |
-| `CampClotNot/Services/SponsorService.cs` | Sponsor CRUD scoped to the active event |
+| `CampClotNot/Services/SponsorService.cs` | Shared sponsors (#341): details, the event's list and order (`EventSponsor`), the "Add from past events" picker, delete-if-unused |
 | `CampClotNot/appsettings.Development.json` | Local DB + seed credentials (gitignored — must copy to worktrees manually) |
 
 ---

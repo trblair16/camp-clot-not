@@ -30,7 +30,7 @@ public class EventSetupService(
     {
         using var db = factory.CreateDbContext();
         return new CopyCounts(
-            await db.Sponsors.CountAsync(s => s.EventId == sourceEventId),
+            await db.EventSponsors.CountAsync(s => s.EventId == sourceEventId),
             await db.Activities.CountAsync(a => a.EventId == sourceEventId),
             await db.EventStaff.CountAsync(s => s.EventId == sourceEventId && s.User.IsActive));
     }
@@ -92,15 +92,9 @@ public class EventSetupService(
 
             if (req.Copy.Sponsors)
             {
-                foreach (var s in await db.Sponsors.AsNoTracking().Where(s => s.EventId == src).ToListAsync())
-                {
-                    db.Sponsors.Add(new Sponsor
-                    {
-                        SponsorId = Guid.NewGuid(), EventId = eventId,
-                        Name = s.Name, LogoUrl = s.LogoUrl, LogoData = s.LogoData, LogoContentType = s.LogoContentType,
-                        Website = s.Website, ContactName = s.ContactName, Phone = s.Phone, SortOrder = s.SortOrder
-                    });
-                }
+                // Sponsors are shared (#341): the new event shows the same ones, in the same order.
+                foreach (var link in await db.EventSponsors.AsNoTracking().Where(es => es.EventId == src).ToListAsync())
+                    db.EventSponsors.Add(new EventSponsor { EventId = eventId, SponsorId = link.SponsorId, SortOrder = link.SortOrder });
             }
 
             if (req.Copy.Activities)

@@ -21,7 +21,12 @@
 </style>
 
 <div style="padding: 0 16px 100px">
-    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/trophy.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Sponsors</h2>
+    <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/trophy.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Sponsors@(_eventName is null ? "" : $" — {_eventName}")</h2>
+    <p style="font-size:13px;color:var(--text-mid);margin:-12px 0 16px;max-width:720px">
+        The sponsors shown on this event's Hub and Dashboard. A sponsor is entered once: use
+        <strong>Add from past events</strong> to reuse one, or the form to add someone new. Logo and contact
+        changes show at every event they're part of.
+    </p>
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
@@ -31,12 +36,17 @@
         <div class="admin-spo-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Sponsor" : "Edit Sponsor")</h3>
+                <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add New Sponsor" : "Edit Sponsor")</h3>
                 @if (_mobileFormOpen)
                 {
                     <button @onclick="CloseFormOverlay" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
                 }
             </div>
+
+            @if (_editingId != Guid.Empty && _editingEventCount > 1)
+            {
+                <div style="font-size:12px;font-weight:700;color:#8A6D00;margin:-6px 0 12px">Changes show at all @_editingEventCount events with this sponsor.</div>
+            }
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name *</div>
@@ -86,12 +96,6 @@
                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
             </div>
 
-            <div style="margin-bottom:16px">
-                <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Sort Order</div>
-                <input type="number" @bind="_fSortOrder"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
-            </div>
-
             @if (!string.IsNullOrWhiteSpace(_saveError))
             {
                 <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_saveError</div>
@@ -109,7 +113,10 @@
 
         @* ── Table ── *@
         <div style="flex:1;min-width:240px">
-            <button class="ccn-btn admin-spo-add-mobile" @onclick="() => _mobileFormOpen = true">+ Add Sponsor</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+                <button class="ccn-btn" style="background:var(--color-primary)" @onclick="OpenPickerAsync">+ Add from past events</button>
+                <button class="ccn-btn admin-spo-add-mobile" style="margin-bottom:0" @onclick="() => _mobileFormOpen = true">+ New Sponsor</button>
+            </div>
 
             @if (_loading)
             {
@@ -117,7 +124,7 @@
             }
             else if (!_sponsors.Any())
             {
-                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No sponsors yet. Add the first one →</p>
+                <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No sponsors on this event yet. Add some from past events, or add a new one.</p>
             }
             else
             {
@@ -129,7 +136,7 @@
                         <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
                             <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
                                 <img src="@LogoSrc(s)" alt="@s.Name"
-                                     style="height:36px;width:48px;object-fit:contain;border:1px solid #E8E0CC;border-radius:4px;background:white;padding:2px;flex-shrink:0" />
+                                     style="height:36px;width:48px;object-fit:contain;border:1px solid var(--divider);border-radius:4px;background:white;padding:2px;flex-shrink:0" />
                                 <div style="min-width:0">
                                     <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark)">@s.Name</div>
                                     @if (!string.IsNullOrWhiteSpace(s.Website))
@@ -141,8 +148,8 @@
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-shrink:0">
                                 <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
                                 <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == _sponsors.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => { StartEdit(s); _mobileFormOpen = true; }">Edit</button>
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(s)">Del</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="async () => { await StartEdit(s); _mobileFormOpen = true; }">Edit</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:#D12B2B" title="Take off this event (they stay available for others)" @onclick="() => RemoveAsync(s)">Remove</button>
                             </div>
                         </div>
                     }
@@ -167,7 +174,7 @@
                                 var s = _sponsors[i];
                                 var idx = i;
                                 <tr draggable="true"
-                                    style="border-bottom:2px solid #E8E0CC"
+                                    style="border-bottom:2px solid var(--divider)"
                                     @ondragstart="() => _dragIndex = idx"
                                     ondragover="event.preventDefault()"
                                     @ondrop="() => DropAsync(idx)">
@@ -175,7 +182,7 @@
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@s.Name</td>
                                     <td style="padding:8px 14px">
                                         <img src="@LogoSrc(s)" alt="@s.Name"
-                                             style="height:36px;width:auto;object-fit:contain;border:1px solid #E8E0CC;border-radius:4px;background:white;padding:2px" />
+                                             style="height:36px;width:auto;object-fit:contain;border:1px solid var(--divider);border-radius:4px;background:white;padding:2px" />
                                     </td>
                                     <td style="padding:10px 14px;font-size:12px;color:var(--text-mid);overflow-wrap:break-word;word-break:break-all;max-width:200px">
                                         @if (!string.IsNullOrWhiteSpace(s.Website))
@@ -187,7 +194,7 @@
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(s)">Edit</button>
-                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" @onclick="() => DeleteAsync(s)">Del</button>
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:#D12B2B" title="Take off this event (they stay available for others)" @onclick="() => RemoveAsync(s)">Remove</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -202,6 +209,53 @@
     </div>
 </div>
 
+@* ── Add from past events ── *@
+@if (_pickerOpen)
+{
+    <div class="ccn-form-overlay" style="z-index:150" @onclick="() => _pickerOpen = false">
+        <div class="ccn-panel" style="padding:20px;display:flex;flex-direction:column;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease" @onclick:stopPropagation>
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 4px">Add sponsors to @_eventName</h3>
+            <div style="font-size:12px;color:var(--text-light);margin-bottom:10px">Sponsors from every event. Adding one puts it at the end of this event's list.</div>
+            <input type="text" @bind="_pickerSearch" @bind:event="oninput" placeholder="Search sponsors…"
+                   style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-weight:600;color:var(--text-dark);outline:none;box-sizing:border-box;margin-bottom:10px" />
+            <div style="overflow-y:auto;flex:1;min-height:0">
+                @if (!PickerFiltered.Any())
+                {
+                    <p style="font-size:13px;color:var(--text-light);font-weight:700">
+                        @(_library.Any(o => !o.OnThisEvent) ? "No one matches." : "Every sponsor we have is already on this event.") Close this and use the form to add a new one.
+                    </p>
+                }
+                @foreach (var o in PickerFiltered)
+                {
+                    var opt = o;
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:2px solid var(--divider)">
+                        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                            @if (!string.IsNullOrEmpty(LogoSrc(opt.Sponsor)))
+                            {
+                                <img src="@LogoSrc(opt.Sponsor)" alt="" style="height:34px;width:48px;object-fit:contain;border:1px solid var(--divider);border-radius:4px;background:white;padding:2px;flex-shrink:0" />
+                            }
+                            <div style="min-width:0">
+                                <div style="font-weight:700;font-size:14px">@opt.Sponsor.Name</div>
+                                <div style="font-size:11px;color:var(--text-light)">@(opt.EventNames.Any() ? string.Join(", ", opt.EventNames) : "Not on any event")</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:6px;flex-shrink:0">
+                            @if (!opt.EventNames.Any())
+                            {
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:#D12B2B" disabled="@_busy" title="Delete this sponsor for good" @onclick="() => DeleteUnusedAsync(opt.Sponsor)">Delete</button>
+                            }
+                            <button class="ccn-btn" style="font-size:11px;padding:4px 12px" disabled="@_busy" @onclick="() => AddFromPickerAsync(opt.Sponsor)">Add</button>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                <button class="ccn-btn" @onclick="() => _pickerOpen = false">Done</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<Sponsor> _sponsors = [];
     private bool _loading = true;
@@ -213,7 +267,13 @@
     private string? _fWebsite;
     private string? _fContactName;
     private string? _fPhone;
-    private int _fSortOrder;
+    private Guid _eventId;
+    private string? _eventName;
+    private int _editingEventCount;
+    private bool _pickerOpen;
+    private bool _busy;
+    private string _pickerSearch = "";
+    private List<SponsorOption> _library = [];
     private byte[]? _fLogoData;
     private string? _fLogoContentType;
     private bool _currentHasFile;
@@ -228,7 +288,47 @@
 
     private async Task Reload()
     {
-        _sponsors = await SponsorSvc.GetAllForEventAsync(await ActiveEventSvc.GetActiveEventIdAsync());
+        var ev = await ActiveEventSvc.GetActiveEventAsync();
+        _eventId = ev?.EventId ?? Guid.Empty;
+        _eventName = ev?.Name;
+        _sponsors = await SponsorSvc.GetAllForEventAsync(_eventId);
+    }
+
+    private IEnumerable<SponsorOption> PickerFiltered => _library
+        .Where(o => !o.OnThisEvent)
+        .Where(o => string.IsNullOrWhiteSpace(_pickerSearch) || o.Sponsor.Name.Contains(_pickerSearch.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private async Task OpenPickerAsync()
+    {
+        _pickerSearch = "";
+        _library = await SponsorSvc.GetLibraryAsync(_eventId);
+        _pickerOpen = true;
+    }
+
+    private async Task AddFromPickerAsync(Sponsor sp)
+    {
+        _busy = true;
+        try
+        {
+            await SponsorSvc.AddToEventAsync(_eventId, sp.SponsorId);
+            _library = await SponsorSvc.GetLibraryAsync(_eventId);
+            await Reload();
+            Snackbar.Add($"{sp.Name} added.", Severity.Success);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task DeleteUnusedAsync(Sponsor sp)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"Delete {sp.Name} for good? It isn't on any event.")) return;
+        _busy = true;
+        try
+        {
+            if (!await SponsorSvc.DeleteUnusedAsync(sp.SponsorId))
+                Snackbar.Add($"{sp.Name} was just added to an event, so it wasn't deleted.", Severity.Warning);
+            _library = await SponsorSvc.GetLibraryAsync(_eventId);
+        }
+        finally { _busy = false; }
     }
 
     private async Task HandleLogoUpload(InputFileChangeEventArgs e)
@@ -262,15 +362,15 @@
     private const int LogoMaxSide = 800;
     private bool _processing;
 
-    private void StartEdit(Sponsor s)
+    private async Task StartEdit(Sponsor s)
     {
+        _editingEventCount = await SponsorSvc.CountEventsAsync(s.SponsorId);
         _editingId      = s.SponsorId;
         _fName          = s.Name;
         _fLogoUrl       = s.LogoUrl;
         _fWebsite       = s.Website;
         _fContactName   = s.ContactName;
         _fPhone         = s.Phone;
-        _fSortOrder     = s.SortOrder;
         _fLogoData      = null;
         _fLogoContentType = null;
         _currentHasFile = s.LogoContentType is not null;
@@ -281,7 +381,7 @@
     private void CancelEdit()
     {
         _editingId = Guid.Empty;
-        _fName = ""; _fLogoUrl = null; _fWebsite = null; _fContactName = null; _fPhone = null; _fSortOrder = 0;
+        _fName = ""; _fLogoUrl = null; _fWebsite = null; _fContactName = null; _fPhone = null; _editingEventCount = 0;
         _fLogoData = null; _fLogoContentType = null; _currentHasFile = false;
         _uploadError = ""; _saveError = "";
         _mobileFormOpen = false;
@@ -302,30 +402,35 @@
             _saveError = "Provide a logo file or a logo URL.";
             return;
         }
-        var eventId = await ActiveEventSvc.GetActiveEventIdAsync();
+        if (await SponsorSvc.FindByNameAsync(_fName, _editingId) is { } same)
+        {
+            _saveError = _editingId == Guid.Empty
+                ? $"{same.Name} already exists. Use \"Add from past events\" to add it here."
+                : $"Another sponsor is already called {same.Name}.";
+            return;
+        }
         await SponsorSvc.UpsertAsync(new Sponsor
         {
             SponsorId        = _editingId,
-            EventId          = eventId,
             Name             = _fName.Trim(),
             LogoUrl          = string.IsNullOrWhiteSpace(_fLogoUrl) ? null : _fLogoUrl.Trim(),
             LogoData         = _fLogoData,
             LogoContentType  = _fLogoContentType,
             Website          = string.IsNullOrWhiteSpace(_fWebsite) ? null : _fWebsite.Trim(),
             ContactName      = string.IsNullOrWhiteSpace(_fContactName) ? null : _fContactName.Trim(),
-            Phone            = string.IsNullOrWhiteSpace(_fPhone) ? null : _fPhone.Trim(),
-            SortOrder        = _fSortOrder
-        });
+            Phone            = string.IsNullOrWhiteSpace(_fPhone) ? null : _fPhone.Trim()
+        }, addToEventId: _editingId == Guid.Empty ? _eventId : null);
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
         CancelEdit();
         await Reload();
     }
 
-    private async Task DeleteAsync(Sponsor s)
+    private async Task RemoveAsync(Sponsor s)
     {
-        if (!await JS.InvokeAsync<bool>("confirm", "Delete this sponsor?")) return;
-        await SponsorSvc.DeleteAsync(s.SponsorId);
-        Snackbar.Add($"{s.Name} deleted.", Severity.Info);
+        if (!await JS.InvokeAsync<bool>("confirm", $"Remove {s.Name} from {_eventName}? They stay available to add to other events.")) return;
+        await SponsorSvc.RemoveFromEventAsync(_eventId, s.SponsorId);
+        if (_editingId == s.SponsorId) CancelEdit();
+        Snackbar.Add($"{s.Name} removed from {_eventName}.", Severity.Info);
         await Reload();
     }
 
@@ -336,7 +441,7 @@
         var item = _sponsors[index];
         _sponsors.RemoveAt(index);
         _sponsors.Insert(newIndex, item);
-        await SponsorSvc.UpdateSortOrderAsync(_sponsors);
+        await SponsorSvc.ReorderAsync(_eventId, _sponsors.Select(x => x.SponsorId).ToList());
         await Reload();
     }
 
@@ -347,7 +452,7 @@
         _sponsors.RemoveAt(_dragIndex);
         _sponsors.Insert(dropIndex, item);
         _dragIndex = -1;
-        await SponsorSvc.UpdateSortOrderAsync(_sponsors);
+        await SponsorSvc.ReorderAsync(_eventId, _sponsors.Select(x => x.SponsorId).ToList());
         await Reload();
     }
 
