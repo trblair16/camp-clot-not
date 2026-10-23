@@ -148,7 +148,7 @@
 @* ── BOTTOM BAR (mobile) ─────────────────────────────────────────── *@
 <AuthorizeView>
     <Authorized>
-        <div class="nav-bottom-bar">
+        <div class="nav-bottom-bar @(_adminSheetOpen || _gameSheetOpen ? "sheet-open" : "")">
             <button class="nav-tab @(IsDashboardActive() ? "active" : "")" @onclick='() => Nav.NavigateTo("/dashboard")'>
                 <span class="tab-icon"><img src="/img/icons/home.svg?v=3" alt="" /></span>
                 <span>Home</span>
@@ -176,70 +176,77 @@
                     <span>Admin</span>
                 </button>
             </AuthorizeView>
+            @* The sheets live inside the bar, anchored to its top edge (bottom:100%), so they can't end up
+               under it or off-screen however a browser sizes the viewport (Android, #343). *@
+            @if (_gameSheetOpen && AnyGameEnabled())
+            {
+            <div class="nav-game-sheet">
+                <a href="/leaderboard" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/leaderboard.svg?v=3" alt="" /> Leaderboard</a>
+                <AuthorizeView Roles="Admin,Staff" Context="gameStaffCtx">
+                    @if (_boardGameEnabled)
+                    {
+                        <a href="/board" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/board.svg?v=3" alt="" /> Board Game</a>
+                    }
+                </AuthorizeView>
+                <AuthorizeView Roles="Admin" Context="gameAdminCtx">
+                    @if (_miniGameEnabled)
+                    {
+                        <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
+                    }
+                    @if (_bowserEnabled)
+                    {
+                        <a href="/bowser" @onclick="() => _gameSheetOpen = false"><img src="/img/bowser-space.webp" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
+                    }
+                    @if (_awardsEnabled)
+                    {
+                        <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
+                    }
+                </AuthorizeView>
+            </div>
+            }
+            @if (_adminSheetOpen)
+            {
+            <div class="nav-admin-sheet">
+                @if (_coinShopEnabled)
+                {
+                    <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/transactions.svg?v=3" alt="" /> Transactions</a>
+                }
+                <a href="/admin/events"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/gear.svg?v=3" alt="" /> Events</a>
+                <a href="/admin/theme"               @onclick="() => _adminSheetOpen = false">🎨 Theme</a>
+                <div class="nav-admin-sheet-section">Game</div>
+                <a href="/admin/games"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/game.svg?v=3" alt="" /> Game Admin</a>
+                <a href="/admin/activities"          @onclick="() => _adminSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Activities</a>
+                <div class="nav-admin-sheet-section">Schedule</div>
+                <a href="/admin/schedule"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/schedule.svg?v=3" alt="" /> Schedule</a>
+                <a href="/admin/schedule-item-types" @onclick="() => _adminSheetOpen = false">🗂️ Types</a>
+                <a href="/admin/breakouts"           @onclick="() => _adminSheetOpen = false">🔀 Breakouts</a>
+                <div class="nav-admin-sheet-section">People</div>
+                <a href="/admin/team"                @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg?v=3" alt="" /> Team</a>
+                <a href="/admin/groups"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg?v=3" alt="" /> Groups</a>
+                <a href="/admin/guests"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/person.svg?v=3" alt="" /> Guests</a>
+                <a href="/admin/attendance"          @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg?v=3" alt="" /> Attendance</a>
+                <a href="/admin/users"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/key.svg?v=3" alt="" /> Accounts</a>
+                <div class="nav-admin-sheet-section">Venue & Content</div>
+                <a href="/admin/locations"           @onclick="() => _adminSheetOpen = false"><img src="/img/icons/pin.svg?v=3" alt="" /> Locations</a>
+                <a href="/admin/sponsors"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Sponsors</a>
+                <button onclick="window.location='/logout'"><img src="/img/icons/signout.svg?v=3" alt="" /> Sign Out</button>
+            </div>
+            }
         </div>
     </Authorized>
 </AuthorizeView>
 
-@* ── GAME BOTTOM SHEET (mobile) ───────────────────────────────────── *@
+@* ── GAME / ADMIN SHEET BACKDROPS (mobile; the sheets are inside the bottom bar) ── *@
 @if (_gameSheetOpen && AnyGameEnabled())
 {
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _gameSheetOpen = false"></div>
-    <div class="nav-game-sheet">
-        <a href="/leaderboard" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/leaderboard.svg?v=3" alt="" /> Leaderboard</a>
-        <AuthorizeView Roles="Admin,Staff">
-            @if (_boardGameEnabled)
-            {
-                <a href="/board" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/board.svg?v=3" alt="" /> Board Game</a>
-            }
-        </AuthorizeView>
-        <AuthorizeView Roles="Admin">
-            @if (_miniGameEnabled)
-            {
-                <a href="/minigames" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Mini-Game</a>
-            }
-            @if (_bowserEnabled)
-            {
-                <a href="/bowser" @onclick="() => _gameSheetOpen = false"><img src="/img/bowser-space.webp" style="width:20px;height:20px;border-radius:50%;flex-shrink:0;object-fit:cover" alt="" /> Bowser Event</a>
-            }
-            @if (_awardsEnabled)
-            {
-                <a href="/leaderboard/reveal" target="_blank" @onclick="() => _gameSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Awards Ceremony</a>
-            }
-        </AuthorizeView>
-    </div>
 }
 
-@* ── ADMIN BOTTOM SHEET (mobile) ─────────────────────────────────── *@
 @if (_adminSheetOpen)
 {
     <div style="position:fixed;inset:0;z-index:51;background:rgba(26,26,26,.4)"
          @onclick="() => _adminSheetOpen = false"></div>
-    <div class="nav-admin-sheet">
-        @if (_coinShopEnabled)
-        {
-            <a href="/transactions"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/transactions.svg?v=3" alt="" /> Transactions</a>
-        }
-        <a href="/admin/events"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/gear.svg?v=3" alt="" /> Events</a>
-        <a href="/admin/theme"               @onclick="() => _adminSheetOpen = false">🎨 Theme</a>
-        <div class="nav-admin-sheet-section">Game</div>
-        <a href="/admin/games"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/game.svg?v=3" alt="" /> Game Admin</a>
-        <a href="/admin/activities"          @onclick="() => _adminSheetOpen = false"><img src="/img/icons/dice.svg?v=3" alt="" /> Activities</a>
-        <div class="nav-admin-sheet-section">Schedule</div>
-        <a href="/admin/schedule"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/schedule.svg?v=3" alt="" /> Schedule</a>
-        <a href="/admin/schedule-item-types" @onclick="() => _adminSheetOpen = false">🗂️ Types</a>
-        <a href="/admin/breakouts"           @onclick="() => _adminSheetOpen = false">🔀 Breakouts</a>
-        <div class="nav-admin-sheet-section">People</div>
-        <a href="/admin/team"                @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg?v=3" alt="" /> Team</a>
-        <a href="/admin/groups"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg?v=3" alt="" /> Groups</a>
-        <a href="/admin/guests"              @onclick="() => _adminSheetOpen = false"><img src="/img/icons/person.svg?v=3" alt="" /> Guests</a>
-        <a href="/admin/attendance"          @onclick="() => _adminSheetOpen = false"><img src="/img/icons/people.svg?v=3" alt="" /> Attendance</a>
-        <a href="/admin/users"               @onclick="() => _adminSheetOpen = false"><img src="/img/icons/key.svg?v=3" alt="" /> Accounts</a>
-        <div class="nav-admin-sheet-section">Venue & Content</div>
-        <a href="/admin/locations"           @onclick="() => _adminSheetOpen = false"><img src="/img/icons/pin.svg?v=3" alt="" /> Locations</a>
-        <a href="/admin/sponsors"            @onclick="() => _adminSheetOpen = false"><img src="/img/icons/trophy.svg?v=3" alt="" /> Sponsors</a>
-        <button onclick="window.location='/logout'"><img src="/img/icons/signout.svg?v=3" alt="" /> Sign Out</button>
-    </div>
 }
 
 @code {
