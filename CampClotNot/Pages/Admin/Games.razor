@@ -44,7 +44,7 @@
                 <div class="admin-gm-cards">
                     @foreach (var space in _spaces)
                     {
-                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:10px 14px;display:flex;align-items:center;gap:10px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--card-shadow);padding:10px 14px;display:flex;align-items:center;gap:10px">
                             <div style="font-family:'Fredoka One',cursive;font-size:20px;color:var(--text-light);min-width:28px;text-align:center">@space.SpaceIndex</div>
                             <div style="flex:1;min-width:0">
                                 <span style="@($"background:{SpaceColor(space.CategorySystemName)};color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px")">
@@ -59,7 +59,7 @@
                     }
                 </div>
 
-                <div class="admin-gm-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div class="admin-gm-table" style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">
@@ -103,7 +103,7 @@
             }
             else
             {
-                <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden">
+                <div style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow:hidden">
                     <div style="overflow-x:auto">
                         <table style="border-collapse:collapse;width:100%;min-width:480px">
                             <thead>
@@ -140,7 +140,7 @@
                                                     <input type="number" min="0" max="19" placeholder="—"
                                                            value="@(script?.DestinationSpaceIndex.ToString() ?? "")"
                                                            @onchange="async e => { if (int.TryParse(e.Value?.ToString(), out var v)) await OnBlockHitDestChanged(group.GroupId, d, v); }"
-                                                           style="width:70px;padding:6px 8px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;text-align:center;box-sizing:border-box" />
+                                                           style="width:70px;padding:6px 8px;background:var(--bg-base);border:var(--control-border);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;text-align:center;box-sizing:border-box" />
                                                 }
                                             </td>
                                         }
@@ -153,7 +153,7 @@
 
                 @if (_blockHitSaveMsg is not null)
                 {
-                    <div style="margin-top:12px;padding:10px 16px;border:2px solid var(--black);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_blockHitSaveMsg</div>
+                    <div style="margin-top:12px;padding:10px 16px;border:var(--control-border);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_blockHitSaveMsg</div>
                 }
             }
         </MudTabPanel>
@@ -172,7 +172,7 @@
             }
             else if (_miniGameActivities.Count == 0)
             {
-                <div style="padding:14px 16px;border:2px solid var(--black);border-radius:8px;background:#E3F2FD;font-size:13px">
+                <div style="padding:14px 16px;border:var(--control-border);border-radius:8px;background:#E3F2FD;font-size:13px">
                     ℹ️ No MinuteToWinIt activities seeded yet. Add activities with category "MinuteToWinIt" in SeedService and restart.
                 </div>
             }
@@ -183,7 +183,7 @@
                     {
                         var d = day;
                         var script = _miniGameScripts.FirstOrDefault(s => s.CampDay == d);
-                        <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--card-shadow);padding:12px 14px">
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
                                 <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--text-dark)">Day @d</div>
                                 @if (script?.IsTriggered == true)
@@ -207,7 +207,7 @@
                             {
                                 <select value="@(script?.ActivityId.ToString() ?? "")"
                                         @onchange="async e => { if (Guid.TryParse(e.Value?.ToString(), out var g)) await OnMiniGameActivityChanged(d, g); }"
-                                        style="width:100%;padding:7px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer;box-sizing:border-box">
+                                        style="width:100%;padding:7px 10px;background:var(--bg-base);border:var(--control-border);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;cursor:pointer;box-sizing:border-box">
                                     <option value="">— pick activity —</option>
                                     @foreach (var activity in _miniGameActivities)
                                     {
@@ -219,7 +219,7 @@
                     }
                 </div>
 
-                <div class="admin-mg-table" style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);overflow:hidden;max-width:640px">
+                <div class="admin-mg-table" style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow:hidden;max-width:640px">
                     <table style="border-collapse:collapse;width:100%">
                         <thead>
                             <tr style="background:var(--black)">
@@ -244,7 +244,7 @@
                                         {
                                             <select value="@(script?.ActivityId.ToString() ?? "")"
                                                     @onchange="async e => { if (Guid.TryParse(e.Value?.ToString(), out var g)) await OnMiniGameActivityChanged(d, g); }"
-                                                    style="min-width:200px;padding:7px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;cursor:pointer;box-sizing:border-box">
+                                                    style="min-width:200px;padding:7px 10px;background:var(--bg-base);border:var(--control-border);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;cursor:pointer;box-sizing:border-box">
                                                 <option value="">— pick activity —</option>
                                                 @foreach (var activity in _miniGameActivities)
                                                 {
@@ -275,7 +275,7 @@
 
                 @if (_miniGameSaveMsg is not null)
                 {
-                    <div style="margin-top:12px;padding:10px 16px;border:2px solid var(--black);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_miniGameSaveMsg</div>
+                    <div style="margin-top:12px;padding:10px 16px;border:var(--control-border);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_miniGameSaveMsg</div>
                 }
             }
         </MudTabPanel>
@@ -288,13 +288,13 @@
                 Design custom Bowser dice for each meal. Select a script on the Bowser Event page before rolling.
             </p>
 
-            <div style="border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);background:var(--panel-bg);padding:20px;max-width:640px;margin-bottom:20px">
+            <div style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);background:var(--panel-bg);padding:20px;max-width:640px;margin-bottom:20px">
                 <h3 style="font-family:'Fredoka One',cursive;font-size:15px;margin:0 0 14px">@(_editingScript is null ? "New Script" : "Edit Script")</h3>
 
                 <div style="margin-bottom:12px">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name</div>
                     <input type="text" @bind="_scriptName" placeholder="e.g. Monday Lunch"
-                           style="width:100%;padding:8px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:8px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
                 </div>
 
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px">Die Faces (6)</div>
@@ -305,11 +305,11 @@
                         <div style="display:flex;gap:6px;align-items:center">
                             <span style="font-family:'Fredoka One',cursive;font-size:12px;color:var(--text-light);min-width:18px">@(idx + 1).</span>
                             <input type="text" value="@_editFaces[idx].Emoji" @onchange="e => SetFaceEmoji(idx, e)"
-                                   placeholder="😈" style="width:48px;padding:6px;text-align:center;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:16px;outline:none;box-sizing:border-box" />
+                                   placeholder="😈" style="width:48px;padding:6px;text-align:center;background:var(--bg-base);border:var(--control-border);border-radius:6px;font-size:16px;outline:none;box-sizing:border-box" />
                             <input type="text" value="@_editFaces[idx].Label" @onchange="e => SetFaceLabel(idx, e)"
-                                   placeholder="Label" style="flex:1;min-width:80px;padding:6px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);outline:none;box-sizing:border-box" />
+                                   placeholder="Label" style="flex:1;min-width:80px;padding:6px 10px;background:var(--bg-base);border:var(--control-border);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);outline:none;box-sizing:border-box" />
                             <input type="number" value="@_editFaces[idx].CoinDelta" @onchange="e => SetFaceCoins(idx, e)"
-                                   placeholder="Coins" style="width:80px;padding:6px 10px;background:var(--bg-base);border:2px solid var(--black);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);outline:none;box-sizing:border-box;text-align:center" />
+                                   placeholder="Coins" style="width:80px;padding:6px 10px;background:var(--bg-base);border:var(--control-border);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);outline:none;box-sizing:border-box;text-align:center" />
                             <span style="font-size:11px;color:var(--text-light)">🪙</span>
                         </div>
                     }
@@ -321,14 +321,14 @@
                     </button>
                     @if (_editingScript is not null)
                     {
-                        <button class="ccn-btn" style="font-size:13px;padding:8px 16px;background:transparent;border-color:var(--black);color:var(--text-dark)" @onclick="CancelEdit">Cancel</button>
+                        <button class="ccn-btn" style="font-size:13px;padding:8px 16px;background:transparent;border-color:var(--border-color);color:var(--text-dark)" @onclick="CancelEdit">Cancel</button>
                     }
                     <button class="ccn-btn" style="font-size:11px;padding:6px 12px;background:transparent;border-color:var(--text-light);color:var(--text-light)" @onclick="LoadDefaults">Load Defaults</button>
                 </div>
 
                 @if (_bowserSaveMsg is not null)
                 {
-                    <div style="margin-top:12px;padding:10px 16px;border:2px solid var(--black);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_bowserSaveMsg</div>
+                    <div style="margin-top:12px;padding:10px 16px;border:var(--control-border);border-radius:8px;background:#E8F5E9;font-family:'Fredoka One',cursive;font-size:13px">✓ @_bowserSaveMsg</div>
                 }
             </div>
 
@@ -338,7 +338,7 @@
                     @foreach (var script in _bowserScripts)
                     {
                         var faces = BowserEventService.ParseFaces(script.FacesJson);
-                        <div style="border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);background:var(--panel-bg);padding:14px 16px">
+                        <div style="border:var(--panel-border);border-radius:10px;box-shadow:var(--card-shadow);background:var(--panel-bg);padding:14px 16px">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                                 <span style="font-family:'Fredoka One',cursive;font-size:16px">@script.Name</span>
                                 <div style="display:flex;gap:6px">
@@ -350,7 +350,7 @@
                                 @foreach (var f in faces)
                                 {
                                     var color = f.CoinDelta >= 0 ? "#1A7A3E" : "#D12B2B";
-                                    <span style="font-size:11px;padding:3px 8px;border:2px solid var(--black);border-radius:5px;background:var(--bg-base)">
+                                    <span style="font-size:11px;padding:3px 8px;border:var(--control-border);border-radius:5px;background:var(--bg-base)">
                                         @f.Emoji <span style="color:@color;font-weight:700">@(f.CoinDelta > 0 ? "+" : "")@f.CoinDelta</span>
                                     </span>
                                 }
@@ -372,14 +372,14 @@
 
                 @if (_boardGameEnabled)
                 {
-                <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px">
+                <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);padding:20px">
                     <h3 style="font-family:'Fredoka One',cursive;font-size:15px;margin:0 0 6px">Block Hit — Reset Day</h3>
                     <p style="font-size:13px;color:var(--text-light);margin:0 0 14px">Moves all groups back to space 0 and un-triggers all block hit scripts for the selected day.</p>
                     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                         <div>
                             <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Camp Day</div>
                             <input type="number" @bind="_resetDay" min="1" max="5"
-                                   style="width:90px;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;text-align:center" />
+                                   style="width:90px;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box;text-align:center" />
                         </div>
                         <button class="ccn-btn" style="background:var(--color-accent);color:white;margin-top:18px"
                                 disabled="@_resettingBoard" @onclick="ResetBoardDayAsync">
@@ -388,21 +388,21 @@
                     </div>
                     @if (_resetBoardMsg is not null)
                     {
-                        <div style="margin-top:12px;padding:8px 14px;border:2px solid var(--black);border-radius:7px;background:#FFF8E1;font-family:'Fredoka One',cursive;font-size:13px">@_resetBoardMsg</div>
+                        <div style="margin-top:12px;padding:8px 14px;border:var(--control-border);border-radius:7px;background:#FFF8E1;font-family:'Fredoka One',cursive;font-size:13px">@_resetBoardMsg</div>
                     }
                 </div>
                 }
 
                 @if (_miniGameEnabled)
                 {
-                <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:4px 4px 0 var(--black);padding:20px">
+                <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);padding:20px">
                     <h3 style="font-family:'Fredoka One',cursive;font-size:15px;margin:0 0 6px">Mini-Game — Reset Day</h3>
                     <p style="font-size:13px;color:var(--text-light);margin:0 0 14px">Un-triggers the mini-game script for the selected day so the spinner can be re-run.</p>
                     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                         <div>
                             <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Camp Day</div>
                             <input type="number" @bind="_resetMiniGameDay" min="1" max="5"
-                                   style="width:90px;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;text-align:center" />
+                                   style="width:90px;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box;text-align:center" />
                         </div>
                         <button class="ccn-btn" style="background:var(--color-accent);color:white;margin-top:18px"
                                 disabled="@_resettingMiniGame" @onclick="ResetMiniGameDayAsync">
@@ -411,7 +411,7 @@
                     </div>
                     @if (_resetMiniGameMsg is not null)
                     {
-                        <div style="margin-top:12px;padding:8px 14px;border:2px solid var(--black);border-radius:7px;background:#FFF8E1;font-family:'Fredoka One',cursive;font-size:13px">@_resetMiniGameMsg</div>
+                        <div style="margin-top:12px;padding:8px 14px;border:var(--control-border);border-radius:7px;background:#FFF8E1;font-family:'Fredoka One',cursive;font-size:13px">@_resetMiniGameMsg</div>
                     }
                 </div>
                 }

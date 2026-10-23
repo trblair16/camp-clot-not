@@ -99,6 +99,16 @@ public record ThemeConfig(
         --{prefix}text-warn: {TextContrast.Readable("#8A6D00", bg)};
         """;
 
+    // Border/shadow sizes for smaller and larger things than a panel, in the theme's shape
+    // language: bold = thick border + hard offset shadow (Mario), soft = the theme's thin border
+    // and soft panel shadow. Bold is the same test the Theme editor uses (3px borders).
+    [JsonIgnore] public bool IsBold => BorderWidth == "3px";
+    [JsonIgnore] public string ControlBorder => IsBold ? $"2px solid {BorderColor}" : $"{BorderWidth} solid {BorderColor}";
+    // "0 0 0 transparent" rather than "none" so it can still be combined with another shadow.
+    [JsonIgnore] public string ControlShadow => IsBold ? $"2px 2px 0 {BorderColor}" : "0 0 0 transparent";
+    [JsonIgnore] public string CardShadow    => IsBold ? $"3px 3px 0 {BorderColor}" : PanelShadow;
+    [JsonIgnore] public string ModalShadow   => IsBold ? $"8px 8px 0 {BorderColor}" : "0 18px 48px rgba(0,0,0,0.28)";
+
     [JsonIgnore] public string BackgroundGradient =>
         $"linear-gradient(135deg,{BgStart} 0%,{BgMid} 60%,{BgEnd} 100%)";
 
@@ -126,6 +136,10 @@ public record ThemeConfig(
         --panel-bg: {PanelBg};
         --panel-border: {BorderWidth} solid {BorderColor};
         --panel-shadow: {PanelShadow};
+        --control-border: {ControlBorder};
+        --control-shadow: {ControlShadow};
+        --card-shadow: {CardShadow};
+        --modal-shadow: {ModalShadow};
         --text-dark: {TextDark};
         --text-mid: {TextMid};
         --text-light: {TextLight};

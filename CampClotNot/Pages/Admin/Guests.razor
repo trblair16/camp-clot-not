@@ -11,7 +11,7 @@
 
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
 
-        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);padding:20px;flex:0 0 320px;min-width:260px">
+        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);padding:20px;flex:0 0 320px;min-width:260px">
             <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0 0 16px">@(_editingId == Guid.Empty ? "Rename a Guest" : "Edit Guest")</h3>
 
             @if (_editingId == Guid.Empty)
@@ -23,12 +23,12 @@
                 <div style="margin-bottom:14px">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">First Name</div>
                     <input type="text" @bind="_fFirstName"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
                 </div>
                 <div style="margin-bottom:16px">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Last Name</div>
                     <input type="text" @bind="_fLastName"
-                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                           style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
                 </div>
 
                 @if (!string.IsNullOrWhiteSpace(_saveError))
@@ -54,7 +54,7 @@
             }
             else
             {
-                <div style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow-x:auto">
+                <div style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow-x:auto">
                     <table style="width:100%;border-collapse:collapse;min-width:640px">
                         <thead>
                             <tr style="background:var(--black)">

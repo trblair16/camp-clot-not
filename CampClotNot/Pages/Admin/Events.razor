@@ -33,7 +33,7 @@
 
         <div class="@(_mobileFormOpen ? "ccn-form-overlay" : null)" style="@(_mobileFormOpen ? null : "display:contents")"
              @onclick="CloseFormOverlay">
-        <div class="admin-evt-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+        <div class="admin-evt-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "var(--modal-shadow)" : "var(--panel-shadow)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
                 <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Create Event" : "Edit Event")</h3>
@@ -45,10 +45,10 @@
 
             @if (_editingId == Guid.Empty && _events.Any())
             {
-                <div style="margin-bottom:14px;padding:12px;background:var(--bg-base);border:2px dashed var(--border-color);border-radius:8px">
+                <div style="margin-bottom:14px;padding:12px;background:var(--bg-base);border:var(--border-width) dashed var(--border-color);border-radius:8px">
                     <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Copy setup from</div>
                     <select value="@(_copyFromId?.ToString() ?? "")" @onchange="OnCopyFromChanged"
-                            style="width:100%;padding:9px 12px;background:var(--panel-bg);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
+                            style="width:100%;padding:9px 12px;background:var(--panel-bg);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box;cursor:pointer">
                         <option value="">None — start fresh</option>
                         @foreach (var ev in _events)
                         {
@@ -75,21 +75,21 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Event Name *</div>
                 <input type="text" @bind="_fName" placeholder="e.g. Men's Retreat 2026"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Start Date *</div>
                 <input type="date" value="@_fStartDate?.ToString("yyyy-MM-dd")"
                        @onchange="e => { if (DateOnly.TryParse(e.Value?.ToString(), out var d)) _fStartDate = d; }"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">End Date *</div>
                 <input type="date" value="@_fEndDate?.ToString("yyyy-MM-dd")"
                        @onchange="e => { if (DateOnly.TryParse(e.Value?.ToString(), out var d)) _fEndDate = d; }"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
@@ -97,7 +97,7 @@
                 <div style="display:flex;gap:6px;align-items:stretch">
                     <select value="@_fEventTypeId.ToString()"
                             @onchange="e => _fEventTypeId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : _eventTypes.First().EventTypeId"
-                            style="flex:1;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
+                            style="flex:1;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box;cursor:pointer">
                         @foreach (var et in _eventTypes)
                         {
                             <option value="@et.EventTypeId">@et.Name</option>
@@ -109,7 +109,7 @@
                 {
                     <div style="display:flex;gap:6px;margin-top:8px;align-items:stretch">
                         <input type="text" @bind="_newTypeName" placeholder="e.g. Men's Retreat"
-                               style="flex:1;padding:7px 10px;background:var(--bg-base);border:2px solid var(--border-color);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);outline:none;box-sizing:border-box" />
+                               style="flex:1;padding:7px 10px;background:var(--bg-base);border:var(--control-border);border-radius:6px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);outline:none;box-sizing:border-box" />
                         <button class="ccn-btn" style="font-size:11px;padding:6px 10px;flex-shrink:0" disabled="@string.IsNullOrWhiteSpace(_newTypeName)" @onclick="AddEventTypeAsync">Add</button>
                     </div>
                 }
@@ -120,7 +120,7 @@
                 @if (_editingId == Guid.Empty)
                 {
                     <select value="@_fThemeStart" @onchange="e => _fThemeStart = e.Value?.ToString() ?? _fThemeStart"
-                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box;cursor:pointer">
+                            style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box;cursor:pointer">
                         @if (_copyFromId is { } srcId)
                         {
                             <option value="@SourceThemeKey">Same as @(_events.FirstOrDefault(e => e.EventId == srcId)?.Name)</option>
@@ -150,7 +150,7 @@
             <div style="margin-bottom:16px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Guest Code</div>
                 <input type="text" @bind="_fGuestCode" placeholder="e.g. MENSRETREAT26"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:3px solid var(--black);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--black);outline:none;box-sizing:border-box;text-transform:uppercase" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box;text-transform:uppercase" />
                 <div style="font-size:11px;color:var(--text-light);margin-top:4px">Attendees scan a QR code or type this to reach a read-only Schedule/Announcements view. Leave blank to disable guest access for this event.</div>
                 @if (_editingId != Guid.Empty && !string.IsNullOrWhiteSpace(_fGuestCode))
                 {
@@ -208,7 +208,7 @@
                 <div class="admin-evt-cards">
                     @foreach (var ev in _events)
                     {
-                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--card-shadow);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
                             <div style="flex:1;min-width:0">
                                 <div style="display:flex;align-items:center;gap:6px">
                                     <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text-dark)">@ev.Name</div>
@@ -224,7 +224,7 @@
                     }
                 </div>
 
-                <div class="admin-evt-table" style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow:hidden">
+                <div class="admin-evt-table" style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">
@@ -245,7 +245,7 @@
                                     <td style="padding:10px 14px">
                                         @if (ev.IsActive)
                                         {
-                                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#27AE60;padding:2px 8px;border-radius:4px;border:2px solid var(--border-color)">Active</span>
+                                            <span style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:white;background:#27AE60;padding:2px 8px;border-radius:4px;border:var(--control-border)">Active</span>
                                         }
                                         else
                                         {
@@ -274,7 +274,7 @@
 @if (_qrOpen && _editingId != Guid.Empty && SavedGuestCode is { } qrCode)
 {
     <div class="ccn-form-overlay" style="z-index:150" @onclick="() => _qrOpen = false">
-        <div class="ccn-panel" style="padding:20px;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease;text-align:center" @onclick:stopPropagation>
+        <div class="ccn-panel" style="padding:20px;box-shadow:var(--modal-shadow);animation:popIn .25s ease;text-align:center" @onclick:stopPropagation>
             <div style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:2px">@_fName</div>
             <div style="font-size:12px;color:var(--text-light);font-weight:700;margin-bottom:12px">Guest access</div>
             <img src="@QrPath?c=@qrCode" alt="Guest QR code"

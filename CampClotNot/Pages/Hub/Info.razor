@@ -18,7 +18,7 @@
         border: var(--panel-border);
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: 3px 3px 0 var(--border-color);
+        box-shadow: var(--card-shadow);
         background: var(--panel-bg);
         --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
@@ -63,7 +63,7 @@
                     {
                         @if (_editing && _isAdmin)
                         {
-                            <div style="border:var(--panel-border);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--border-color);margin-bottom:16px">
+                            <div style="border:var(--panel-border);border-radius:10px;padding:16px;background:var(--panel-bg);box-shadow:var(--card-shadow);margin-bottom:16px">
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:12px">📤 Upload New Document</div>
 
                                 <div style="margin-bottom:12px">
@@ -122,7 +122,7 @@
                         }
                         else
                         {
-                            <div style="border:var(--panel-border);border-radius:10px;overflow:hidden;box-shadow:3px 3px 0 var(--border-color);background:var(--panel-bg)">
+                            <div style="border:var(--panel-border);border-radius:10px;overflow:hidden;box-shadow:var(--card-shadow);background:var(--panel-bg)">
                                 @foreach (var doc in _documents.Where(CanSeeDocument))
                                 {
                                     <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid var(--divider);flex-wrap:wrap">
@@ -158,7 +158,7 @@
                             @if (IsMedicalPage)
                             {
                                 @* ── Emergency contacts PDF section below the textarea ── *@
-                                <div style="border:var(--panel-border);border-radius:10px;padding:16px;margin-top:12px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--border-color)">
+                                <div style="border:var(--panel-border);border-radius:10px;padding:16px;margin-top:12px;background:var(--panel-bg);box-shadow:var(--card-shadow)">
                                     <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:12px">📄 Emergency Contacts PDF</div>
 
                                     @if (_activePage.PdfContentType is not null && !_fRemovePdf)
@@ -213,7 +213,7 @@
                         }
                         else
                         {
-                            <div style="border:var(--panel-border);border-radius:10px;padding:20px;background:var(--panel-bg);box-shadow:3px 3px 0 var(--border-color)">
+                            <div style="border:var(--panel-border);border-radius:10px;padding:20px;background:var(--panel-bg);box-shadow:var(--card-shadow)">
                                 @((MarkupString)Markdig.Markdown.ToHtml(_activePage.Body ?? ""))
                             </div>
 
@@ -225,7 +225,7 @@
                                         📄 Open Emergency Contacts PDF
                                     </a>
                                     <iframe src="/hub/info/@_activePage.Slug/pdf"
-                                            style="display:block;width:100%;height:520px;border:var(--panel-border);border-radius:8px;box-shadow:3px 3px 0 var(--border-color);margin-top:10px"
+                                            style="display:block;width:100%;height:520px;border:var(--panel-border);border-radius:8px;box-shadow:var(--card-shadow);margin-top:10px"
                                             title="Emergency Contacts PDF"></iframe>
                                 </div>
                             }
