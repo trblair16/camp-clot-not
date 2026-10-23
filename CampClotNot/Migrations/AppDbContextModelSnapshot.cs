@@ -469,6 +469,24 @@ namespace CampClotNot.Migrations
                     b.ToTable("EventScheduleItemTypes");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.EventSponsor", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SponsorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("EventId", "SponsorId");
+
+                    b.HasIndex("SponsorId");
+
+                    b.ToTable("EventSponsors");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.EventStaff", b =>
                 {
                     b.Property<Guid>("EventStaffId")
@@ -1178,9 +1196,6 @@ namespace CampClotNot.Migrations
                     b.Property<string>("ContactName")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("LogoContentType")
                         .HasColumnType("text");
 
@@ -1197,15 +1212,10 @@ namespace CampClotNot.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text");
 
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Website")
                         .HasColumnType("text");
 
                     b.HasKey("SponsorId");
-
-                    b.HasIndex("EventId");
 
                     b.ToTable("Sponsors");
                 });
@@ -1613,6 +1623,25 @@ namespace CampClotNot.Migrations
                     b.Navigation("ScheduleItemType");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.EventSponsor", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.Sponsor", "Sponsor")
+                        .WithMany("Events")
+                        .HasForeignKey("SponsorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("Sponsor");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.EventStaff", b =>
                 {
                     b.HasOne("CampClotNot.Data.Entities.Event", "Event")
@@ -1921,17 +1950,6 @@ namespace CampClotNot.Migrations
                     b.Navigation("Event");
                 });
 
-            modelBuilder.Entity("CampClotNot.Data.Entities.Sponsor", b =>
-                {
-                    b.HasOne("CampClotNot.Data.Entities.Event", "Event")
-                        .WithMany()
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Event");
-                });
-
             modelBuilder.Entity("CampClotNot.Data.Entities.Transaction", b =>
                 {
                     b.HasOne("CampClotNot.Data.Entities.CurrencyType", "CurrencyType")
@@ -2082,6 +2100,11 @@ namespace CampClotNot.Migrations
                     b.Navigation("ItemGroups");
 
                     b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.Sponsor", b =>
+                {
+                    b.Navigation("Events");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.Theme", b =>

@@ -1,10 +1,12 @@
 namespace CampClotNot.Data.Entities;
 
+/// <summary>
+/// A sponsor, entered once and reused across events (#341). Which events show it, and in what
+/// order, is <see cref="EventSponsor"/>. Editing these details changes every event it's on.
+/// </summary>
 public class Sponsor
 {
     public Guid SponsorId { get; set; }
-    public Guid EventId { get; set; }
-    public Event Event { get; set; } = null!;
     public string Name { get; set; } = "";
     public string? LogoUrl { get; set; }
     public byte[]? LogoData { get; set; }
@@ -12,5 +14,5 @@ public class Sponsor
     public string? Website { get; set; }
     public string? ContactName { get; set; }
     public string? Phone { get; set; }
-    public int SortOrder { get; set; }
+    public ICollection<EventSponsor> Events { get; set; } = [];
 }
