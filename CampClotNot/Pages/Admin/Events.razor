@@ -161,7 +161,7 @@
                     }
                     else
                     {
-                        <div style="font-size:11px;font-weight:700;color:#8A6D00;margin-top:6px">Save changes to use this code and get its QR.</div>
+                        <div style="font-size:11px;font-weight:700;color:var(--text-warn);margin-top:6px">Save changes to use this code and get its QR.</div>
                     }
                 }
             </div>
@@ -179,7 +179,7 @@
 
             @if (!string.IsNullOrEmpty(_saveError))
             {
-                <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_saveError</div>
+                <div style="color:var(--text-danger);font-size:12px;margin-bottom:10px">@_saveError</div>
             }
 
             <div style="display:flex;gap:8px">
@@ -238,7 +238,7 @@
                         <tbody>
                             @foreach (var ev in _events)
                             {
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                <tr style="border-bottom:2px solid var(--divider)">
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@ev.Name</td>
                                     <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@ev.EventType.Name</td>
                                     <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@ev.EffDate.ToString("MMM d") – @ev.ExpDate.ToString("MMM d, yyyy")</td>

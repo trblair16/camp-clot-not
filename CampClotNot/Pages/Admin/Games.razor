@@ -73,7 +73,7 @@
                         <tbody>
                             @foreach (var space in _spaces)
                             {
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                <tr style="border-bottom:2px solid var(--divider)">
                                     <td style="@TdStyle()">@space.SpaceIndex</td>
                                     <td style="@TdStyle()">
                                         <span style="@($"background:{SpaceColor(space.CategorySystemName)};color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px")">
@@ -118,7 +118,7 @@
                             <tbody>
                                 @foreach (var group in _groups)
                                 {
-                                    <tr style="border-bottom:2px solid #E8E0CC">
+                                    <tr style="border-bottom:2px solid var(--divider)">
                                         <td style="@TdStyle()">
                                             <div style="display:flex;align-items:center;gap:8px">
                                                 <div style="@($"width:12px;height:12px;border-radius:50%;background:{group.Color};flex-shrink:0")"></div>
@@ -185,7 +185,7 @@
                         var script = _miniGameScripts.FirstOrDefault(s => s.CampDay == d);
                         <div style="background:var(--panel-bg);border:3px solid var(--black);border-radius:10px;box-shadow:3px 3px 0 var(--black);padding:12px 14px">
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
-                                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--black)">Day @d</div>
+                                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--text-dark)">Day @d</div>
                                 @if (script?.IsTriggered == true)
                                 {
                                     <span style="background:#27AE60;color:white;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:4px">✓ Triggered</span>
@@ -233,7 +233,7 @@
                             {
                                 var d = day;
                                 var script = _miniGameScripts.FirstOrDefault(s => s.CampDay == d);
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                <tr style="border-bottom:2px solid var(--divider)">
                                     <td style="@TdStyle()"><span style="font-weight:700">Day @d</span></td>
                                     <td style="@TdStyle()">
                                         @if (script?.IsTriggered == true)
@@ -321,7 +321,7 @@
                     </button>
                     @if (_editingScript is not null)
                     {
-                        <button class="ccn-btn" style="font-size:13px;padding:8px 16px;background:transparent;border-color:var(--black);color:var(--black)" @onclick="CancelEdit">Cancel</button>
+                        <button class="ccn-btn" style="font-size:13px;padding:8px 16px;background:transparent;border-color:var(--black);color:var(--text-dark)" @onclick="CancelEdit">Cancel</button>
                     }
                     <button class="ccn-btn" style="font-size:11px;padding:6px 12px;background:transparent;border-color:var(--text-light);color:var(--text-light)" @onclick="LoadDefaults">Load Defaults</button>
                 </div>
@@ -646,5 +646,5 @@
         "padding:10px 14px;text-align:left;font-family:'Fredoka One',cursive;font-size:12px;letter-spacing:.5px;color:white";
 
     private static string TdStyle() =>
-        "padding:10px 14px;border-bottom:2px solid #E8E0CC;vertical-align:middle;font-size:13px";
+        "padding:10px 14px;border-bottom:2px solid var(--divider);vertical-align:middle;font-size:13px";
 }

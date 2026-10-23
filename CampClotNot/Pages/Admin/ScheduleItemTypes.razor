@@ -83,7 +83,7 @@
 
             @if (!string.IsNullOrWhiteSpace(_error))
             {
-                <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_error</div>
+                <div style="color:var(--text-danger);font-size:12px;margin-bottom:10px">@_error</div>
             }
 
             <div style="display:flex;gap:8px">
@@ -157,7 +157,7 @@
                             @foreach (var t in _types)
                             {
                                 var enabled = _enabledIds.Contains(t.ScheduleItemTypeId);
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                <tr style="border-bottom:2px solid var(--divider)">
                                     <td style="padding:8px 14px;font-size:13px;color:var(--text-light)">@t.SortOrder</td>
                                     <td style="padding:8px 14px;font-size:13px;font-weight:700">
                                         <div style="display:flex;align-items:center;gap:8px">

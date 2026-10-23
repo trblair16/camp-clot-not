@@ -21,6 +21,7 @@
         background: var(--panel-bg);
         box-shadow: 4px 4px 0 var(--border-color);
         margin-bottom: 16px;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     .att-day-tabs::-webkit-scrollbar { display: none; }
     .att-day-tab {
@@ -38,22 +39,23 @@
         font-family: var(--font-display); font-weight: 700;
     }
     .att-day-tab:hover { background: rgba(26,26,26,.05); }
-    .att-day-tab.active { border-bottom-color: var(--border-color); background: var(--bg-base); }
+    .att-day-tab.active {border-bottom-color: var(--border-color); background: var(--bg-base); --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark); }
     .att-day-tab .tab-dow  { font-size: 11px; color: var(--text-light); letter-spacing: .5px; text-transform: uppercase; }
     .att-day-tab .tab-date { font-size: 18px; color: var(--text-dark); line-height: 1; }
     .att-day-tab .tab-count { font-size: 9px; color: var(--text-light); margin-top: 1px; }
     .att-item-row {
         display: flex; justify-content: space-between; align-items: center; gap: 10px;
-        width: 100%; padding: 10px 14px; border: none; border-bottom: 2px solid #E8E0CC;
+        width: 100%; padding: 10px 14px; border: none; border-bottom: 2px solid var(--divider);
         background: transparent; cursor: pointer; text-align: left;
     }
     .att-item-row:last-child { border-bottom: none; }
     .att-item-row:hover { background: rgba(26,26,26,.04); }
-    .att-item-row.selected { background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); }
+    .att-item-row.selected {background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark); }
     .att-pill {
         font-family: var(--font-display); font-weight: 700; font-size: 12px;
         padding: 2px 10px; border-radius: 50px; border: 2px solid var(--border-color);
         background: var(--panel-bg); white-space: nowrap;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     .att-filter button {
         font-family: var(--font-display); font-weight: 700; font-size: 12px;
@@ -150,7 +152,7 @@
                                 </div>
                                 @if (sel.ParentScheduleItem is not null)
                                 {
-                                    <div style="font-size:12px;color:var(--text-light);margin-top:2px">🔀 Option in @sel.ParentScheduleItem.Title — only people signed up can check in. <a href="/admin/breakouts" style="color:var(--black);font-weight:700">Manage sign-ups →</a></div>
+                                    <div style="font-size:12px;color:var(--text-light);margin-top:2px">🔀 Option in @sel.ParentScheduleItem.Title — only people signed up can check in. <a href="/admin/breakouts" style="color:var(--text-dark);font-weight:700">Manage sign-ups →</a></div>
                                 }
                             </div>
                             <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -191,12 +193,12 @@
                                     @foreach (var r in FilteredRoster)
                                     {
                                         var entry = r;
-                                        <tr style="border-bottom:2px solid #E8E0CC">
+                                        <tr style="border-bottom:2px solid var(--divider)">
                                             <td style="padding:10px 14px;font-size:13px;font-weight:700">
                                                 @entry.LastName, @entry.FirstName
                                                 @if (entry.IsRegistered == false)
                                                 {
-                                                    <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEE2E2;border:1px solid #D12B2B;color:#C0392B;font-weight:700;margin-left:4px">not signed up</span>
+                                                    <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:color-mix(in srgb, var(--color-accent) 16%, var(--panel-bg));border:1px solid #D12B2B;color:var(--text-danger);font-weight:700;margin-left:4px">not signed up</span>
                                                 }
                                             </td>
                                             <td style="padding:10px 14px">
@@ -206,11 +208,11 @@
                                                 @if (entry.IsCheckedIn)
                                                 {
                                                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                                                        <span style="font-size:12px;font-weight:700;color:#1E7F46">
+                                                        <span style="font-size:12px;font-weight:700;color:var(--text-success)">
                                                             ✓ @entry.CheckedInAt?.ToString("h:mm tt")
                                                             <span style="color:var(--text-light);font-weight:600">· @MethodLabel(entry)</span>
                                                         </span>
-                                                        <button class="ccn-btn" style="font-size:11px;padding:3px 10px;background:transparent;color:#D12B2B;border-color:#D12B2B"
+                                                        <button class="ccn-btn" style="font-size:11px;padding:3px 10px;background:transparent;color:var(--text-danger);border-color:#D12B2B"
                                                                 disabled="@_busy" @onclick="() => UndoAsync(entry)">Undo</button>
                                                     </div>
                                                 }
@@ -265,7 +267,7 @@
 
             @if (!string.IsNullOrEmpty(_walkInError))
             {
-                <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_walkInError</div>
+                <div style="color:var(--text-danger);font-size:12px;margin-bottom:10px">@_walkInError</div>
             }
 
             <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -296,7 +298,7 @@
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
                 <a class="ccn-btn" href="/admin/attendance/item/@qrItem.ScheduleItemId/qr" target="_blank" style="text-decoration:none">🖨 Print</a>
                 <button class="ccn-btn" style="background:transparent" @onclick="CopyQrLinkAsync">Copy link</button>
-                <button class="ccn-btn" style="background:transparent;color:#D12B2B;border-color:#D12B2B" disabled="@_busy" @onclick="RegenerateQrAsync">Regenerate</button>
+                <button class="ccn-btn" style="background:transparent;color:var(--text-danger);border-color:#D12B2B" disabled="@_busy" @onclick="RegenerateQrAsync">Regenerate</button>
                 <button class="ccn-btn" style="background:transparent" @onclick="() => _qrOpen = false">Close</button>
             </div>
         </div>

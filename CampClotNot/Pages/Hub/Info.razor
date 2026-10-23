@@ -20,6 +20,7 @@
         overflow: hidden;
         box-shadow: 3px 3px 0 var(--border-color);
         background: var(--panel-bg);
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     @@media (max-width: 500px) {
         .info-sidebar { width: 100%; }
@@ -38,7 +39,7 @@
                 @foreach (var p in _pages)
                 {
                     <a href="/hub/info?slug=@p.Slug"
-                       style="display:block;padding:12px 16px;font-family:var(--font-display);font-weight:700;font-size:14px;text-decoration:none;border-bottom:2px solid #E8E0CC;color:@(p.Slug == _activeSlug ? "white" : "var(--text-dark)");background:@(p.Slug == _activeSlug ? "var(--text-dark)" : "transparent")">
+                       style="display:block;padding:12px 16px;font-family:var(--font-display);font-weight:700;font-size:14px;text-decoration:none;border-bottom:2px solid var(--divider);color:@(p.Slug == _activeSlug ? "white" : "var(--text-dark)");background:@(p.Slug == _activeSlug ? "var(--text-dark)" : "transparent")">
                         @p.IconEmoji @p.Title
                     </a>
                 }
@@ -77,7 +78,7 @@
                                                style="font-size:13px;font-family:'Nunito',sans-serif" />
                                     @if (!string.IsNullOrWhiteSpace(_docUploadError))
                                     {
-                                        <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_docUploadError</div>
+                                        <div style="color:var(--text-danger);font-size:12px;margin-top:4px">@_docUploadError</div>
                                     }
                                 </div>
 
@@ -124,7 +125,7 @@
                             <div style="border:var(--panel-border);border-radius:10px;overflow:hidden;box-shadow:3px 3px 0 var(--border-color);background:var(--panel-bg)">
                                 @foreach (var doc in _documents.Where(CanSeeDocument))
                                 {
-                                    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid #E8E0CC;flex-wrap:wrap">
+                                    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid var(--divider);flex-wrap:wrap">
                                         <span style="font-family:var(--font-display);font-weight:700;font-size:14px;flex:1;min-width:120px">📄 @doc.Title</span>
                                         <span style="font-size:11px;color:var(--text-light);flex-shrink:0">
                                             @doc.UploadedAt.ToString("MMM d, yyyy")
@@ -162,9 +163,9 @@
 
                                     @if (_activePage.PdfContentType is not null && !_fRemovePdf)
                                     {
-                                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#F8F4EC;border:2px solid #E8E0CC;border-radius:6px">
+                                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:var(--surface-muted);border:2px solid var(--divider);border-radius:6px">
                                             <span style="font-size:13px;font-weight:700">PDF attached</span>
-                                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#D12B2B;cursor:pointer;margin-left:auto">
+                                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-danger);cursor:pointer;margin-left:auto">
                                                 <input type="checkbox" @bind="_fRemovePdf" /> Remove PDF
                                             </label>
                                         </div>
@@ -178,7 +179,7 @@
                                                    style="font-size:13px;font-family:'Nunito',sans-serif" />
                                         @if (!string.IsNullOrWhiteSpace(_pdfUploadError))
                                         {
-                                            <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_pdfUploadError</div>
+                                            <div style="color:var(--text-danger);font-size:12px;margin-top:4px">@_pdfUploadError</div>
                                         }
                                     </div>
 

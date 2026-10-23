@@ -129,7 +129,7 @@
                             @foreach (var a in _activities)
                             {
                                 var locName = a.LocationId.HasValue ? _locations.FirstOrDefault(l => l.LocationId == a.LocationId.Value)?.Name : null;
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                <tr style="border-bottom:2px solid var(--divider)">
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@a.Name</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(string.IsNullOrEmpty(a.Description) ? "—" : a.Description)</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(locName ?? "—")</td>

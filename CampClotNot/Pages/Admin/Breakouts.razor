@@ -17,6 +17,7 @@
         display: flex; overflow-x: auto; scrollbar-width: none;
         border: var(--panel-border); border-radius: 10px; background: var(--panel-bg);
         box-shadow: 4px 4px 0 var(--border-color); margin-bottom: 16px;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     .bo-day-tabs::-webkit-scrollbar { display: none; }
     .bo-day-tab {
@@ -24,25 +25,25 @@
         background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px;
         font-family: var(--font-display); font-weight: 700;
     }
-    .bo-day-tab.active { border-bottom-color: var(--border-color); background: var(--bg-base); }
+    .bo-day-tab.active {border-bottom-color: var(--border-color); background: var(--bg-base); --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark); }
     .bo-day-tab .tab-dow  { font-size: 11px; color: var(--text-light); text-transform: uppercase; }
     .bo-day-tab .tab-date { font-size: 18px; color: var(--text-dark); line-height: 1; }
     .bo-day-tab .tab-count { font-size: 9px; color: var(--text-light); }
-    .bo-panel { background: var(--panel-bg); border: var(--panel-border); border-radius: 10px; box-shadow: 4px 4px 0 var(--border-color); }
+    .bo-panel {background: var(--panel-bg); border: var(--panel-border); border-radius: 10px; box-shadow: 4px 4px 0 var(--border-color); --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark); }
     .bo-slot-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; border: none; border-bottom: 2px solid var(--divider); background: transparent; cursor: pointer; }
     .bo-slot-btn:last-child { border-bottom: none; }
-    .bo-slot-btn.selected { background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); }
-    .bo-option-card { display: block; width: 100%; font: inherit; text-align: left; padding: 12px; border: var(--panel-border); border-radius: 8px; background: var(--panel-bg); box-shadow: 3px 3px 0 var(--border-color); cursor: pointer; }
-    .bo-option-card:hover { background: var(--bg-base); }
+    .bo-slot-btn.selected {background: var(--bg-base); box-shadow: inset 4px 0 0 var(--border-color); --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark); }
+    .bo-option-card {display: block; width: 100%; font: inherit; text-align: left; padding: 12px; border: var(--panel-border); border-radius: 8px; background: var(--panel-bg); box-shadow: 3px 3px 0 var(--border-color); cursor: pointer; --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark); }
+    .bo-option-card:hover {background: var(--bg-base); --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark); }
     .bo-pill { font-family: var(--font-display); font-weight: 700; font-size: 12px; padding: 2px 10px; border-radius: 50px; border: 2px solid var(--border-color); white-space: nowrap; }
-    .bo-input { padding: 8px 12px; background: var(--bg-base); border: var(--panel-border); border-radius: 7px; font-size: 13px; font-family: 'Nunito', sans-serif; font-weight: 600; color: var(--text-dark); box-shadow: 2px 2px 0 var(--border-color); outline: none; box-sizing: border-box; }
+    .bo-input {padding: 8px 12px; background: var(--bg-base); border: var(--panel-border); border-radius: 7px; font-size: 13px; font-family: 'Nunito', sans-serif; font-weight: 600; color: var(--text-dark); box-shadow: 2px 2px 0 var(--border-color); outline: none; box-sizing: border-box; --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); }
     .bo-label { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin-bottom: 6px; }
 </style>
 
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 6px">🔀 Breakouts</h2>
     <p style="font-size:13px;color:var(--text-mid);margin:0 0 18px">
-        Who's in which session. Create slots and their options on <a href="/admin/schedule" style="color:var(--black);font-weight:700">Schedule</a>
+        Who's in which session. Create slots and their options on <a href="/admin/schedule" style="color:var(--text-dark);font-weight:700">Schedule</a>
         (Breakout → "This is a breakout slot", then items with "Option in: …").
     </p>
 
@@ -85,7 +86,7 @@
                         <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text-dark)">@slot.Slot.Title</div>
                         <div style="font-size:11px;color:var(--text-mid);margin-top:2px">
                             @slot.Options.Count option@(slot.Options.Count == 1 ? "" : "s") ·
-                            <span style="color:@(slot.Unassigned > 0 ? "#C0392B" : "#1E7F46");font-weight:700">@slot.Unassigned unassigned</span>
+                            <span style="color:@(slot.Unassigned > 0 ? "var(--text-danger)" : "var(--text-success)");font-weight:700">@slot.Unassigned unassigned</span>
                         </div>
                     </button>
                 }
@@ -124,10 +125,10 @@
                                 <button class="bo-option-card" @onclick="() => SelectOption(opt.Option.ScheduleItemId)">
                                     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
                                         <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark)">@opt.Option.Title</div>
-                                        <span class="bo-pill" style="background:@(opt.IsOver ? "#FEE2E2" : opt.IsFull ? "var(--highlight-soft)" : "#E8F4EA")">@opt.Registered@(opt.Option.MaxCapacity is { } c ? $" / {c}" : "")</span>
+                                        <span class="bo-pill" style="background:@(opt.IsOver ? "color-mix(in srgb, var(--color-accent) 16%, var(--panel-bg))" : opt.IsFull ? "var(--highlight-soft)" : "color-mix(in srgb, var(--color-success) 16%, var(--panel-bg))")">@opt.Registered@(opt.Option.MaxCapacity is { } c ? $" / {c}" : "")</span>
                                     </div>
                                     <div style="font-size:11px;color:var(--text-mid);margin-top:4px">@TimeRange(opt.Option)@(opt.Option.Location is not null ? $" · {opt.Option.Location.Name}" : "")</div>
-                                    @if (opt.IsOver) { <div style="font-size:11px;color:#C0392B;font-weight:700;margin-top:4px">Over capacity</div> }
+                                    @if (opt.IsOver) { <div style="font-size:11px;color:var(--text-danger);font-weight:700;margin-top:4px">Over capacity</div> }
                                 </button>
                             }
                         </div>
@@ -155,7 +156,7 @@
 
                         @if (!_unassigned.Any())
                         {
-                            <p style="font-size:13px;color:#1E7F46;font-weight:700;margin:0">Everyone expected is in a session. 🎉</p>
+                            <p style="font-size:13px;color:var(--text-success);font-weight:700;margin:0">Everyone expected is in a session. 🎉</p>
                         }
                         else
                         {
@@ -201,7 +202,7 @@
                                 <div style="font-size:12px;color:var(--text-light);font-weight:700">@TimeRange(opt.Option)@(opt.Option.Location is not null ? $" · {opt.Option.Location.Name}" : "")</div>
                                 <div style="font-size:13px;margin-top:6px">
                                     <strong>@opt.Registered signed up</strong>@(opt.Option.MaxCapacity is { } c ? $" of {c} spots" : " · no capacity limit")
-                                    @if (opt.IsOver) { <span style="color:#C0392B;font-weight:700"> · over capacity</span> }
+                                    @if (opt.IsOver) { <span style="color:var(--text-danger);font-weight:700"> · over capacity</span> }
                                 </div>
                             </div>
                             <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -235,12 +236,12 @@
                                             @foreach (var r in _regs.OrderBy(r => r.Person.LastName, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Person.FirstName, StringComparer.OrdinalIgnoreCase))
                                             {
                                                 var reg = r;
-                                                <tr style="border-bottom:2px solid var(--divider);@(reg.OverCapacity ? "background:#FFF5F5" : "")">
+                                                <tr style="border-bottom:2px solid var(--divider);@(reg.OverCapacity ? "background:color-mix(in srgb, var(--color-accent) 8%, var(--panel-bg))" : "")">
                                                     <td style="padding:8px 12px;font-size:13px">
                                                         <strong>@reg.Person.LastName, @reg.Person.FirstName</strong>
                                                         <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:@(reg.Person.IsGuest ? "#16A085" : "#566573");color:white;font-family:var(--font-display);font-weight:700;margin-left:4px">@reg.Person.TypeLabel</span>
-                                                        @if (reg.OverCapacity) { <span style="font-size:10px;color:#C0392B;font-weight:700;margin-left:4px">over capacity</span> }
-                                                        @if (reg.CheckedIn) { <span style="font-size:10px;color:#1E7F46;font-weight:700;margin-left:4px">✓ checked in</span> }
+                                                        @if (reg.OverCapacity) { <span style="font-size:10px;color:var(--text-danger);font-weight:700;margin-left:4px">over capacity</span> }
+                                                        @if (reg.CheckedIn) { <span style="font-size:10px;color:var(--text-success);font-weight:700;margin-left:4px">✓ checked in</span> }
                                                     </td>
                                                     <td style="padding:8px 12px;font-size:11px;color:var(--text-mid)">
                                                         @reg.RegisteredAt.ToString("MMM d h:mm tt") · @(reg.Method == AttendanceMethod.Self ? "self" : $"by {reg.RegisteredByName ?? "Admin"}")

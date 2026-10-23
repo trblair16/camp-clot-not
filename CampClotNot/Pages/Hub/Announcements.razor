@@ -97,7 +97,7 @@
                                     var annId = a.AnnouncementId;
                                     var pickerOpen = _reactionPickerOpen == annId;
                                 }
-                                <button class="react-add" style="border:2px solid #D8D0BC;border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:13px;color:var(--text-light);transition:all .1s;@(pickerOpen ? "opacity:1 !important" : "")"
+                                <button class="react-add" style="border:2px solid var(--divider);border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:13px;color:var(--text-light);transition:all .1s;@(pickerOpen ? "opacity:1 !important" : "")"
                                         @onclick="() => _reactionPickerOpen = pickerOpen ? Guid.Empty : annId">
                                     @(pickerOpen ? "✕" : "+")
                                 </button>
@@ -108,7 +108,7 @@
                                         var alreadyShown = reactions.ContainsKey(emoji) && reactions[emoji].Count > 0;
                                         if (alreadyShown) continue;
                                         var eid = emoji;
-                                        <button style="border:2px solid #D8D0BC;border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:14px;transition:all .1s"
+                                        <button style="border:2px solid var(--divider);border-radius:20px;padding:3px 8px;background:transparent;cursor:pointer;font-size:14px;transition:all .1s"
                                                 @onclick="() => { React(annId, eid); _reactionPickerOpen = Guid.Empty; }">
                                             @emoji
                                         </button>

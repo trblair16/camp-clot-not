@@ -12,7 +12,7 @@
                                       box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease"
              @onclick:stopPropagation="true">
 
-            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--black);margin-bottom:18px">
+            <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--text-dark);margin-bottom:18px">
                 ＋ Log Transaction
             </div>
 
@@ -27,7 +27,7 @@
                             var sel = _form.GroupId == g.GroupId;
                             var s   = sel
                                 ? $"font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:{g.Color};color:white;border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)"
-                                : "font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--black);border:3px solid var(--black);box-shadow:2px 2px 0 var(--black)";
+                                : "font-family:'Fredoka One',cursive;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--text-dark);border:3px solid var(--black);box-shadow:2px 2px 0 var(--black)";
                             <button style="@s" @onclick="() => _form.GroupId = g.GroupId">@g.ShortName</button>
                         }
                     </div>
@@ -47,7 +47,7 @@
                             var icon      = isPrimary ? "/img/ccn-coin.webp" : "/img/ccn-star.webp";
                             var s         = sel
                                 ? $"flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:{color};color:{textColor};border:3px solid var(--black);box-shadow:3px 3px 0 var(--black)"
-                                : "flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--black);border:3px solid var(--black);box-shadow:2px 2px 0 var(--black)";
+                                : "flex:1;font-family:'Fredoka One',cursive;font-size:14px;padding:10px;border-radius:8px;cursor:pointer;background:var(--panel-bg);color:var(--text-dark);border:3px solid var(--black);box-shadow:2px 2px 0 var(--black)";
                             <button style="@s;display:flex;align-items:center;justify-content:center;gap:8px" @onclick="() => _form.CurrencyTypeId = ct.CurrencyTypeId">
                                 <img src="@icon" style="height:20px;width:auto" alt="@label" />
                                 @label
@@ -70,7 +70,7 @@
                                   box-shadow:2px 2px 0 @(CoinAmountInvalid ? "#D12B2B" : "var(--black)");outline:none" />
                     @if (CoinAmountInvalid)
                     {
-                        <div style="font-size:12px;font-weight:800;color:#D12B2B;margin-top:5px">
+                        <div style="font-size:12px;font-weight:800;color:var(--text-danger);margin-top:5px">
                             ⚠️ Coins must be a multiple of 5 (e.g. 5, 10, 25, -10)
                         </div>
                     }

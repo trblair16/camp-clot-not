@@ -15,7 +15,7 @@ else
 @if (ThemeSvc.NavLogoUrl is not null
      || !string.Equals(ThemeSvc.Active.AppSubtitle.Trim(), ThemeSvc.Active.AppTitle.Trim(), StringComparison.OrdinalIgnoreCase))
 {
-    <span style="font-family:var(--font-display);font-weight:700;font-size:@(SubtitleSize)px;color:var(--color-primary);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
+    <span style="font-family:var(--font-display);font-weight:700;font-size:@(SubtitleSize)px;color:var(--primary-on-black);letter-spacing:2px;text-transform:uppercase;line-height:1;text-align:center">@ThemeSvc.Active.AppSubtitle</span>
 }
 
 @code {

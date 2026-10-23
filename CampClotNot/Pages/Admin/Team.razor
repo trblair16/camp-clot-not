@@ -148,7 +148,7 @@
                                         <div style="font-size:11px;color:var(--text-light);margin:2px 0 0 22px">@row.Title</div>
                                     }
                                 </td>
-                                <td style="padding:8px 14px;font-size:12px;font-weight:700;color:@(row.User.CanSignIn ? "#1E7F46" : "var(--text-light)")">@(row.User.CanSignIn ? "✓ Yes" : "No")</td>
+                                <td style="padding:8px 14px;font-size:12px;font-weight:700;color:@(row.User.CanSignIn ? "var(--text-success)" : "var(--text-light)")">@(row.User.CanSignIn ? "✓ Yes" : "No")</td>
                                 <td style="padding:8px 10px;text-align:right;white-space:nowrap">
                                     <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => OpenEdit(row)">Edit</button>
                                     <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:#D12B2B;color:white" disabled="@_busy" @onclick="() => RemoveAsync(row)">Remove</button>
@@ -209,7 +209,7 @@
     @if (_event is not null)
     {
         <div style="font-size:12px;color:var(--text-light);margin-top:22px;max-width:780px">
-            To reset a password or deactivate someone for every event, use <a href="/admin/users" style="color:var(--black);font-weight:700">Accounts</a>.
+            To reset a password or deactivate someone for every event, use <a href="/admin/users" style="color:var(--text-dark);font-weight:700">Accounts</a>.
             The role here is only a label for this event — what someone can do in the app comes from their account.
         </div>
     }
@@ -302,7 +302,7 @@
                     </label>
                     @if (_addError is not null)
                     {
-                        <div style="color:#D12B2B;font-size:13px;font-weight:700;margin-bottom:10px">@_addError</div>
+                        <div style="color:var(--text-danger);font-size:13px;font-weight:700;margin-bottom:10px">@_addError</div>
                     }
                     <div style="display:flex;justify-content:flex-end">
                         <button class="ccn-btn" style="background:var(--color-primary)" disabled="@_busy" @onclick="AddNewAsync">@(_n.CanSignIn ? "Add & invite" : "Add")</button>
@@ -360,14 +360,14 @@
                     }
                     <div style="flex:1;min-width:180px">
                         <InputFile OnChange="OnPhotoSelected" accept="image/*" style="font-size:12px;margin-bottom:6px" />
-                        @if (_edit.PhotoError is not null) { <div style="color:#D12B2B;font-size:12px">@_edit.PhotoError</div> }
+                        @if (_edit.PhotoError is not null) { <div style="color:var(--text-danger);font-size:12px">@_edit.PhotoError</div> }
                         @if (PhotoPreviewSrc is not null)
                         {
                             <div style="font-size:11px;font-weight:700;color:var(--text-mid)">Left/right — @_edit.PhotoX%</div>
                             <input type="range" min="0" max="100" value="@_edit.PhotoX" @oninput="e => _edit.PhotoX = int.TryParse(e.Value?.ToString(), out var v) ? v : 50" style="width:100%;accent-color:var(--text-dark)" />
                             <div style="font-size:11px;font-weight:700;color:var(--text-mid)">Up/down — @_edit.PhotoY%</div>
                             <input type="range" min="0" max="100" value="@_edit.PhotoY" @oninput="e => _edit.PhotoY = int.TryParse(e.Value?.ToString(), out var v) ? v : 50" style="width:100%;accent-color:var(--text-dark)" />
-                            <button class="ccn-btn" style="font-size:11px;padding:3px 10px;margin-top:4px;background:transparent;color:#D12B2B;border-color:#D12B2B" @onclick="RemovePhoto">Remove photo</button>
+                            <button class="ccn-btn" style="font-size:11px;padding:3px 10px;margin-top:4px;background:transparent;color:var(--text-danger);border-color:#D12B2B" @onclick="RemovePhoto">Remove photo</button>
                         }
                     </div>
                 </div>
@@ -391,7 +391,7 @@
 
                 @if (_edit.Error is not null)
                 {
-                    <div style="color:#D12B2B;font-size:13px;font-weight:700;margin-bottom:10px">@_edit.Error</div>
+                    <div style="color:var(--text-danger);font-size:13px;font-weight:700;margin-bottom:10px">@_edit.Error</div>
                 }
                 <div style="display:flex;gap:8px;justify-content:flex-end">
                     <button class="ccn-btn" style="background:transparent" @onclick="CloseEdit">Cancel</button>

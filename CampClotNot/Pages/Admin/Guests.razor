@@ -33,7 +33,7 @@
 
                 @if (!string.IsNullOrWhiteSpace(_saveError))
                 {
-                    <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_saveError</div>
+                    <div style="color:var(--text-danger);font-size:12px;margin-bottom:10px">@_saveError</div>
                 }
 
                 <div style="display:flex;gap:8px">
@@ -67,7 +67,7 @@
                         <tbody>
                             @foreach (var g in _guests)
                             {
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                <tr style="border-bottom:2px solid var(--divider)">
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@g.FirstName @g.LastName</td>
                                     <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">
                                         @if (g.Visits.Any())

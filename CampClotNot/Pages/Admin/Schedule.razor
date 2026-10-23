@@ -197,13 +197,13 @@
             }
 
             @* ── Group Assignments ── *@
-            <div style="border:2px solid #E8E0CC;border-radius:8px;margin-bottom:16px;overflow:hidden">
+            <div style="border:2px solid var(--divider);border-radius:8px;margin-bottom:16px;overflow:hidden">
                 <button type="button"
-                        style="width:100%;padding:10px 12px;background:#F8F4EC;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"
+                        style="width:100%;padding:10px 12px;background:var(--surface-muted);border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"
                         @onclick="() => _assignmentsExpanded = !_assignmentsExpanded">
                     <div style="display:flex;align-items:center;gap:8px">
                         <span style="font-family:var(--font-display);font-weight:700;font-size:13px">Group Assignments</span>
-                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:#E8E0CC;color:var(--text-light);font-family:var(--font-display);font-weight:700">
+                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--surface-muted);color:var(--text-light);font-family:var(--font-display);font-weight:700">
                             @(_assignedCount > 0 ? $"{_assignedCount} set" : "Optional")
                         </span>
                     </div>
@@ -211,7 +211,7 @@
                 </button>
                 @if (!_assignmentsExpanded)
                 {
-                    <div style="padding:6px 12px 8px;font-size:11px;color:var(--text-light);border-top:1px solid #E8E0CC">
+                    <div style="padding:6px 12px 8px;font-size:11px;color:var(--text-light);border-top:1px solid var(--divider)">
                         Use for rotation slots where each group does a different activity.
                     </div>
                 }
@@ -221,7 +221,7 @@
                         @foreach (var row in _fAssignments)
                         {
                             var group = _groups.FirstOrDefault(g => g.GroupId == row.GroupId);
-                            <div style="margin-bottom:10px;padding:8px;background:#F8F4EC;border-radius:6px">
+                            <div style="margin-bottom:10px;padding:8px;background:var(--surface-muted);border-radius:6px">
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:12px;color:@(group?.Color ?? "#555");margin-bottom:6px">
                                     @(group?.Name ?? "—")
                                 </div>
@@ -263,7 +263,7 @@
 
             @if (!string.IsNullOrWhiteSpace(_error))
             {
-                <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_error</div>
+                <div style="color:var(--text-danger);font-size:12px;margin-bottom:10px">@_error</div>
             }
 
             <div style="display:flex;gap:8px">
@@ -336,7 +336,7 @@
                                         @BreakoutChips(ev)
                                         @if (ev.TrackAttendance)
                                         {
-                                            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#E8E0CC;border:1px solid #9E8C70;color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">📋 Attendance</span>
+                                            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--surface-muted);border:1px solid var(--divider);color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">📋 Attendance</span>
                                         }
                                     </div>
                                     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -403,7 +403,7 @@
                                         @BreakoutChips(ev)
                                         @if (ev.TrackAttendance)
                                         {
-                                            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#E8E0CC;border:1px solid #9E8C70;color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">📋 Attendance</span>
+                                            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--surface-muted);border:1px solid var(--divider);color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">📋 Attendance</span>
                                         }
                                         @if (!string.IsNullOrEmpty(ev.Description))
                                         {
@@ -484,7 +484,7 @@
             @if (_importRows is null)
             {
                 <div style="font-size:13px;color:var(--text-mid);margin-bottom:14px">
-                    Use the <a href="/admin/schedule/template.xlsx" download style="color:var(--black);font-weight:700">spreadsheet template</a> (it has dropdowns for this event's days, types, and locations),
+                    Use the <a href="/admin/schedule/template.xlsx" download style="color:var(--text-dark);font-weight:700">spreadsheet template</a> (it has dropdowns for this event's days, types, and locations),
                     or any sheet with columns like <em>Day, Start, End, Title, Type, Location</em>. Nothing is saved until you check the preview.
                 </div>
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Upload the file (.xlsx or .csv)</div>
@@ -494,7 +494,7 @@
                           style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:12px;font-family:monospace;resize:vertical"></textarea>
                 @if (_importError is not null)
                 {
-                    <div style="color:#D12B2B;font-size:13px;font-weight:700;margin-top:8px">@_importError</div>
+                    <div style="color:var(--text-danger);font-size:13px;font-weight:700;margin-top:8px">@_importError</div>
                 }
                 <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
                     <button class="ccn-btn" style="background:transparent" @onclick="CloseImport">Cancel</button>
@@ -508,7 +508,7 @@
                 <div style="font-size:13px;margin-bottom:10px">
                     <strong>@ready ready to add</strong>
                     @if (_importRows.Count(r => r.Duplicate) is var dup && dup > 0) { <span> · @dup already on the schedule (skipped)</span> }
-                    @if (_importRows.Count(r => r.Errors.Any()) is var bad && bad > 0) { <span style="color:#C0392B;font-weight:700"> · @bad with problems (skipped)</span> }
+                    @if (_importRows.Count(r => r.Errors.Any()) is var bad && bad > 0) { <span style="color:var(--text-danger);font-weight:700"> · @bad with problems (skipped)</span> }
                 </div>
                 @if (newLocs.Any())
                 {
@@ -542,10 +542,10 @@
                                     <td style="padding:5px 8px">@r.Type?.Name</td>
                                     <td style="padding:5px 8px">@(r.Location?.Name ?? r.NewLocationName)@(r.LocationOther is not null ? $" · {r.LocationOther}" : "")</td>
                                     <td style="padding:5px 8px">
-                                        @if (r.Errors.Any()) { <span style="color:#C0392B;font-weight:700">✗ @string.Join("; ", r.Errors)</span> }
+                                        @if (r.Errors.Any()) { <span style="color:var(--text-danger);font-weight:700">✗ @string.Join("; ", r.Errors)</span> }
                                         else if (r.Duplicate) { <span style="color:var(--text-light)">Already on the schedule</span> }
-                                        else if (r.Warnings.Any()) { <span style="color:#8A6D00">⚠ @string.Join("; ", r.Warnings)</span> }
-                                        else { <span style="color:#1E7F46;font-weight:700">✓</span> }
+                                        else if (r.Warnings.Any()) { <span style="color:var(--text-warn)">⚠ @string.Join("; ", r.Warnings)</span> }
+                                        else { <span style="color:var(--text-success);font-weight:700">✓</span> }
                                     </td>
                                 </tr>
                             }
@@ -613,7 +613,7 @@
                     </div>
                     @if (pv.SkippedDays > 0)
                     {
-                        <div style="font-size:12px;color:#8A6D00;margin-bottom:10px">⚠ @pv.Source.Name is longer than this event, so @pv.SkippedDays day@(pv.SkippedDays == 1 ? "" : "s") won't be copied.</div>
+                        <div style="font-size:12px;color:var(--text-warn);margin-bottom:10px">⚠ @pv.Source.Name is longer than this event, so @pv.SkippedDays day@(pv.SkippedDays == 1 ? "" : "s") won't be copied.</div>
                     }
                 }
             }
@@ -808,7 +808,7 @@
         {
             var n = _optionCounts.GetValueOrDefault(ev.ScheduleItemId);
             var over = ev.MaxCapacity is { } c && n > c;
-            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:@(over ? "#FEE2E2" : "#E8F4EA");border:1px solid @(over ? "#D12B2B" : "#27AE60");color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">👥 @n@(ev.MaxCapacity is { } cap ? $" / {cap}" : "")</span>
+            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:@(over ? "color-mix(in srgb, var(--color-accent) 16%, var(--panel-bg))" : "color-mix(in srgb, var(--color-success) 16%, var(--panel-bg))");border:1px solid @(over ? "#D12B2B" : "#27AE60");color:var(--text-dark);font-family:var(--font-display);font-weight:700;white-space:nowrap">👥 @n@(ev.MaxCapacity is { } cap ? $" / {cap}" : "")</span>
         }
     };
 

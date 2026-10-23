@@ -122,7 +122,7 @@
                         var voided   = tx.VoidedAt.HasValue;
                         var isCoins  = tx.CurrencyType?.SystemName == nameof(Currency.Primary);
                         var amtColor = voided ? "var(--text-light)" : tx.Amount < 0 ? "#D12B2B" : "#1A7A3E";
-                        <tr style="border-bottom:2px solid #E8E0CC;@(voided ? "opacity:.5" : "")">
+                        <tr style="border-bottom:2px solid var(--divider);@(voided ? "opacity:.5" : "")">
                             <td style="padding:10px 14px;font-size:12px;color:var(--text-mid);white-space:nowrap">
                                 @tx.CreatedAt.ToString("MM/dd h:mm tt")
                             </td>

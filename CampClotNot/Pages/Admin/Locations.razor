@@ -54,7 +54,7 @@
                 <InputFile OnChange="HandleImageUpload" accept="image/*" style="font-size:13px;font-family:'Nunito',sans-serif" />
                 @if (!string.IsNullOrWhiteSpace(_imageUploadError))
                 {
-                    <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_imageUploadError</div>
+                    <div style="color:var(--text-danger);font-size:12px;margin-top:4px">@_imageUploadError</div>
                 }
                 @if (_fImageData is not null)
                 {
@@ -140,7 +140,7 @@
                         <tbody>
                             @foreach (var loc in _locations)
                             {
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                <tr style="border-bottom:2px solid var(--divider)">
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@loc.Name</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(loc.Description ?? "—")</td>
                                     <td style="padding:6px 10px">

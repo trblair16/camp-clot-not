@@ -27,6 +27,7 @@
         background: var(--panel-bg);
         box-shadow: 4px 4px 0 var(--border-color);
         margin-bottom: 16px;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     .sched-day-tabs::-webkit-scrollbar { display: none; }
     .sched-day-tab {
@@ -48,6 +49,7 @@
     .sched-day-tab.active {
         border-bottom-color: var(--border-color);
         background: var(--bg-base);
+        --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark);
     }
     .sched-day-tab .tab-dow  { font-size: 11px; color: var(--text-light); letter-spacing: .5px; text-transform: uppercase; }
     .sched-day-tab .tab-date { font-size: 18px; color: var(--text-dark); line-height: 1; }
@@ -105,7 +107,7 @@
         .sched-tbl tbody tr:hover td { background: rgba(26,26,26,.04); }
         .sched-tbl tbody td { padding: 10px 10px; vertical-align: middle; border-bottom: 3px solid #3a3a3a; text-align: center; overflow: hidden; }
         .sched-tbl tbody tr:last-child td { border-bottom: none; }
-        .sched-group-row td { padding: 0; background: #F5F0E4; border-top: 2px solid #C8BBAA; border-bottom: 3px solid #3a3a3a; overflow: hidden; }
+        .sched-group-row td { padding: 0; background: var(--surface-muted); border-top: 2px solid var(--divider); border-bottom: 3px solid #3a3a3a; overflow: hidden; }
         .sched-group-row details { width: 0; min-width: 100%; overflow: hidden; box-sizing: border-box; }
         .sched-group-row:last-child td { border-bottom: none; }
         .sched-group-row details > summary { list-style: none; display: block; font-family: var(--font-display); font-weight: 700; font-size: 12px; color: var(--text-light); cursor: pointer; padding: 7px 14px; user-select: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -129,7 +131,7 @@
             letter-spacing: 1px;
             text-transform: uppercase;
             color: var(--text-light);
-            border-bottom: 2px solid #C8BBAA;
+            border-bottom: 2px solid var(--divider);
         }
         .sched-sub-row:last-child { border-bottom: none; }
     }
@@ -209,7 +211,7 @@
                                             {
                                                 <img src="/location-image/@displayLocation.LocationId" class="sched-loc-img" style="width:56px;height:40px;object-fit:cover;border-radius:3px;border:2px solid var(--border-color);cursor:zoom-in;flex-shrink:0;vertical-align:middle" alt="@displayLocation.Name" @onclick='() => _lightboxSrc = $"/location-image/{displayLocation.LocationId}"' />
                                             }
-                                            <span style="font-size:12px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:#DDD5C0;padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@displayLocation.Name</span>
+                                            <span style="font-size:12px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:var(--divider);padding:2px 8px;border-radius:4px;border:2px solid #6B5540;overflow-wrap:break-word;word-break:break-word"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@displayLocation.Name</span>
                                         }
                                         @if (!string.IsNullOrEmpty(ev.LocationOther))
                                         {
@@ -231,12 +233,12 @@
                                     {
                                         <details class="sched-mobile-groups" style="margin-top:6px" @onclick:stopPropagation>
                                             <summary style="font-size:12px;color:var(--text-light);cursor:pointer;font-family:var(--font-display);font-weight:700">Group assignments (@ev.ItemGroups.Count)</summary>
-                                            <div style="margin-top:6px;border:2px solid #9E8C70;border-radius:6px;overflow:hidden;overflow-x:auto">
+                                            <div style="margin-top:6px;border:2px solid var(--divider);border-radius:6px;overflow:hidden;overflow-x:auto">
                                                 <div style="display:grid;grid-template-columns:36px minmax(80px,1fr) minmax(80px,1fr) minmax(60px,1fr);gap:0;font-size:11px;min-width:320px">
-                                                    <div style="padding:4px 8px;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-light);background:#E8E0CC;border-bottom:2px solid #9E8C70">Grp</div>
-                                                    <div style="padding:4px 8px;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-light);background:#E8E0CC;border-bottom:2px solid #9E8C70">Activity</div>
-                                                    <div style="padding:4px 8px;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-light);background:#E8E0CC;border-bottom:2px solid #9E8C70">Location</div>
-                                                    <div style="padding:4px 8px;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-light);background:#E8E0CC;border-bottom:2px solid #9E8C70">Note</div>
+                                                    <div style="padding:4px 8px;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-light);background:var(--surface-muted);border-bottom:2px solid var(--divider)">Grp</div>
+                                                    <div style="padding:4px 8px;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-light);background:var(--surface-muted);border-bottom:2px solid var(--divider)">Activity</div>
+                                                    <div style="padding:4px 8px;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-light);background:var(--surface-muted);border-bottom:2px solid var(--divider)">Location</div>
+                                                    <div style="padding:4px 8px;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-light);background:var(--surface-muted);border-bottom:2px solid var(--divider)">Note</div>
                                                     @foreach (var eg in ev.ItemGroups.OrderBy(x => x.Group.Name))
                                                     {
                                                         <div style="padding:6px 8px;font-family:var(--font-display);font-weight:700;color:@eg.Group.Color;border-bottom:1px solid #C0A882">@eg.Group.ShortName</div>
@@ -244,7 +246,7 @@
                                                         <div style="padding:6px 8px;border-bottom:1px solid #C0A882;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                                                             @if (eg.Location is not null)
                                                             {
-                                                                <span style="font-size:10px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:#DDD5C0;padding:1px 4px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:8px;height:8px;vertical-align:middle;margin-right:1px;opacity:.7" alt="" />@eg.Location.Name</span>
+                                                                <span style="font-size:10px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:var(--divider);padding:1px 4px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:8px;height:8px;vertical-align:middle;margin-right:1px;opacity:.7" alt="" />@eg.Location.Name</span>
                                                             }
                                                             else { <span style="color:var(--text-light)">—</span> }
                                                         </div>
@@ -317,7 +319,7 @@
                                     <td>
                                         @if (dispLoc is not null)
                                         {
-                                            <span style="font-size:10px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:#DDD5C0;padding:2px 6px;border-radius:4px;border:2px solid #6B5540;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@dispLoc.Name</span>
+                                            <span style="font-size:10px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:var(--divider);padding:2px 6px;border-radius:4px;border:2px solid #6B5540;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@dispLoc.Name</span>
                                         }
                                         else
                                         {
@@ -404,7 +406,7 @@
             @if (mdLocation is not null)
             {
                 <div style="margin-bottom:14px">
-                    <span style="font-size:12px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:#DDD5C0;padding:3px 10px;border-radius:4px;border:2px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:3px;opacity:.7" alt="" />@mdLocation.Name</span>
+                    <span style="font-size:12px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:var(--divider);padding:3px 10px;border-radius:4px;border:2px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:3px;opacity:.7" alt="" />@mdLocation.Name</span>
                     @if (mdLocation.ImageContentType is not null)
                     {
                         <div style="margin-top:10px">
@@ -456,15 +458,15 @@
 
             @if (_isAdminOrStaff && md.ItemGroups.Any())
             {
-                <div style="border-top:2px solid #E8E0CC;padding-top:10px;margin-top:4px">
+                <div style="border-top:2px solid var(--divider);padding-top:10px;margin-top:4px">
                     <div style="font-family:var(--font-display);font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Group Assignments</div>
                     @foreach (var eg in md.ItemGroups.OrderBy(x => x.Group.Name))
                     {
-                        <div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #E8E0CC;font-size:13px">
+                        <div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--divider);font-size:13px">
                             <span style="font-family:var(--font-display);font-weight:700;color:@eg.Group.Color;min-width:36px;flex-shrink:0">@eg.Group.ShortName</span>
                             <div style="flex:1;min-width:0">
                                 <div>@(eg.Activity?.Name ?? "—")</div>
-                                @if (eg.Location is not null) { <div style="margin-top:3px"><span style="font-size:10px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span></div> }
+                                @if (eg.Location is not null) { <div style="margin-top:3px"><span style="font-size:10px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:var(--divider);padding:1px 6px;border-radius:3px;border:1px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span></div> }
                             </div>
                         </div>
                     }
@@ -491,14 +493,14 @@
 
             @foreach (var eg in gd.ItemGroups.OrderBy(x => x.Group.Name))
             {
-                <div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #E8E0CC">
+                <div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--divider)">
                     <span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:@eg.Group.Color;min-width:40px">@eg.Group.ShortName</span>
                     <div style="flex:1;min-width:0">
                         <div style="font-size:13px;font-weight:700;color:var(--text-dark)">@(eg.Activity?.Name ?? "—")</div>
                         @if (eg.Location is not null)
                         {
                             <div style="margin-top:3px">
-                                <span style="font-size:10px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
+                                <span style="font-size:10px;font-weight:900;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:var(--divider);padding:1px 6px;border-radius:3px;border:1px solid #6B5540;display:inline-block"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@eg.Location.Name</span>
                             </div>
                             @if (eg.Location.ImageContentType is not null)
                             {
@@ -534,7 +536,7 @@
 
             @if (_pickerMessage is not null)
             {
-                <div style="background:#FEE2E2;border:2px solid #E83030;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:#C0392B">@_pickerMessage</div>
+                <div style="background:color-mix(in srgb, var(--color-accent) 16%, var(--panel-bg));border:2px solid #E83030;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--text-danger)">@_pickerMessage</div>
             }
 
             @if (_pickerChoice is { } choice)
@@ -567,7 +569,7 @@
                                 <div style="font-size:12px;color:var(--text-mid);margin-top:2px">@TimeRange(o)</div>
                                 @if (o.Location is not null)
                                 {
-                                    <div style="margin-top:4px"><span style="font-size:11px;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:#DDD5C0;padding:1px 6px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@o.Location.Name</span></div>
+                                    <div style="margin-top:4px"><span style="font-size:11px;font-family:var(--font-display);font-weight:700;color:var(--text-dark);background:var(--divider);padding:1px 6px;border-radius:3px;border:1px solid #6B5540"><img src="/img/icons/pin.svg?v=3" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;opacity:.7" alt="" />@o.Location.Name</span></div>
                                 }
                                 @if (!string.IsNullOrEmpty(o.PresenterName)) { <div style="font-size:12px;color:var(--text-mid);margin-top:4px">🎤 @o.PresenterName</div> }
                                 @if (!string.IsNullOrEmpty(o.Description)) { <div style="font-size:12px;color:var(--text-light);margin-top:4px">@o.Description</div> }
@@ -698,12 +700,12 @@
             @{
                 var assignedCount = _fAssignments.Count(a => a.ActivityId.HasValue || a.LocationId.HasValue || !string.IsNullOrEmpty(a.Note));
             }
-            <div style="border:2px solid #E8E0CC;border-radius:8px;margin-bottom:16px;overflow:hidden">
-                <button style="width:100%;padding:12px 14px;background:#F8F4EC;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"
+            <div style="border:2px solid var(--divider);border-radius:8px;margin-bottom:16px;overflow:hidden">
+                <button style="width:100%;padding:12px 14px;background:var(--surface-muted);border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"
                         @onclick="() => _assignmentsExpanded = !_assignmentsExpanded">
                     <div style="display:flex;align-items:center;gap:8px">
                         <span style="font-family:var(--font-display);font-weight:700;font-size:14px">Group Assignments</span>
-                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:#E8E0CC;color:var(--text-light);font-family:var(--font-display);font-weight:700">
+                        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--surface-muted);color:var(--text-light);font-family:var(--font-display);font-weight:700">
                             @(assignedCount > 0 ? $"{assignedCount} set" : "Optional")
                         </span>
                     </div>
@@ -711,7 +713,7 @@
                 </button>
                 @if (!_assignmentsExpanded)
                 {
-                    <div style="padding:8px 14px 10px;font-size:12px;color:var(--text-light);border-top:1px solid #E8E0CC">
+                    <div style="padding:8px 14px 10px;font-size:12px;color:var(--text-light);border-top:1px solid var(--divider)">
                         Use for rotation slots where each group does a different activity. Skip for meals, free time, and whole-group sessions.
                     </div>
                 }
@@ -721,7 +723,7 @@
                         @foreach (var ga in _fAssignments)
                         {
                             var group = _groups.FirstOrDefault(g => g.GroupId == ga.GroupId);
-                            <div style="margin-bottom:10px;padding:10px;background:#F8F4EC;border-radius:6px">
+                            <div style="margin-bottom:10px;padding:10px;background:var(--surface-muted);border-radius:6px">
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:@(group?.Color ?? "#555");margin-bottom:6px">
                                     @(group?.Name ?? ga.GroupId.ToString())
                                 </div>
@@ -758,7 +760,7 @@
 
             @if (_formError is not null)
             {
-                <div style="color:#D12B2B;font-size:13px;font-weight:700;margin-bottom:10px">@_formError</div>
+                <div style="color:var(--text-danger);font-size:13px;font-weight:700;margin-bottom:10px">@_formError</div>
             }
             <div style="display:flex;gap:8px;justify-content:flex-end">
                 <button class="ccn-btn" style="background:transparent;border-color:var(--text-dark);color:var(--text-dark)" @onclick="CloseForm">Cancel</button>
@@ -1157,7 +1159,7 @@
             }
             else if (_checkInMessages.TryGetValue(ev.ScheduleItemId, out var msg))
             {
-                <span style="font-size:12px;color:#D12B2B;font-weight:700">@msg</span>
+                <span style="font-size:12px;color:var(--text-danger);font-weight:700">@msg</span>
             }
             else if (ev.SelfCheckInMode == SelfCheckInMode.QrOnly)
             {
@@ -1219,7 +1221,7 @@
                 var n = _allEvents.Count(o => o.ParentScheduleItemId == ev.ScheduleItemId);
                 <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap" @onclick:stopPropagation="true">
                     <span style="font-size:11px;padding:1px 8px;border-radius:4px;background:var(--highlight-soft);border:1px solid var(--highlight-edge);font-family:var(--font-display);font-weight:700">🔀 Breakout · @n option@(n == 1 ? "" : "s")@(ev.AllowSelfSignup ? "" : " · assigned")</span>
-                    <a href="/admin/breakouts" style="font-size:11px;font-weight:700;color:var(--black)">Manage →</a>
+                    <a href="/admin/breakouts" style="font-size:11px;font-weight:700;color:var(--text-dark)">Manage →</a>
                 </div>
             }
             else if (ev.AllowSelfSignup)
@@ -1242,13 +1244,13 @@
                 var over = ev.MaxCapacity is { } c && n > c;
                 <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                     <span style="font-size:11px;color:var(--text-light)">↳ Option in @slotTitle</span>
-                    <span style="font-size:11px;padding:1px 6px;border-radius:4px;background:@(over ? "#FEE2E2" : "#E8F4EA");border:1px solid @(over ? "#D12B2B" : "#27AE60");font-family:var(--font-display);font-weight:700">👥 @n@(ev.MaxCapacity is { } cap ? $" / {cap}" : "")</span>
+                    <span style="font-size:11px;padding:1px 6px;border-radius:4px;background:@(over ? "color-mix(in srgb, var(--color-accent) 16%, var(--panel-bg))" : "color-mix(in srgb, var(--color-success) 16%, var(--panel-bg))");border:1px solid @(over ? "#D12B2B" : "#27AE60");font-family:var(--font-display);font-weight:700">👥 @n@(ev.MaxCapacity is { } cap ? $" / {cap}" : "")</span>
                 </div>
             }
             else
             {
                 <div style="margin-top:4px">
-                    <span style="font-size:11px;padding:1px 8px;border-radius:4px;background:#E8F4EA;border:1px solid #27AE60;font-family:var(--font-display);font-weight:700">✓ Your session</span>
+                    <span style="font-size:11px;padding:1px 8px;border-radius:4px;background:color-mix(in srgb, var(--color-success) 16%, var(--panel-bg));border:1px solid #27AE60;font-family:var(--font-display);font-weight:700">✓ Your session</span>
                 </div>
             }
         }
