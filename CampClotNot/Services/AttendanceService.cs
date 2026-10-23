@@ -33,7 +33,7 @@ public record RosterEntry(
 {
     public bool IsCheckedIn => AttendanceId.HasValue;
     public string FullName => $"{FirstName} {LastName}";
-    public string TypeLabel => IsGuest ? "Guest" : RoleName ?? "Staff";
+    public string TypeLabel => IsGuest ? "Guest" : RoleName ?? "Event team";
 }
 
 public class AttendanceService(
@@ -453,7 +453,7 @@ public class AttendanceService(
                 a,
                 First = a.GuestAttendee?.FirstName ?? a.User?.FirstName ?? "",
                 Last  = a.GuestAttendee?.LastName  ?? a.User?.LastName  ?? "",
-                Type  = a.GuestAttendeeId.HasValue ? "Guest" : a.User?.UserRole?.Name ?? "Staff"
+                Type  = a.GuestAttendeeId.HasValue ? "Guest" : a.User?.UserRole?.Name ?? "Event team"
             })
             .OrderBy(x => x.a.ScheduleItem.CampDay)
             .ThenBy(x => x.a.ScheduleItem.StartTime)

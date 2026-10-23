@@ -433,6 +433,27 @@ namespace CampClotNot.Migrations
                     b.ToTable("Events");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.EventAd", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SponsorAdId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ClickCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("EventId", "SponsorAdId");
+
+                    b.HasIndex("SponsorAdId");
+
+                    b.ToTable("EventAds");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.EventCapability", b =>
                 {
                     b.Property<Guid>("EventCapabilityId")
@@ -1220,6 +1241,40 @@ namespace CampClotNot.Migrations
                     b.ToTable("Sponsors");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.SponsorAd", b =>
+                {
+                    b.Property<Guid>("SponsorAdId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ImageContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("ImageData")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("LinkUrl")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("SponsorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("SponsorAdId");
+
+                    b.HasIndex("SponsorId");
+
+                    b.ToTable("SponsorAds");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.Theme", b =>
                 {
                     b.Property<Guid>("ThemeId")
@@ -1583,6 +1638,25 @@ namespace CampClotNot.Migrations
                     b.Navigation("EventType");
 
                     b.Navigation("Theme");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.EventAd", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampClotNot.Data.Entities.SponsorAd", "SponsorAd")
+                        .WithMany("Events")
+                        .HasForeignKey("SponsorAdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("SponsorAd");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.EventCapability", b =>
@@ -1950,6 +2024,16 @@ namespace CampClotNot.Migrations
                     b.Navigation("Event");
                 });
 
+            modelBuilder.Entity("CampClotNot.Data.Entities.SponsorAd", b =>
+                {
+                    b.HasOne("CampClotNot.Data.Entities.Sponsor", "Sponsor")
+                        .WithMany()
+                        .HasForeignKey("SponsorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Sponsor");
+                });
+
             modelBuilder.Entity("CampClotNot.Data.Entities.Transaction", b =>
                 {
                     b.HasOne("CampClotNot.Data.Entities.CurrencyType", "CurrencyType")
@@ -2103,6 +2187,11 @@ namespace CampClotNot.Migrations
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.Sponsor", b =>
+                {
+                    b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("CampClotNot.Data.Entities.SponsorAd", b =>
                 {
                     b.Navigation("Events");
                 });

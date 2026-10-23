@@ -19,7 +19,7 @@ public record NewEventRequest(
     Guid? CopyFromEventId,
     EventCopyOptions Copy);
 
-public record CopyCounts(int Sponsors, int Activities, int EventStaff);
+public record CopyCounts(int Sponsors, int Activities, int EventStaff, int Ads = 0);
 
 public class EventSetupService(
     IDbContextFactory<AppDbContext> factory,
@@ -32,7 +32,8 @@ public class EventSetupService(
         return new CopyCounts(
             await db.EventSponsors.CountAsync(s => s.EventId == sourceEventId),
             await db.Activities.CountAsync(a => a.EventId == sourceEventId),
-            await db.EventStaff.CountAsync(s => s.EventId == sourceEventId && s.User.IsActive));
+            await db.EventStaff.CountAsync(s => s.EventId == sourceEventId && s.User.IsActive),
+            await db.EventAds.CountAsync(a => a.EventId == sourceEventId));
     }
 
     /// Creates the event, its own theme row, and every copied row in one SaveChanges, so a
@@ -95,6 +96,9 @@ public class EventSetupService(
                 // Sponsors are shared (#341): the new event shows the same ones, in the same order.
                 foreach (var link in await db.EventSponsors.AsNoTracking().Where(es => es.EventId == src).ToListAsync())
                     db.EventSponsors.Add(new EventSponsor { EventId = eventId, SponsorId = link.SponsorId, SortOrder = link.SortOrder });
+                // ...and the same ads (#350), in the same order, with tap counts starting over.
+                foreach (var ad in await db.EventAds.AsNoTracking().Where(ea => ea.EventId == src).ToListAsync())
+                    db.EventAds.Add(new EventAd { EventId = eventId, SponsorAdId = ad.SponsorAdId, SortOrder = ad.SortOrder });
             }
 
             if (req.Copy.Activities)

@@ -23,7 +23,7 @@
     {
         <div style="font-size:40px;line-height:1">🤔</div>
         <div style="font-family:var(--font-display);font-size:20px;margin:8px 0">This check-in code isn't valid</div>
-        <div style="font-size:13px;color:var(--text-mid)">It may have been replaced with a new one. Ask a staff member for the current QR code.</div>
+        <div style="font-size:13px;color:var(--text-mid)">It may have been replaced with a new one. Ask someone on the event team for the current QR code.</div>
     }
     else
     {
@@ -36,7 +36,7 @@
             <div style="font-size:14px;margin-bottom:14px">Sign in to check in.</div>
             <div style="display:flex;flex-direction:column;gap:10px">
                 <a class="ccn-btn" href="@JoinUrl" style="text-decoration:none;padding:11px;font-size:16px;background:var(--color-primary);border:var(--panel-border);box-shadow:var(--panel-shadow)">I'm a guest</a>
-                <a class="ccn-btn" href="@LoginUrl" style="text-decoration:none;padding:9px;font-size:14px;background:transparent">Staff sign in</a>
+                <a class="ccn-btn" href="@LoginUrl" style="text-decoration:none;padding:9px;font-size:14px;background:transparent">Event team sign in</a>
             </div>
         }
         else
@@ -64,7 +64,7 @@
                     }
                     else if (CampTime.Now >= opens)
                     {
-                        <div style="font-size:13px;color:var(--text-mid)">Missed it? A staff member can check you in.</div>
+                        <div style="font-size:13px;color:var(--text-mid)">Missed it? Someone on the event team can check you in.</div>
                     }
                     break;
                 case CheckInResult.WrongEvent:

@@ -59,10 +59,10 @@
                     {
                         <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin:10px 0 5px">Also copy</div>
                         <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer">
-                            <input type="checkbox" checked="@_copySponsors" @onchange="() => _copySponsors = !_copySponsors" /> Sponsors (@_copyCounts.Sponsors)
+                            <input type="checkbox" checked="@_copySponsors" @onchange="() => _copySponsors = !_copySponsors" /> Sponsors and ads (@_copyCounts.Sponsors sponsor@(_copyCounts.Sponsors == 1 ? "" : "s"), @_copyCounts.Ads ad@(_copyCounts.Ads == 1 ? "" : "s"))
                         </label>
                         <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer">
-                            <input type="checkbox" checked="@_copyEventStaff" @onchange="() => _copyEventStaff = !_copyEventStaff" /> Team (@_copyCounts.EventStaff) <span style="font-weight:600;color:var(--text-light)">— people, roles, and Hub directory cards (not groups)</span>
+                            <input type="checkbox" checked="@_copyEventStaff" @onchange="() => _copyEventStaff = !_copyEventStaff" /> Event team (@_copyCounts.EventStaff) <span style="font-weight:600;color:var(--text-light)">— people, roles, and Hub directory cards (not groups)</span>
                         </label>
                         <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer">
                             <input type="checkbox" checked="@_copyActivities" @onchange="() => _copyActivities = !_copyActivities" /> Activities (@_copyCounts.Activities)
