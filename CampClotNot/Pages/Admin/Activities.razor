@@ -31,7 +31,7 @@
         @* ── Form panel (desktop) / mobile overlay ── *@
         <div class="@(_mobileFormOpen ? "ccn-form-overlay" : null)" style="@(_mobileFormOpen ? null : "display:contents")"
              @onclick="CloseFormOverlay">
-        <div class="admin-act-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 300px;min-width:240px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+        <div class="admin-act-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "var(--modal-shadow)" : "var(--panel-shadow)");padding:20px;flex:0 0 300px;min-width:240px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
                 <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add Activity" : "Edit Activity")</h3>
@@ -44,20 +44,20 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name</div>
                 <input type="text" @bind="_fName" placeholder="e.g. Mushroom Kingdom Trivia"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Description (optional)</div>
                 <input type="text" @bind="_fDescription" placeholder="Short description"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:16px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Location (optional — used for board space image)</div>
                 <select value="@(_fLocationId?.ToString() ?? "")"
                         @onchange="e => _fLocationId = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null"
-                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box">
+                        style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box">
                     <option value="">— No location —</option>
                     @foreach (var loc in _locations)
                     {
@@ -94,7 +94,7 @@
                     @foreach (var a in _activities)
                     {
                         var locName = a.LocationId.HasValue ? _locations.FirstOrDefault(l => l.LocationId == a.LocationId.Value)?.Name : null;
-                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--card-shadow);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                             <div style="flex:1;min-width:0">
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark);margin-bottom:4px">@a.Name</div>
                                 @if (!string.IsNullOrEmpty(a.Description))
@@ -114,7 +114,7 @@
                     }
                 </div>
 
-                <div class="admin-act-table" style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow:hidden">
+                <div class="admin-act-table" style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow:hidden">
                     <table style="width:100%;border-collapse:collapse">
                         <thead>
                             <tr style="background:var(--black)">
@@ -129,7 +129,7 @@
                             @foreach (var a in _activities)
                             {
                                 var locName = a.LocationId.HasValue ? _locations.FirstOrDefault(l => l.LocationId == a.LocationId.Value)?.Name : null;
-                                <tr style="border-bottom:2px solid #E8E0CC">
+                                <tr style="border-bottom:2px solid var(--divider)">
                                     <td style="padding:10px 14px;font-size:13px;font-weight:700">@a.Name</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(string.IsNullOrEmpty(a.Description) ? "—" : a.Description)</td>
                                     <td style="padding:10px 14px;font-size:13px;color:var(--text-mid)">@(locName ?? "—")</td>

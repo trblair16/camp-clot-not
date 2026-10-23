@@ -15,13 +15,13 @@
 <div class="ccn-panel"
      style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(340px,calc(100vw - 32px));padding:20px">
 
-    <div style="font-family:var(--font-display);font-size:20px;color:var(--black);text-align:center;margin-bottom:16px">
+    <div style="font-family:var(--font-display);font-size:20px;color:var(--text-dark);text-align:center;margin-bottom:16px">
         Staff Sign In
     </div>
 
     @if (Error)
     {
-        <div style="background:#FEE2E2;border:2px solid #E83030;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:#C0392B">
+        <div style="background:color-mix(in srgb, var(--color-accent) 16%, var(--panel-bg));border:2px solid #E83030;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--text-danger)">
             ⚠️ Invalid email or password.
         </div>
     }
@@ -33,7 +33,7 @@
         }
         @if (ReturnUrl?.StartsWith("/checkin/") == true)
         {
-            <div style="background:#E8F4EA;border:2px solid #27AE60;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;color:#1E7F46">
+            <div style="background:color-mix(in srgb, var(--color-success) 16%, var(--panel-bg));border:2px solid #27AE60;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--text-success)">
                 📷 You'll be checked in right after you sign in.
             </div>
         }
@@ -41,25 +41,25 @@
             <label style="font-family:var(--font-display);font-size:12px;color:var(--text-mid);display:block;margin-bottom:4px">Email</label>
             <input type="email" name="email" placeholder="you@example.com"
                    required autocomplete="email"
-                   style="width:100%;padding:10px 12px;border:3px solid var(--black);border-radius:8px;font-size:14px;font-family:'Nunito',sans-serif;box-sizing:border-box;background:var(--bg-base);color:var(--black);outline:none;box-shadow:2px 2px 0 var(--black)" />
+                   style="width:100%;padding:10px 12px;border:var(--panel-border);border-radius:8px;font-size:14px;font-family:'Nunito',sans-serif;box-sizing:border-box;background:var(--bg-base);color:var(--text-dark);outline:none;box-shadow:var(--control-shadow)" />
         </div>
         <div>
             <label style="font-family:var(--font-display);font-size:12px;color:var(--text-mid);display:block;margin-bottom:4px">Password</label>
             <input type="password" name="password" placeholder="••••••••"
                    required autocomplete="current-password"
-                   style="width:100%;padding:10px 12px;border:3px solid var(--black);border-radius:8px;font-size:14px;font-family:'Nunito',sans-serif;box-sizing:border-box;background:var(--bg-base);color:var(--black);outline:none;box-shadow:2px 2px 0 var(--black)" />
+                   style="width:100%;padding:10px 12px;border:var(--panel-border);border-radius:8px;font-size:14px;font-family:'Nunito',sans-serif;box-sizing:border-box;background:var(--bg-base);color:var(--text-dark);outline:none;box-shadow:var(--control-shadow)" />
         </div>
         <label style="display:flex;align-items:center;gap:8px;font-family:'Nunito',sans-serif;font-size:13px;color:var(--text-mid);cursor:pointer;user-select:none">
             <input type="checkbox" name="rememberMe" style="width:16px;height:16px;cursor:pointer;accent-color:var(--black)" />
             Keep me signed in
         </label>
         <button type="submit" class="ccn-btn"
-                style="width:100%;padding:11px;background:var(--color-primary);font-size:16px;border:3px solid var(--black);box-shadow:4px 4px 0 var(--black)">
+                style="width:100%;padding:11px;background:var(--color-primary);font-size:16px;border:var(--panel-border);box-shadow:var(--panel-shadow)">
             Sign In
         </button>
     </form>
     <div style="margin-top:14px;text-align:center;font-family:'Nunito',sans-serif;font-size:12px;color:var(--text-light)">
-        <a href="/forgot-password" style="color:var(--black);font-weight:700">Forgot your password?</a>
+        <a href="/forgot-password" style="color:var(--text-dark);font-weight:700">Forgot your password?</a>
     </div>
 </div>
 

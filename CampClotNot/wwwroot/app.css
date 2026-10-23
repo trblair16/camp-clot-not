@@ -47,7 +47,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     padding: 9px 16px;
     font-family: var(--font-display); font-weight: 700;
     font-size: 14px;
-    border-bottom: 3px solid var(--border-color);
+    border-bottom: var(--panel-border);
 }
 #components-reconnect-modal.components-reconnect-show .ccn-reconnect-show {
     display: flex;
@@ -214,6 +214,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     min-width: 180px;
     z-index: 51;
     overflow: hidden;
+    --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
 }
 .nav-admin-panel a,
 .nav-admin-panel button {
@@ -227,7 +228,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     color: var(--text-dark);
     text-decoration: none;
     border: none;
-    border-bottom: 2px solid var(--border-color);
+    border-bottom: var(--control-border);
     background: transparent;
     cursor: pointer;
     text-align: left;
@@ -271,6 +272,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     height: calc(60px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     align-items: flex-start;
+    --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn); color: var(--text-dark);
 }
 /* While a sheet is open the bar (and the sheet inside it) sits above the sheet's backdrop (z 51). */
 .nav-bottom-bar.sheet-open { z-index: 53; }
@@ -329,6 +331,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     box-shadow: 0 -4px 0 var(--border-color);
     z-index: 52;
     animation: slideUp .2s ease;
+    --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
 }
 .nav-admin-sheet a,
 .nav-admin-sheet button,
@@ -343,7 +346,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     color: var(--text-dark);
     text-decoration: none;
     border: none;
-    border-bottom: 2px solid var(--border-color);
+    border-bottom: var(--control-border);
     background: transparent;
     cursor: pointer;
     width: 100%;
@@ -390,7 +393,7 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     /* Belt and braces for iOS: if WebKit paints .app-main's fixed children at .app-main's own
        level, the header (z 50) and bottom bar (z 40) would still cover the dialog. Raise the
        content area above them while a dialog is open; it doesn't overlap them otherwise. */
-    html:has(.ccn-form-overlay) .app-frame > .app-main { position: relative; z-index: 60; }
+    html:has(.ccn-form-overlay) .app-frame > .app-main { position: relative; z-index: 101; }   /* above the push banner (z 100) too */
 }
 
 /* iOS Safari gives date/time inputs an intrinsic minimum width that ignores width:100%, so they

@@ -9,8 +9,10 @@
     :root {
         @((MarkupString)ThemeSvc.Active.CssVariables)
         /* Derived from the theme so they suit every preset (≈ the old cream shades on Mario). */
-        --divider: color-mix(in srgb, var(--text-light) 24%, var(--panel-bg));
-        --surface-muted: color-mix(in srgb, var(--text-light) 10%, var(--panel-bg));
+        --divider: color-mix(in srgb, var(--panel-text-light) 24%, var(--panel-bg));
+        --surface-muted: color-mix(in srgb, var(--panel-text-light) 10%, var(--panel-bg));
+        --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success);
+        --text-link: var(--page-text-link); --text-warn: var(--page-text-warn);
         --highlight-soft: color-mix(in srgb, var(--color-primary) 22%, var(--panel-bg));
         --highlight-edge: color-mix(in srgb, var(--color-primary) 70%, var(--text-dark));
     }
@@ -22,6 +24,35 @@
         background-color: var(--bg-base);
         background-image: var(--bg-dot-image);
         background-size: 22px 22px;
+        color: var(--text-dark);
+    }
+
+    /* ── Text follows the surface it's on ──
+       --text-dark/mid/light start out computed for the page background (black or white, whichever
+       reads better). Panels and primary-colored surfaces swap in their own computed set, so text
+       stays readable whatever colors a theme picks. Later rules win, so a primary-colored button
+       (.ccn-btn + inline primary background) gets the primary set. */
+    .ccn-panel, .ccn-btn, [style*="var(--panel-bg)"] {
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light);
+        --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success);
+        --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn);
+        color: var(--text-dark);
+    }
+    /* A transparent button shows whatever it sits on, so it keeps its parent's text colors. */
+    .ccn-btn[style*="background:transparent"], .ccn-btn[style*="background: transparent"] {
+        --text-dark: inherit; --text-mid: inherit; --text-light: inherit;
+        --text-accent: inherit; --text-danger: inherit; --text-success: inherit; --text-link: inherit; --text-warn: inherit;
+    }
+    [style*="background:var(--bg-base)"], [style*="background: var(--bg-base)"], [style*="background-color:var(--bg-base)"] {
+        --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light);
+        --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success);
+        --text-link: var(--page-text-link); --text-warn: var(--page-text-warn);
+        color: var(--text-dark);
+    }
+    [style*="background:var(--color-primary)"], [style*="background: var(--color-primary)"] {
+        --text-dark: var(--primary-text-dark); --text-mid: var(--primary-text-mid); --text-light: var(--primary-text-light);
+        --text-accent: var(--primary-text-accent); --text-danger: var(--primary-text-danger); --text-success: var(--primary-text-success);
+        --text-link: var(--primary-text-link); --text-warn: var(--primary-text-warn);
         color: var(--text-dark);
     }
 
@@ -80,7 +111,7 @@
     @@keyframes rollFlip   { from{transform:translateY(-10px);opacity:0} to{transform:translateY(0);opacity:1} }
     @@keyframes blockBounce { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-12px) scale(1.05)} }
     @@keyframes fadeIn   { from{opacity:0} to{opacity:1} }
-    @@keyframes blockPulse { from{box-shadow:3px 3px 0 var(--black)} to{box-shadow:6px 6px 0 var(--black),0 0 0 3px var(--color-primary)} }
+    @@keyframes blockPulse { from{box-shadow:var(--card-shadow)} to{box-shadow:var(--modal-shadow),0 0 0 3px var(--color-primary)} }
     @@keyframes bounce   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
     @@keyframes pulseBorder { 0%,100%{opacity:.5} 50%{opacity:1} }
 
@@ -102,6 +133,7 @@
     .mud-tabs-header {
         background: var(--panel-bg) !important;
         border-bottom: var(--border-width) solid var(--border-color) !important;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
     .mud-tabs-header .mud-tab {
         font-family: var(--font-display) !important;
@@ -118,6 +150,7 @@
     .mud-tabs-header .mud-tab.mud-tab-active {
         color: var(--text-dark) !important;
         background-color: var(--bg-base) !important;
+        --text-dark: var(--page-text-dark); --text-mid: var(--page-text-mid); --text-light: var(--page-text-light); --text-accent: var(--page-text-accent); --text-danger: var(--page-text-danger); --text-success: var(--page-text-success); --text-link: var(--page-text-link); --text-warn: var(--page-text-warn);
     }
     .mud-tab-slider {
         background: var(--border-color) !important;
@@ -126,6 +159,7 @@
     }
     .mud-tabs-panels {
         background: var(--panel-bg) !important;
+        --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
     }
 </style>
 

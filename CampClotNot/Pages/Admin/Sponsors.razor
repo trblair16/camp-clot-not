@@ -33,7 +33,7 @@
         @* ── Form panel (desktop) / mobile overlay ── *@
         <div class="@(_mobileFormOpen ? "ccn-form-overlay" : null)" style="@(_mobileFormOpen ? null : "display:contents")"
              @onclick="CloseFormOverlay">
-        <div class="admin-spo-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "8px 8px 0 var(--border-color)" : "4px 4px 0 var(--border-color)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
+        <div class="admin-spo-form" style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:@(_mobileFormOpen ? "var(--modal-shadow)" : "var(--panel-shadow)");padding:20px;flex:0 0 320px;min-width:260px;@(_mobileFormOpen ? "display:block !important;max-width:480px;width:100%;margin:auto;animation:popIn .2s ease" : "")"
              @onclick:stopPropagation>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
                 <h3 style="font-family:var(--font-display);font-weight:700;font-size:16px;margin:0">@(_editingId == Guid.Empty ? "Add New Sponsor" : "Edit Sponsor")</h3>
@@ -45,13 +45,13 @@
 
             @if (_editingId != Guid.Empty && _editingEventCount > 1)
             {
-                <div style="font-size:12px;font-weight:700;color:#8A6D00;margin:-6px 0 12px">Changes show at all @_editingEventCount events with this sponsor.</div>
+                <div style="font-size:12px;font-weight:700;color:var(--text-warn);margin:-6px 0 12px">Changes show at all @_editingEventCount events with this sponsor.</div>
             }
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Name *</div>
                 <input type="text" @bind="_fName" placeholder="e.g. Children's Harbor"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
@@ -60,7 +60,7 @@
                            style="width:100%;font-size:13px;font-family:'Nunito',sans-serif" />
                 @if (!string.IsNullOrWhiteSpace(_uploadError))
                 {
-                    <div style="color:#D12B2B;font-size:12px;margin-top:4px">@_uploadError</div>
+                    <div style="color:var(--text-danger);font-size:12px;margin-top:4px">@_uploadError</div>
                 }
                 @if (_fLogoData is not null)
                 {
@@ -75,30 +75,30 @@
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Logo URL (fallback if no file uploaded)</div>
                 <input type="url" @bind="_fLogoUrl" placeholder="https://..."
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Website URL — clicking logo navigates here (optional)</div>
                 <input type="url" @bind="_fWebsite" placeholder="https://..."
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Contact Name (optional)</div>
                 <input type="text" @bind="_fContactName" placeholder="e.g. Jane Smith"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             <div style="margin-bottom:14px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px">Phone (optional — tap-to-call)</div>
                 <input type="tel" @bind="_fPhone" placeholder="e.g. (205) 555-1234"
-                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:2px 2px 0 var(--border-color);outline:none;box-sizing:border-box" />
+                       style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box" />
             </div>
 
             @if (!string.IsNullOrWhiteSpace(_saveError))
             {
-                <div style="color:#D12B2B;font-size:12px;margin-bottom:10px">@_saveError</div>
+                <div style="color:var(--text-danger);font-size:12px;margin-bottom:10px">@_saveError</div>
             }
 
             <div style="display:flex;gap:8px">
@@ -133,7 +133,7 @@
                     {
                         var s   = _sponsors[i];
                         var idx = i;
-                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:3px 3px 0 var(--border-color);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                        <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--card-shadow);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px">
                             <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
                                 <img src="@LogoSrc(s)" alt="@s.Name"
                                      style="height:36px;width:48px;object-fit:contain;border:1px solid var(--divider);border-radius:4px;background:white;padding:2px;flex-shrink:0" />
@@ -149,7 +149,7 @@
                                 <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == 0)" @onclick="() => MoveAsync(idx, -1)">↑</button>
                                 <button class="ccn-btn" style="font-size:15px;padding:4px 10px" disabled="@(idx == _sponsors.Count - 1)" @onclick="() => MoveAsync(idx, 1)">↓</button>
                                 <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="async () => { await StartEdit(s); _mobileFormOpen = true; }">Edit</button>
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:#D12B2B" title="Take off this event (they stay available for others)" @onclick="() => RemoveAsync(s)">Remove</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:var(--text-danger)" title="Take off this event (they stay available for others)" @onclick="() => RemoveAsync(s)">Remove</button>
                             </div>
                         </div>
                     }
@@ -157,7 +157,7 @@
 
                 <div class="admin-spo-table">
                 <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">Drag rows to reorder. Changes save immediately.</div>
-                <div style="border:var(--panel-border);border-radius:10px;box-shadow:4px 4px 0 var(--border-color);overflow-x:auto">
+                <div style="border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);overflow-x:auto">
                     <table style="width:100%;border-collapse:collapse;min-width:560px">
                         <thead>
                             <tr style="background:var(--black)">
@@ -194,7 +194,7 @@
                                     <td style="padding:8px 10px">
                                         <div style="display:flex;gap:4px">
                                             <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => StartEdit(s)">Edit</button>
-                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:#D12B2B" title="Take off this event (they stay available for others)" @onclick="() => RemoveAsync(s)">Remove</button>
+                                            <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:var(--text-danger)" title="Take off this event (they stay available for others)" @onclick="() => RemoveAsync(s)">Remove</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -213,7 +213,7 @@
 @if (_pickerOpen)
 {
     <div class="ccn-form-overlay" style="z-index:150" @onclick="() => _pickerOpen = false">
-        <div class="ccn-panel" style="padding:20px;display:flex;flex-direction:column;box-shadow:8px 8px 0 var(--black);animation:popIn .25s ease" @onclick:stopPropagation>
+        <div class="ccn-panel" style="padding:20px;display:flex;flex-direction:column;box-shadow:var(--modal-shadow);animation:popIn .25s ease" @onclick:stopPropagation>
             <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 4px">Add sponsors to @_eventName</h3>
             <div style="font-size:12px;color:var(--text-light);margin-bottom:10px">Sponsors from every event. Adding one puts it at the end of this event's list.</div>
             <input type="text" @bind="_pickerSearch" @bind:event="oninput" placeholder="Search sponsors…"
@@ -242,7 +242,7 @@
                         <div style="display:flex;gap:6px;flex-shrink:0">
                             @if (!opt.EventNames.Any())
                             {
-                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:#D12B2B" disabled="@_busy" title="Delete this sponsor for good" @onclick="() => DeleteUnusedAsync(opt.Sponsor)">Delete</button>
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:var(--text-danger)" disabled="@_busy" title="Delete this sponsor for good" @onclick="() => DeleteUnusedAsync(opt.Sponsor)">Delete</button>
                             }
                             <button class="ccn-btn" style="font-size:11px;padding:4px 12px" disabled="@_busy" @onclick="() => AddFromPickerAsync(opt.Sponsor)">Add</button>
                         </div>
