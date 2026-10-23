@@ -80,6 +80,7 @@ try
     builder.Services.AddScoped<ScheduleItemTypeService>();
     builder.Services.AddScoped<IncidentReportService>();
     builder.Services.AddScoped<SponsorService>();
+    builder.Services.AddScoped<SponsorAdService>();
     builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
@@ -317,6 +318,24 @@ try
         if (s?.LogoData is null) return Results.NotFound();
         return Results.File(s.LogoData, s.LogoContentType ?? "image/jpeg");
     });
+
+    // Sponsor ad images (#350). The URL carries ?v=<updated ticks>, so it can be cached for good.
+    app.MapGet("/sponsors/ad/{id:guid}", async (Guid id, HttpContext ctx, SponsorAdService ads) =>
+    {
+        if (await ads.GetImageAsync(id) is not { } img) return Results.NotFound();
+        ctx.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        return Results.File(img.Data, img.ContentType);
+    }).AllowAnonymous();
+
+    // A tap on an ad: count it for this event, then go to the ad's link (or its sponsor's
+    // website). The target comes from the database, so this isn't an open redirect.
+    app.MapGet("/ads/{eventId:guid}/{adId:guid}", async (Guid eventId, Guid adId, SponsorAdService ads) =>
+    {
+        var url = await ads.RecordClickAsync(eventId, adId);
+        return url is not null && Uri.TryCreate(url, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp)
+            ? Results.Redirect(u.ToString())
+            : Results.Redirect("/hub/sponsors");
+    }).AllowAnonymous();
 
     // Staff directory photos, by person (UserId). Only served for people shown in some event's
     // Hub directory, since the route is anonymous (the Hub page is also used by guests).

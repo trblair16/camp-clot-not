@@ -54,6 +54,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<IncidentReport> IncidentReports => Set<IncidentReport>();
     public DbSet<Sponsor> Sponsors => Set<Sponsor>();
     public DbSet<EventSponsor> EventSponsors => Set<EventSponsor>();
+    public DbSet<SponsorAd> SponsorAds => Set<SponsorAd>();
+    public DbSet<EventAd> EventAds => Set<EventAd>();
     public DbSet<CampDocument> CampDocuments => Set<CampDocument>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
@@ -257,6 +259,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         // EventStaff: one row per user per event. Three navigations point at reference tables
         // (Event, User, UserRole) plus an optional Group, all configured explicitly.
+        // Sponsor ads (#350): one SponsorAd row, linked to each event that shows it. Deleting a
+        // sponsor leaves its ads standalone.
+        modelBuilder.Entity<SponsorAd>()
+            .HasOne(a => a.Sponsor)
+            .WithMany()
+            .HasForeignKey(a => a.SponsorId)
+            .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<EventAd>()
+            .HasKey(ea => new { ea.EventId, ea.SponsorAdId });
+        modelBuilder.Entity<EventAd>()
+            .HasOne(ea => ea.Event)
+            .WithMany()
+            .HasForeignKey(ea => ea.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<EventAd>()
+            .HasOne(ea => ea.SponsorAd)
+            .WithMany(a => a.Events)
+            .HasForeignKey(ea => ea.SponsorAdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Reusable sponsors (#341): one Sponsor row, linked to each event that shows it.
         modelBuilder.Entity<EventSponsor>()
             .HasKey(es => new { es.EventId, es.SponsorId });

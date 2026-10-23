@@ -1,0 +1,314 @@
+@* The Ads tab on /admin/sponsors (#350): this event's sponsor ads, their order and tap counts,
+   adding from past events, and the new/edit dialog. Ads are shared like sponsors: editing one
+   changes it at every event it's on. *@
+@inject SponsorAdService AdSvc
+@inject SponsorService SponsorSvc
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<p style="font-size:13px;color:var(--text-mid);margin:0 0 14px;max-width:720px">
+    Ads show at the top of the Hub's Sponsors page, full width and uncropped, in this order. Tapping one opens its
+    link, or its sponsor's website. An ad is uploaded once: use <strong>Add from past events</strong> to reuse it.
+</p>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <button class="ccn-btn" style="background:var(--color-primary)" @onclick="OpenPickerAsync">+ Add from past events</button>
+    <button class="ccn-btn" @onclick="() => OpenEditor(null)">+ New ad</button>
+</div>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (!_ads.Any())
+{
+    <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No ads on this event yet. Add one from a past event, or upload a new one.</p>
+}
+else
+{
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:900px">
+        @for (var i = 0; i < _ads.Count; i++)
+        {
+            var ad = _ads[i];
+            var idx = i;
+            <div class="ccn-panel" style="padding:10px 12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <img src="@ad.ImageSrc" alt="@ad.Title" style="width:120px;height:72px;object-fit:contain;background:var(--surface-muted);border:var(--control-border);border-radius:6px;flex-shrink:0" />
+                <div style="flex:1;min-width:180px">
+                    <div style="font-family:var(--font-display);font-weight:700;font-size:15px">@ad.Title</div>
+                    <div style="font-size:12px;color:var(--text-mid)">@(ad.SponsorName ?? "No sponsor")</div>
+                    <div style="font-size:12px;overflow-wrap:anywhere">
+                        @if (ad.Target is { } t)
+                        {
+                            <span style="color:var(--text-light)">Opens </span><a href="@t" target="_blank" rel="noopener" style="color:var(--text-link)">@t</a>
+                        }
+                        else
+                        {
+                            <span style="color:var(--text-warn);font-weight:700">Not tappable: add a link, or a website on its sponsor.</span>
+                        }
+                    </div>
+                </div>
+                <div style="font-size:12px;font-weight:800;color:var(--text-mid);white-space:nowrap" title="Taps at this event">👆 @ad.ClickCount tap@(ad.ClickCount == 1 ? "" : "s")</div>
+                <div style="display:flex;gap:4px;flex-shrink:0">
+                    <button class="ccn-btn" style="font-size:14px;padding:4px 10px" disabled="@(idx == 0 || _busy)" @onclick="() => MoveAsync(idx, -1)" title="Move up">↑</button>
+                    <button class="ccn-btn" style="font-size:14px;padding:4px 10px" disabled="@(idx == _ads.Count - 1 || _busy)" @onclick="() => MoveAsync(idx, 1)" title="Move down">↓</button>
+                    <button class="ccn-btn" style="font-size:11px;padding:4px 10px" @onclick="() => OpenEditor(ad)">Edit</button>
+                    <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:var(--text-danger)" title="Take off this event (it stays available for others)" @onclick="() => RemoveAsync(ad)">Remove</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* ── Add from past events ── *@
+@if (_pickerOpen)
+{
+    <div class="ccn-form-overlay" style="z-index:150" @onclick="() => _pickerOpen = false">
+        <div class="ccn-panel" style="padding:20px;display:flex;flex-direction:column;box-shadow:var(--modal-shadow);animation:popIn .25s ease" @onclick:stopPropagation>
+            <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0 0 4px">Add ads to @EventName</h3>
+            <div style="font-size:12px;color:var(--text-light);margin-bottom:10px">Ads from every event. Adding one puts it at the end of this event's list.</div>
+            <input type="text" @bind="_pickerSearch" @bind:event="oninput" placeholder="Search ads or sponsors…"
+                   style="width:100%;padding:9px 12px;background:var(--bg-base);border:var(--control-border);border-radius:7px;font-size:14px;font-weight:600;color:var(--text-dark);outline:none;box-sizing:border-box;margin-bottom:10px" />
+            <div style="overflow-y:auto;flex:1;min-height:0">
+                @if (!PickerFiltered.Any())
+                {
+                    <p style="font-size:13px;color:var(--text-light);font-weight:700">
+                        @(_library.Any(o => !o.OnThisEvent) ? "No ad matches." : "Every ad we have is already on this event.") Close this and use <strong>+ New ad</strong> to upload one.
+                    </p>
+                }
+                @foreach (var o in PickerFiltered)
+                {
+                    var opt = o;
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:var(--control-border)">
+                        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                            <img src="@opt.Ad.ImageSrc" alt="" style="width:80px;height:48px;object-fit:contain;background:var(--surface-muted);border-radius:4px;flex-shrink:0" />
+                            <div style="min-width:0">
+                                <div style="font-weight:700;font-size:14px">@opt.Ad.Title</div>
+                                <div style="font-size:11px;color:var(--text-light)">@(opt.Ad.SponsorName ?? "No sponsor") · @(opt.EventNames.Any() ? string.Join(", ", opt.EventNames) : "Not on any event")</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:6px;flex-shrink:0">
+                            @if (!opt.EventNames.Any())
+                            {
+                                <button class="ccn-btn" style="font-size:11px;padding:4px 10px;background:transparent;color:var(--text-danger)" disabled="@_busy" title="Delete this ad for good" @onclick="() => DeleteUnusedAsync(opt.Ad)">Delete</button>
+                            }
+                            <button class="ccn-btn" style="font-size:11px;padding:4px 12px" disabled="@_busy" @onclick="() => AddFromPickerAsync(opt.Ad)">Add</button>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                <button class="ccn-btn" @onclick="() => _pickerOpen = false">Done</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── New / edit ad ── *@
+@if (_editorOpen)
+{
+    <div class="ccn-form-overlay" style="z-index:150" @onclick="CloseEditor">
+        <div class="ccn-panel" style="padding:20px;box-shadow:var(--modal-shadow);animation:popIn .25s ease" @onclick:stopPropagation>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <h3 style="font-family:var(--font-display);font-weight:700;font-size:18px;margin:0">@(_editId == Guid.Empty ? "New ad" : "Edit ad")</h3>
+                <button @onclick="CloseEditor" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;color:var(--text-light);padding:0">✕</button>
+            </div>
+            @if (_editId != Guid.Empty && _editEventCount > 1)
+            {
+                <div style="font-size:12px;font-weight:700;color:var(--text-warn);margin:-4px 0 12px">Changes show at all @_editEventCount events with this ad.</div>
+            }
+
+            <div style="@Label">Title *</div>
+            <input type="text" @bind="_fTitle" placeholder="e.g. Children's Harbor: Camp 2027" style="@Input;margin-bottom:4px" />
+            <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">For you, and for screen readers. Guests see the image.</div>
+
+            <div style="@Label">Image @(_editId == Guid.Empty ? "*" : "")</div>
+            <InputFile OnChange="OnImageAsync" accept=".jpg,.jpeg,.png,.webp" disabled="@_processing" style="font-size:13px;margin-bottom:6px" />
+            <div style="font-size:11px;color:var(--text-light);margin-bottom:8px">JPEG, PNG, or WebP up to 20 MB. Shown at its own shape, never cropped; stored at up to @(SponsorAdService.MaxSide)px.</div>
+            @if (_processing) { <div style="font-size:12px;color:var(--text-mid);margin-bottom:8px">Processing…</div> }
+            @if (_imageError is not null) { <div style="color:var(--text-danger);font-size:12px;font-weight:700;margin-bottom:8px">@_imageError</div> }
+            @if (PreviewSrc is { } src)
+            {
+                <img src="@src" alt="" style="display:block;width:100%;max-height:260px;object-fit:contain;background:var(--surface-muted);border:var(--control-border);border-radius:8px;margin-bottom:12px" />
+            }
+
+            <div style="@Label">Sponsor</div>
+            <select value="@(_fSponsorId?.ToString() ?? "")" @onchange="e => _fSponsorId = Guid.TryParse(e.Value?.ToString(), out var g) ? g : null" style="@Input;margin-bottom:12px">
+                <option value="">No sponsor (e.g. an HBDA promo)</option>
+                @foreach (var sp in _sponsors)
+                {
+                    <option value="@sp.Sponsor.SponsorId">@sp.Sponsor.Name</option>
+                }
+            </select>
+
+            <div style="@Label">Link (optional)</div>
+            <input type="url" @bind="_fLink" placeholder="@(SelectedSponsorWebsite ?? "https://…")" style="@Input;margin-bottom:4px" />
+            <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">
+                @(SelectedSponsorWebsite is { } w ? $"Leave blank to open the sponsor's website ({w})." : "Leave blank and the ad won't be tappable.")
+            </div>
+
+            @if (_saveError is not null) { <div style="color:var(--text-danger);font-size:12px;font-weight:700;margin-bottom:10px">@_saveError</div> }
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button class="ccn-btn" style="background:transparent" @onclick="CloseEditor">Cancel</button>
+                <button class="ccn-btn" style="background:var(--color-primary)" disabled="@(_busy || _processing)" @onclick="SaveAsync">@(_editId == Guid.Empty ? "Add ad" : "Save")</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid EventId { get; set; }
+    [Parameter] public string? EventName { get; set; }
+
+    private const string Label = "font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:5px";
+    private const string Input = "width:100%;padding:9px 12px;background:var(--bg-base);border:var(--control-border);border-radius:7px;font-size:14px;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;box-sizing:border-box";
+
+    private List<AdCard> _ads = [];
+    private List<SponsorOption> _sponsors = [];
+    private List<AdOption> _library = [];
+    private Guid _loadedFor;
+    private bool _loading = true, _busy, _processing, _pickerOpen, _editorOpen;
+    private string _pickerSearch = "";
+
+    private Guid _editId;
+    private int _editEventCount;
+    private string _fTitle = "";
+    private Guid? _fSponsorId;
+    private string? _fLink;
+    private ShrunkImage? _fImage;
+    private string? _currentImageSrc;
+    private string? _imageError, _saveError;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (EventId == _loadedFor) return;
+        _loadedFor = EventId;
+        await ReloadAsync();
+        _loading = false;
+    }
+
+    private async Task ReloadAsync() => _ads = await AdSvc.LoadForEventAsync(EventId);
+
+    private IEnumerable<AdOption> PickerFiltered => _library
+        .Where(o => !o.OnThisEvent)
+        .Where(o => string.IsNullOrWhiteSpace(_pickerSearch)
+                    || o.Ad.Title.Contains(_pickerSearch.Trim(), StringComparison.OrdinalIgnoreCase)
+                    || (o.Ad.SponsorName ?? "").Contains(_pickerSearch.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private string? SelectedSponsorWebsite =>
+        _sponsors.FirstOrDefault(s => s.Sponsor.SponsorId == _fSponsorId)?.Sponsor.Website is { Length: > 0 } w ? w : null;
+
+    private string? PreviewSrc =>
+        _fImage is { } img ? $"data:{img.ContentType};base64,{Convert.ToBase64String(img.Data)}" : _currentImageSrc;
+
+    private async Task OpenPickerAsync()
+    {
+        _pickerSearch = "";
+        _library = await AdSvc.GetLibraryAsync(EventId);
+        _pickerOpen = true;
+    }
+
+    private async Task AddFromPickerAsync(AdCard ad)
+    {
+        _busy = true;
+        try
+        {
+            await AdSvc.AddToEventAsync(EventId, ad.SponsorAdId);
+            _library = await AdSvc.GetLibraryAsync(EventId);
+            await ReloadAsync();
+            Snackbar.Add($"{ad.Title} added.", Severity.Success);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task DeleteUnusedAsync(AdCard ad)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"Delete the ad \"{ad.Title}\" for good? It isn't on any event.")) return;
+        _busy = true;
+        try
+        {
+            if (!await AdSvc.DeleteUnusedAsync(ad.SponsorAdId))
+                Snackbar.Add($"{ad.Title} was just added to an event, so it wasn't deleted.", Severity.Warning);
+            _library = await AdSvc.GetLibraryAsync(EventId);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task MoveAsync(int index, int direction)
+    {
+        var to = index + direction;
+        if (to < 0 || to >= _ads.Count) return;
+        _busy = true;
+        try
+        {
+            var order = _ads.Select(a => a.SponsorAdId).ToList();
+            (order[index], order[to]) = (order[to], order[index]);
+            await AdSvc.ReorderAsync(EventId, order);
+            await ReloadAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task RemoveAsync(AdCard ad)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"Remove \"{ad.Title}\" from {EventName}? It stays available to add to other events. Its tap count here is cleared.")) return;
+        await AdSvc.RemoveFromEventAsync(EventId, ad.SponsorAdId);
+        Snackbar.Add($"{ad.Title} removed from {EventName}.", Severity.Info);
+        await ReloadAsync();
+    }
+
+    private async Task OpenEditor(AdCard? ad)
+    {
+        _sponsors = await SponsorSvc.GetLibraryAsync(EventId);
+        _editId = ad?.SponsorAdId ?? Guid.Empty;
+        _fTitle = ad?.Title ?? "";
+        _fSponsorId = ad?.SponsorId;
+        _fLink = ad?.LinkUrl;
+        _fImage = null;
+        _currentImageSrc = ad?.ImageSrc;
+        _imageError = _saveError = null;
+        _editEventCount = ad is null ? 0 : await AdSvc.CountEventsAsync(ad.SponsorAdId);
+        _editorOpen = true;
+    }
+
+    private void CloseEditor() { _editorOpen = false; _fImage = null; }
+
+    private async Task OnImageAsync(InputFileChangeEventArgs e)
+    {
+        _imageError = null;
+        if (e.File.Size > ImageShrinker.MaxUploadBytes) { _imageError = "That file is over 20 MB."; return; }
+        _processing = true;
+        try
+        {
+            using var ms = new MemoryStream();
+            await e.File.OpenReadStream(ImageShrinker.MaxUploadBytes).CopyToAsync(ms);
+            var data = ms.ToArray();
+            var type = e.File.ContentType;
+            _fImage = await Task.Run(() => ImageShrinker.Shrink(data, type, SponsorAdService.MaxSide, WebpMode.Smallest));
+            if (_fImage is null) _imageError = "Couldn't read that image. Try saving it as a JPEG or PNG.";
+        }
+        finally { _processing = false; }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saveError = null;
+        if (string.IsNullOrWhiteSpace(_fTitle)) { _saveError = "Give the ad a title."; return; }
+        if (_editId == Guid.Empty && _fImage is null) { _saveError = "Choose an image."; return; }
+        if (!string.IsNullOrWhiteSpace(_fLink)
+            && !(Uri.TryCreate(_fLink.Trim(), UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp)))
+        {
+            _saveError = "The link needs to be a full web address, starting with https://";
+            return;
+        }
+        _busy = true;
+        try
+        {
+            var isNew = _editId == Guid.Empty;
+            await AdSvc.UpsertAsync(_editId, _fTitle, _fSponsorId, _fLink, _fImage, isNew ? EventId : null);
+            Snackbar.Add(isNew ? $"{_fTitle.Trim()} added." : $"{_fTitle.Trim()} saved.", Severity.Success);
+            CloseEditor();
+            await ReloadAsync();
+        }
+        finally { _busy = false; }
+    }
+}

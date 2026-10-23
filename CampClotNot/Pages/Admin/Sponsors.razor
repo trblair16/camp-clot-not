@@ -1,6 +1,7 @@
 @page "/admin/sponsors"
 @attribute [Authorize(Roles = "Admin")]
 @inject SponsorService SponsorSvc
+@inject SponsorAdService AdSvc
 @inject ActiveEventService ActiveEventSvc
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
@@ -22,7 +23,18 @@
 
 <div style="padding: 0 16px 100px">
     <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 20px"><img src="/img/icons/trophy.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Sponsors@(_eventName is null ? "" : $" — {_eventName}")</h2>
-    <p style="font-size:13px;color:var(--text-mid);margin:-12px 0 16px;max-width:720px">
+    <div style="display:inline-flex;border:var(--panel-border);border-radius:8px;overflow:hidden;margin:0 0 14px;box-shadow:var(--control-shadow)">
+        <button style="@TabStyle(_tab == SponsorTab.Sponsors)" @onclick="() => _tab = SponsorTab.Sponsors">Sponsors (@_sponsors.Count)</button>
+        <button style="@TabStyle(_tab == SponsorTab.Ads)" @onclick="() => _tab = SponsorTab.Ads">Ads</button>
+    </div>
+
+    @if (_tab == SponsorTab.Ads)
+    {
+        <SponsorAdsTab EventId="_eventId" EventName="@_eventName" />
+    }
+    else
+    {
+    <p style="font-size:13px;color:var(--text-mid);margin:0 0 16px;max-width:720px">
         The sponsors shown on this event's Hub and Dashboard. A sponsor is entered once: use
         <strong>Add from past events</strong> to reuse one, or the form to add someone new. Logo and contact
         changes show at every event they're part of.
@@ -207,6 +219,7 @@
         </div>
 
     </div>
+    }
 </div>
 
 @* ── Add from past events ── *@
@@ -269,6 +282,12 @@
     private string? _fPhone;
     private Guid _eventId;
     private string? _eventName;
+    private enum SponsorTab { Sponsors, Ads }
+    private SponsorTab _tab = SponsorTab.Sponsors;
+
+    private static string TabStyle(bool active) =>
+        $"padding:7px 16px;border:none;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:13px;" +
+        (active ? "background:var(--black);color:#fff" : "background:var(--panel-bg);color:var(--text-dark)");
     private int _editingEventCount;
     private bool _pickerOpen;
     private bool _busy;
@@ -420,6 +439,7 @@
             ContactName      = string.IsNullOrWhiteSpace(_fContactName) ? null : _fContactName.Trim(),
             Phone            = string.IsNullOrWhiteSpace(_fPhone) ? null : _fPhone.Trim()
         }, addToEventId: _editingId == Guid.Empty ? _eventId : null);
+        if (_editingId != Guid.Empty) await AdSvc.InvalidateForSponsorAsync(_editingId);   // its website feeds its ads' links
         Snackbar.Add(_editingId == Guid.Empty ? $"{_fName} added." : $"{_fName} updated.", Severity.Success);
         CancelEdit();
         await Reload();

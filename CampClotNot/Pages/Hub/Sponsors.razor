@@ -1,6 +1,7 @@
 @page "/hub/sponsors"
 @attribute [Authorize(Policy = "HubGuestAccess")]
 @inject SponsorService SponsorSvc
+@inject SponsorAdService AdSvc
 @inject ActiveEventService ActiveEventSvc
 @inject GuestAccessService GuestSvc
 @inject AuthenticationStateProvider Auth
@@ -19,12 +20,33 @@
     {
         <MudProgressCircular Indeterminate="true" />
     }
-    else if (!_sponsors.Any())
+    else if (!_sponsors.Any() && !_ads.Any())
     {
         <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No sponsors yet.</p>
     }
     else
     {
+        @* Sponsor ads (#350): full width at their own proportions, never cropped. A tap is counted
+           for this event by /ads/{event}/{ad}, which then opens the ad's link. *@
+        @if (_ads.Any())
+        {
+            <div class="sponsor-ads">
+                @foreach (var ad in _ads)
+                {
+                    @if (ad.Target is not null)
+                    {
+                        <a href="/ads/@_eventId/@ad.SponsorAdId" target="_blank" rel="noopener" class="sponsor-ad" title="@ad.Title">
+                            <img src="@ad.ImageSrc" alt="@ad.Title" loading="lazy" />
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="sponsor-ad"><img src="@ad.ImageSrc" alt="@ad.Title" loading="lazy" /></div>
+                    }
+                }
+            </div>
+        }
+
         <div class="sponsors-grid">
             @foreach (var s in _sponsors)
             {
@@ -57,6 +79,14 @@
 </div>
 
 <style>
+    .sponsor-ads { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 24px; }
+    .sponsor-ad {
+        display: block; width: 100%; max-width: 720px; overflow: hidden; line-height: 0;
+        border: var(--panel-border); border-radius: 10px; box-shadow: var(--panel-shadow); background: var(--panel-bg);
+    }
+    .sponsor-ad img { display: block; width: 100%; height: auto; }
+    a.sponsor-ad { transition: transform .12s ease; }
+    a.sponsor-ad:hover { transform: translateY(-2px); }
     .sponsors-grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -97,6 +127,8 @@
 
 @code {
     private List<Sponsor> _sponsors = [];
+    private List<AdCard> _ads = [];
+    private Guid _eventId;
     private bool _loading = true;
     private bool _isGuest;
 
@@ -106,7 +138,9 @@
         var guestEventId = GuestSvc.GetGuestEventId(authState.User);
         _isGuest = guestEventId.HasValue;
         var eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
+        _eventId  = eventId;
         _sponsors = await SponsorSvc.GetAllForEventAsync(eventId);
+        _ads      = await AdSvc.GetForEventAsync(eventId);
         _loading  = false;
     }
 
