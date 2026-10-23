@@ -5,7 +5,7 @@
 @inject GuestAccessService GuestSvc
 @inject AuthenticationStateProvider Auth
 
-<PageTitle>Staff — Camp Clot Not</PageTitle>
+<PageTitle>Event Team — Camp Clot Not</PageTitle>
 
 @if (!_isGuest)
 {
@@ -14,11 +14,11 @@
 
 <div style="padding: 0 16px 100px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0"><img src="/img/icons/people.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Staff Directory</h2>
+        <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0"><img src="/img/icons/people.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Event Team</h2>
         @if (_isAdmin)
         {
             @* The directory is the event's team members marked "Show in Hub directory". *@
-            <a class="ccn-btn" href="/admin/team" style="font-size:13px;text-decoration:none">✏️ Edit on Team</a>
+            <a class="ccn-btn" href="/admin/team" style="font-size:13px;text-decoration:none">✏️ Edit Event Team</a>
         }
     </div>
 
@@ -28,7 +28,7 @@
     }
     else if (!_cards.Any())
     {
-        <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No staff listed yet.</p>
+        <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No one on the event team is listed yet.</p>
     }
     else
     {

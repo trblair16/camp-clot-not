@@ -213,7 +213,13 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     box-shadow: var(--panel-shadow);
     min-width: 180px;
     z-index: 51;
-    overflow: hidden;
+    /* Scroll inside the menu when it's taller than the window (zoomed-in browsers, short
+       laptop screens), instead of running off the bottom where the page scrolls but it doesn't. */
+    max-height: calc(100vh - 96px);
+    max-height: calc(100dvh - 96px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     --text-dark: var(--panel-text-dark); --text-mid: var(--panel-text-mid); --text-light: var(--panel-text-light); --text-accent: var(--panel-text-accent); --text-danger: var(--panel-text-danger); --text-success: var(--panel-text-success); --text-link: var(--panel-text-link); --text-warn: var(--panel-text-warn); color: var(--text-dark);
 }
 .nav-admin-panel a,

@@ -152,7 +152,7 @@
                                 </div>
                             }
                         </div>
-                        <div style="font-size:12px;color:var(--text-light);margin-bottom:10px">Guests who joined the event and staff at this event who aren't in any option of this slot yet.</div>
+                        <div style="font-size:12px;color:var(--text-light);margin-bottom:10px">Guests who joined the event and event team members who aren't in any option of this slot yet.</div>
 
                         @if (!_unassigned.Any())
                         {
@@ -276,7 +276,7 @@
 
                             <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
                                 <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(true, false), "No guests have joined this event yet.")'>Add all guests</button>
-                                <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(false, true), "The staff list for this event is empty.")'>Add all staff</button>
+                                <button class="ccn-btn" style="font-size:12px;padding:6px 10px" disabled="@_busy" @onclick='() => BulkAsync(new BulkFilter(false, true), "The event team is empty.")'>Add the event team</button>
                             </div>
 
                             <div class="bo-label">By role</div>
