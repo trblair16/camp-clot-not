@@ -272,6 +272,8 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     padding-bottom: env(safe-area-inset-bottom);
     align-items: flex-start;
 }
+/* While a sheet is open the bar (and the sheet inside it) sits above the sheet's backdrop (z 51). */
+.nav-bottom-bar.sheet-open { z-index: 53; }
 .nav-tab {
     flex: 1;
     height: 56px;
@@ -308,14 +310,19 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
 .hub-tab .tab-icon img { width: 20px; height: 20px; display: block; }
 .nav-admin-sheet a img, .nav-admin-sheet button img,
 .nav-game-sheet a img, .nav-game-sheet button img { width: 20px; height: 20px; flex-shrink: 0; }
+/* The sheets are children of .nav-bottom-bar, anchored to its top edge. That holds however a
+   browser sizes the viewport (bottom address bars, gesture bars, vh that counts hidden UI), which
+   is what cut off the last rows on Android. Height is capped by the visible space above the bar. */
 .nav-admin-sheet,
 .nav-game-sheet {
-    position: fixed;
-    bottom: calc(60px + env(safe-area-inset-bottom));
+    position: absolute;
+    bottom: calc(100% + var(--border-width));   /* sit on the bar's top border, not over it */
     left: 0;
     right: 0;
     max-height: calc(70vh - 60px);
+    max-height: calc(100dvh - 72px - env(safe-area-inset-top) - 60px - env(safe-area-inset-bottom) - 24px);
     overflow-y: auto;
+    overscroll-behavior: contain;
     background: var(--panel-bg);
     border-top: var(--border-width) solid var(--border-color);
     border-radius: 16px 16px 0 0;
