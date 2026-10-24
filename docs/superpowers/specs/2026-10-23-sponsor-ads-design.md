@@ -18,7 +18,7 @@ without being uploaded again.
 | Model | Same pattern as reusable sponsors (#341). `SponsorAd` is global: title (alt text and admin label), image, **optional** `SponsorId`, optional `LinkUrl`. `EventAd` (`EventId`, `SponsorAdId`, `SortOrder`, `ClickCount`; key on both ids) is which ads an event shows, in what order. |
 | Sponsor link | Optional. An ad linked to a sponsor is labeled with it, and its click-through defaults to the sponsor's website. A standalone ad (an HBDA promo, a "save the date") has no sponsor. Deleting a sponsor (only possible when it's on no event) leaves its ads standalone. |
 | Click target | The ad's `LinkUrl`, else its sponsor's website, else not clickable. |
-| Where ads show | `/hub/sponsors` only: a full-width section above the logo grid, in the event's order. |
+| Where ads show | Their own page, `/hub/sponsor-ads`, in the event's order (moved off `/hub/sponsors` before release). It's linked from the Sponsors page title row and from a "Sponsor Ads" button next to the Dashboard's "Our Sponsors" title, both shown only when the event has ads. |
 | Image shape | Shown at its own proportions, full width (up to 720px), never cropped. |
 | Image storage | Uploads up to 20 MB (the existing limit). Stored resized to 1600px on the long side with `ImageShrinker` (`Smallest`: lossless when that keeps text sharp at a sensible size, otherwise WebP quality 85). Served from `/sponsors/ad/{id}?v=…` with a long cache, and the version changes when the image is replaced. |
 | Click counts | `/ads/{eventId}/{adId}` adds 1 to that event's `EventAd.ClickCount` and redirects to the ad's target. The target always comes from the database, so this can't be used as an open redirect. No personal data is stored. Counts show on the admin Ads tab. |

@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @using Microsoft.EntityFrameworkCore
 @inject SponsorService SponsorSvc
+@inject SponsorAdService AdSvc
 @inject ActiveEventService ActiveEventSvc
 @inject ScheduleService ScheduleSvc
 @inject AnnouncementService AnnouncementSvc
@@ -155,15 +156,22 @@ else
     }
 
     @* ── SPONSORS ── *@
-    @if (_sponsors.Any())
+    @if (_sponsors.Any() || _hasAds)
     {
         <div class="ccn-panel" style="margin-bottom:18px;padding:18px 20px;animation:slideUp .25s ease">
             <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text-dark);margin-bottom:14px;
                         display:flex;align-items:center;justify-content:space-between">
-                <span><img src="/img/icons/trophy.svg?v=3" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;opacity:.8" alt="" />Our Sponsors</span>
+                <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <span><img src="/img/icons/trophy.svg?v=3" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;opacity:.8" alt="" />Our Sponsors</span>
+                    @if (_hasAds)
+                    {
+                        <a href="/hub/sponsor-ads" class="hero-pill" style="font-size:12px;padding:4px 14px">📣 Sponsor Ads</a>
+                    }
+                </span>
                 <a href="/hub/sponsors" style="font-size:11px;color:var(--text-accent);text-decoration:none">View all →</a>
             </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px">
+                @* (empty, and the panel just shows the ads button, when the event has ads but no sponsors yet) *@
                 @foreach (var s in _sponsors)
                 {
                     var cellStyle = "background:white;border:2px solid var(--divider);border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center;height:52px";
@@ -244,6 +252,7 @@ else
 
 @code {
     private List<Sponsor>       _sponsors           = new();
+    private bool                _hasAds;
     private List<ScheduleItem>  _todayEvents        = new();
     private Announcement?       _latestAnnouncement;
     private bool                _loading            = true;
@@ -262,6 +271,7 @@ else
         _isGuest = guestEventId.HasValue;
         var eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
         _sponsors = await SponsorSvc.GetAllForEventAsync(eventId);
+        _hasAds   = (await AdSvc.GetForEventAsync(eventId)).Any();
 
         _anyGameEnabled = await CapSvc.IsEnabledAsync(eventId, Feature.BoardGame)
             || await CapSvc.IsEnabledAsync(eventId, Feature.MiniGameSpinner)

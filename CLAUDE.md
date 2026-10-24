@@ -398,7 +398,7 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 | `CampClotNot/Pages/Hub/IncidentPrint.razor` | Print view at `/hub/incidents/{id}/print` — uses `PrintLayout` |
 | `CampClotNot/Pages/Hub/Sponsors.razor` | Public sponsor grid at `/hub/sponsors` |
 | `CampClotNot/Services/IncidentReportService.cs` | Submit, list, acknowledge incident reports |
-| `CampClotNot/Services/SponsorAdService.cs` / `Pages/Admin/SponsorAdsTab.razor` | Sponsor ads (#350): the event's ads and order, the picker, the new/edit dialog, `/sponsors/ad/{id}` images, and `/ads/{event}/{ad}` (counts a tap, then redirects to the ad's link or its sponsor's website) |
+| `CampClotNot/Services/SponsorAdService.cs` / `Pages/Admin/SponsorAdsTab.razor` | Sponsor ads (#350): the event's ads and order, the picker, the new/edit dialog, the Hub's `/hub/sponsor-ads` page (`Pages/Hub/SponsorAds.razor`), `/sponsors/ad/{id}` images, and `/ads/{event}/{ad}` (counts a tap, then redirects to the ad's link or its sponsor's website) |
 | `CampClotNot/Services/SponsorService.cs` | Shared sponsors (#341): details, the event's list and order (`EventSponsor`), the "Add from past events" picker, delete-if-unused |
 | `CampClotNot/appsettings.Development.json` | Local DB + seed credentials (gitignored — must copy to worktrees manually) |
 
