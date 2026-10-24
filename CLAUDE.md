@@ -398,7 +398,7 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 | `CampClotNot/Pages/Hub/IncidentPrint.razor` | Print view at `/hub/incidents/{id}/print` — uses `PrintLayout` |
 | `CampClotNot/Pages/Hub/Sponsors.razor` | Public sponsor grid at `/hub/sponsors` |
 | `CampClotNot/Services/IncidentReportService.cs` | Submit, list, acknowledge incident reports |
-| `CampClotNot/Services/SponsorAdService.cs` / `Pages/Admin/SponsorAdsTab.razor` | Sponsor ads (#350): the event's ads and order, the picker, the new/edit dialog, `/sponsors/ad/{id}` images, and `/ads/{event}/{ad}` (counts a tap, then redirects to the ad's link or its sponsor's website) |
+| `CampClotNot/Services/SponsorAdService.cs` / `Pages/Admin/SponsorAdsTab.razor` | Sponsor ads (#350): the event's ads and order, the picker, the new/edit dialog, the Hub's `/hub/sponsor-ads` page (`Pages/Hub/SponsorAds.razor`), `/sponsors/ad/{id}` images, and `/ads/{event}/{ad}` (counts a tap, then redirects to the ad's link or its sponsor's website) |
 | `CampClotNot/Services/SponsorService.cs` | Shared sponsors (#341): details, the event's list and order (`EventSponsor`), the "Add from past events" picker, delete-if-unused |
 | `CampClotNot/appsettings.Development.json` | Local DB + seed credentials (gitignored — must copy to worktrees manually) |
 
@@ -440,6 +440,6 @@ feature/N-name    — feature branches off dev (N = GitHub issue number, open is
 ## Production (Railway)
 
 - **Migrations apply automatically at startup.** There's no manual step when deploying.
-- **Environment variables:** `DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`/`Seed__AdminPassword` (only used when the Users table is empty), `Vapid__PublicKey`/`Vapid__PrivateKey`/`Vapid__Subject`, `Email__ResendApiKey`/`Email__From` (password emails; unset means Admins get copyable links instead), and `App__PublicBaseUrl` (optional, the base for emailed links), and `Ui__AppShell` (optional; `false` turns off the mobile app-shell layout from #326 and restores whole-page scrolling).
+- **Environment variables:** `DATABASE_URL`, `ASPNETCORE_ENVIRONMENT`, `Seed__AdminEmail`/`Seed__AdminPassword` (only used when the Users table is empty), `Vapid__PublicKey`/`Vapid__PrivateKey`/`Vapid__Subject`, `Email__ResendApiKey`/`Email__From` (password emails; unset means Admins get copyable links instead), and `App__PublicBaseUrl` (optional, the base for emailed links), and `Ui__AppShell` (optional; `false` turns off the mobile app-shell layout from #326 and restores whole-page scrolling). `App__EnvironmentLabel` (optional) sets the header's environment pill; by default it's Railway's `RAILWAY_ENVIRONMENT_NAME` uppercased (nothing in `production`, "STAGING" on staging) and "DEV" locally, and `none` hides it.
 - **Emergency manual migration** (normally unnecessary): `dotnet ef database update --connection '<public TCP proxy connection string>'` from a machine that can reach Railway's public Postgres proxy (Railway → Postgres → Settings → Public Networking). Use single quotes in PowerShell so `$` in the password isn't expanded.
 - **Locked out of an account:** use "Forgot password?" (once email is configured), or have another Admin use "Email reset link" / "Reset PW" on `/admin/users`.

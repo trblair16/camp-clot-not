@@ -745,7 +745,7 @@
         if (f.CanSignIn && string.IsNullOrWhiteSpace(f.Email)) { f.Error = "An email is needed so they can sign in."; return; }
         if (await EventStaffSvc.FindUserByEmailAsync(f.Email, f.Row.UserId) is { } other)
         {
-            f.Error = $"{other.FirstName} {other.LastName} already has that email.";
+            f.Error = $"Another person record ({other.FirstName} {other.LastName}{(other.CanSignIn ? ", who can sign in" : "")}) already has that email. Use a different email, or ask Tyler to merge the two.";
             return;
         }
 

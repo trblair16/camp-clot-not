@@ -198,6 +198,43 @@
                             @if (!IsHex(_colors["BorderColor"])) { <div class="thm-err">Border color: use #RRGGBB</div> }
                         }
                     </div>
+
+                    @* Optional colors: off keeps the default look. Text on them is black or white automatically. *@
+                    <div style="margin-top:16px">
+                        <div class="thm-label">Optional colors</div>
+                        @foreach (var o in OptionalFields)
+                        {
+                            var opt = o;
+                            <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:700;cursor:pointer;margin:8px 0 4px">
+                                <input type="checkbox" checked="@_optOn[opt.Key]" @onchange="() => _optOn[opt.Key] = !_optOn[opt.Key]" style="margin-top:3px" />
+                                <span>@opt.Label<span style="display:block;font-weight:600;font-size:11px;color:var(--text-light)">@(_optOn[opt.Key] ? opt.Hint : opt.OffHint)</span></span>
+                            </label>
+                            @if (_optOn[opt.Key])
+                            {
+                                <div class="thm-color-row" style="margin-left:22px">
+                                    <input type="color" value="@(IsHex(_colors[opt.Key]) ? _colors[opt.Key] : "#000000")" @oninput="e => _colors[opt.Key] = e.Value?.ToString() ?? _colors[opt.Key]" />
+                                    <input class="thm-input" value="@_colors[opt.Key]" @onchange='e => _colors[opt.Key] = (e.Value?.ToString() ?? "").Trim()' />
+                                </div>
+                                @if (!IsHex(_colors[opt.Key])) { <div class="thm-err" style="margin-left:22px">Use #RRGGBB</div> }
+                            }
+                        }
+                    </div>
+                </div>
+
+                @* Save sits after all the options (the preview on the right updates as you go). *@
+                <div class="ccn-panel" style="padding:16px">
+                    @if (!IsValid)
+                    {
+                        <div class="thm-err" style="margin:0 0 10px">Fix the highlighted colors before saving.</div>
+                    }
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="ccn-btn" disabled="@(!IsValid || _saving)" @onclick="SaveAsync">@(_saving ? "Saving…" : "Save Theme")</button>
+                        @if (_savedActive)
+                        {
+                            <button class="ccn-btn" style="background:transparent" @onclick='() => Nav.NavigateTo(Nav.Uri, forceLoad: true)'>Reload to see it</button>
+                        }
+                    </div>
+                    <div class="thm-hint" style="margin-top:8px">Changes reach everyone on their next page load. Logo and banner uploads save immediately.</div>
                 </div>
             </div>
 
@@ -220,6 +257,10 @@
                                 <span style="font-family:var(--font-display);font-weight:700;font-size:10px;color:var(--primary-on-black);letter-spacing:2px;text-transform:uppercase;line-height:1">@_subtitle</span>
                             }
                         </div>
+                        <div style="background:var(--black);padding:0 10px 10px;display:flex;gap:6px;justify-content:center">
+                            <span style="font-family:var(--font-display);font-weight:700;font-size:11px;padding:4px 10px;border-radius:6px;border:3px solid var(--nav-active,#2980B9);background:var(--nav-active,#2980B9);color:var(--nav-active-text,#1A1A1A)">Schedule</span>
+                            <span style="font-family:var(--font-display);font-weight:700;font-size:11px;padding:4px 10px;border-radius:6px;border:3px solid var(--home-btn-border,#555);background:var(--home-btn-bg,transparent);color:var(--home-btn-text,#ccc)">Hub</span>
+                        </div>
                         <div style="background-color:var(--bg-base);background-image:var(--bg-dot-image);background-size:22px 22px;padding:16px;font-family:'Nunito',sans-serif;color:var(--text-dark)">
                             <div style="background:var(--color-primary);border:var(--panel-border);border-radius:12px;box-shadow:var(--panel-shadow);padding:16px;text-align:center;margin-bottom:14px">
                                 @if (_state.BannerUrl is { } pb)
@@ -231,6 +272,12 @@
                                     <img src="@pbl" alt="" style="height:44px;width:auto;max-width:100%;object-fit:contain;margin-bottom:8px" />
                                 }
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text-dark)">Welcome to @_state.EventName</div>
+                                <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+                                    @foreach (var label in new[] { "Schedule", "Event Team", "Sponsors" })
+                                    {
+                                        <span style="font-family:var(--font-display);font-weight:700;font-size:11px;padding:4px 12px;border-radius:50px;background:var(--home-btn-bg,rgba(0,0,0,.22));border:2px solid var(--home-btn-border,rgba(0,0,0,.5));color:var(--home-btn-text,var(--text-dark))">@label</span>
+                                    }
+                                </div>
                             </div>
                             <div style="background:var(--panel-bg);border:var(--panel-border);border-radius:10px;box-shadow:var(--panel-shadow);padding:14px;margin-bottom:14px">
                                 <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:4px">Today's schedule</div>
@@ -247,20 +294,6 @@
                     </div>
                 </div>
 
-                <div class="ccn-panel" style="padding:16px">
-                    @if (!IsValid)
-                    {
-                        <div class="thm-err" style="margin:0 0 10px">Fix the highlighted colors before saving.</div>
-                    }
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
-                        <button class="ccn-btn" disabled="@(!IsValid || _saving)" @onclick="SaveAsync">@(_saving ? "Saving…" : "Save Theme")</button>
-                        @if (_savedActive)
-                        {
-                            <button class="ccn-btn" style="background:transparent" @onclick='() => Nav.NavigateTo(Nav.Uri, forceLoad: true)'>Reload to see it</button>
-                        }
-                    </div>
-                    <div class="thm-hint" style="margin-top:8px">Changes reach everyone on their next page load. Logo and banner uploads save immediately.</div>
-                </div>
             </div>
         </div>
     }
@@ -280,6 +313,17 @@
         new("BgBase",    "Page background",  "Behind everything"),
         new("PanelBg",   "Panel background", "Cards, forms, buttons"),
     ];
+
+    private record OptionalField(string Key, string Label, string Hint, string OffHint, string Default);
+
+    private static readonly OptionalField[] OptionalFields =
+    [
+        new("HomeButtonBg", "Buttons", "The menu buttons in the header, and the Schedule, Event Team, … buttons on the Dashboard banner.",
+            "Off: outlined gray buttons in the header, see-through dark buttons on the banner.", "#FFFFFF"),
+        new("NavActiveBg", "Selected menu button", "The menu button for the page you're on (Home, Hub, Admin, …), and the selected tab on phones.",
+            "Off: each menu button has its own color.", "#2980B9"),
+    ];
+    private Dictionary<string, bool> _optOn = new();
 
     private static readonly (string Value, string Label)[] Fonts =
     [
@@ -320,7 +364,8 @@
     private bool IsValid =>
         ColorFields.All(c => IsHex(_colors[c.Key]))
         && (!_dots || IsHex(_colors["BgDot"]))
-        && (_bold || IsHex(_colors["BorderColor"]));
+        && (_bold || IsHex(_colors["BorderColor"]))
+        && OptionalFields.All(o => !_optOn[o.Key] || IsHex(_colors[o.Key]));
 
     protected override async Task OnInitializedAsync()
     {
@@ -361,7 +406,10 @@
             ["Primary"] = c.Primary, ["Accent"] = c.Accent, ["Success"] = c.Success, ["Info"] = c.Info,
             ["BgBase"] = c.BgBase, ["PanelBg"] = c.PanelBg,
             ["BgDot"] = c.BgDot, ["BorderColor"] = c.BorderColor,
+            ["HomeButtonBg"] = c.HomeButtonBg ?? OptionalFields[0].Default,
+            ["NavActiveBg"]  = c.NavActiveBg  ?? OptionalFields[1].Default,
         };
+        _optOn = new() { ["HomeButtonBg"] = c.HomeButtonBg is not null, ["NavActiveBg"] = c.NavActiveBg is not null };
         _font = c.HeadingFont;
         _dots = c.UseDotPattern;
         _bold = c.BorderWidth == "3px";
@@ -384,6 +432,8 @@
             BgBase        = _colors["BgBase"],
             PanelBg       = _colors["PanelBg"],
             BgDot         = _colors["BgDot"],
+            HomeButtonBg  = _optOn["HomeButtonBg"] ? _colors["HomeButtonBg"] : null,
+            NavActiveBg   = _optOn["NavActiveBg"]  ? _colors["NavActiveBg"]  : null,
             UseDotPattern = _dots,
             HeadingFont   = _font,
             BorderWidth   = _bold ? "3px" : "1.5px",

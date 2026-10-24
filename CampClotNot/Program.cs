@@ -81,6 +81,7 @@ try
     builder.Services.AddScoped<IncidentReportService>();
     builder.Services.AddScoped<SponsorService>();
     builder.Services.AddScoped<SponsorAdService>();
+    builder.Services.AddSingleton(EnvironmentLabel.From(builder.Configuration, builder.Environment));
     builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
@@ -334,7 +335,7 @@ try
         var url = await ads.RecordClickAsync(eventId, adId);
         return url is not null && Uri.TryCreate(url, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp)
             ? Results.Redirect(u.ToString())
-            : Results.Redirect("/hub/sponsors");
+            : Results.Redirect("/hub/sponsor-ads");
     }).AllowAnonymous();
 
     // Staff directory photos, by person (UserId). Only served for people shown in some event's

@@ -5,6 +5,7 @@
 
 @* ── MOBILE HEADER ──────────────────────────────────────────────── *@
 <div class="nav-mobile-header">
+    <EnvBadge />
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
         <NavBrand Height="36" SubtitleSize="10" />
         @if (!string.IsNullOrWhiteSpace(_guestFirstName))
@@ -16,6 +17,7 @@
 
 @* ── DESKTOP HEADER ─────────────────────────────────────────────── *@
 <div class="nav-desktop-header">
+    <EnvBadge />
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
         <NavBrand Height="42" SubtitleSize="11" />
         @if (!string.IsNullOrWhiteSpace(_guestFirstName))
@@ -81,7 +83,7 @@
     {
         var active = IsActive(href);
         return active
-            ? $"border-color:{color};box-shadow:2px 2px 0 {color};background:{color};color:#1A1A1A"
+            ? $"border-color:var(--nav-active,{color});box-shadow:2px 2px 0 var(--nav-active,{color});background:var(--nav-active,{color});color:var(--nav-active-text,#1A1A1A)"
             : "";
     }
 }
