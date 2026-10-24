@@ -8,13 +8,11 @@ A Blazor Server (.NET 8) web app for Camp Clot Not (CCN), a camp for kids with b
 
 ---
 
-## Current State (as of 2026-10-08)
+## Current State (as of 2026-10-24)
 
-The app is now a multi-event HBDA platform ("HBDA Events"). CCN 2026 (June 19–25) ran on v1.0.0/v1.0.1, and Men's Retreat 2026 (July) ran on v1.1.0. **The next event is Camp Harvest 2026 (mid-October).** Release tags and history: `docs/RELEASES.md`.
+The app is now a multi-event HBDA platform ("HBDA Events"). CCN 2026 (June 19–25) ran on v1.0.0/v1.0.1, Men's Retreat 2026 (July) ran on v1.1.0, and **Camp Harvest 2026 (mid-October) ran on v1.2.0.** Release tags and history: `docs/RELEASES.md`.
 
-**`main` (production) = `v1.1.1`:** last updated 2026-07-25 (PR #301). It has the CCN go-live build plus v1.1.0 Men's Retreat enablement (#297): active-event wiring, capability gating, per-event theme, and guest QR/event-code access.
-
-**`dev`: merged but not yet released to `main`.** This is the Camp Harvest release (87 commits ahead of `main`, 8 migrations):
+**`main` (production) = `dev` = `v1.2.0`:** released 2026-10-24 (PR #353, `dev` → `main`). The Camp Harvest release — everything below shipped:
 
 | Issue / PR | Feature | Spec |
 |---|---|---|
@@ -28,12 +26,16 @@ The app is now a multi-event HBDA platform ("HBDA Events"). CCN 2026 (June 19–
 | #322 / #323 | Image uploads up to 20 MB with auto-resize (staff photos, sponsor logos, theme, groups) | `2026-10-05-larger-logo-uploads-design.md` |
 | #324 / #325 | Guests land on the Dashboard, get a Home tab; bottom-nav highlight fix | — |
 | #326 / #327–#333 | Mobile app-shell layout for the iOS PWA (fixed header and bottom bar, `.app-main` scroller, black status bar, content-hashed CSS/JS). Supersedes #153. See pitfalls #22–#23 | — |
+| #341 / #342 | Reusable sponsors: entered once, picked per event (`EventSponsor`) | — |
+| #343 / #345 | Hotfix: Android admin menu cut off at "Venue & Content" | — |
+| #350 / #349, #352 | Sponsor ads: global `SponsorAd` + per-event `EventAd` (order, tap counts), `/hub/sponsor-ads` page, "Event Team" naming | — |
+| — / #352 | Theme button colors, environment pill (`App__EnvironmentLabel`), favicon, and the `MergeDuplicatePeopleByEmail` migration (folds a directory-card copy into the account that can sign in when they share an email) | — |
 
-**Releasing `dev` → `main`:** two migrations remove data the old code depends on (`AddEventStaff` drops `Users.GroupId`; `MergeStaffDirectoryIntoTeam` drops `StaffMembers` after copying it into `Users`/`EventStaff`). **Back up the Railway Postgres before merging.** Rolling back means restoring that backup and redeploying `v1.1.1`. Redeploying the old code alone won't work. Confirm `Vapid__*` is set on prod. After deploying, trim each event's team on `/admin/team`: the `AddEventStaff` backfill adds every active user to every existing event.
+**Migration notes (for future reference if a rollback is ever needed):** two migrations in this release removed data the old `v1.1.1` code depends on (`AddEventStaff` drops `Users.GroupId`; `MergeStaffDirectoryIntoTeam` drops `StaffMembers` after copying it into `Users`/`EventStaff`). Rolling back `v1.2.0` means restoring a pre-release Railway Postgres backup and redeploying `v1.1.1` — redeploying the old code alone won't work.
 
-**Before Camp Harvest:** verify on staging (including a real Resend email once `Email__*` is set), back up prod, open the `dev` → `main` release PR, merge and tag it (`v1.2.0`), smoke test production, then set up the Camp Harvest event (theme, logo, guest code, team).
+**Next up:** #354 (guest/QR join should detect existing accounts and team records — fixes sponsors/speakers double-counted on the Attendance roster).
 
-**Open issues:** #315 (Cloudflare Turnstile on login and forgot-password) is the only real backlog item. #311, #314, #318, #320, #324, and #326 are merged into `dev` but still open (see "Closing issues" below). #153 is superseded by #326. Planned-but-unstarted items are in the Roadmap below.
+**Open issues:** #315 (Cloudflare Turnstile on login and forgot-password) and #335 (schedule export) are the real backlog items, plus #354 above. Planned-but-unstarted roadmap items are below.
 
 **How work is done here:** every feature has a design spec in `docs/superpowers/specs/` and an implementation plan in `docs/superpowers/plans/`. Read the relevant spec before changing a feature. New work follows the same process: ask the design questions first, write a spec with a "Design Decisions" table, write a plan, implement in logical commits, then open a PR into `dev` with a manual test checklist.
 
