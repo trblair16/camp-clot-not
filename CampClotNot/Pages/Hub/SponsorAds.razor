@@ -1,3 +1,4 @@
+@page "/hub/spotlight"
 @page "/hub/sponsor-ads"
 @attribute [Authorize(Policy = "HubGuestAccess")]
 @inject SponsorAdService AdSvc
@@ -29,19 +30,20 @@
     else
     {
         @* Sponsor ads (#350): full width at their own proportions, never cropped. A tap is counted
-           for this event by /ads/{event}/{ad}, which then opens the ad's link. *@
-        <div class="sponsor-ads">
+           for this event by /go/{event}/{ad}, which then opens the ad's link. Nothing here
+           is named "ad" or "sponsor-ad": ad blockers hide or block anything that is. *@
+        <div class="spot-list">
             @foreach (var ad in _ads)
             {
                 @if (ad.Target is not null)
                 {
-                    <a href="/ads/@_eventId/@ad.SponsorAdId" target="_blank" rel="noopener" class="sponsor-ad" title="@ad.Title">
+                    <a href="/go/@_eventId/@ad.SponsorAdId" target="_blank" rel="noopener" class="spot-card" title="@ad.Title">
                         <img src="@ad.ImageSrc" alt="@ad.Title" />
                     </a>
                 }
                 else
                 {
-                    <div class="sponsor-ad"><img src="@ad.ImageSrc" alt="@ad.Title" /></div>
+                    <div class="spot-card"><img src="@ad.ImageSrc" alt="@ad.Title" /></div>
                 }
             }
         </div>
@@ -49,14 +51,14 @@
 </div>
 
 <style>
-    .sponsor-ads { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-    .sponsor-ad {
+    .spot-list { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .spot-card {
         display: block; width: 100%; max-width: 720px; overflow: hidden; line-height: 0;
         border: var(--panel-border); border-radius: 10px; box-shadow: var(--panel-shadow); background: var(--panel-bg);
     }
-    .sponsor-ad img { display: block; width: 100%; height: auto; }
-    a.sponsor-ad { transition: transform .12s ease; }
-    a.sponsor-ad:hover { transform: translateY(-2px); }
+    .spot-card img { display: block; width: 100%; height: auto; }
+    a.spot-card { transition: transform .12s ease; }
+    a.spot-card:hover { transform: translateY(-2px); }
 </style>
 
 @code {

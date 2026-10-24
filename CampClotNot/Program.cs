@@ -321,7 +321,8 @@ try
     });
 
     // Sponsor ad images (#350). The URL carries ?v=<updated ticks>, so it can be cached for good.
-    app.MapGet("/sponsors/ad/{id:guid}", async (Guid id, HttpContext ctx, SponsorAdService ads) =>
+    // These URLs (and /go below) avoid "ad"/"ads"/"sponsor-ad": ad blockers block those.
+    app.MapGet("/media/spotlight/{id:guid}", async (Guid id, HttpContext ctx, SponsorAdService ads) =>
     {
         if (await ads.GetImageAsync(id) is not { } img) return Results.NotFound();
         ctx.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
@@ -330,12 +331,12 @@ try
 
     // A tap on an ad: count it for this event, then go to the ad's link (or its sponsor's
     // website). The target comes from the database, so this isn't an open redirect.
-    app.MapGet("/ads/{eventId:guid}/{adId:guid}", async (Guid eventId, Guid adId, SponsorAdService ads) =>
+    app.MapGet("/go/{eventId:guid}/{adId:guid}", async (Guid eventId, Guid adId, SponsorAdService ads) =>
     {
         var url = await ads.RecordClickAsync(eventId, adId);
         return url is not null && Uri.TryCreate(url, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp)
             ? Results.Redirect(u.ToString())
-            : Results.Redirect("/hub/sponsor-ads");
+            : Results.Redirect("/hub/spotlight");
     }).AllowAnonymous();
 
     // Staff directory photos, by person (UserId). Only served for people shown in some event's

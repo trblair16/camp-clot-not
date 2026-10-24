@@ -18,11 +18,12 @@ without being uploaded again.
 | Model | Same pattern as reusable sponsors (#341). `SponsorAd` is global: title (alt text and admin label), image, **optional** `SponsorId`, optional `LinkUrl`. `EventAd` (`EventId`, `SponsorAdId`, `SortOrder`, `ClickCount`; key on both ids) is which ads an event shows, in what order. |
 | Sponsor link | Optional. An ad linked to a sponsor is labeled with it, and its click-through defaults to the sponsor's website. A standalone ad (an HBDA promo, a "save the date") has no sponsor. Deleting a sponsor (only possible when it's on no event) leaves its ads standalone. |
 | Click target | The ad's `LinkUrl`, else its sponsor's website, else not clickable. |
-| Where ads show | Their own page, `/hub/sponsor-ads`, in the event's order (moved off `/hub/sponsors` before release). It's linked from the Sponsors page title row and from a "Sponsor Ads" button next to the Dashboard's "Our Sponsors" title, both shown only when the event has ads. |
+| Where ads show | Their own page, `/hub/spotlight` (first shipped as `/hub/sponsor-ads`, which still works), in the event's order (moved off `/hub/sponsors` before release). It's linked from the Sponsors page title row and from a "Sponsor Ads" button next to the Dashboard's "Our Sponsors" title, both shown only when the event has ads. |
 | Image shape | Shown at its own proportions, full width (up to 720px), never cropped. |
-| Image storage | Uploads up to 20 MB (the existing limit). Stored resized to 1600px on the long side with `ImageShrinker` (`Smallest`: lossless when that keeps text sharp at a sensible size, otherwise WebP quality 85). Served from `/sponsors/ad/{id}?v=…` with a long cache, and the version changes when the image is replaced. |
-| Click counts | `/ads/{eventId}/{adId}` adds 1 to that event's `EventAd.ClickCount` and redirects to the ad's target. The target always comes from the database, so this can't be used as an open redirect. No personal data is stored. Counts show on the admin Ads tab. |
+| Image storage | Uploads up to 20 MB (the existing limit). Stored resized to 1600px on the long side with `ImageShrinker` (`Smallest`: lossless when that keeps text sharp at a sensible size, otherwise WebP quality 85). Served from `/media/spotlight/{id}?v=…` with a long cache, and the version changes when the image is replaced. |
+| Click counts | `/go/{eventId}/{adId}` adds 1 to that event's `EventAd.ClickCount` and redirects to the ad's target. The target always comes from the database, so this can't be used as an open redirect. No personal data is stored. Counts show on the admin Ads tab. |
 | Admin | `/admin/sponsors` gets **Sponsors** and **Ads** tabs. The Ads tab lists this event's ads (thumbnail, title, sponsor, where it links, clicks here, order, Edit, Remove). **+ Add from past events** opens a picker that shows which events each ad was on, with Delete for ads on no event. **+ New ad** opens a dialog: title, image, sponsor (or none), link. Editing says how many events the ad is on, since changes apply to all of them. |
+| Ad blockers | Desktop ad blockers (uBlock Origin, AdBlock) hid the first version: their filter lists hide elements with classes like `sponsor-ad` and block URLs containing `/ads/` or `/sponsor-ad`. So the page, image, and click URLs and the CSS classes use "spotlight" and "go" instead. The words "Sponsor Ads" on screen are fine. |
 | Event creation | "Also copy: Sponsors" becomes "Sponsors and ads". It copies the sponsor links and the ad links, in the same order, with click counts starting at 0. |
 
 ## Out of scope
@@ -33,7 +34,7 @@ without being uploaded again.
 
 ## Testing
 
-- Upload a large JPEG: it's stored at no more than 1600px and shows on `/hub/sponsors` at its own proportions.
+- Upload a large JPEG: it's stored at no more than 1600px and shows on `/hub/spotlight` at its own proportions.
 - An ad linked to a sponsor with no link URL opens the sponsor's website. An override URL wins over it. An ad with neither isn't clickable.
 - Tapping an ad (as a guest) adds 1 to that event's count, and the admin tab shows it. Another event's count is unaffected.
 - Add from past events: an ad on CCN can be added to Camp Harvest. Removing it from Harvest keeps it on CCN. Delete only shows for ads on no event.

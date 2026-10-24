@@ -5,11 +5,11 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace CampClotNot.Services;
 
-/// <summary>An ad as an event shows it. Image bytes are served by /sponsors/ad/{id}.</summary>
+/// <summary>An ad as an event shows it. Image bytes are served by /media/spotlight/{id} (no "ad" in the URL, or ad blockers drop it).</summary>
 public record AdCard(Guid SponsorAdId, string Title, Guid? SponsorId, string? SponsorName, string? LinkUrl,
                      string? Target, long ImageVersion, int SortOrder, int ClickCount)
 {
-    public string ImageSrc => $"/sponsors/ad/{SponsorAdId}?v={ImageVersion}";
+    public string ImageSrc => $"/media/spotlight/{SponsorAdId}?v={ImageVersion}";
 }
 
 /// <summary>An ad in the "Add from past events" picker.</summary>
