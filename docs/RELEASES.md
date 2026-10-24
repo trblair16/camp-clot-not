@@ -15,7 +15,7 @@ Each release is an annotated tag on `main`. Tags `v1.0.0` through `v1.1.1` were 
 | `v1.0.1` | 2026-06-24 | `cb7ba7d` (PR #296) | **End of CCN 2026 camp week.** Rolls up 67 hotfix and feature merges (PRs #164–#296) shipped live during camp: push notifications and persistent sessions, the Bowser event, announcement reactions, the first `/admin/events` page, staff directory CRUD, performance work (WebP, compression, cache headers), and hotfixes |
 | `v1.1.0` | 2026-07-24 | `3d96dcf` (PR #299) | **Men's Retreat enablement** (#297): active-event wiring, capability gating, per-event theme, guest QR/event-code access (#298) |
 | `v1.1.1` | 2026-07-25 | `62d6cf0` (PR #301) | Mobile header fix (#300), plus versioned manifest/icon URLs so Android picks up new branding (#301) |
-| *next* | — | — | **Camp Harvest release**, merged from `dev`: see "Current State" in `CLAUDE.md` |
+| `v1.2.0` | 2026-10-24 | `2f19ed1` (PR #353) | **Camp Harvest release**, merged from `dev` (87 commits, 11 migrations). Named guest identity, guest push notifications, attendance tracking, admin theme editor + event duplication, forgot password/invite emails, breakout slots + per-event staff (`EventStaff`), larger image uploads, iOS PWA app-shell, reusable sponsors, sponsor ads, and a migration merging duplicate directory-card/account pairs that share an email. Full feature list in "Current State" in `CLAUDE.md` |
 
 **Camp week (June 19–25) didn't follow the RC convention.** Fixes went `dev` → `main` one PR at a time, often minutes apart, without per-fix tags. `v1.0.1` marks the state at the end of the week rather than one hotfix.
 

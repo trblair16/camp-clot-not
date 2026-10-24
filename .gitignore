@@ -25,3 +25,6 @@ mockup/preview/
 
 # Git worktrees (local workspace isolation)
 .worktrees/
+
+# Local Postgres backups (contain production data — never commit)
+backups/
