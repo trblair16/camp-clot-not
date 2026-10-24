@@ -138,6 +138,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         using var db = factory.CreateDbContext();
         await db.Database.MigrateAsync();
         await SeedUserRolesAsync(db);
+        await FixTeamOnlyAccountRolesAsync(db);
         await SeedAuthoritiesAsync(db);
         await SeedUserRoleAuthoritiesAsync(db);
         await SeedEventTypesAsync(db);
@@ -156,6 +157,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         await SeedBoardSpacesAsync(db);
         await SeedGroupBoardPositionsAsync(db);
         await SeedInfoPagesAsync(db);
+        await RenameCampRulesAsync(db);
         await SeedScheduleItemTypesAsync(db);
         await SeedEventScheduleItemTypesAsync(db);
     }
@@ -655,6 +657,31 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         logger.LogInformation("Seeded GroupBoardPositions.");
     }
 
+    // The rules page was seeded as "Camp Rules"; every event uses it now. Titles can't be edited in
+    // the app, so rename it here. Only the untouched seed values change: never an admin's own body.
+    private async Task RenameCampRulesAsync(AppDbContext db)
+    {
+        var page = await db.InfoPages.FirstOrDefaultAsync(p => p.PageId == Id.InfoPageRules && p.Title == "Camp Rules");
+        if (page is null) return;
+        page.Title = "Event Rules";
+        if (page.Body == "# Camp Rules\n\nContent coming soon — an Admin will update this before camp.")
+            page.Body = "# Event Rules\n\nContent coming soon — an Admin will update this before the event.";
+        await db.SaveChangesAsync();
+        logger.LogInformation("Renamed the 'Camp Rules' info page to 'Event Rules'.");
+    }
+
+    // Speaker and Sponsor label someone on an event's team; they're never an account role (they
+    // carry no permissions, so such an account couldn't open the Hub). Any account that has one
+    // becomes a Volunteer; their event-team role stays as it was.
+    private async Task FixTeamOnlyAccountRolesAsync(AppDbContext db)
+    {
+        var fixedCount = await db.Users
+            .Where(u => u.UserRoleId == Id.RoleSpeaker || u.UserRoleId == Id.RoleSponsor)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.UserRoleId, Id.RoleVolunteer));
+        if (fixedCount > 0)
+            logger.LogInformation("Moved {Count} account(s) with a team-only role (Speaker/Sponsor) to Volunteer.", fixedCount);
+    }
+
     private async Task SeedInfoPagesAsync(AppDbContext db)
     {
         var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Email == config["Seed:AdminEmail"]);
@@ -675,8 +702,8 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
 
         var pages = new[]
         {
-            new { Id = Id.InfoPageRules,        Slug = "rules",         Title = "Camp Rules",         Icon = "📋", Order = 1,
-                  Body = "# Camp Rules\n\nContent coming soon — an Admin will update this before camp." },
+            new { Id = Id.InfoPageRules,        Slug = "rules",         Title = "Event Rules",        Icon = "📋", Order = 1,
+                  Body = "# Event Rules\n\nContent coming soon — an Admin will update this before the event." },
             new { Id = Id.InfoPageMedical,      Slug = "medical",       Title = "Medical Info",       Icon = "🏥", Order = 2,
                   Body = "# Medical Info & Emergency Contacts\n\n## Emergency Numbers\n- **Camp Emergency:** TBD\n- **Children's Harbor:** (205) 939-9583\n- **Nearest Hospital:** TBD\n\n## On-Site Medical Staff\nSee the Staff Directory for on-site medical contacts.\n\n## Incident Reporting\nUse the 🚨 Report Incident button to document any medical incident." },
             new { Id = Id.InfoPageDocuments,    Slug = "documents",     Title = "Documents",          Icon = "📁", Order = 3,
