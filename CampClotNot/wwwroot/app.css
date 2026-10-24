@@ -189,12 +189,14 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
     font-size: 12px;
     padding: 6px 14px;
     border-radius: 6px;
-    border: 3px solid #555;
+    /* The theme's "Buttons" color when set (shared with the Dashboard banner's buttons), else
+       outlined gray on the black header. The selected button overrides this inline. */
+    border: 3px solid var(--home-btn-border, #555);
     cursor: pointer;
     text-decoration: none;
-    box-shadow: 2px 2px 0 #555;
-    background: transparent;
-    color: #ccc;
+    box-shadow: 2px 2px 0 var(--home-btn-border, #555);
+    background: var(--home-btn-bg, transparent);
+    color: var(--home-btn-text, #ccc);
     transition: all .1s;
     display: inline-block;
     line-height: 1.4;
@@ -308,7 +310,9 @@ h1, h2, h3, .mud-typography-h1, .mud-typography-h2, .mud-typography-h3, .mud-app
 }
 .nav-tab.active {
     color: var(--text-dark);
-    border-top-color: var(--border-color);
+    /* The theme's "Selected menu button" color when set (with a light tint), else the border color. */
+    border-top-color: var(--nav-active, var(--border-color));
+    background: var(--nav-active-tint, transparent);
 }
 .nav-tab .tab-icon { font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; }
 .nav-tab .tab-icon svg { width: 22px; height: 22px; display: block; }

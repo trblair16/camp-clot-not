@@ -1,0 +1,77 @@
+@page "/hub/sponsor-ads"
+@attribute [Authorize(Policy = "HubGuestAccess")]
+@inject SponsorAdService AdSvc
+@inject ActiveEventService ActiveEventSvc
+@inject GuestAccessService GuestSvc
+@inject AuthenticationStateProvider Auth
+
+<PageTitle>Sponsor Ads — Camp Clot Not</PageTitle>
+
+@if (!_isGuest)
+{
+    <HubSubNav HideFabOnMobile="true" />
+}
+
+<div style="padding: 0 16px 100px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 20px">
+        <h2 style="font-family:var(--font-display);font-weight:700;font-size:22px;margin:0"><img src="/img/icons/trophy.svg?v=3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;opacity:.8" alt="" />Sponsor Ads</h2>
+        <a href="/hub/sponsors" class="ccn-btn" style="text-decoration:none;font-size:13px">🏆 Our Sponsors</a>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_ads.Any())
+    {
+        <p style="color:var(--text-light);font-family:var(--font-display);font-weight:700">No sponsor ads yet.</p>
+    }
+    else
+    {
+        @* Sponsor ads (#350): full width at their own proportions, never cropped. A tap is counted
+           for this event by /ads/{event}/{ad}, which then opens the ad's link. *@
+        <div class="sponsor-ads">
+            @foreach (var ad in _ads)
+            {
+                @if (ad.Target is not null)
+                {
+                    <a href="/ads/@_eventId/@ad.SponsorAdId" target="_blank" rel="noopener" class="sponsor-ad" title="@ad.Title">
+                        <img src="@ad.ImageSrc" alt="@ad.Title" loading="lazy" />
+                    </a>
+                }
+                else
+                {
+                    <div class="sponsor-ad"><img src="@ad.ImageSrc" alt="@ad.Title" loading="lazy" /></div>
+                }
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .sponsor-ads { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .sponsor-ad {
+        display: block; width: 100%; max-width: 720px; overflow: hidden; line-height: 0;
+        border: var(--panel-border); border-radius: 10px; box-shadow: var(--panel-shadow); background: var(--panel-bg);
+    }
+    .sponsor-ad img { display: block; width: 100%; height: auto; }
+    a.sponsor-ad { transition: transform .12s ease; }
+    a.sponsor-ad:hover { transform: translateY(-2px); }
+</style>
+
+@code {
+    private List<AdCard> _ads = [];
+    private Guid _eventId;
+    private bool _loading = true;
+    private bool _isGuest;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await Auth.GetAuthenticationStateAsync();
+        var guestEventId = GuestSvc.GetGuestEventId(authState.User);
+        _isGuest = guestEventId.HasValue;
+        _eventId = guestEventId ?? await ActiveEventSvc.GetActiveEventIdAsync();
+        _ads = await AdSvc.GetForEventAsync(_eventId);
+        _loading = false;
+    }
+}

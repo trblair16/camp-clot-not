@@ -1,0 +1,16 @@
+@* The environment pill (STAGING, DEV, …); renders nothing in production. Sits centered on the
+   bottom edge of whatever positioned element contains it, or pinned to the top of the window. *@
+@inject EnvironmentLabel Env
+
+@if (Env.Text is { } text)
+{
+    <div title="This isn't the live site" style="@(Pinned
+            ? "position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%)"
+            : "position:absolute;left:50%;bottom:-13px;transform:translateX(-50%)");z-index:60;pointer-events:none;
+         background:#FF8A00;color:#1A1A1A;border:2px solid #1A1A1A;border-radius:999px;padding:1px 12px;
+         font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:1.5px;white-space:nowrap;line-height:1.5">@text</div>
+}
+
+@code {
+    [Parameter] public bool Pinned { get; set; }
+}

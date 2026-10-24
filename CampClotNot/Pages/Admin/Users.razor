@@ -149,10 +149,11 @@
                     <select @bind="_roleFilter"
                             style="padding:8px 12px;background:var(--bg-base);border:var(--panel-border);border-radius:7px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text-dark);box-shadow:var(--control-shadow);outline:none;cursor:pointer">
                         <option value="">All roles</option>
-                        <option value="Admin">Admin</option>
-                        <option value="MedicalStaff">Medical Staff</option>
-                        <option value="Staff">Staff</option>
-                        <option value="Volunteer">Volunteer</option>
+                        @* Every role someone here actually has, so no account is unfilterable. *@
+                        @foreach (var r in _users.Select(u => u.UserRole).DistinctBy(r => r.SystemName).OrderBy(r => RoleRank(r.SystemName)).ThenBy(r => r.Name))
+                        {
+                            <option value="@r.SystemName">@r.Name</option>
+                        }
                     </select>
                 </div>
 
@@ -163,7 +164,7 @@
                             <div style="flex:1;min-width:0">
                                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap">
                                     <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text-dark)">@u.FirstName @u.LastName</div>
-                                    <span style="background:var(--black);color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px;flex-shrink:0">@u.UserRole.SystemName</span>
+                                    <span style="background:var(--black);color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px;flex-shrink:0">@u.UserRole.Name</span>
                                     @if (!u.IsActive)
                                     {
                                         <span style="background:#E67E22;color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px">Inactive</span>
@@ -212,7 +213,7 @@
                                         <td style="padding:10px 14px;font-size:13px;font-weight:700">@u.FirstName @u.LastName</td>
                                         <td style="padding:10px 14px;font-size:12px;color:var(--text-mid)">@u.Email</td>
                                         <td style="padding:10px 14px">
-                                            <span style="background:var(--black);color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px">@u.UserRole.SystemName</span>
+                                            <span style="background:var(--black);color:white;font-family:var(--font-display);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px">@u.UserRole.Name</span>
                                         </td>
                                         <td style="padding:10px 14px;font-size:13px">@(u.IsActive ? "✓" : "—")</td>
                                         <td style="padding:8px 10px">
