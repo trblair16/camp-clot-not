@@ -36,12 +36,12 @@
                 @if (ad.Target is not null)
                 {
                     <a href="/ads/@_eventId/@ad.SponsorAdId" target="_blank" rel="noopener" class="sponsor-ad" title="@ad.Title">
-                        <img src="@ad.ImageSrc" alt="@ad.Title" loading="lazy" />
+                        <img src="@ad.ImageSrc" alt="@ad.Title" />
                     </a>
                 }
                 else
                 {
-                    <div class="sponsor-ad"><img src="@ad.ImageSrc" alt="@ad.Title" loading="lazy" /></div>
+                    <div class="sponsor-ad"><img src="@ad.ImageSrc" alt="@ad.Title" /></div>
                 }
             }
         </div>
