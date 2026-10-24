@@ -229,16 +229,17 @@ else
         font-family: var(--font-display); font-weight: 700;
         font-size: 13px;
         padding: 6px 16px;
-        background: rgba(0,0,0,.22);
-        border: 2.5px solid rgba(0,0,0,.5);
+        /* The theme's "Home page buttons" color when set, else see-through dark pills. */
+        background: var(--home-btn-bg, rgba(0,0,0,.22));
+        border: 2.5px solid var(--home-btn-border, rgba(0,0,0,.5));
         border-radius: 50px;
-        color: var(--text-dark);
+        color: var(--home-btn-text, var(--text-dark));
         text-decoration: none;
         transition: background .15s, transform .1s;
         display: inline-block;
     }
-    .hero-pill:hover  { background: rgba(0,0,0,.22); transform: translateY(-1px); }
-    .hero-pill:active { background: rgba(0,0,0,.30); transform: scale(.96); }
+    .hero-pill:hover  { filter: brightness(1.08); transform: translateY(-1px); }
+    .hero-pill:active { filter: brightness(.92); transform: scale(.96); }
 </style>
 
 @code {

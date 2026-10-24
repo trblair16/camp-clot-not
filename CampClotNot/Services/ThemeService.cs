@@ -72,7 +72,14 @@ public record ThemeConfig(
     // What shows when the theme has no logo/banner of its own: CCN's Mario artwork (nav logo,
     // hero logo, Dashboard coins/stars) when true, a plain text wordmark when false. Part of a
     // preset's look, so older serialized palettes without it (Men's Retreat) read as false.
-    bool UseCcnArtwork = false
+    bool UseCcnArtwork = false,
+    // Optional colors; null keeps the default look. HomeButtonBg ("Buttons" in the editor) colors
+    // the Dashboard banner's buttons (Schedule, Event Team, …; see-through dark pills by default)
+    // and the header's menu buttons (outlined gray by default). The selected menu button uses each
+    // button's own color by default (Home green, Schedule blue, Admin purple, …). Text on both
+    // is black or white by contrast.
+    string? HomeButtonBg = null,
+    string? NavActiveBg = null
 )
 {
     // Text for each surface: black or white by contrast, with the secondary and hint shades
@@ -114,6 +121,23 @@ public record ThemeConfig(
 
     // Injected into :root by ThemeHead.razor. --text-* is for the page background; ThemeHead
     // swaps in --panel-text-* / --primary-text-* inside panels and primary-colored surfaces.
+    // Only emitted when set, so CSS falls back to the default look: var(--home-btn-bg, …).
+    private string OptionalColorVars =>
+        (IsHex(HomeButtonBg) ? $"""
+
+        --home-btn-bg: {HomeButtonBg};
+        --home-btn-text: {TextContrast.TextOn(HomeButtonBg!)};
+        --home-btn-border: color-mix(in srgb, {HomeButtonBg} 70%, #000);
+""" : "")
+        + (IsHex(NavActiveBg) ? $"""
+
+        --nav-active: {NavActiveBg};
+        --nav-active-text: {TextContrast.TextOn(NavActiveBg!)};
+        --nav-active-tint: color-mix(in srgb, {NavActiveBg} 16%, transparent);
+""" : "");
+
+    private static bool IsHex(string? v) => v is { Length: 7 } && v[0] == '#' && int.TryParse(v.AsSpan(1), System.Globalization.NumberStyles.HexNumber, null, out _);
+
     // Use var(--color-primary) etc. in components.
     [JsonIgnore]
     public string CssVariables => $"""
@@ -152,7 +176,7 @@ public record ThemeConfig(
         --primary-text-dark: {PrimaryTextDark};
         --primary-text-mid: {PrimaryTextMid};
         --primary-text-light: {PrimaryTextLight};
-        --primary-on-black: {PrimaryOnBlack};
+        --primary-on-black: {PrimaryOnBlack};{OptionalColorVars}
         {SurfaceVars("page-", BgBase)}
         {SurfaceVars("panel-", PanelBg)}
         {SurfaceVars("primary-", Primary)}

@@ -81,6 +81,7 @@ try
     builder.Services.AddScoped<IncidentReportService>();
     builder.Services.AddScoped<SponsorService>();
     builder.Services.AddScoped<SponsorAdService>();
+    builder.Services.AddSingleton(EnvironmentLabel.From(builder.Configuration, builder.Environment));
     builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
