@@ -170,6 +170,21 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
         await db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Tags an existing guest visit with the team record it matched at join time (#354), so
+    /// Attendance shows one row with their role instead of a separate "Guest" duplicate. A no-op if
+    /// the visit doesn't exist yet or is already linked.
+    /// </summary>
+    public async Task LinkVisitToTeamAsync(Guid guestAttendeeId, Guid eventId, Guid eventStaffId)
+    {
+        using var db = factory.CreateDbContext();
+        var visit = await db.GuestEventVisits.FirstOrDefaultAsync(v =>
+            v.GuestAttendeeId == guestAttendeeId && v.EventId == eventId);
+        if (visit is null || visit.LinkedEventStaffId.HasValue) return;
+        visit.LinkedEventStaffId = eventStaffId;
+        await db.SaveChangesAsync();
+    }
+
     public async Task<List<GuestAttendee>> GetAllGuestsWithVisitsAsync()
     {
         using var db = factory.CreateDbContext();
