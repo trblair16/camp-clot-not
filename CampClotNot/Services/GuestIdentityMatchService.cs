@@ -38,7 +38,8 @@ public class GuestIdentityMatchService(IDbContextFactory<AppDbContext> factory)
             .ToListAsync();
         var teamMatches = team
             .Where(s => GuestAccessService.Normalize(s.User.FirstName) == normFirst
-                     && GuestAccessService.Normalize(s.User.LastName) == normLast)
+                     && GuestAccessService.Normalize(s.User.LastName) == normLast
+                     && s.User.IsActive)
             .ToList();
 
         if (teamMatches.Count > 0)
@@ -52,7 +53,7 @@ public class GuestIdentityMatchService(IDbContextFactory<AppDbContext> factory)
         }
 
         var accounts = await db.Users
-            .Where(u => u.CanSignIn)
+            .Where(u => u.CanSignIn && u.IsActive)
             .Select(u => new { u.FirstName, u.LastName })
             .ToListAsync();
         var hasAccount = accounts.Any(u =>
