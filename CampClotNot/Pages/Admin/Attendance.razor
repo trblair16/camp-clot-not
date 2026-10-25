@@ -148,7 +148,7 @@
                                     {
                                         <strong style="color:var(--text-dark)">@checkedIn.Count checked in</strong>
                                     }
-                                    · @checkedIn.Count(r => r.IsGuest) guests · @checkedIn.Count(r => !r.IsGuest) staff
+                                    · @checkedIn.Count(r => r.IsGuest && r.RoleName is null) guests · @checkedIn.Count(r => !r.IsGuest || r.RoleName is not null) staff
                                 </div>
                                 @if (sel.ParentScheduleItem is not null)
                                 {
