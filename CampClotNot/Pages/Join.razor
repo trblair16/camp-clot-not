@@ -27,6 +27,12 @@
             ⚠️ Please enter both your first and last name.
         </div>
     }
+    else if (Error == "signin")
+    {
+        <div style="background:color-mix(in srgb, var(--color-accent) 16%, var(--panel-bg));border:2px solid #E83030;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--text-danger)">
+            ⚠️ An account already exists for this name. <a href="/login" style="color:var(--text-danger);text-decoration:underline">Please sign in</a> instead.
+        </div>
+    }
 
     <form method="post" action="/account/join" style="display:flex;flex-direction:column;gap:12px">
         @if (!string.IsNullOrEmpty(ReturnUrl))

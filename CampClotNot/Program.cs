@@ -85,6 +85,7 @@ try
     builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
+    builder.Services.AddScoped<GuestIdentityMatchService>();
     builder.Services.AddScoped<AttendanceService>();
     builder.Services.AddScoped<EventStaffService>();
     builder.Services.AddScoped<RegistrationService>();
@@ -291,7 +292,7 @@ try
     // same reason /account/login is a native form POST rather than a Blazor button click.
     // The QR code links to the bare /join page (not a code-carrying deep link) — scanning is a
     // shortcut to the entry form, not a substitute for typing the code.
-    app.MapPost("/account/join", async (HttpContext ctx, GuestAccessService guestSvc) =>
+    app.MapPost("/account/join", async (HttpContext ctx, GuestAccessService guestSvc, GuestIdentityMatchService identityMatch) =>
     {
         var form      = await ctx.Request.ReadFormAsync();
         var code      = form["code"].ToString();
@@ -306,8 +307,19 @@ try
         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
             return Results.Redirect("/join?error=name" + back);
 
+        var match = await identityMatch.MatchAsync(firstName, lastName, ev.EventId);
+        if (match.Kind == GuestIdentityMatch.SignInRequired)
+        {
+            app.Logger.LogInformation(
+                "Guest join blocked (sign-in required) for name '{FirstName} {LastName}' at event {EventId}.",
+                firstName, lastName, ev.EventId);
+            return Results.Redirect("/join?error=signin" + back);
+        }
+
         var guest = await guestSvc.GetOrCreateGuestAsync(firstName, lastName);
         await guestSvc.RecordVisitAsync(guest.GuestAttendeeId, ev.EventId);
+        if (match.Kind == GuestIdentityMatch.LinkedTeamMember)
+            await guestSvc.LinkVisitToTeamAsync(guest.GuestAttendeeId, ev.EventId, match.TeamEventStaffId!.Value);
         await guestSvc.SignInGuestAsync(ctx, ev, guest);
         return Results.Redirect(LocalReturnUrl(form["returnUrl"]) ?? "/dashboard");
     }).AllowAnonymous();

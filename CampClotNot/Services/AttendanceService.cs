@@ -33,14 +33,15 @@ public record RosterEntry(
 {
     public bool IsCheckedIn => AttendanceId.HasValue;
     public string FullName => $"{FirstName} {LastName}";
-    public string TypeLabel => IsGuest ? "Guest" : RoleName ?? "Event team";
+    public string TypeLabel => RoleName ?? (IsGuest ? "Guest" : "Event team");
 }
 
 public class AttendanceService(
     IDbContextFactory<AppDbContext> factory,
     GuestAccessService guestSvc,
     ScheduleService scheduleSvc,
-    RegistrationService registrationSvc)
+    RegistrationService registrationSvc,
+    GuestIdentityMatchService identityMatch)
 {
     public static readonly TimeSpan OpensBefore     = TimeSpan.FromMinutes(30);
     public static readonly TimeSpan DefaultDuration = TimeSpan.FromHours(2);
@@ -256,7 +257,8 @@ public class AttendanceService(
         var isOption = item.ParentScheduleItemId.HasValue;
         List<GuestAttendee> guests;
         List<User> users;
-        HashSet<Guid> regGuests = [], regUsers = [];
+        HashSet<Guid> regGuests = [], regUsers = [], linkedStaffIds = [], linkedUserIds = [];
+        Dictionary<Guid, string> guestRoleTag = [];
         if (isOption)
         {
             var regs = await db.ScheduleItemRegistrations.AsNoTracking()
@@ -271,11 +273,20 @@ public class AttendanceService(
         }
         else
         {
-            guests = await db.GuestEventVisits.AsNoTracking()
+            var visits = await db.GuestEventVisits.AsNoTracking()
                 .Where(v => v.EventId == item.CampEventId)
-                .Select(v => v.GuestAttendee)
+                .Include(v => v.GuestAttendee)
+                .Include(v => v.LinkedEventStaff).ThenInclude(s => s!.UserRole)
                 .ToListAsync();
-            users = staff.Where(st => st.User.IsActive).Select(st => st.User).ToList();
+            guests = visits.Select(v => v.GuestAttendee).ToList();
+            linkedStaffIds = visits.Where(v => v.LinkedEventStaffId.HasValue)
+                .Select(v => v.LinkedEventStaffId!.Value).ToHashSet();
+            guestRoleTag = visits.Where(v => v.LinkedEventStaff is not null)
+                .ToDictionary(v => v.GuestAttendeeId, v => v.LinkedEventStaff!.Title ?? v.LinkedEventStaff.UserRole.Name);
+            users = staff.Where(st => st.User.IsActive && !linkedStaffIds.Contains(st.EventStaffId))
+                .Select(st => st.User).ToList();
+            linkedUserIds = staff.Where(st => linkedStaffIds.Contains(st.EventStaffId))
+                .Select(st => st.UserId).ToHashSet();
         }
 
         var guestCheckIns = checkIns.Where(a => a.GuestAttendeeId.HasValue).ToDictionary(a => a.GuestAttendeeId!.Value);
@@ -284,13 +295,14 @@ public class AttendanceService(
         var guestMap = guests.ToDictionary(g => g.GuestAttendeeId);
         foreach (var a in guestCheckIns.Values) guestMap.TryAdd(a.GuestAttendeeId!.Value, a.GuestAttendee!);
         var userMap = users.ToDictionary(u => u.UserId);
-        foreach (var a in userCheckIns.Values) userMap.TryAdd(a.UserId!.Value, a.User!);
+        foreach (var a in userCheckIns.Values)
+            if (!linkedUserIds.Contains(a.UserId!.Value)) userMap.TryAdd(a.UserId!.Value, a.User!);
 
         var entries = new List<RosterEntry>();
         foreach (var g in guestMap.Values)
         {
             var a = guestCheckIns.GetValueOrDefault(g.GuestAttendeeId);
-            entries.Add(new RosterEntry(g.FirstName, g.LastName, true, null, g.GuestAttendeeId, null,
+            entries.Add(new RosterEntry(g.FirstName, g.LastName, true, guestRoleTag.GetValueOrDefault(g.GuestAttendeeId), g.GuestAttendeeId, null,
                 a?.ScheduleItemAttendanceId, a?.CheckedInAt, a?.Method, a?.CheckedInByUser?.FirstName,
                 isOption ? regGuests.Contains(g.GuestAttendeeId) : null));
         }
@@ -323,8 +335,12 @@ public class AttendanceService(
     }
 
     /// <summary>
-    /// Adds a guest by name (same normalization/matching as /join), records their visit to the
-    /// item's event so they show on /admin/guests and other rosters, then checks them in.
+    /// Adds a guest by name, records their visit to the item's event so they show on /admin/guests
+    /// and other rosters, then checks them in. Also runs the same team-roster match as /join (#354)
+    /// and links the visit when the typed name matches a CanSignIn=false team member on this event —
+    /// an admin typing a walk-in's name shouldn't recreate the exact duplicate that check prevents.
+    /// A SignInRequired match is NOT blocked here (unlike /join) — an admin handling a real walk-in
+    /// at check-in should still be able to add them; only a team-member link changes behavior.
     /// </summary>
     public async Task<CheckInResult> CheckInWalkInAsync(Guid scheduleItemId, string firstName, string lastName, Guid adminUserId)
     {
@@ -335,6 +351,10 @@ public class AttendanceService(
 
         var guest = await guestSvc.GetOrCreateGuestAsync(firstName, lastName);
         await guestSvc.RecordVisitAsync(guest.GuestAttendeeId, item.CampEventId);
+
+        var match = await identityMatch.MatchAsync(firstName, lastName, item.CampEventId);
+        if (match.Kind == GuestIdentityMatch.LinkedTeamMember)
+            await guestSvc.LinkVisitToTeamAsync(guest.GuestAttendeeId, item.CampEventId, match.TeamEventStaffId!.Value);
 
         // A breakout option's roster is its sign-up list, so a walk-in is signed up too. If
         // they were down for another option of the slot, the Admin is placing them here instead.

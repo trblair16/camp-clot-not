@@ -200,6 +200,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(v => v.Event)
             .WithMany()
             .HasForeignKey(v => v.EventId);
+        modelBuilder.Entity<GuestEventVisit>()
+            .HasOne(v => v.LinkedEventStaff)
+            .WithMany()
+            .HasForeignKey(v => v.LinkedEventStaffId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // PasswordResetToken: two FKs point at Users, so both are configured explicitly.
         // Users are deactivated, never deleted, hence Restrict.
