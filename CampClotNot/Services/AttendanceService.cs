@@ -33,7 +33,7 @@ public record RosterEntry(
 {
     public bool IsCheckedIn => AttendanceId.HasValue;
     public string FullName => $"{FirstName} {LastName}";
-    public string TypeLabel => IsGuest ? "Guest" : RoleName ?? "Event team";
+    public string TypeLabel => RoleName ?? (IsGuest ? "Guest" : "Event team");
 }
 
 public class AttendanceService(
@@ -256,7 +256,8 @@ public class AttendanceService(
         var isOption = item.ParentScheduleItemId.HasValue;
         List<GuestAttendee> guests;
         List<User> users;
-        HashSet<Guid> regGuests = [], regUsers = [];
+        HashSet<Guid> regGuests = [], regUsers = [], linkedStaffIds = [];
+        Dictionary<Guid, string> guestRoleTag = [];
         if (isOption)
         {
             var regs = await db.ScheduleItemRegistrations.AsNoTracking()
@@ -271,11 +272,18 @@ public class AttendanceService(
         }
         else
         {
-            guests = await db.GuestEventVisits.AsNoTracking()
+            var visits = await db.GuestEventVisits.AsNoTracking()
                 .Where(v => v.EventId == item.CampEventId)
-                .Select(v => v.GuestAttendee)
+                .Include(v => v.GuestAttendee)
+                .Include(v => v.LinkedEventStaff).ThenInclude(s => s!.UserRole)
                 .ToListAsync();
-            users = staff.Where(st => st.User.IsActive).Select(st => st.User).ToList();
+            guests = visits.Select(v => v.GuestAttendee).ToList();
+            linkedStaffIds = visits.Where(v => v.LinkedEventStaffId.HasValue)
+                .Select(v => v.LinkedEventStaffId!.Value).ToHashSet();
+            guestRoleTag = visits.Where(v => v.LinkedEventStaff is not null)
+                .ToDictionary(v => v.GuestAttendeeId, v => v.LinkedEventStaff!.Title ?? v.LinkedEventStaff.UserRole.Name);
+            users = staff.Where(st => st.User.IsActive && !linkedStaffIds.Contains(st.EventStaffId))
+                .Select(st => st.User).ToList();
         }
 
         var guestCheckIns = checkIns.Where(a => a.GuestAttendeeId.HasValue).ToDictionary(a => a.GuestAttendeeId!.Value);
@@ -290,7 +298,7 @@ public class AttendanceService(
         foreach (var g in guestMap.Values)
         {
             var a = guestCheckIns.GetValueOrDefault(g.GuestAttendeeId);
-            entries.Add(new RosterEntry(g.FirstName, g.LastName, true, null, g.GuestAttendeeId, null,
+            entries.Add(new RosterEntry(g.FirstName, g.LastName, true, guestRoleTag.GetValueOrDefault(g.GuestAttendeeId), g.GuestAttendeeId, null,
                 a?.ScheduleItemAttendanceId, a?.CheckedInAt, a?.Method, a?.CheckedInByUser?.FirstName,
                 isOption ? regGuests.Contains(g.GuestAttendeeId) : null));
         }
