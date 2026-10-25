@@ -256,7 +256,7 @@ public class AttendanceService(
         var isOption = item.ParentScheduleItemId.HasValue;
         List<GuestAttendee> guests;
         List<User> users;
-        HashSet<Guid> regGuests = [], regUsers = [], linkedStaffIds = [];
+        HashSet<Guid> regGuests = [], regUsers = [], linkedStaffIds = [], linkedUserIds = [];
         Dictionary<Guid, string> guestRoleTag = [];
         if (isOption)
         {
@@ -284,6 +284,8 @@ public class AttendanceService(
                 .ToDictionary(v => v.GuestAttendeeId, v => v.LinkedEventStaff!.Title ?? v.LinkedEventStaff.UserRole.Name);
             users = staff.Where(st => st.User.IsActive && !linkedStaffIds.Contains(st.EventStaffId))
                 .Select(st => st.User).ToList();
+            linkedUserIds = staff.Where(st => linkedStaffIds.Contains(st.EventStaffId))
+                .Select(st => st.UserId).ToHashSet();
         }
 
         var guestCheckIns = checkIns.Where(a => a.GuestAttendeeId.HasValue).ToDictionary(a => a.GuestAttendeeId!.Value);
@@ -292,7 +294,8 @@ public class AttendanceService(
         var guestMap = guests.ToDictionary(g => g.GuestAttendeeId);
         foreach (var a in guestCheckIns.Values) guestMap.TryAdd(a.GuestAttendeeId!.Value, a.GuestAttendee!);
         var userMap = users.ToDictionary(u => u.UserId);
-        foreach (var a in userCheckIns.Values) userMap.TryAdd(a.UserId!.Value, a.User!);
+        foreach (var a in userCheckIns.Values)
+            if (!linkedUserIds.Contains(a.UserId!.Value)) userMap.TryAdd(a.UserId!.Value, a.User!);
 
         var entries = new List<RosterEntry>();
         foreach (var g in guestMap.Values)
