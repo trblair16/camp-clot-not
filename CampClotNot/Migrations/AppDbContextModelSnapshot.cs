@@ -676,9 +676,14 @@ namespace CampClotNot.Migrations
                     b.Property<DateTime>("LastSeenAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("LinkedEventStaffId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("GuestEventVisitId");
 
                     b.HasIndex("EventId");
+
+                    b.HasIndex("LinkedEventStaffId");
 
                     b.HasIndex("GuestAttendeeId", "EventId")
                         .IsUnique();
@@ -1786,9 +1791,16 @@ namespace CampClotNot.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("CampClotNot.Data.Entities.EventStaff", "LinkedEventStaff")
+                        .WithMany()
+                        .HasForeignKey("LinkedEventStaffId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Event");
 
                     b.Navigation("GuestAttendee");
+
+                    b.Navigation("LinkedEventStaff");
                 });
 
             modelBuilder.Entity("CampClotNot.Data.Entities.IncidentReport", b =>
