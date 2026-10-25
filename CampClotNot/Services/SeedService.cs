@@ -318,10 +318,13 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
     }
 
     /// <summary>
-    /// One-time repair for guest visits created before #354: matches each still-unlinked visit
-    /// against its event's team roster and links it when exactly one CanSignIn=false record
-    /// matches by name. Leaves ambiguous or sign-in-account matches alone — same rule as the live
-    /// /join check (GuestIdentityMatchService), just applied retroactively.
+    /// Repair for guest visits still unlinked to a team record: matches each against its event's
+    /// team roster and links it when exactly one CanSignIn=false record matches by name. Leaves
+    /// ambiguous or sign-in-account matches alone — same rule as the live /join check
+    /// (GuestIdentityMatchService), just applied retroactively. Runs on every startup (not just
+    /// once) — re-checking only still-unlinked visits each time is cheap, and it opportunistically
+    /// catches team members added to the roster after a guest already joined, which the live /join
+    /// path can never do retroactively.
     /// </summary>
     private async Task BackfillGuestTeamLinksAsync(AppDbContext db)
     {
@@ -331,15 +334,34 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
             .ToListAsync();
         if (unlinked.Count == 0) return;
 
+        // Pre-filter: load each distinct event's team roster once and build a normalized-name
+        // lookup, so MatchAsync (which falls through to a site-wide CanSignIn=true scan when
+        // there's no team match) is only ever called for visits with a real chance of linking.
+        var eventIds = unlinked.Select(v => v.EventId).Distinct().ToList();
+        var rosterNamesByEvent = new Dictionary<Guid, HashSet<(string, string)>>();
+        foreach (var eventId in eventIds)
+        {
+            var team = await db.EventStaff.Where(s => s.EventId == eventId).Include(s => s.User).ToListAsync();
+            rosterNamesByEvent[eventId] = team
+                .Select(s => (GuestAccessService.Normalize(s.User.FirstName), GuestAccessService.Normalize(s.User.LastName)))
+                .ToHashSet();
+        }
+
         var linked = 0;
         foreach (var visit in unlinked)
         {
+            var key = (GuestAccessService.Normalize(visit.GuestAttendee.FirstName), GuestAccessService.Normalize(visit.GuestAttendee.LastName));
+            if (!rosterNamesByEvent[visit.EventId].Contains(key)) continue;
+
             var match = await identityMatch.MatchAsync(
                 visit.GuestAttendee.FirstName, visit.GuestAttendee.LastName, visit.EventId);
             if (match.Kind == GuestIdentityMatch.LinkedTeamMember)
             {
                 visit.LinkedEventStaffId = match.TeamEventStaffId;
                 linked++;
+                logger.LogInformation(
+                    "Backfill linked guest {GuestAttendeeId} at event {EventId} to EventStaff {EventStaffId}.",
+                    visit.GuestAttendeeId, visit.EventId, match.TeamEventStaffId);
             }
         }
         if (linked > 0)

@@ -309,7 +309,12 @@ try
 
         var match = await identityMatch.MatchAsync(firstName, lastName, ev.EventId);
         if (match.Kind == GuestIdentityMatch.SignInRequired)
+        {
+            app.Logger.LogInformation(
+                "Guest join blocked (sign-in required) for name '{FirstName} {LastName}' at event {EventId}.",
+                firstName, lastName, ev.EventId);
             return Results.Redirect("/join?error=signin" + back);
+        }
 
         var guest = await guestSvc.GetOrCreateGuestAsync(firstName, lastName);
         await guestSvc.RecordVisitAsync(guest.GuestAttendeeId, ev.EventId);
