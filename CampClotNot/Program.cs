@@ -85,6 +85,7 @@ try
     builder.Services.AddScoped<DocumentService>();
     builder.Services.AddScoped<BowserEventService>();
     builder.Services.AddScoped<GuestAccessService>();
+    builder.Services.AddScoped<GuestIdentityMatchService>();
     builder.Services.AddScoped<AttendanceService>();
     builder.Services.AddScoped<EventStaffService>();
     builder.Services.AddScoped<RegistrationService>();

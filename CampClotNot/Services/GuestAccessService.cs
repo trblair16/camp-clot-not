@@ -61,7 +61,7 @@ public class GuestAccessService(IDbContextFactory<AppDbContext> factory)
         return Guid.TryParse(claim, out var id) ? id : null;
     }
 
-    private static string Normalize(string s) =>
+    internal static string Normalize(string s) =>
         Regex.Replace(s.Trim(), @"\s+", " ").ToLowerInvariant();
 
     /// <summary>
