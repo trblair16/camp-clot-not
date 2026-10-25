@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CampClotNot.Services;
 
-public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration config, ILogger<SeedService> logger)
+public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration config, ILogger<SeedService> logger, GuestIdentityMatchService identityMatch)
 {
     // Stable IDs — never change these; they anchor FK references across re-seeds
     public static class Id
@@ -160,6 +160,7 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         await RenameCampRulesAsync(db);
         await SeedScheduleItemTypesAsync(db);
         await SeedEventScheduleItemTypesAsync(db);
+        await BackfillGuestTeamLinksAsync(db);
     }
 
     private async Task SeedUserRolesAsync(AppDbContext db)
@@ -314,6 +315,38 @@ public class SeedService(IDbContextFactory<AppDbContext> factory, IConfiguration
         }
         await db.SaveChangesAsync();
         logger.LogInformation("Split {Count} shared theme row(s) into per-event copies.", split);
+    }
+
+    /// <summary>
+    /// One-time repair for guest visits created before #354: matches each still-unlinked visit
+    /// against its event's team roster and links it when exactly one CanSignIn=false record
+    /// matches by name. Leaves ambiguous or sign-in-account matches alone — same rule as the live
+    /// /join check (GuestIdentityMatchService), just applied retroactively.
+    /// </summary>
+    private async Task BackfillGuestTeamLinksAsync(AppDbContext db)
+    {
+        var unlinked = await db.GuestEventVisits
+            .Where(v => v.LinkedEventStaffId == null)
+            .Include(v => v.GuestAttendee)
+            .ToListAsync();
+        if (unlinked.Count == 0) return;
+
+        var linked = 0;
+        foreach (var visit in unlinked)
+        {
+            var match = await identityMatch.MatchAsync(
+                visit.GuestAttendee.FirstName, visit.GuestAttendee.LastName, visit.EventId);
+            if (match.Kind == GuestIdentityMatch.LinkedTeamMember)
+            {
+                visit.LinkedEventStaffId = match.TeamEventStaffId;
+                linked++;
+            }
+        }
+        if (linked > 0)
+        {
+            await db.SaveChangesAsync();
+            logger.LogInformation("Linked {Count} existing guest visit(s) to a team record.", linked);
+        }
     }
 
     private async Task SeedCapabilitiesAsync(AppDbContext db)
