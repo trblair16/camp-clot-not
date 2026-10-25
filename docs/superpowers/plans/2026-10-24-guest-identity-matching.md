@@ -8,9 +8,11 @@ sign-in account or an event team record, which today shows up as a duplicate row
 
 **Architecture:** One new service (`GuestIdentityMatchService`) is the single source of truth for
 the matching rule. It's called from the live `/account/join` handler (block sign-in-capable people,
-link team members to their `EventStaff` row) and from a one-time `SeedService` startup repair that
-backfills existing unlinked visits. `AttendanceService.GetRosterAsync` is updated to use the new link
-to collapse a linked guest and their team row into one entry.
+link team members to their `EventStaff` row) and from a `SeedService` startup repair that backfills
+existing unlinked visits — this repair runs on every startup (not just once), re-checking only
+still-unlinked visits each time, which also lets it opportunistically catch team members added after
+a guest already joined. `AttendanceService.GetRosterAsync` is updated to use the new link to collapse
+a linked guest and their team row into one entry.
 
 **Tech Stack:** .NET 8 / EF Core 8 / PostgreSQL (Npgsql), Blazor Server + minimal APIs.
 
@@ -594,10 +596,12 @@ Add this new private method anywhere alongside the other repair methods (e.g. ri
 
 ```csharp
     /// <summary>
-    /// One-time repair for guest visits created before #354: matches each still-unlinked visit
-    /// against its event's team roster and links it when exactly one CanSignIn=false record
-    /// matches by name. Leaves ambiguous or sign-in-account matches alone — same rule as the live
-    /// /join check (GuestIdentityMatchService), just applied retroactively.
+    /// Repair for guest visits still unlinked to a team record: matches each against its event's
+    /// team roster and links it when exactly one CanSignIn=false record matches by name. Leaves
+    /// ambiguous or sign-in-account matches alone — same rule as the live /join check
+    /// (GuestIdentityMatchService), just applied retroactively. Runs on every startup (not just
+    /// once) — re-checking only still-unlinked visits each time is cheap, and it opportunistically
+    /// catches team members added to the roster after a guest already joined.
     /// </summary>
     private async Task BackfillGuestTeamLinksAsync(AppDbContext db)
     {
@@ -607,15 +611,33 @@ Add this new private method anywhere alongside the other repair methods (e.g. ri
             .ToListAsync();
         if (unlinked.Count == 0) return;
 
+        // Pre-filter: load each distinct event's team roster once and skip MatchAsync entirely
+        // for visits with zero chance of linking (see final-review-fix-report for #354).
+        var eventIds = unlinked.Select(v => v.EventId).Distinct().ToList();
+        var rosterNamesByEvent = new Dictionary<Guid, HashSet<(string, string)>>();
+        foreach (var eventId in eventIds)
+        {
+            var team = await db.EventStaff.Where(s => s.EventId == eventId).Include(s => s.User).ToListAsync();
+            rosterNamesByEvent[eventId] = team
+                .Select(s => (GuestAccessService.Normalize(s.User.FirstName), GuestAccessService.Normalize(s.User.LastName)))
+                .ToHashSet();
+        }
+
         var linked = 0;
         foreach (var visit in unlinked)
         {
+            var key = (GuestAccessService.Normalize(visit.GuestAttendee.FirstName), GuestAccessService.Normalize(visit.GuestAttendee.LastName));
+            if (!rosterNamesByEvent[visit.EventId].Contains(key)) continue;
+
             var match = await identityMatch.MatchAsync(
                 visit.GuestAttendee.FirstName, visit.GuestAttendee.LastName, visit.EventId);
             if (match.Kind == GuestIdentityMatch.LinkedTeamMember)
             {
                 visit.LinkedEventStaffId = match.TeamEventStaffId;
                 linked++;
+                logger.LogInformation(
+                    "Backfill linked guest {GuestAttendeeId} at event {EventId} to EventStaff {EventStaffId}.",
+                    visit.GuestAttendeeId, visit.EventId, match.TeamEventStaffId);
             }
         }
         if (linked > 0)

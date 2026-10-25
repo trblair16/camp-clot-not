@@ -53,11 +53,11 @@ created when they personally scanned the QR code and typed their own name. Track
 | Check order | This event's team roster is checked first. A match with `CanSignIn = true` is treated as case 1 (sign in). A match with `CanSignIn = false` is case 2 (linked guest). Only when nothing on this event's roster matches do we fall back to the site-wide case-1 check. |
 | Which `EventStaff` roles qualify for case 2 | Any role, not just Speaker/Sponsor — any `CanSignIn = false` team member on this event. |
 | Match precision | Exact match after normalization (reuse `GuestAccessService.Normalize`) — no fuzzy matching. |
-| Multiple matches, case 1 involved | Case 1 (sign-in) always wins over case 2 on ambiguity. |
+| Multiple matches, case 1 involved | Case 1 (sign-in) always wins over case 2 on ambiguity, *within the same roster check*. Note this never applies across the event-roster/site-wide boundary: if this event's team roster has any match at all (even a single `CanSignIn = false` one), that decides the outcome and the site-wide case-1 check is never consulted — so a `CanSignIn = false` team-only record on this event is linked even if an unrelated person elsewhere in the system happens to have the same name and a real sign-in account. This is intentional; the outcome is benign since case 2 only ever grants guest-level access. |
 | Multiple matches, all case 2 (ambiguous team members) | Don't guess — fall back to a plain, unlinked guest. No logging. |
 | Case 1 UX | Hard block. "An account already exists for this name — please sign in," with a `/login` link. No "continue as guest anyway" escape hatch. |
 | Case 2 UX/access | Guest access only — identical cookie/session to any other guest, no elevated permissions. The only effect is the Attendance roster tagging them with their team role instead of "Guest" and collapsing to one row. |
-| Existing duplicates | Backfilled once via a startup repair in `SeedService`, using the same matching logic, applied to existing unlinked `GuestEventVisit` rows. |
+| Existing duplicates | Backfilled via a startup repair in `SeedService`, using the same matching logic, applied to existing unlinked `GuestEventVisit` rows. Runs on every startup, not just once — see Backfill section below. |
 
 ## Data Model
 
@@ -105,7 +105,7 @@ Logic (mirrors the Design Decisions table above):
    - No match → `NoMatch`.
 
 This is the single source of truth for the matching rule, used by both the live join path and the
-one-time backfill — the rule is never re-implemented or kept in sync across two places.
+startup backfill — the rule is never re-implemented or kept in sync across two places.
 
 ## Join Flow Changes
 
@@ -120,9 +120,13 @@ one-time backfill — the rule is never re-implemented or kept in sync across tw
   matched `EventStaffId`.
 - `NoMatch` → unchanged, today's behavior.
 
-This check runs once, at the point a `GuestEventVisit` is first created for a
-`(GuestAttendee, EventId)` pair. A returning guest's later visits just update `LastSeenAt`; there's
-no re-matching on repeat scans.
+In the implemented code, `MatchAsync` actually runs on every `/account/join` POST — before any
+`GuestEventVisit` lookup, not only the first time one is created for a `(GuestAttendee, EventId)`
+pair. This is arguably more correct than re-matching once: it keeps re-evaluating the match as
+accounts are created/deactivated or team rosters change between visits. It's fine to run on every
+request — `MatchAsync` is idempotent (same inputs always produce the same result) and cheap (two
+small, indexed queries), so repeating it per request has no observable cost or side effect beyond
+the one join attempt being evaluated.
 
 ## Attendance Roster Changes
 
@@ -144,6 +148,20 @@ account-role repair: on startup, find every `GuestEventVisit` with `LinkedEventS
 is `LinkedTeamMember`. `SignInRequired`/`NoMatch` results are left untouched — this backfill only
 resolves case-2 duplicates (the actual complaint); it does not retroactively force anyone with a real
 account to "sign in" for a visit that already happened.
+
+This repair runs on every app startup, not once — `SeedAsync()` is called unconditionally on every
+boot. That's deliberate, not an oversight: it only re-scans visits that are *still* unlinked, so after
+the first run finds everything there is to find, subsequent runs are cheap (a pre-filter checks each
+visit's name against its event's team roster before ever calling the more expensive `MatchAsync`, so
+a visit with zero chance of matching is skipped entirely). The benefit of re-running is that it
+opportunistically catches team members added to the roster *after* a guest already joined — a case
+the live `/join` check can never resolve retroactively since it only runs at join time.
+
+**Known limitation:** pre-existing duplicates where the *other* half of the duplicate is a real
+sign-in account (`CanSignIn = true`), rather than a team-only record, are deliberately left as-is by
+this backfill. Per the Non-goals above, there is no "ambiguous match" admin review UI and no
+retroactive sign-in enforcement for a visit that already happened — so that category of pre-existing
+duplicate is a known, accepted gap, not something this backfill is expected to clean up.
 
 ## Testing Plan
 
